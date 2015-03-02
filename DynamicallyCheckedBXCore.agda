@@ -6,7 +6,8 @@ open import Data.Empty
 open import Data.Unit
 open import Data.Product
 open import Data.Sum
-open import Data.Maybe
+import Data.Maybe as Maybe
+open Maybe
 open import Data.Nat
 open import Data.Fin
 open import Data.List
@@ -76,55 +77,45 @@ iso-lens iso = record
   ; PutGet = λ { s v refl → DONE {- cong just (Iso.to-from-inverse iso v) -} }
   ; GetPut = λ { s   refl → DONE {- cong just (Iso.from-to-inverse iso s) -} } }
 
+fmap-equals-just : {A B : Set} {f : A → B} (mx : Maybe A) {y : B} →
+                   Maybe.map f mx ≡ᴶ y → Σ[ x ∈ A ] mx ≡ᴶ x × f x ≡ y
+fmap-equals-just nothing  ()
+fmap-equals-just (just x) refl = x , refl , refl
+
 bind-equals-just : {A B : Set} {f : A → Maybe B} (mx : Maybe A) {y : B} →
                    mx ↪ f ≡ᴶ y → Σ[ x ∈ A ] mx ≡ᴶ x × f x ≡ᴶ y
 bind-equals-just nothing  ()
 bind-equals-just (just x) eq = x , refl , eq
 
+reduce-fmap : {A B : Set} {f : A → B} {mx : Maybe A} {x : A} → mx ≡ᴶ x → Maybe.map f mx ≡ᴶ f x
+reduce-fmap {mx = nothing} ()
+reduce-fmap {mx = just x } refl = refl
+
 reduce-bind : {A B : Set} {mx : Maybe A} {x : A} {f : A → Maybe B} → mx ≡ᴶ x → mx ↪ f ≡ f x
 reduce-bind {mx = nothing} ()
 reduce-bind {mx = just x } refl = refl
 
-focus-lens : {S F S' V : Set} → S ⇆ F × S' → F ⇆ V → S ⇆ V
-focus-lens {S} {F} {S'} {V} outer-lens inner-lens = record { put = put; get = get; PutGet = PutGet; GetPut = GetPut }
+focus-lens : {S F S' V : Set} → S ≅ F × S' → F ⇆ V → S ⇆ V
+focus-lens {S} {F} {S'} {V} iso lens = record { put = put; get = get; PutGet = PutGet; GetPut = GetPut }
   where
     put : S → V → Maybe S
-    put s v = Lens.get outer-lens s ↪ λ { (focus , residual) →
-              Lens.put inner-lens focus v ↪ λ focus' →
-              Lens.put outer-lens s (focus' , residual) }
+    put s v = let (focus , residual) = Iso.to iso s
+              in  Maybe.map (Iso.from iso ∘ flip _,_ residual) (Lens.put lens focus v)
 
     get : S → Maybe V
-    get = (Lens.get inner-lens ∘ proj₁) ↢ Lens.get outer-lens
+    get = Lens.get lens ∘ proj₁ ∘ Iso.to iso
 
     PutGet : (s : S) (v : V) {s' : S} → put s v ≡ᴶ s' → get s' ≡ᴶ v
-    PutGet s v      eq with bind-equals-just (Lens.get outer-lens s) eq
-    PutGet s v      _  | (focus , residual) , outer-get-eq , eq with bind-equals-just (Lens.put inner-lens focus v) eq
-    PutGet s v {s'} _  | (focus , residual) , outer-get-eq , _  | focus' , inner-put-eq , outer-put-eq =
-      begin
-        get s'
-          ≡⟨ refl ⟩
-        Lens.get outer-lens s' ↪ Lens.get inner-lens ∘ proj₁
-          ≡⟨ reduce-bind (Lens.PutGet outer-lens s (focus' , residual) outer-put-eq) ⟩
-        Lens.get inner-lens focus'
-          ≡⟨ Lens.PutGet inner-lens focus v inner-put-eq ⟩
-        just v
-      ∎
-      where open ≡-Reasoning
+    PutGet s v eq with fmap-equals-just (Lens.put lens (proj₁ (Iso.to iso s)) v) eq
+    PutGet s v _  | s' , put-eq , refl = trans (cong (Lens.get lens ∘ proj₁)
+                                                     (Iso.to-from-inverse iso (s' , proj₂ (Iso.to iso s))))
+                                               (Lens.PutGet lens (proj₁ (Iso.to iso s)) v put-eq)
 
     GetPut : (s : S) {v : V} → get s ≡ᴶ v → put s v ≡ᴶ s
-    GetPut s {v} eq with bind-equals-just (Lens.get outer-lens s) eq
-    GetPut s {v} _  | (focus , residual) , outer-get-eq , inner-get-eq =
-      begin
-        put s v
-          ≡⟨ reduce-bind outer-get-eq ⟩
-        Lens.put inner-lens focus v ↪ (λ focus' → Lens.put outer-lens s (focus' , residual))
-          ≡⟨ reduce-bind (Lens.GetPut inner-lens focus inner-get-eq) ⟩
-        Lens.put outer-lens s (focus , residual)
-          ≡⟨ Lens.GetPut outer-lens s outer-get-eq ⟩
-        just s
-      ∎
-      where open ≡-Reasoning
+    GetPut s get-eq = trans (reduce-fmap (Lens.GetPut lens (proj₁ (Iso.to iso s)) get-eq))
+                            (cong just (Iso.from-to-inverse iso s))
 
+-- a universe for a finite number of mutually recursive datatypes
 data U (n : ℕ) : Set₁ where
   var  : (i : Fin n) → U n
   zero : U n
