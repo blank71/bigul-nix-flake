@@ -1,7 +1,5 @@
-module MutuallyRecursiveUniverse where
+module DynamicallyChecked.Universe where
 
-open import Data.Empty
-open import Data.Unit
 open import Data.Product
 open import Data.Sum
 open import Data.Nat
@@ -11,17 +9,13 @@ open import Data.List
 
 data U (n : ℕ) : Set₁ where
   var  : (i : Fin n) → U n
-  zero : U n
-  one  : U n
-  k    : (A : Set) → U n
+  k    : (A : Set)   → U n
   _⊕_  : (F G : U n) → U n
   _⊗_  : (F G : U n) → U n
-  list : (F : U n) → U n
+  list : (F : U n)   → U n
 
 ⟦_⟧ : {n : ℕ} → U n → (Fin n → Set) → Set
 ⟦ var  i ⟧ Xs = Xs i
-⟦ zero   ⟧ Xs = ⊥
-⟦ one    ⟧ Xs = ⊤
 ⟦ k A    ⟧ Xs = A
 ⟦ F ⊕ G  ⟧ Xs = ⟦ F ⟧ Xs ⊎ ⟦ G ⟧ Xs
 ⟦ F ⊗ G  ⟧ Xs = ⟦ F ⟧ Xs × ⟦ G ⟧ Xs

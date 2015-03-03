@@ -1,10 +1,11 @@
-module Partiality where
+module DynamicallyChecked.Partiality where
 
 open import Function
 open import Data.Unit
 import Data.Maybe as Maybe; open Maybe
 open import Data.Product
 open import Relation.Binary.PropositionalEquality
+
 
 infix 5 _↪_
 
@@ -46,10 +47,17 @@ record Iso (A B : Set) : Set where
     to-from-inverse : (x : A) {y : B} → to x ≡ᴶ y → from y ≡ᴶ x
     from-to-inverse : (y : B) {x : A} → from y ≡ᴶ x → to x ≡ᴶ y
 
-infix 1 _≅_
+infix 0 _≅_
 
 _≅_ : Set → Set → Set
 _≅_ = Iso
+
+id-iso : {A : Set} → A ≅ A
+id-iso = record
+  { to   = just
+  ; from = just
+  ; to-from-inverse = λ { _ refl → refl }
+  ; from-to-inverse = λ { _ refl → refl } }
 
 trans-iso : {A B C : Set} → A ≅ B → B ≅ C → A ≅ C
 trans-iso {A} {B} {C} iso-l iso-r = record

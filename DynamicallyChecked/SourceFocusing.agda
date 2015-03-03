@@ -1,58 +1,21 @@
-module DynamicallyCheckedCore where
+module DynamicallyChecked.SourceFocusing where
 
-open import Partiality
-open import MutuallyRecursiveUniverse
+open import DynamicallyChecked.Partiality
+open import DynamicallyChecked.Universe
+open import DynamicallyChecked.Lens
+open import DynamicallyChecked.Conditional
 
-open import Level using (Level)
 open import Function
-open import Data.Empty
 open import Data.Unit
+open import Data.Bool
+import Data.Maybe as Maybe; open Maybe
 open import Data.Product
 open import Data.Sum
-import Data.Maybe as Maybe
-open Maybe
 open import Data.Nat
 open import Data.Fin
-open import Data.List
-open import Relation.Nullary
+open import Data.List hiding (filter)
 open import Relation.Binary.PropositionalEquality
 
-
-record Lens (S V : Set) : Set where
-  field
-    put : S → V → Maybe S
-    get : S → Maybe V
-    PutGet : (s : S) (v : V) {s' : S} → put s v ≡ᴶ s' → get s' ≡ᴶ v
-    GetPut : (s : S) {v : V} → get s ≡ᴶ v → put s v ≡ᴶ s
-
-infix 1 _⇆_
-
-_⇆_ : Set → Set → Set
-_⇆_ = Lens
-
-iso-lens : {A B : Set} → A ≅ B → A ⇆ B
-iso-lens iso = record
-  { put = const (Iso.from iso)
-  ; get = Iso.to iso
-  ; PutGet = λ s v eq → Iso.from-to-inverse iso v eq
-  ; GetPut = λ s eq → Iso.to-from-inverse iso s eq }
-
-fail : {S V : Set} → S ⇆ V
-fail = record
-  { put = λ s v → nothing
-  ; get = λ s → nothing
-  ; PutGet = λ s v ()
-  ; GetPut = λ s () }
-
-skip : {S : Set} → S ⇆ ⊤
-skip = record
-  { put = λ s _ → just s
-  ; get = λ s → just tt
-  ; PutGet = λ { s _ refl → refl }
-  ; GetPut = λ s _ → refl }
-
---------
--- source focusing
 
 focus-lens : {S F S' V : Set} → S ≅ F × S' → F ⇆ V → S ⇆ V
 focus-lens {S} {F} {S'} {V} iso lens = record { put = put; get = get; PutGet = PutGet; GetPut = GetPut }
@@ -93,12 +56,40 @@ focus-lens {S} {F} {S'} {V} iso lens = record { put = put; get = get; PutGet = P
 
 -- path components
 
-child : {n : ℕ} {i : Fin n} (F : Functor n) → μ F i ≅ ⟦ F i ⟧ (μ F) × ⊤
-child F = trans-iso (record { to   = λ { (con xs) → just xs }
+decon : {n : ℕ} {i : Fin n} (F : Functor n) → μ F i ≅ ⟦ F i ⟧ (μ F) × ⊤
+decon F = trans-iso (record { to   = λ { (con xs) → just xs }
                             ; from = λ xs → just (con xs)
                             ; to-from-inverse = λ { (con xs) refl → refl }
                             ; from-to-inverse = λ { xs refl → refl } })
                     prod-unit-iso
+
+cond : {A : Set} → (A → Bool) → A ≅ A × ⊤
+cond {A} p = trans-iso (record { to   = check 
+                               ; from = check
+                               ; to-from-inverse = check-inverse
+                               ; from-to-inverse = check-inverse })
+                       prod-unit-iso
+  where
+    check : A → Maybe A
+    check x = if p x then just x else nothing
+    check-inverse : (x : A) {y : A} → (if p x then just x else nothing) ≡ᴶ y → (if p y then just y else nothing) ≡ᴶ x
+    check-inverse x eq with p x  | inspect p x
+    check-inverse x refl | true  | [ eq ] = if-true eq
+    check-inverse x ()   | false | [ eq ]
+
+left-branch : {A B : Set} → A ⊎ B ≅ A × ⊤
+left-branch = trans-iso (record { to   = λ { (inj₁ x) → just x; (inj₂ y) → nothing }
+                                ; from = λ x → just (inj₁ x)
+                                ; to-from-inverse = λ { (inj₁ x) refl → refl ; (inj₂ y) () }
+                                ; from-to-inverse = λ { x refl → refl } })
+                        prod-unit-iso
+
+right-branch : {A B : Set} → A ⊎ B ≅ B × ⊤
+right-branch = trans-iso (record { to   = λ { (inj₁ x) → nothing; (inj₂ y) → just y }
+                                 ; from = λ y → just (inj₂ y)
+                                 ; to-from-inverse = λ { (inj₁ x) (); (inj₂ y) refl → refl }
+                                 ; from-to-inverse = λ { y refl → refl } })
+                         prod-unit-iso
 
 nth-elem : {A : Set} → ℕ → List A ≅ A × (List A × List A)
 nth-elem {A} n = record
@@ -130,3 +121,25 @@ nth-elem {A} n = record
     unsplit-split (suc n) (w ∷ ws) eq with fmap-equals-just (split n ws) eq
     unsplit-split (suc n) (w ∷ ws) _  | (x , ys , zs) , split-eq , refl = cong (Maybe.map (_∷_ w))
                                                                                (unsplit-split n ws split-eq)
+
+
+--------
+-- path language
+
+data Path {n : ℕ} (F : Functor n) : U n → U n → Set₁ where
+  child/_   : {i : Fin n} {X : U n}                (p : Path F (F i) X) → Path F (var i)  X
+  prod-l/_  : {G H X : U n}                        (p : Path F G     X) → Path F (G ⊗ H)  X
+  prod-r/_  : {G H X : U n}                        (p : Path F H     X) → Path F (G ⊗ H)  X
+  sum-l/_   : {G H X : U n}                        (p : Path F G     X) → Path F (G ⊕ H)  X
+  sum-r/_   : {G H X : U n}                        (p : Path F H     X) → Path F (G ⊕ H)  X
+  filter_/_ : {G X : U n} → (⟦ G ⟧ (μ F) → Bool) → (p : Path F G     X) → Path F G        X
+  elem_/_   : {G X : U n} → ℕ →                    (p : Path F G     X) → Path F (list G) X
+
+⟦_⟧ᴾ : {n : ℕ} {F : Functor n} {X Y : U n} → Path F X Y → {Z : Set} → ⟦ Y ⟧ (μ F) ⇆ Z → ⟦ X ⟧ (μ F) ⇆ Z
+⟦ child/     p ⟧ᴾ lens = focus-lens (decon _)     (⟦ p ⟧ᴾ lens)
+⟦ prod-l/    p ⟧ᴾ lens = focus-lens id-iso        (⟦ p ⟧ᴾ lens)
+⟦ prod-r/    p ⟧ᴾ lens = focus-lens prod-comm-iso (⟦ p ⟧ᴾ lens)
+⟦ sum-l/     p ⟧ᴾ lens = focus-lens left-branch   (⟦ p ⟧ᴾ lens)
+⟦ sum-r/     p ⟧ᴾ lens = focus-lens right-branch  (⟦ p ⟧ᴾ lens)
+⟦ filter f / p ⟧ᴾ lens = focus-lens (cond f)      (⟦ p ⟧ᴾ lens)
+⟦ elem n /   p ⟧ᴾ lens = focus-lens (nth-elem n)  (⟦ p ⟧ᴾ lens)
