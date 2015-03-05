@@ -63,6 +63,13 @@ id-iso = record
   ; to-from-inverse = λ { _ refl → refl }
   ; from-to-inverse = λ { _ refl → refl } }
 
+sym-iso : {A B : Set} → A ≅ B → B ≅ A
+sym-iso iso = record
+  { to   = Iso.from iso
+  ; from = Iso.to   iso
+  ; to-from-inverse = Iso.from-to-inverse iso
+  ; from-to-inverse = Iso.to-from-inverse iso }
+
 trans-iso : {A B C : Set} → A ≅ B → B ≅ C → A ≅ C
 trans-iso {A} {B} {C} iso-l iso-r = record
   { to   = Iso.to iso-r ↢ Iso.to iso-l

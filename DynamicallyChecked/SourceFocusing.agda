@@ -72,7 +72,7 @@ cond {A} p = trans-iso (record { to   = check
   where
     check : A → Maybe A
     check x = if p x then just x else nothing
-    check-inverse : (x : A) {y : A} → (if p x then just x else nothing) ≡ᴶ y → (if p y then just y else nothing) ≡ᴶ x
+    check-inverse : (x : A) {y : A} → check x ≡ᴶ y → check y ≡ᴶ x
     check-inverse x eq with p x  | inspect p x
     check-inverse x refl | true  | [ eq ] = if-true eq
     check-inverse x ()   | false | [ eq ]
