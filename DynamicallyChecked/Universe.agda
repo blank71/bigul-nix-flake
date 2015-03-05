@@ -26,14 +26,3 @@ Functor n = Fin n → U n
 
 data μ {n : ℕ} (F : Functor n) : Fin n → Set where
   con : {i : Fin n} → ⟦ F i ⟧ (μ F) → μ F i
-
--- equal-or-not : {n : ℕ} (i j : Fin n) → Dec (i ≡ j)
--- equal-or-not zero    zero    = yes refl
--- equal-or-not zero    (suc _) = no (λ ())
--- equal-or-not (suc _) zero    = no (λ ())
--- equal-or-not (suc i) (suc j) with equal-or-not i j
--- equal-or-not (suc i) (suc j) | yes eq = yes (cong suc eq)
--- equal-or-not (suc i) (suc j) | no neq = no (neq ∘ cong-pred)
---   where
---     cong-pred : {n : ℕ} {i j : Fin n} → (Fin (suc n) ∋ suc i) ≡ suc j → i ≡ j
---     cong-pred refl = refl

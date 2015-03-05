@@ -36,6 +36,10 @@ reduce-bind : {A B : Set} {mx : Maybe A} {x : A} {f : A → Maybe B} → mx ≡�
 reduce-bind {mx = nothing} ()
 reduce-bind {mx = just x } refl = refl
 
+reduce-bind-eq : {A B : Set} {mx : Maybe A} {x : A} {f : A → Maybe B} {y : Maybe B} → mx ≡ᴶ x → mx ↪ f ≡ y → f x ≡ y
+reduce-bind-eq {mx = nothing} ()   eq
+reduce-bind-eq {mx = just x } refl eq = eq
+
 reduce-fmap : {A B : Set} {f : A → B} {mx : Maybe A} {x : A} → mx ≡ᴶ x → Maybe.map f mx ≡ᴶ f x
 reduce-fmap {mx = nothing} ()
 reduce-fmap {mx = just x } refl = refl

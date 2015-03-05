@@ -1,7 +1,6 @@
 module DynamicallyChecked.Lens where
 
 open import DynamicallyChecked.Partiality
-open import DynamicallyChecked.Universe
 
 open import Function
 open import Data.Unit

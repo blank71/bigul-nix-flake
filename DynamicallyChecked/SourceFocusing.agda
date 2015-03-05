@@ -127,19 +127,19 @@ nth-elem {A} n = record
 -- path language
 
 data Path {n : ℕ} (F : Functor n) : U n → U n → Set₁ where
-  child/_   : {i : Fin n} {X : U n}                (p : Path F (F i) X) → Path F (var i)  X
-  prod-l/_  : {G H X : U n}                        (p : Path F G     X) → Path F (G ⊗ H)  X
-  prod-r/_  : {G H X : U n}                        (p : Path F H     X) → Path F (G ⊗ H)  X
-  sum-l/_   : {G H X : U n}                        (p : Path F G     X) → Path F (G ⊕ H)  X
-  sum-r/_   : {G H X : U n}                        (p : Path F H     X) → Path F (G ⊕ H)  X
-  filter_/_ : {G X : U n} → (⟦ G ⟧ (μ F) → Bool) → (p : Path F G     X) → Path F G        X
-  elem_/_   : {G X : U n} → ℕ →                    (p : Path F G     X) → Path F (list G) X
+  child⟩_   : {i : Fin n} {X : U n}                (p : Path F (F i) X) → Path F (var i)  X
+  prod-l⟩_  : {G H X : U n}                        (p : Path F G     X) → Path F (G ⊗ H)  X
+  prod-r⟩_  : {G H X : U n}                        (p : Path F H     X) → Path F (G ⊗ H)  X
+  sum-l⟩_   : {G H X : U n}                        (p : Path F G     X) → Path F (G ⊕ H)  X
+  sum-r⟩_   : {G H X : U n}                        (p : Path F H     X) → Path F (G ⊕ H)  X
+  filter_⟩_ : {G X : U n} → (⟦ G ⟧ (μ F) → Bool) → (p : Path F G     X) → Path F G        X
+  elem_⟩_   : {G X : U n} → ℕ →                    (p : Path F G     X) → Path F (list G) X
 
 ⟦_⟧ᴾ : {n : ℕ} {F : Functor n} {X Y : U n} → Path F X Y → {Z : Set} → ⟦ Y ⟧ (μ F) ⇆ Z → ⟦ X ⟧ (μ F) ⇆ Z
-⟦ child/     p ⟧ᴾ lens = focus-lens (decon _)     (⟦ p ⟧ᴾ lens)
-⟦ prod-l/    p ⟧ᴾ lens = focus-lens id-iso        (⟦ p ⟧ᴾ lens)
-⟦ prod-r/    p ⟧ᴾ lens = focus-lens prod-comm-iso (⟦ p ⟧ᴾ lens)
-⟦ sum-l/     p ⟧ᴾ lens = focus-lens left-branch   (⟦ p ⟧ᴾ lens)
-⟦ sum-r/     p ⟧ᴾ lens = focus-lens right-branch  (⟦ p ⟧ᴾ lens)
-⟦ filter f / p ⟧ᴾ lens = focus-lens (cond f)      (⟦ p ⟧ᴾ lens)
-⟦ elem n /   p ⟧ᴾ lens = focus-lens (nth-elem n)  (⟦ p ⟧ᴾ lens)
+⟦ child⟩     p ⟧ᴾ lens = focus-lens (decon _)     (⟦ p ⟧ᴾ lens)
+⟦ prod-l⟩    p ⟧ᴾ lens = focus-lens id-iso        (⟦ p ⟧ᴾ lens)
+⟦ prod-r⟩    p ⟧ᴾ lens = focus-lens prod-comm-iso (⟦ p ⟧ᴾ lens)
+⟦ sum-l⟩     p ⟧ᴾ lens = focus-lens left-branch   (⟦ p ⟧ᴾ lens)
+⟦ sum-r⟩     p ⟧ᴾ lens = focus-lens right-branch  (⟦ p ⟧ᴾ lens)
+⟦ filter f ⟩ p ⟧ᴾ lens = focus-lens (cond f)      (⟦ p ⟧ᴾ lens)
+⟦ elem n ⟩   p ⟧ᴾ lens = focus-lens (nth-elem n)  (⟦ p ⟧ᴾ lens)
