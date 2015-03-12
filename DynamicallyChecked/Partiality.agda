@@ -2,70 +2,94 @@ module DynamicallyChecked.Partiality where
 
 open import Function
 open import Data.Unit
+open import Data.Bool
 import Data.Maybe as Maybe; open Maybe
 open import Data.Product
 open import Relation.Binary.PropositionalEquality
 
 
-infix 5 _↪_
+data Par : Set → Set₁ where
+  fail         : {A   : Set} → Par A
+  return       : {A   : Set} → A → Par A
+  _>>=_        : {A B : Set} → Par A → (A → Par B) → Par B
+  assert_then_ : {A   : Set} → Bool → Par A → Par A
+  embed        : {A   : Set} → Maybe A → Par A
 
-_↪_ : {A B : Set} → Maybe A → (A → Maybe B) → Maybe B
-ma ↪ f = maybe f nothing ma
+runPar : {A : Set} → Par A → Maybe A
+runPar fail       = nothing
+runPar (return x) = just x
+runPar (mx >>= f) with runPar mx
+runPar (mx >>= f) | just x  = runPar (f x)
+runPar (mx >>= f) | nothing = nothing
+runPar (assert true  then mx) = runPar mx
+runPar (assert false then mx) = nothing
+runPar (embed mx) = mx
 
-infix 5 _↢_
+_>>_ : {A B : Set} → Par A → Par B → Par B
+mx >> my = mx >>= const my
 
-_↢_ : {A B C : Set} → (B → Maybe C) → (A → Maybe B) → (A → Maybe C)
-(f ↢ g) a = g a ↪ f
+infixr 8 _<=<_
 
-infix 4 _≡ᴶ_
+_<=<_ : {A B C : Set} → (B → Par C) → (A → Par B) → (A → Par C)
+(f <=< g) x = g x >>= f
 
-_≡ᴶ_ : {A : Set} → Maybe A → A → Set
-mx ≡ᴶ y = mx ≡ just y
+liftM : {A B : Set} → (A → B) → Par A → Par B
+liftM f mx = mx >>= λ x → return (f x)
 
-fmap-equals-just : {A B : Set} {f : A → B} (mx : Maybe A) {y : B} →
-                   Maybe.map f mx ≡ᴶ y → Σ[ x ∈ A ] mx ≡ᴶ x × f x ≡ y
-fmap-equals-just nothing  ()
-fmap-equals-just (just x) refl = x , refl , refl
+liftM₂ : {A B C : Set} → (A → B → C) → Par A → Par B → Par C
+liftM₂ f mx my = mx >>= λ x → my >>= λ y → return (f x y)
 
-bind-equals-just : {A B : Set} {f : A → Maybe B} (mx : Maybe A) {y : B} →
-                   mx ↪ f ≡ᴶ y → Σ[ x ∈ A ] mx ≡ᴶ x × f x ≡ᴶ y
-bind-equals-just nothing  ()
-bind-equals-just (just x) eq = x , refl , eq
+infixr 1 _>>=_
+infix 1 assert_then_
 
-reduce-bind : {A B : Set} {mx : Maybe A} {x : A} {f : A → Maybe B} → mx ≡ᴶ x → mx ↪ f ≡ f x
-reduce-bind {mx = nothing} ()
-reduce-bind {mx = just x } refl = refl
+data CompSeq : {A : Set} → Par A → A → Set₁ where
+  return       : {A : Set} {x x' : A} → x ≡ x' → CompSeq (return x) x'
+  _>>=_        : {A B : Set} {x : A} {mx : Par A} {f : A → Par B} {y : B} →
+                 CompSeq mx x → CompSeq (f x) y → CompSeq (mx >>= f) y
+  embed        : {A : Set} {mx : Maybe A} {x : A} → mx ≡ just x → CompSeq (embed mx) x
+  assert_then_ : {A : Set} {b : Bool} {mx : Par A} {x : A} → b ≡ true → CompSeq mx x → CompSeq (assert b then mx) x
 
-reduce-bind-eq : {A B : Set} {mx : Maybe A} {x : A} {f : A → Maybe B} {y : Maybe B} → mx ≡ᴶ x → mx ↪ f ≡ y → f x ≡ y
-reduce-bind-eq {mx = nothing} ()   eq
-reduce-bind-eq {mx = just x } refl eq = eq
+_↦_ : {A : Set} → Par A → A → Set₁
+_↦_ = CompSeq
 
-expand-bind-eq : {A B : Set} {mx : Maybe A} {x : A} {f : A → Maybe B} {y : Maybe B} → mx ≡ᴶ x → f x ≡ y → mx ↪ f ≡ y
-expand-bind-eq {mx = nothing} ()   eq
-expand-bind-eq {mx = just x } refl eq = eq
+toCompSeq : {A : Set} {mx : Par A} {x : A} → runPar mx ≡ just x → CompSeq mx x
+toCompSeq {mx = fail                } ()
+toCompSeq {mx = return x            } refl = return refl
+toCompSeq {mx = mx >>= f            } eq   with runPar mx | inspect runPar mx
+toCompSeq {mx = mx >>= f            } eq   | just x  | [ runPar-mx≡just-x ] = toCompSeq runPar-mx≡just-x >>= toCompSeq eq
+toCompSeq {mx = mx >>= f            } ()   | nothing | _
+toCompSeq {mx = embed ._            } refl = embed refl
+toCompSeq {mx = assert true  then mx} eq   = assert refl then toCompSeq eq
+toCompSeq {mx = assert false then mx} ()  
 
-reduce-fmap : {A B : Set} {f : A → B} {mx : Maybe A} {x : A} → mx ≡ᴶ x → Maybe.map f mx ≡ᴶ f x
-reduce-fmap {mx = nothing} ()
-reduce-fmap {mx = just x } refl = refl
+fromCompSeq : {A : Set} {mx : Par A} {x : A} → CompSeq mx x → runPar mx ≡ just x
+fromCompSeq (return refl               ) = refl
+fromCompSeq (_>>=_ {mx = mx} comp comp') with runPar mx | inspect runPar mx
+fromCompSeq (_>>=_ {mx = mx} comp comp') | just x' | [ eq ] with trans (sym eq) (fromCompSeq comp)
+fromCompSeq (_>>=_ {mx = mx} comp comp') | just ._ | [ eq ] | refl = fromCompSeq comp'
+fromCompSeq (_>>=_ {mx = mx} comp comp') | nothing | [ eq ] with trans (sym eq) (fromCompSeq comp)
+fromCompSeq (_>>=_ {mx = mx} comp comp') | nothing | [ eq ] | ()
+fromCompSeq (embed eq                  ) = eq
+fromCompSeq (assert refl then comp     ) = fromCompSeq comp
 
-record Iso (A B : Set) : Set where
+record Iso (A B : Set) : Set₁ where
   field
-    to   : A → Maybe B
-    from : B → Maybe A
-    to-from-inverse : (x : A) {y : B} → to x ≡ᴶ y → from y ≡ᴶ x
-    from-to-inverse : (y : B) {x : A} → from y ≡ᴶ x → to x ≡ᴶ y
+    to   : A → Par B
+    from : B → Par A
+    to-from-inverse : {x : A} {y : B} → to x ↦ y → from y ↦ x
+    from-to-inverse : {y : B} {x : A} → from y ↦ x → to x ↦ y
 
 infix 0 _≅_
 
-_≅_ : Set → Set → Set
+_≅_ : Set → Set → Set₁
 _≅_ = Iso
 
 id-iso : {A : Set} → A ≅ A
 id-iso = record
-  { to   = just
-  ; from = just
-  ; to-from-inverse = λ { _ refl → refl }
-  ; from-to-inverse = λ { _ refl → refl } }
+  { to   = return
+  ; from = return
+  ; to-from-inverse = λ { {._} (return refl) → return refl }
+  ; from-to-inverse = λ { {._} (return refl) → return refl } }
 
 sym-iso : {A B : Set} → A ≅ B → B ≅ A
 sym-iso iso = record
@@ -76,44 +100,21 @@ sym-iso iso = record
 
 trans-iso : {A B C : Set} → A ≅ B → B ≅ C → A ≅ C
 trans-iso {A} {B} {C} iso-l iso-r = record
-  { to   = Iso.to iso-r ↢ Iso.to iso-l
-  ; from = Iso.from iso-l ↢ Iso.from iso-r
-  ; from-to-inverse = from-to-inverse
-  ; to-from-inverse = to-from-inverse }
-  where
-    from-to-inverse : (c : C) {a : A} → (Iso.from iso-l ↢ Iso.from iso-r) c ≡ᴶ a → (Iso.to iso-r ↢ Iso.to iso-l) a ≡ᴶ c
-    from-to-inverse c {a} eq with bind-equals-just (Iso.from iso-r c) eq
-    from-to-inverse c {a} _  | b , from-r-eq , from-l-eq =
-      begin
-        Iso.to iso-l a ↪ Iso.to iso-r
-          ≡⟨ reduce-bind (Iso.from-to-inverse iso-l b from-l-eq) ⟩
-        Iso.to iso-r b
-          ≡⟨ Iso.from-to-inverse iso-r c from-r-eq ⟩
-        just c
-      ∎
-      where open ≡-Reasoning
-    to-from-inverse : (a : A) {c : C} → (Iso.to iso-r ↢ Iso.to iso-l) a ≡ᴶ c → (Iso.from iso-l ↢ Iso.from iso-r) c ≡ᴶ a
-    to-from-inverse a {c} eq with bind-equals-just (Iso.to iso-l a) eq
-    to-from-inverse a {c} _  | b , to-l-eq , to-r-eq =
-      begin
-        Iso.from iso-r c ↪ Iso.from iso-l
-          ≡⟨ reduce-bind (Iso.to-from-inverse iso-r b to-r-eq) ⟩
-        Iso.from iso-l b
-          ≡⟨ Iso.to-from-inverse iso-l a to-l-eq ⟩
-        just a
-      ∎
-      where open ≡-Reasoning
+  { to   = Iso.to iso-r <=< Iso.to iso-l
+  ; from = Iso.from iso-l <=< Iso.from iso-r
+  ; from-to-inverse = λ { (r-comp >>= l-comp) → Iso.from-to-inverse iso-l l-comp >>= Iso.from-to-inverse iso-r r-comp }
+  ; to-from-inverse = λ { (l-comp >>= r-comp) → Iso.to-from-inverse iso-r r-comp >>= Iso.to-from-inverse iso-l l-comp } }
 
 prod-unit-iso : {A : Set} → A ≅ A × ⊤
 prod-unit-iso = record
-  { to   = λ x → just (x , tt)
-  ; from = λ { (x , _) → just x }
-  ; from-to-inverse = λ { _ refl → refl }
-  ; to-from-inverse = λ { _ refl → refl } }
+  { to   = return ∘ flip _,_ tt
+  ; from = return ∘ proj₁
+  ; from-to-inverse = λ { {_} {._} (return refl) → return refl }
+  ; to-from-inverse = λ { {._}     (return refl) → return refl } }
 
 prod-comm-iso : {A B : Set} → A × B ≅ B × A
 prod-comm-iso = record
-  { to   = just ∘ swap
-  ; from = just ∘ swap
-  ; from-to-inverse = λ { _ refl → refl }
-  ; to-from-inverse = λ { _ refl → refl } }
+  { to   = return ∘ swap
+  ; from = return ∘ swap
+  ; from-to-inverse = λ { {_} {._} (return refl) → return refl }
+  ; to-from-inverse = λ { {_} {._} (return refl) → return refl } }

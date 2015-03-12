@@ -4,115 +4,73 @@ open import DynamicallyChecked.Utilities
 open import DynamicallyChecked.Partiality
 open import DynamicallyChecked.Lens
 
+open import Level
 open import Function
-open import Data.Maybe
+open import Data.Bool
 open import Data.Product
 open import Data.Sum
 open import Data.Nat
 open import Data.Fin
-open import Data.Vec
+open import Data.Vec using (Vec; lookup)
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
 
 
-data Branch (S V : Set) : Set where
+data Branch (S V : Set) : Set₁ where
   normal   : S ⇆ V → Branch S V
-  adaptive : (S → Maybe S) → Branch S V
+  adaptive : (S → Par S) → Branch S V
 
-branch : {S V A : Set} → (S ⇆ V → A) → ((S → Maybe S) → A) → Branch S V → A
+branch : {S V : Set} {l : Level} {A : Set l} → (S ⇆ V → A) → ((S → Par S) → A) → Branch S V → A
 branch f g (normal   l) = f l
 branch f g (adaptive u) = g u
 
-reduce-branch-normal : {S V A : Set} {f : S ⇆ V → A} {g : (S → Maybe S) → A} {b : Branch S V} {l : S ⇆ V} →
-                       b ≡ normal l → branch f g b ≡ f l
-reduce-branch-normal refl = refl
+elim-branch-normal :
+  {S V : Set} {ℓ ℓ' : Level} {A : Set ℓ} {f : S ⇆ V → A} {g : (S → Par S) → A} {b : Branch S V} {l : S ⇆ V} →
+  b ≡ normal l → (P : A → Set ℓ') → P (f l) → P (branch f g b)
+elim-branch-normal refl P p = p
 
-module CaseS {S V : Set} {n : ℕ} (bs : Vec (Branch S V) n) (bsel : S → Maybe (Fin n)) where
+module CaseS {S V : Set} {n : ℕ} (bs : Vec (Branch S V) n) (bsel : S → Par (Fin n)) where
 
-  put-branch-check : S → Fin n → Fin n → Maybe S
-  put-branch-check s i j with i ≟ᶠ j
-  put-branch-check s i j | yes _ = just s
-  put-branch-check s i j | no  _ = nothing
+  put-normal-branch : S → V → Fin n → S ⇆ V → Par S
+  put-normal-branch s v i l = Lens.put l s v >>= λ s' → bsel s' >>= λ j → assert (i ==ᶠ j) then return s'
 
-  put-branch-check-equal : (s : S) (i : Fin n) → put-branch-check s i i ≡ᴶ s
-  put-branch-check-equal s i with i ≟ᶠ i
-  put-branch-check-equal s i | yes _   = refl
-  put-branch-check-equal s i | no  i≢i with i≢i refl
-  put-branch-check-equal s i | no  i≢i | ()
+  put-with-adaptation : S → V → ((S → Par S) → Par S) → Par S
+  put-with-adaptation s v g = bsel s >>= λ i → branch (put-normal-branch s v i) g (lookup i bs)
 
-  put-normal-branch : S → V → Fin n → S ⇆ V → Maybe S
-  put-normal-branch s v i l = Lens.put l s v ↪ λ s' → bsel s' ↪ put-branch-check s' i
+  put : S → V → Par S
+  put s v = put-with-adaptation s v (λ u → u s >>= λ s' → put-with-adaptation s' v (const fail))
 
-  put-with-adaptation : S → V → ((S → Maybe S) → Maybe S) → Maybe S
-  put-with-adaptation s v g = bsel s ↪ λ i → branch (put-normal-branch s v i) g (lookup i bs)
+  get : S → Par V
+  get s = bsel s >>= branch (λ l → Lens.get l s) (const fail) ∘ flip lookup bs
 
-  put : S → V → Maybe S
-  put s v = put-with-adaptation s v (λ u → u s ↪ λ s' → put-with-adaptation s' v (const nothing))
-
-  get : S → Maybe V
-  get s = bsel s ↪ branch (λ l → Lens.get l s) (const nothing) ∘ flip lookup bs
-
-  PutGet-normal : (s : S) (v : V) {s' : S}
-                  (i : Fin n) → bsel s ≡ᴶ i →
+  PutGet-normal : {s : S} {v : V} {s' : S}
+                  {i : Fin n} → bsel s ↦ i →
                   (l : S ⇆ V) → lookup i bs ≡ normal l →
-                  put-normal-branch s v i l ≡ᴶ s' →
-                  get s' ≡ᴶ v
-  PutGet-normal s v i bsel-s≡ᴶi l lookup-i-bs≡normal-l eq with bind-equals-just (Lens.put l s v) eq
-  PutGet-normal s v i bsel-s≡ᴶi l lookup-i-bs≡normal-l _  | s' , _ , eq with bind-equals-just (bsel s') eq
-  PutGet-normal s v i bsel-s≡ᴶi l lookup-i-bs≡normal-l _  | s' , _ , _  | j , _ , _ with i ≟ᶠ j
-  PutGet-normal s v i bsel-s≡ᴶi l lookup-i-bs≡normal-l _  | s' , put-s-v≡ᴶs' , _ | .i , bsel-s'≡ᴶi , refl | yes refl =
-    begin
-      bsel s' ↪ branch (λ l → Lens.get l s') (const nothing) ∘ flip lookup bs
-        ≡⟨ reduce-bind bsel-s'≡ᴶi ⟩
-      branch (λ l → Lens.get l s') (const nothing) (lookup i bs)
-        ≡⟨ reduce-branch-normal lookup-i-bs≡normal-l ⟩
-      Lens.get l s'
-        ≡⟨ Lens.PutGet l s v put-s-v≡ᴶs' ⟩
-      just v
-    ∎
-    where open ≡-Reasoning
-  PutGet-normal s v i l bsel-s≡ᴶi lookup-i-bs≡normal-l _  | s' , put-s-v≡ᴶs' , _ | j , bsel-s'≡ᴶji , () | no i≢j
+                  put-normal-branch s v i l ↦ s' →
+                  get s' ↦ v
+  PutGet-normal {v = v} bsel-s↦i l lookup-i-bs≡normal-l (put-s-v↦s' >>= bsel-s'↦j >>= assert i==ᶠj≡true then return refl)
+      with eqFin i==ᶠj≡true
+  ... | refl = bsel-s'↦j >>= elim-branch-normal lookup-i-bs≡normal-l (flip CompSeq v) (Lens.PutGet l put-s-v↦s')
 
-  PutGet : (s : S) (v : V) {s' : S} → put s v ≡ᴶ s' → get s' ≡ᴶ v
-  PutGet s v eq with bind-equals-just (bsel s) eq
-  PutGet s v _  | i , bsel-s≡ᴶi , eq with lookup i bs | inspect (lookup i) bs
-  PutGet s v _  | i , bsel-s≡ᴶi , eq | normal   l | [ lookup-i-bs≡normal-l   ] =
-    PutGet-normal s v i bsel-s≡ᴶi l lookup-i-bs≡normal-l eq
-  PutGet s v _  | i , bsel-s≡ᴶi , eq | adaptive u | [ lookup-i-bs≡adaptive-u ]
-                with bind-equals-just (u s) eq
-  PutGet s v _  | i , bsel-s≡ᴶi , _  | adaptive u | [ lookup-i-bs≡adaptive-u ]
-                | s' , u-s≡ᴶs' , eq with bind-equals-just (bsel s') eq
-  PutGet s v _  | i , bsel-s≡ᴶi , _  | adaptive u | [ lookup-i-bs≡adaptive-u ]
-                | s' , u-s≡ᴶs' , _  | i' , bsel-s'≡ᴶi' , eq with lookup i' bs | inspect (lookup i') bs
-  PutGet s v _  | i , bsel-s≡ᴶi , _  | adaptive u | [ lookup-i-bs≡adaptive-u ]
-                | s' , u-s≡ᴶs' , _  | i' , bsel-s'≡ᴶi' , eq | normal   l' | [ lookup-i'-bs≡normal-l'   ] =
-    PutGet-normal s' v i' bsel-s'≡ᴶi' l' lookup-i'-bs≡normal-l' eq
-  PutGet s v _  | i , bsel-s≡ᴶi , _  | adaptive u | [ lookup-i-bs≡adaptive-u ]
-                | s' , u-s≡ᴶs' , _  | i' , bsel-s'≡ᴶi' , () | adaptive u' | [ lookup-i'-bs≡adaptive-u' ]
+  PutGet : {s : S} {v : V} {s' : S} → put s v ↦ s' → get s' ↦ v
+  PutGet (_>>=_ {x = i} bsel-s↦i comp)
+    with lookup i bs | inspect (lookup i) bs
+  PutGet (bsel-s↦i >>= put-normal-branch-comp)
+    | normal l | [ lookup-i-bs≡normal-l ] = PutGet-normal bsel-s↦i l lookup-i-bs≡normal-l put-normal-branch-comp
+  PutGet (bsel-s↦i >>= u-s↦s' >>= (_>>=_ {x = j} bsel-s'↦j put-normal-branch-comp))
+    | adaptive _ | _ with lookup j bs | inspect (lookup j) bs
+  PutGet (bsel-s↦i >>= u-s↦s' >>= (_>>=_ {x = j} bsel-s'↦j put-normal-branch-comp))
+    | adaptive _ | _ | normal l' | [ lookup-j-bs≡normal-l' ] = PutGet-normal bsel-s'↦j l' lookup-j-bs≡normal-l' put-normal-branch-comp
+  PutGet (bsel-s↦i >>= u-s↦s' >>= (_>>=_ {x = j} bsel-s'↦j ()))
+    | adaptive _ | _ | adaptive _ | _
 
-  GetPut : (s : S) {v : V} → get s ≡ᴶ v → put s v ≡ᴶ s
-  GetPut s {v} eq with bind-equals-just (bsel s) eq
-  GetPut s {v} _  | i , bsel-s≡ᴶi , _ with lookup i bs | inspect (lookup i) bs
-  GetPut s {v} _  | i , bsel-s≡ᴶi , l-get-s≡ᴶv | normal   l | [ lookup-i-bs≡normal-l   ] =
-    let g = λ u → u s ↪ λ s' → put-with-adaptation s' v (const nothing)
-    in  begin
-          put s v
-            ≡⟨ refl ⟩
-          put-with-adaptation s v g
-            ≡⟨ reduce-bind bsel-s≡ᴶi ⟩
-          branch (put-normal-branch s v i) g (lookup i bs)
-            ≡⟨ reduce-branch-normal lookup-i-bs≡normal-l ⟩
-          put-normal-branch s v i l
-            ≡⟨ reduce-bind (Lens.GetPut l s l-get-s≡ᴶv) ⟩
-          bsel s ↪ put-branch-check s i
-            ≡⟨ reduce-bind bsel-s≡ᴶi ⟩
-          put-branch-check s i i
-            ≡⟨ put-branch-check-equal s i ⟩
-          just s
-        ∎
-    where open ≡-Reasoning
-  GetPut s {v} _  | i , bsel-s≡ᴶi , ()         | adaptive u | [ lookup-i-bs≡adaptive-u ]
+  GetPut : {s : S} {v : V} → get s ↦ v → put s v ↦ s
+  GetPut (_>>=_ {x = i} bsel-s↦i comp) with lookup i bs | inspect (lookup i) bs
+  GetPut {s} (bsel-s↦i >>= get-s↦v) | normal   l | [ lookup-i-bs≡normal-l ] =
+    bsel-s↦i >>= elim-branch-normal lookup-i-bs≡normal-l (flip CompSeq s)
+                   (Lens.GetPut l get-s↦v >>= bsel-s↦i >>= assert (==ᶠ-reflexive refl) then return refl)
+  GetPut (bsel-s↦i >>= ()     ) | adaptive _ | _
 
-caseS-lens : {S V : Set} {n : ℕ} → Vec (Branch S V) n → (S → Maybe (Fin n)) → S ⇆ V
+caseS-lens : {S V : Set} {n : ℕ} → Vec (Branch S V) n → (S → Par (Fin n)) → S ⇆ V
 caseS-lens bs bsel = record { put = put; get = get; PutGet = PutGet; GetPut = GetPut }
   where open CaseS bs bsel
