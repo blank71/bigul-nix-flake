@@ -50,10 +50,13 @@ mapPar : {A B : Set} → (A → Par B) → List A → Par (List B)
 mapPar f []       = return []
 mapPar f (x ∷ xs) = liftM₂ _∷_ (f x) (mapPar f xs)
 
+mapPar-equals-nil : {A B : Set} {f : A → Par B} {xs : List A} → mapPar f xs ↦ [] → xs ≡ []
+mapPar-equals-nil {xs = []    } comp = refl
+mapPar-equals-nil {xs = x ∷ xs} (_ >>= _ >>= return ())
+
 foldrPar : {A B : Set} → (A → B → Par B) → B → List A → Par B
 foldrPar f e []       = return e
 foldrPar f e (x ∷ xs) = foldrPar f e xs >>= f x
-
 
 module AlignLens {S V : Set} (sourceCondition : S → Par Bool) (match? : S → V → Par Bool)
                  (elem-lens : S ⇆ V) (create : V → Par S) (conceal : S → Par (Maybe S)) where
@@ -89,16 +92,31 @@ module AlignLens {S V : Set} (sourceCondition : S → Par Bool) (match? : S → 
                                           (return ss')) []
 
   align : List V → List S → Par (List S × List S)
-  align []       ss = liftM (_,_ []) (concealSs ss)
-  align vs       [] = liftM (flip _,_ []) (createSs vs)
-  align (v ∷ vs) ss = firstMatch v ss >>=
-                      maybe (λ { (s , ss') → liftM (Product.map (_∷_ s) id) (align vs ss') })
-                            (liftM₂ (λ s → Product.map (_∷_ s) id) (createS v) (align vs ss))
+  align []       ss       = liftM (flip _,_ []) (concealSs ss)
+  align (v ∷ vs) []       = liftM (_,_ []) (createSs (v ∷ vs))
+  align (v ∷ vs) (s ∷ ss) = firstMatch v (s ∷ ss) >>=
+                              maybe (λ { (s' , ss') → liftM (Product.map id (_∷_ s')) (align vs ss') })
+                                    (liftM₂ (λ s' → Product.map id (_∷_ s')) (createS v) (align vs (s ∷ ss)))
 
   put : List S → List V → Par (List S)
   put ss vs = filterPar sourceCondition ss >>= λ { (filtered , residual) →
-              align vs ss >>= λ { (synced , concealed) →
+              align vs filtered >>= λ { (synced , concealed) →
               return (invert-filterPar (synced ++ concealed) residual) } }
   
+  getV : S → Par V
+  getV s = Lens.get elem-lens s >>= λ v → match? s v >>= λ b → assert b then return v
+
   get : List S → Par (List V)
-  get = mapPar (Lens.get elem-lens) ∘ proj₁ <=< filterPar sourceCondition
+  get = mapPar getV ∘ proj₁ <=< filterPar sourceCondition
+
+  GetPut-align : (vs : List V) (ss : List S) → mapPar getV ss ↦ vs → align vs ss ↦ ([] , ss)
+  GetPut-align []        ss       comp with mapPar-equals-nil comp
+  GetPut-align []       .[]       comp | refl = return refl >>= return refl
+  GetPut-align (v ∷ vs)  []       (return ())
+  GetPut-align (v ∷ vs)  (s ∷ ss) ((get-s↦v >>= match?-s-v↦true >>= assert refl then return refl) >>=
+                                     mapPar-getV-ss↦vs >>= return refl) =
+    (match?-s-v↦true >>= return refl) >>= GetPut-align vs ss mapPar-getV-ss↦vs >>= return refl
+
+  GetPut : {ss : List S} {vs : List V} → get ss ↦ vs → put ss vs ↦ ss
+  GetPut (filterPar-comp >>= mapPar-comp) =
+    filterPar-comp >>= GetPut-align _ _ mapPar-comp >>= return (filterPar-inverse sourceCondition _ filterPar-comp)
