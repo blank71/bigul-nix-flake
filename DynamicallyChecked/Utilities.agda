@@ -1,5 +1,6 @@
 module DynamicallyChecked.Utilities where
 
+open import Level using (Level)
 open import Function
 open import Data.Bool
 open import Data.Nat
@@ -7,6 +8,9 @@ open import Data.Fin
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
 
+
+record ⊤ {l : Level} : Set l where
+  constructor tt
 
 infix 5 _≟ᶠ_
 
