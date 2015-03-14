@@ -95,6 +95,16 @@ filterᴾ-invert-inverse {xs = x ∷ xs} {mys = nothing ∷ mys} all (_>>=_ {x =
 filterᴾ-invert-inverse {xs = x ∷ xs} {mys = just y  ∷ mys} all filterᴾ-comp =
   _ , (proj₁ all >>= proj₂ (filterᴾ-invert-inverse {mys = mys} (proj₂ all) filterᴾ-comp) >>= return refl)
 
+filterᴾ-filtered : {A : Set} {p : A → Par Bool} {xs : List A} → AllTrueᴾ p xs → Σ[ mys ∈ List (Maybe A) ] (filterᴾ p xs ↦ (xs , mys))
+filterᴾ-filtered {xs = []    } all = , return refl
+filterᴾ-filtered {xs = x ∷ xs} all = , (proj₁ all >>= proj₂ (filterᴾ-filtered (proj₂ all)) >>= return refl)
+
+filterᴾ-append-residual :
+  {A : Set} {p : A → Par Bool} {xs ys zs : List A} {mws : List (Maybe A)} →
+  AllFalseᴾ p xs → filterᴾ p ys ↦ (zs , mws) → Σ[ mws' ∈ List (Maybe A) ] (filterᴾ p (xs ++ ys) ↦ (zs , mws'))
+filterᴾ-append-residual {xs = []    } all comp = , comp
+filterᴾ-append-residual {xs = x ∷ xs} all comp = , (proj₁ all >>= proj₂ (filterᴾ-append-residual (proj₂ all) comp) >>= return refl)
+
 mapPar : {A B : Set} → (A → Par B) → List A → Par (List B)
 mapPar f []       = return []
 mapPar f (x ∷ xs) = liftM₂ _∷_ (f x) (mapPar f xs)
@@ -118,12 +128,22 @@ module AlignLens {S V : Set} (sourceCondition : S → Par Bool) (match? : S → 
                assert revealed then
                return s'
 
+  syncSV-true : {s : S} {v : V} {s' : S} → syncSV s v ↦ s' → sourceCondition s' ↦ true
+  syncSV-true (_ >>= _ >>= assert _ then comp >>= assert refl then return refl) = comp
+
   createS : V → Par S
   createS v = create v >>= λ s → syncSV s v
+
+  createS-true : {v : V} {s : S} → createS v ↦ s → sourceCondition s ↦ true
+  createS-true (_ >>= comp) = syncSV-true comp
 
   createSs : List V → Par (List S)
   createSs []       = return []
   createSs (v ∷ vs) = liftM₂ _∷_ (createS v) (createSs vs)
+
+  createSs-all-true : {vs : List V} {ss : List S} → createSs vs ↦ ss → AllTrueᴾ sourceCondition ss
+  createSs-all-true {[]    } (return refl)                           = tt
+  createSs-all-true {v ∷ vs} (comp >>= createSs-vs↦ >>= return refl) = createS-true comp , createSs-all-true createSs-vs↦
 
   firstMatch : V → List S → Par (Maybe (S × List S))
   firstMatch v []       = return nothing
@@ -135,12 +155,39 @@ module AlignLens {S V : Set} (sourceCondition : S → Par Bool) (match? : S → 
                                     maybe (λ s' → sourceCondition s' >>= λ b → assert (not b) then return (s' ∷ ss'))
                                           (return ss')) []
 
+  concealSs-all-false : {ss ss' : List S} → concealSs ss ↦ ss' → AllFalseᴾ sourceCondition ss'
+  concealSs-all-false {[]    } (return refl) = tt
+  concealSs-all-false {s ∷ ss}
+    (concealSs↦ >>= (_>>=_ {x = just s'} conceal↦ (_>>=_ {x = true } sourceCondition↦ (assert () then _))))
+  concealSs-all-false {s ∷ ss}
+    (concealSs↦ >>= (_>>=_ {x = just s'} conceal↦ (_>>=_ {x = false} sourceCondition↦ (assert _ then return refl)))) =
+    sourceCondition↦ , (concealSs-all-false concealSs↦)
+  concealSs-all-false {s ∷ ss} (concealSs↦ >>= (_>>=_ {x = nothing} conceal↦ (return refl))) = concealSs-all-false concealSs↦
+
   align : List V → List S → Par (List S × List S)  -- returns unmatched sources and aligned sources
   align []       ss       = liftM (flip _,_ []) (concealSs ss)
   align (v ∷ vs) []       = liftM (_,_ []) (createSs (v ∷ vs))
   align (v ∷ vs) (s ∷ ss) = firstMatch v (s ∷ ss) >>=
                               maybe (λ { (s' , ss') → syncSV s' v >>= λ s'' → liftM (Product.map id (_∷_ s'')) (align vs ss') })
                                     (liftM₂ (λ s' → Product.map id (_∷_ s')) (createS v) (align vs (s ∷ ss)))
+
+  align-all-true : (vs : List V) (ss : List S) {unmatched aligned : List S} →
+                   align vs ss ↦ (unmatched , aligned) → AllTrueᴾ sourceCondition aligned
+  align-all-true []       ss       (_ >>= return refl) = tt
+  align-all-true (v ∷ vs) []       (comp >>= return refl) = createSs-all-true comp
+  align-all-true (v ∷ vs) (s ∷ ss) (_>>=_ {x = just (s' , ss')} firstMatch↦ (syncSV↦ >>= align↦ >>= return refl)) =
+    syncSV-true syncSV↦ , align-all-true vs ss' align↦
+  align-all-true (v ∷ vs) (s ∷ ss) (_>>=_ {x = nothing        } firstMatch↦ (createS↦ >>= align↦ >>= return refl)) =
+    createS-true createS↦ , align-all-true vs (s ∷ ss) align↦
+
+  align-all-false : (vs : List V) (ss : List S) {unmatched aligned : List S} →
+                    align vs ss ↦ (unmatched , aligned) → AllFalseᴾ sourceCondition unmatched
+  align-all-false []       ss       (concealSs↦ >>= return refl) = concealSs-all-false concealSs↦
+  align-all-false (v ∷ vs) []       (_ >>= return refl) = tt
+  align-all-false (v ∷ vs) (s ∷ ss) (_>>=_ {x = just (s' , ss')} firstMatch↦ (syncSV↦ >>= align↦ >>= return refl)) =
+    align-all-false vs ss' align↦
+  align-all-false (v ∷ vs) (s ∷ ss) (_>>=_ {x = nothing        } firstMatch↦ (createS↦ >>= align↦ >>= return refl)) =
+    align-all-false vs (s ∷ ss) align↦
 
   put : List S → List V → Par (List S)
   put ss vs = filterᴾ sourceCondition ss >>= λ { (filtered , residual) →
@@ -153,20 +200,33 @@ module AlignLens {S V : Set} (sourceCondition : S → Par Bool) (match? : S → 
   get : List S → Par (List V)
   get = mapPar getV ∘ proj₁ <=< filterᴾ sourceCondition
 
-  PutGet-createSs : (vs : List V) {ss : List S} → createSs vs ↦ ss → get ss ↦ vs
-  PutGet-createSs []       (return refl) = return refl >>= return refl
-  PutGet-createSs (v ∷ vs) ((create-v↦s >>= put-s-v↦s' >>= match?-s-v↦true >>= assert refl then sourceCondition-s'↦true >>= assert refl then return refl) >>= createSs-vs↦ss' >>= return refl) with PutGet-createSs vs
-  PutGet-createSs (v ∷ vs) ((create-v↦s >>= put-s-v↦s' >>= match?-s-v↦true >>= assert refl then sourceCondition-s'↦true >>= assert refl then return refl) >>= createSs-vs↦ss' >>= return refl) | comp =
-  (sourceCondition-s'↦true >>= {!!} >>= return refl) >>= (Lens.PutGet elem-lens put-s-v↦s' >>= match?-s-v↦true >>= assert refl then return refl) >>= {!!} >>= return refl
+  PutGet-syncSV : {s s' : S} {v : V} → syncSV s v ↦ s' → getV s' ↦ v
+  PutGet-syncSV (put-s-v↦s' >>= match?-s'-v↦true >>=
+                 assert refl then sourceCondition-s'↦true >>= assert refl then return refl) =
+    Lens.PutGet elem-lens put-s-v↦s' >>= match?-s'-v↦true >>= assert refl then return refl
+
+  PutGet-createS : {v : V} {s : S} → createS v ↦ s → getV s ↦ v
+  PutGet-createS (create↦ >>= syncSV↦) = PutGet-syncSV syncSV↦
+
+  PutGet-createSs : (vs : List V) {ss : List S} → createSs vs ↦ ss → mapPar getV ss ↦ vs
+  PutGet-createSs []       (return refl) = return refl
+  PutGet-createSs (v ∷ vs) (createS↦ >>= createSs↦ >>= return refl) =
+    PutGet-createS createS↦ >>= PutGet-createSs vs createSs↦ >>= return refl
 
   PutGet-align : (vs : List V) (ss : List S) {unmatched aligned : List S} →
-                 align vs ss ↦ (unmatched , aligned) → get aligned ↦ vs
-  PutGet-align []       ss       (_ >>= return refl)    = return refl >>= return refl
+                 align vs ss ↦ (unmatched , aligned) → mapPar getV aligned ↦ vs
+  PutGet-align []       ss       (_ >>= return refl)    = return refl
   PutGet-align (v ∷ vs) []       (comp >>= return refl) = PutGet-createSs (v ∷ vs) comp
-  PutGet-align (v ∷ vs) (s ∷ ss) comp                   = {!!}
+  PutGet-align (v ∷ vs) (s ∷ ss) (_>>=_ {x = just (s' , ss')} firstMatch↦ (syncSV↦ >>= align↦ >>= return refl)) =
+    PutGet-syncSV syncSV↦ >>= PutGet-align vs ss' align↦ >>= return refl
+  PutGet-align (v ∷ vs) (s ∷ ss) (_>>=_ {x = nothing        } firstMatch↦ (createS↦ >>= align↦ >>= return refl)) =
+    PutGet-createS createS↦ >>= PutGet-align vs (s ∷ ss) align↦ >>= return refl
 
   PutGet : {ss : List S} {vs : List V} {ss' : List S} → put ss vs ↦ ss' → get ss' ↦ vs
-  PutGet (_>>=_ {x = (filtered , residuals)} filterᴾ-comp (_>>=_ {x = (unmatched , aligned)} align-comp (return refl))) = {!!}
+  PutGet {ss} {vs} (_>>=_ {x = (filtered , residual)} filterᴾ↦ (_>>=_ {x = (unmatched , aligned)} align↦ (return refl))) =
+    proj₂ (filterᴾ-invert-inverse {mys = residual} (filterᴾ-all-false filterᴾ↦)
+      (proj₂ (filterᴾ-append-residual (align-all-false vs filtered align↦)
+         (proj₂ (filterᴾ-filtered (align-all-true vs filtered align↦)))))) >>= PutGet-align vs filtered align↦
 
   GetPut-align : (vs : List V) (ss : List S) → AllTrueᴾ sourceCondition ss → mapPar getV ss ↦ vs → align vs ss ↦ ([] , ss)
   GetPut-align []        ss       all comp with mapPar-equals-nil comp
