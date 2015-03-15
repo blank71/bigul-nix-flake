@@ -78,12 +78,12 @@ nth-elem {A} n = record
     split : ℕ → List A → Par (A × (List A × List A))
     split n       []       = fail
     split zero    (x ∷ xs) = return (x , [] , xs)
-    split (suc n) (x ∷ xs) = liftM (λ { (y , zs , ws) → y , x ∷ zs , ws }) (split n xs)
+    split (suc n) (x ∷ xs) = liftPar (λ { (y , zs , ws) → y , x ∷ zs , ws }) (split n xs)
     unsplit : ℕ → A → List A → List A → Par (List A)
     unsplit zero    x []       zs = return (x ∷ zs)
     unsplit (suc n) x []       zs = fail
     unsplit zero    x (y ∷ ys) zs = fail
-    unsplit (suc n) x (y ∷ ys) zs = liftM (_∷_ y) (unsplit n x ys zs)
+    unsplit (suc n) x (y ∷ ys) zs = liftPar (_∷_ y) (unsplit n x ys zs)
     unsplit-split-inverse : (n : ℕ) (x : A) (ys zs : List A) {ws : List A} →
                             unsplit n x ys zs ↦ ws → split n ws ↦ (x , ys , zs)
     unsplit-split-inverse zero    x []       zs (return refl) = return refl

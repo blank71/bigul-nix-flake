@@ -33,11 +33,11 @@ infixr 8 _<=<_
 _<=<_ : {A B C : Set} → (B → Par C) → (A → Par B) → (A → Par C)
 (f <=< g) x = g x >>= f
 
-liftM : {A B : Set} → (A → B) → Par A → Par B
-liftM f mx = mx >>= λ x → return (f x)
+liftPar : {A B : Set} → (A → B) → Par A → Par B
+liftPar f mx = mx >>= λ x → return (f x)
 
-liftM₂ : {A B C : Set} → (A → B → C) → Par A → Par B → Par C
-liftM₂ f mx my = mx >>= λ x → my >>= λ y → return (f x y)
+liftPar₂ : {A B C : Set} → (A → B → C) → Par A → Par B → Par C
+liftPar₂ f mx my = mx >>= λ x → my >>= λ y → return (f x y)
 
 infixr 1 _>>=_
 infix 1 assert_then_
