@@ -3,6 +3,7 @@ module DynamicallyChecked.Utilities where
 open import Level using (Level)
 open import Function
 open import Data.Bool
+open import Data.Maybe
 open import Data.Nat
 open import Data.Fin
 open import Relation.Nullary
@@ -49,3 +50,7 @@ eqFin {i = i} {j} () | no _
 ==ᶠ-reflexive {i = i} {j} eq | yes _   = refl
 ==ᶠ-reflexive {i = i} {j} eq | no  i≢j with i≢j eq
 ==ᶠ-reflexive {i = i} {j} eq | no  i≢j | ()
+
+pred' : {n : ℕ} → Fin (suc n) → Maybe (Fin n)
+pred' zero    = nothing  
+pred' (suc n) = just n
