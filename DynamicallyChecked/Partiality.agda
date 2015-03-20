@@ -2,6 +2,7 @@ module DynamicallyChecked.Partiality where
 
 open import Level using (Level)
 open import Function
+open import Data.Empty
 open import Data.Unit
 open import Data.Bool
 import Data.Maybe as Maybe; open Maybe using (Maybe; just; nothing; maybe)
@@ -151,11 +152,11 @@ mutual
   fromFailedCompSeq (assert-snd refl fcomp           ) = fromFailedCompSeq fcomp
 
 strong-bind-snd : {A B : Set} {mx : Par A} {f : A → Par B} → ((x : A) → FailedCompSeq (f x)) → FailedCompSeq (mx >>= f)
-strong-bind-snd {mx = mx} {f} comps = toFailedCompSeq aux
+strong-bind-snd {mx = mx} {f} fcomps = toFailedCompSeq aux
   where
     aux : runPar (mx >>= f) ≡ nothing
     aux with runPar mx | inspect runPar mx
-    aux | just x  | [ eq ] = fromFailedCompSeq (comps x)
+    aux | just x  | [ eq ] = fromFailedCompSeq (fcomps x)
     aux | nothing | [ eq ] = refl
 
 record Iso (A B : Set) : Set₁ where
