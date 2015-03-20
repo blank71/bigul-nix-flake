@@ -16,35 +16,19 @@ data Par : Set → Set₁ where
   return       : {A   : Set} → A → Par A
   _>>=_        : {A B : Set} → Par A → (A → Par B) → Par B
   fail         : {A   : Set} → Par A
-  ⊕            : {A   : Set} → List (Par A) → Par A
-  catch        : {A   : Set} → Par A → Par A → Par A
+  catch        : {A B : Set} → Par A → (A → Par B) → Par B → Par B
   assert_then_ : {A   : Set} → Bool → Par A → Par A
 
-mutual
-  
-  runPar : {A : Set} → Par A → Maybe A
-  runPar (return x        ) = just x
-  runPar (mx >>= f        ) with runPar mx
-  runPar (mx >>= f        ) | just x  = runPar (f x)
-  runPar (mx >>= f        ) | nothing = nothing
-  runPar fail               = nothing
-  runPar (⊕ mxs           ) = runPars mxs
-  runPar (catch mx my     ) with runPar mx
-  runPar (catch mx my     ) | just x  = just x
-  runPar (catch mx my     ) | nothing = runPar my
-  runPar (assert b then mx) = if b then runPar mx else nothing
-
-  runPars : {A : Set} → List (Par A) → Maybe A
-  runPars []         = nothing
-  runPars (mx ∷ mxs) with runPar mx
-  runPars (mx ∷ mxs) | just x  = runPars' mxs x
-  runPars (mx ∷ mxs) | nothing = runPars mxs
-
-  runPars' : {A : Set} → List (Par A) → A → Maybe A
-  runPars' []         x = just x
-  runPars' (mx ∷ mxs) x with runPar mx 
-  runPars' (mx ∷ mxs) x | just _  = nothing
-  runPars' (mx ∷ mxs) x | nothing = runPars' mxs x
+runPar : {A : Set} → Par A → Maybe A
+runPar (return x        ) = just x
+runPar (mx >>= f        ) with runPar mx
+runPar (mx >>= f        ) | just x  = runPar (f x)
+runPar (mx >>= f        ) | nothing = nothing
+runPar fail               = nothing
+runPar (catch mx f my   ) with runPar mx
+runPar (catch mx f my   ) | just x  = runPar (f x)
+runPar (catch mx f my   ) | nothing = runPar my
+runPar (assert b then mx) = if b then runPar mx else nothing
 
 embed : {A : Set} → Maybe A → Par A
 embed = maybe return fail
@@ -63,36 +47,37 @@ liftPar f mx = mx >>= λ x → return (f x)
 liftPar₂ : {A B C : Set} → (A → B → C) → Par A → Par B → Par C
 liftPar₂ f mx my = mx >>= λ x → my >>= λ y → return (f x y)
 
+mapPar : {A B : Set} → (A → Par B) → List A → Par (List B)
+mapPar f []       = return []
+mapPar f (x ∷ xs) = liftPar₂ _∷_ (f x) (mapPar f xs)
+
+foldrPar : {A B : Set} → (A → B → Par B) → B → List A → Par B
+foldrPar f e []       = return e
+foldrPar f e (x ∷ xs) = foldrPar f e xs >>= f x
+
 infixr 1 _>>=_
 infix 1 assert_then_
-
-
-data Count {m n : Level} {A : Set m} (P Q : A → Set n) : List A → ℕ → Set n where
-  nil  : Count P Q [] 0
-  pos : {x : A} {xs : List A} {n : ℕ} → P x → Count P Q xs n → Count P Q (x ∷ xs) (suc n)
-  neg : {x : A} {xs : List A} {n : ℕ} → Q x → Count P Q xs n → Count P Q (x ∷ xs) n
 
 mutual
 
   data CompSeq : {A : Set} → Par A → A → Set₁ where
     return       : {A : Set} {x x' : A} → x ≡ x' → CompSeq (return x) x'
-    _>>=_        : {A B : Set} {x : A} {mx : Par A} {f : A → Par B} {y : B} →
-                   CompSeq mx x → CompSeq (f x) y → CompSeq (mx >>= f) y
-    ⊕            : {A : Set} {mxs : List (Par A)} {y : A} → Count (flip CompSeq y) FailedCompSeq mxs 1 → CompSeq (⊕ mxs) y
-    catch-fst    : {A : Set} {mx my : Par A} {z : A} → CompSeq mx z → CompSeq (catch mx my) z
-    catch-snd    : {A : Set} {mx my : Par A} {z : A} → FailedCompSeq mx → CompSeq my z → CompSeq (catch mx my) z
+    _>>=_        : {A B : Set} {x : A} {mx : Par A} {f : A → Par B} {y : B} → CompSeq mx x → CompSeq (f x) y → CompSeq (mx >>= f) y
+    catch-fst    : {A B : Set} {mx : Par A} {f : A → Par B} {my : Par B} {x : A} {z : B} →
+                   CompSeq mx x → CompSeq (f x) z → CompSeq (catch mx f my) z
+    catch-snd    : {A B : Set} {mx : Par A} {f : A → Par B} {my : Par B} {z : B} → FailedCompSeq mx → CompSeq my z → CompSeq (catch mx f my) z
     assert_then_ : {A : Set} {b : Bool} {mx : Par A} {x : A} → b ≡ true → CompSeq mx x → CompSeq (assert b then mx) x
 
   data FailedCompSeq : {A : Set} → Par A → Set₁ where
     bind-fst   : {A B : Set} {mx : Par A} {f : A → Par B} → FailedCompSeq mx → FailedCompSeq (mx >>= f)
     bind-snd   : {A B : Set} {mx : Par A} {x : A} {f : A → Par B} → CompSeq mx x → FailedCompSeq (f x) → FailedCompSeq (mx >>= f)
     fail       : {A : Set} → FailedCompSeq (fail {A})
-    ⊕-fst      : {A : Set} {mxs : List (Par A)} → Count (Σ A ∘ CompSeq) FailedCompSeq mxs 0 → FailedCompSeq (⊕ mxs)
-    ⊕-snd      : {A : Set} {mxs : List (Par A)} {n : ℕ} → Count (Σ A ∘ CompSeq) FailedCompSeq mxs (2 + n) → FailedCompSeq (⊕ mxs)
-    catch      : {A : Set} {mx my : Par A} → FailedCompSeq mx → FailedCompSeq my → FailedCompSeq (catch mx my)
+    catch-fst  : {A B : Set} {mx : Par A} {f : A → Par B} {my : Par B} → FailedCompSeq mx → FailedCompSeq my → FailedCompSeq (catch mx f my)
+    catch-snd  : {A B : Set} {mx : Par A} {f : A → Par B} {my : Par B} {x : A} →
+                 CompSeq mx x → FailedCompSeq (f x) → FailedCompSeq (catch mx f my)
     assert-fst : {A : Set} {mx : Par A} {b : Bool} → b ≡ false → FailedCompSeq (assert b then mx)
     assert-snd : {A : Set} {mx : Par A} {b : Bool} → b ≡ true → FailedCompSeq mx → FailedCompSeq (assert b then mx)
-    
+
 _↦_ : {A : Set} → Par A → A → Set₁
 _↦_ = CompSeq
 
@@ -104,25 +89,11 @@ mutual
   toCompSeq {mx = mx >>= f            } eq   | just x  | [ runPar-eq ] = toCompSeq runPar-eq >>= toCompSeq eq
   toCompSeq {mx = mx >>= f            } ()   | nothing | _
   toCompSeq {mx = fail                } ()
-  toCompSeq {mx = ⊕ mxs               } eq   = ⊕ (toCompSeq-runPars eq)
-  toCompSeq {mx = catch mx my         } eq   with runPar mx | inspect runPar mx
-  toCompSeq {mx = catch mx my         } refl | just x  | [ runPar-eq ] = catch-fst (toCompSeq runPar-eq)
-  toCompSeq {mx = catch mx my         } eq   | nothing | [ runPar-eq ] = catch-snd (toFailedCompSeq runPar-eq) (toCompSeq eq)
+  toCompSeq {mx = catch mx f my       } eq   with runPar mx | inspect runPar mx
+  toCompSeq {mx = catch mx f my       } eq   | just x  | [ runPar-eq ] = catch-fst (toCompSeq runPar-eq) (toCompSeq eq)
+  toCompSeq {mx = catch mx f my       } eq   | nothing | [ runPar-eq ] = catch-snd (toFailedCompSeq runPar-eq) (toCompSeq eq)
   toCompSeq {mx = assert true  then mx} eq   = assert refl then toCompSeq eq
   toCompSeq {mx = assert false then mx} ()
-  
-  toCompSeq-runPars : {A : Set} {mxs : List (Par A)} {x : A} → runPars mxs ≡ just x → Count (flip CompSeq x) FailedCompSeq mxs 1
-  toCompSeq-runPars {mxs = []      } ()
-  toCompSeq-runPars {mxs = mx ∷ mxs} eq with runPar mx | inspect runPar mx
-  toCompSeq-runPars {mxs = mx ∷ mxs} eq | just x  | [ runPar-eq ] with toCompSeq-runPars' {mxs = mxs} eq
-  toCompSeq-runPars {mxs = mx ∷ mxs} eq | just x  | [ runPar-eq ] | refl , all-failed = pos (toCompSeq runPar-eq) all-failed
-  toCompSeq-runPars {mxs = mx ∷ mxs} eq | nothing | [ runPar-eq ] = neg (toFailedCompSeq runPar-eq) (toCompSeq-runPars eq)
-  
-  toCompSeq-runPars' : {A : Set} {mxs : List (Par A)} {x y : A} → runPars' mxs x ≡ just y → x ≡ y × Count (flip CompSeq x) FailedCompSeq mxs 0
-  toCompSeq-runPars' {mxs = []      } refl = refl , nil
-  toCompSeq-runPars' {mxs = mx ∷ mxs} eq   with runPar mx | inspect runPar mx
-  toCompSeq-runPars' {mxs = mx ∷ mxs} ()   | just x  | [ runPar-eq ]
-  toCompSeq-runPars' {mxs = mx ∷ mxs} eq   | nothing | [ runPar-eq ] = Product.map id (neg (toFailedCompSeq runPar-eq)) (toCompSeq-runPars' eq)
 
   toFailedCompSeq : {A : Set} {mx : Par A} → runPar mx ≡ nothing → FailedCompSeq mx
   toFailedCompSeq {mx = return x            } ()
@@ -130,39 +101,11 @@ mutual
   toFailedCompSeq {mx = mx >>= f            } eq | just x  | [ runPar-eq ] = bind-snd (toCompSeq runPar-eq) (toFailedCompSeq eq)
   toFailedCompSeq {mx = mx >>= f            } eq | nothing | [ runPar-eq ] = bind-fst (toFailedCompSeq runPar-eq)
   toFailedCompSeq {mx = fail                } eq = fail
-  toFailedCompSeq {mx = ⊕ mxs               } eq with toFailedCompSeq-runPars mxs eq
-  toFailedCompSeq {mx = ⊕ mxs               } eq | inj₁ count       = ⊕-fst count
-  toFailedCompSeq {mx = ⊕ mxs               } eq | inj₂ (_ , count) = ⊕-snd count
-  toFailedCompSeq {mx = catch mx my         } eq with runPar mx | inspect runPar mx
-  toFailedCompSeq {mx = catch mx my         } () | just x  | [ runPar-eq ]
-  toFailedCompSeq {mx = catch mx my         } eq | nothing | [ runPar-eq ] = catch (toFailedCompSeq runPar-eq) (toFailedCompSeq eq)
+  toFailedCompSeq {mx = catch mx f my       } eq with runPar mx | inspect runPar mx
+  toFailedCompSeq {mx = catch mx f my       } eq | just x  | [ runPar-eq ] = catch-snd (toCompSeq runPar-eq) (toFailedCompSeq eq)
+  toFailedCompSeq {mx = catch mx f my       } eq | nothing | [ runPar-eq ] = catch-fst (toFailedCompSeq runPar-eq) (toFailedCompSeq eq)
   toFailedCompSeq {mx = assert true  then mx} eq = assert-snd refl (toFailedCompSeq eq)
   toFailedCompSeq {mx = assert false then mx} eq = assert-fst refl
-
-  toFailedCompSeq-runPars : {A : Set} (mxs : List (Par A)) → runPars mxs ≡ nothing →
-                            Count (Σ A ∘ CompSeq) FailedCompSeq mxs 0 ⊎ Σ[ n ∈ ℕ ] Count (Σ A ∘ CompSeq) FailedCompSeq mxs (2 + n)
-  toFailedCompSeq-runPars []         eq = inj₁ nil
-  toFailedCompSeq-runPars (mx ∷ mxs) eq with runPar mx | inspect runPar mx
-  toFailedCompSeq-runPars (mx ∷ mxs) eq | just x  | [ runPar-eq ] =
-    inj₂ (Product.map id (pos (, toCompSeq runPar-eq)) (toFailedCompSeq-runPars' mxs eq))
-  toFailedCompSeq-runPars (mx ∷ mxs) eq | nothing | [ runPar-eq ] =
-    let fcomp = toFailedCompSeq runPar-eq
-    in  Sum.map (neg fcomp) (Product.map id (neg fcomp)) (toFailedCompSeq-runPars mxs eq)
-  
-  toFailedCompSeq-runPars' : {A : Set} (mxs : List (Par A)) {x : A} → runPars' mxs x ≡ nothing →
-                             Σ[ n ∈ ℕ ] Count (Σ A ∘ CompSeq) FailedCompSeq mxs (suc n)
-  toFailedCompSeq-runPars' []         ()
-  toFailedCompSeq-runPars' (mx ∷ mxs) eq with runPar mx | inspect runPar mx
-  toFailedCompSeq-runPars' (mx ∷ mxs) eq | just x  | [ runPar-eq ] =
-    Product.map id (pos (, toCompSeq runPar-eq)) (computeCount mxs)
-  toFailedCompSeq-runPars' (mx ∷ mxs) eq | nothing | [ runPar-eq ] =
-    Product.map id (neg (toFailedCompSeq runPar-eq)) (toFailedCompSeq-runPars' mxs eq)
-
-  computeCount : {A : Set} (mxs : List (Par A)) → Σ[ n ∈ ℕ ] Count (Σ A ∘ CompSeq) FailedCompSeq mxs n
-  computeCount []         = 0 , nil
-  computeCount (mx ∷ mxs) with runPar mx | inspect runPar mx
-  computeCount (mx ∷ mxs) | just x  | [ runPar-eq ] = Product.map suc (pos (, toCompSeq runPar-eq)) (computeCount mxs)
-  computeCount (mx ∷ mxs) | nothing | [ runPar-eq ] = Product.map id (neg (toFailedCompSeq runPar-eq)) (computeCount mxs)
 
 mutual
 
@@ -173,82 +116,39 @@ mutual
   fromCompSeq (_>>=_           comp comp'    ) | just x  | [ eq ] | refl = fromCompSeq comp'
   fromCompSeq (_>>=_           comp comp'    ) | nothing | [ eq ] with trans (sym eq) (fromCompSeq comp)
   fromCompSeq (_>>=_           comp comp'    ) | nothing | [ eq ] | ()
-  fromCompSeq (⊕ count                       ) = fromCompSeq-runPars count 
-  fromCompSeq (catch-fst {mx = mx} comp      ) with runPar mx | inspect runPar mx
-  fromCompSeq (catch-fst           comp      ) | just x  | [ eq ] with trans (sym eq) (fromCompSeq comp)
-  fromCompSeq (catch-fst           comp      ) | just x  | [ eq ] | refl = refl
-  fromCompSeq (catch-fst           comp      ) | nothing | [ eq ] with trans (sym eq) (fromCompSeq comp)
-  fromCompSeq (catch-fst           comp      ) | nothing | [ eq ] | ()
+  fromCompSeq (catch-fst {mx = mx} comp comp') with runPar mx | inspect runPar mx
+  fromCompSeq (catch-fst           comp comp') | just x  | [ eq ] with trans (sym eq) (fromCompSeq comp)
+  fromCompSeq (catch-fst           comp comp') | just x  | [ eq ] | refl = fromCompSeq comp'
+  fromCompSeq (catch-fst           comp comp') | nothing | [ eq ] with trans (sym eq) (fromCompSeq comp)
+  fromCompSeq (catch-fst           comp comp') | nothing | [ eq ] | ()
   fromCompSeq (catch-snd {mx = mx} fcomp comp) with runPar mx | inspect runPar mx
-  fromCompSeq (catch-snd {mx = mx} fcomp comp) | just x  | [ eq ] with trans (sym eq) (fromFailedCompSeq fcomp)
-  fromCompSeq (catch-snd {mx = mx} fcomp comp) | just x  | [ eq ] | ()
-  fromCompSeq (catch-snd {mx = mx} fcomp comp) | nothing | [ eq ] = fromCompSeq comp
+  fromCompSeq (catch-snd           fcomp comp) | just x  | [ eq ] with trans (sym eq) (fromFailedCompSeq fcomp)
+  fromCompSeq (catch-snd           fcomp comp) | just x  | [ eq ] | ()
+  fromCompSeq (catch-snd           fcomp comp) | nothing | [ eq ] = fromCompSeq comp
   fromCompSeq (assert refl then comp         ) = fromCompSeq comp
 
-  fromCompSeq-runPars : {A : Set} {mxs : List (Par A)} {x : A} → Count (flip CompSeq x) FailedCompSeq mxs 1 → runPars mxs ≡ just x
-  fromCompSeq-runPars {mxs = []      } ()
-  fromCompSeq-runPars {mxs = mx ∷ mxs} count with runPar mx | inspect runPar mx
-  fromCompSeq-runPars {mxs = mx ∷ mxs} (pos  comp count) | just x  | [ eq ] with trans (sym eq) (fromCompSeq comp)
-  fromCompSeq-runPars {mxs = mx ∷ mxs} (pos  comp count) | just x  | [ eq ] | refl = fromCompSeq-runPars' count
-  fromCompSeq-runPars {mxs = mx ∷ mxs} (neg fcomp count) | just x  | [ eq ] with trans (sym eq) (fromFailedCompSeq fcomp)
-  fromCompSeq-runPars {mxs = mx ∷ mxs} (neg fcomp count) | just x  | [ eq ] | ()
-  fromCompSeq-runPars {mxs = mx ∷ mxs} (pos  comp count) | nothing | [ eq ] with trans (sym eq) (fromCompSeq comp)
-  fromCompSeq-runPars {mxs = mx ∷ mxs} (pos  comp count) | nothing | [ eq ] | ()
-  fromCompSeq-runPars {mxs = mx ∷ mxs} (neg fcomp count) | nothing | [ eq ] = fromCompSeq-runPars count
-  
-  fromCompSeq-runPars' : {A : Set} {mxs : List (Par A)} {x : A} → Count (flip CompSeq x) FailedCompSeq mxs 0 → runPars' mxs x ≡ just x
-  fromCompSeq-runPars' {mxs = []      } count = refl
-  fromCompSeq-runPars' {mxs = mx ∷ mxs} count with runPar mx | inspect runPar mx
-  fromCompSeq-runPars' {mxs = mx ∷ mxs} (neg fcomp count) | just x  | [ eq ] with trans (sym eq) (fromFailedCompSeq fcomp)
-  fromCompSeq-runPars' {mxs = mx ∷ mxs} (neg fcomp count) | just x  | [ eq ] | ()
-  fromCompSeq-runPars' {mxs = mx ∷ mxs} (neg fcomp count) | nothing | [ eq ] = fromCompSeq-runPars' count
-
   fromFailedCompSeq : {A : Set} {mx : Par A} → FailedCompSeq mx → runPar mx ≡ nothing
-  fromFailedCompSeq (bind-fst {mx = mx} fcomp      ) with runPar mx | inspect runPar mx
-  fromFailedCompSeq (bind-fst           fcomp      ) | just x  | [ eq ] with trans (sym eq) (fromFailedCompSeq fcomp)
-  fromFailedCompSeq (bind-fst           fcomp      ) | just x  | [ eq ] | ()
-  fromFailedCompSeq (bind-fst           fcomp      ) | nothing | [ eq ] = refl
-  fromFailedCompSeq (bind-snd {mx = mx} comp fcomp ) with runPar mx | inspect runPar mx
-  fromFailedCompSeq (bind-snd           comp fcomp ) | just x  | [ eq ] with trans (sym eq) (fromCompSeq comp)
-  fromFailedCompSeq (bind-snd           comp fcomp ) | just x  | [ eq ] | refl = fromFailedCompSeq fcomp
-  fromFailedCompSeq (bind-snd           comp fcomp ) | nothing | [ eq ] with trans (sym eq) (fromCompSeq comp)
-  fromFailedCompSeq (bind-snd           comp fcomp ) | nothing | [ eq ] | ()
-  fromFailedCompSeq fail                             = refl
-  fromFailedCompSeq (⊕-fst count                   ) = fromFailedCompSeq-runPars-fst count
-  fromFailedCompSeq (⊕-snd count                   ) = fromFailedCompSeq-runPars-snd count
-  fromFailedCompSeq (catch {mx = mx} fcomp fcomp'  ) with runPar mx | inspect runPar mx
-  fromFailedCompSeq (catch           fcomp fcomp'  ) | just x  | [ eq ] with trans (sym eq) (fromFailedCompSeq fcomp)
-  fromFailedCompSeq (catch           fcomp fcomp'  ) | just x  | [ eq ] | ()
-  fromFailedCompSeq (catch           fcomp fcomp'  ) | nothing | [ eq ] = fromFailedCompSeq fcomp'
-  fromFailedCompSeq (assert-fst refl               ) = refl
-  fromFailedCompSeq (assert-snd refl fcomp         ) = fromFailedCompSeq fcomp
-
-  fromFailedCompSeq-runPars-fst : {A : Set} {mxs : List (Par A)} → Count (Σ A ∘ CompSeq) FailedCompSeq mxs 0 → runPars mxs ≡ nothing
-  fromFailedCompSeq-runPars-fst {mxs = []      } count = refl
-  fromFailedCompSeq-runPars-fst {mxs = mx ∷ mxs} count with runPar mx | inspect runPar mx
-  fromFailedCompSeq-runPars-fst {mxs = mx ∷ mxs} (neg fcomp count) | just x  | [ eq ] with trans (sym eq) (fromFailedCompSeq fcomp)
-  fromFailedCompSeq-runPars-fst {mxs = mx ∷ mxs} (neg fcomp count) | just x  | [ eq ] | ()
-  fromFailedCompSeq-runPars-fst {mxs = mx ∷ mxs} (neg fcomp count) | nothing | [ eq ] = fromFailedCompSeq-runPars-fst count
-
-  fromFailedCompSeq-runPars-snd : {A : Set} {mxs : List (Par A)} {n : ℕ} →
-                                  Count (Σ A ∘ CompSeq) FailedCompSeq mxs (2 + n) → runPars mxs ≡ nothing
-  fromFailedCompSeq-runPars-snd {mxs = []      } ()
-  fromFailedCompSeq-runPars-snd {mxs = mx ∷ mxs} count with runPar mx | inspect runPar mx
-  fromFailedCompSeq-runPars-snd {mxs = mx ∷ mxs} (pos (_ , comp) count) | just x  | [ eq ] = fromFailedCompSeq-runPars' count
-  fromFailedCompSeq-runPars-snd {mxs = mx ∷ mxs} (neg fcomp      count) | just x  | [ eq ] with trans (sym eq) (fromFailedCompSeq fcomp)
-  fromFailedCompSeq-runPars-snd {mxs = mx ∷ mxs} (neg fcomp      count) | just x  | [ eq ] | ()
-  fromFailedCompSeq-runPars-snd {mxs = mx ∷ mxs} (pos (_ , comp) count) | nothing | [ eq ] with trans (sym eq) (fromCompSeq comp)
-  fromFailedCompSeq-runPars-snd {mxs = mx ∷ mxs} (pos (_ , comp) count) | nothing | [ eq ] | ()
-  fromFailedCompSeq-runPars-snd {mxs = mx ∷ mxs} (neg fcomp      count) | nothing | [ eq ] = fromFailedCompSeq-runPars-snd count
-
-  fromFailedCompSeq-runPars' : {A : Set} {mxs : List (Par A)} {x : A} {n : ℕ} →
-                               Count (Σ A ∘ CompSeq) FailedCompSeq mxs (suc n) → runPars' mxs x ≡ nothing
-  fromFailedCompSeq-runPars' {mxs = []      } ()
-  fromFailedCompSeq-runPars' {mxs = mx ∷ mxs} count with runPar mx | inspect runPar mx
-  fromFailedCompSeq-runPars' {mxs = mx ∷ mxs} count | just x  | [ eq ] = refl
-  fromFailedCompSeq-runPars' {mxs = mx ∷ mxs} (pos (_ , comp) count) | nothing | [ eq ] with trans (sym eq) (fromCompSeq comp)
-  fromFailedCompSeq-runPars' {mxs = mx ∷ mxs} (pos (_ , comp) count) | nothing | [ eq ] | ()
-  fromFailedCompSeq-runPars' {mxs = mx ∷ mxs} (neg fcomp      count) | nothing | [ eq ] = fromFailedCompSeq-runPars' count
+  fromFailedCompSeq (bind-fst {mx = mx} fcomp        ) with runPar mx | inspect runPar mx
+  fromFailedCompSeq (bind-fst           fcomp        ) | just x  | [ eq ] with trans (sym eq) (fromFailedCompSeq fcomp)
+  fromFailedCompSeq (bind-fst           fcomp        ) | just x  | [ eq ] | ()
+  fromFailedCompSeq (bind-fst           fcomp        ) | nothing | [ eq ] = refl
+  fromFailedCompSeq (bind-snd {mx = mx} comp fcomp   ) with runPar mx | inspect runPar mx
+  fromFailedCompSeq (bind-snd           comp fcomp   ) | just x  | [ eq ] with trans (sym eq) (fromCompSeq comp)
+  fromFailedCompSeq (bind-snd           comp fcomp   ) | just x  | [ eq ] | refl = fromFailedCompSeq fcomp
+  fromFailedCompSeq (bind-snd           comp fcomp   ) | nothing | [ eq ] with trans (sym eq) (fromCompSeq comp)
+  fromFailedCompSeq (bind-snd           comp fcomp   ) | nothing | [ eq ] | ()
+  fromFailedCompSeq fail                               = refl
+  fromFailedCompSeq (catch-fst {mx = mx} fcomp fcomp') with runPar mx | inspect runPar mx
+  fromFailedCompSeq (catch-fst           fcomp fcomp') | just x  | [ eq ] with trans (sym eq) (fromFailedCompSeq fcomp)
+  fromFailedCompSeq (catch-fst           fcomp fcomp') | just x  | [ eq ] | ()
+  fromFailedCompSeq (catch-fst           fcomp fcomp') | nothing | [ eq ] = fromFailedCompSeq fcomp'
+  fromFailedCompSeq (catch-snd {mx = mx} comp fcomp  ) with runPar mx | inspect runPar mx
+  fromFailedCompSeq (catch-snd {mx = mx} comp fcomp  ) | just x  | [ eq ] with trans (sym eq) (fromCompSeq comp)
+  fromFailedCompSeq (catch-snd {mx = mx} comp fcomp  ) | just x  | [ eq ] | refl = fromFailedCompSeq fcomp
+  fromFailedCompSeq (catch-snd {mx = mx} comp fcomp  ) | nothing | [ eq ] with trans (sym eq) (fromCompSeq comp)
+  fromFailedCompSeq (catch-snd {mx = mx} comp fcomp  ) | nothing | [ eq ] | ()
+  fromFailedCompSeq (assert-fst refl                 ) = refl
+  fromFailedCompSeq (assert-snd refl fcomp           ) = fromFailedCompSeq fcomp
 
 strong-bind-snd : {A B : Set} {mx : Par A} {f : A → Par B} → ((x : A) → FailedCompSeq (f x)) → FailedCompSeq (mx >>= f)
 strong-bind-snd {mx = mx} {f} comps = toFailedCompSeq aux

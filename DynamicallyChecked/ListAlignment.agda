@@ -104,14 +104,6 @@ unfilterᴾ-filterᴾ-inverse {xs = x ∷ xs} {mys = nothing ∷ mys} all (_>>=_
 unfilterᴾ-filterᴾ-inverse {xs = x ∷ xs} {mys = just y  ∷ mys} all filterᴾ-comp =
   , (proj₁ all >>= proj₂ (unfilterᴾ-filterᴾ-inverse {mys = mys} (proj₂ all) filterᴾ-comp) >>= return refl)
 
-mapPar : {A B : Set} → (A → Par B) → List A → Par (List B)
-mapPar f []       = return []
-mapPar f (x ∷ xs) = liftPar₂ _∷_ (f x) (mapPar f xs)
-
-foldrPar : {A B : Set} → (A → B → Par B) → B → List A → Par B
-foldrPar f e []       = return e
-foldrPar f e (x ∷ xs) = foldrPar f e xs >>= f x
-
 module AlignLens {S V : Set} (source-condition : S → Par Bool) (match? : S → V → Par Bool)
                  (elem-lens : S ⇆ V) (create : V → Par S) (conceal : S → Par (Maybe S)) where
 
