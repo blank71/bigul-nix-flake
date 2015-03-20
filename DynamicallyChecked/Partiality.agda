@@ -164,128 +164,143 @@ mutual
   computeCount (mx ∷ mxs) | just x  | [ runPar-eq ] = Product.map suc (pos (, toCompSeq runPar-eq)) (computeCount mxs)
   computeCount (mx ∷ mxs) | nothing | [ runPar-eq ] = Product.map id (neg (toFailedCompSeq runPar-eq)) (computeCount mxs)
 
--- mutual
+mutual
 
---   fromCompSeq : {A : Set} {mx : Par A} {x : A} → CompSeq mx x → runPar mx ≡ just x
---   fromCompSeq (return refl                   ) = refl
---   fromCompSeq (_>>=_ {mx = mx} comp comp'    ) with runPar mx | inspect runPar mx
---   fromCompSeq (_>>=_           comp comp'    ) | just x  | [ eq ] with trans (sym eq) (fromCompSeq comp)
---   fromCompSeq (_>>=_           comp comp'    ) | just x  | [ eq ] | refl = fromCompSeq comp'
---   fromCompSeq (_>>=_           comp comp'    ) | nothing | [ eq ] with trans (sym eq) (fromCompSeq comp)
---   fromCompSeq (_>>=_           comp comp'    ) | nothing | [ eq ] | ()
---   fromCompSeq (_⊕-fst_ {mx = mx} comp fcomp  ) with runPar mx | inspect runPar mx
---   fromCompSeq (_⊕-fst_ {my = my} comp fcomp  ) | just x  | [ runPar-mx-eq ] with runPar my | inspect runPar my
---   fromCompSeq (comp ⊕-fst fcomp              ) | just x  | [ runPar-mx-eq ] | just y  | [ runPar-my-eq ] with trans (sym runPar-my-eq)
---                                                                                                                     (fromFailedCompSeq fcomp)
---   fromCompSeq (comp ⊕-fst fcomp              ) | just x  | [ runPar-mx-eq ] | just y  | [ runPar-my-eq ] | ()
---   fromCompSeq (comp ⊕-fst fcomp              ) | just x  | [ runPar-mx-eq ] | nothing | [ runPar-my-eq ] = trans (sym runPar-mx-eq)
---                                                                                                                  (fromCompSeq comp)
---   fromCompSeq (comp ⊕-fst fcomp              ) | nothing | [ runPar-mx-eq ] with trans (sym runPar-mx-eq) (fromCompSeq comp)
---   fromCompSeq (comp ⊕-fst fcomp              ) | nothing | [ runPar-mx-eq ] | ()
---   fromCompSeq (_⊕-snd_ {mx = mx} fcomp comp  ) with runPar mx | inspect runPar mx
---   fromCompSeq (_⊕-snd_ {my = my} fcomp comp  ) | just x  | [ runPar-mx-eq ] with runPar my
---   fromCompSeq (fcomp ⊕-snd comp              ) | just x  | [ runPar-mx-eq ] | just y  with trans (sym runPar-mx-eq)
---                                                                                                  (fromFailedCompSeq fcomp)
---   fromCompSeq (fcomp ⊕-snd comp              ) | just x  | [ runPar-mx-eq ] | just y  | ()
---   fromCompSeq (fcomp ⊕-snd comp              ) | just x  | [ runPar-mx-eq ] | nothing with trans (sym runPar-mx-eq)
---                                                                                                  (fromFailedCompSeq fcomp)
---   fromCompSeq (fcomp ⊕-snd comp              ) | just x  | [ runPar-mx-eq ] | nothing | ()
---   fromCompSeq (fcomp ⊕-snd comp              ) | nothing | [ runPar-mx-eq ] = fromCompSeq comp
---   fromCompSeq (catch-fst {mx = mx} comp      ) with runPar mx | inspect runPar mx
---   fromCompSeq (catch-fst           comp      ) | just x  | [ eq ] with trans (sym eq) (fromCompSeq comp)
---   fromCompSeq (catch-fst           comp      ) | just x  | [ eq ] | refl = refl
---   fromCompSeq (catch-fst           comp      ) | nothing | [ eq ] with trans (sym eq) (fromCompSeq comp)
---   fromCompSeq (catch-fst           comp      ) | nothing | [ eq ] | ()
---   fromCompSeq (catch-snd {mx = mx} fcomp comp) with runPar mx | inspect runPar mx
---   fromCompSeq (catch-snd {mx = mx} fcomp comp) | just x  | [ eq ] with trans (sym eq) (fromFailedCompSeq fcomp)
---   fromCompSeq (catch-snd {mx = mx} fcomp comp) | just x  | [ eq ] | ()
---   fromCompSeq (catch-snd {mx = mx} fcomp comp) | nothing | [ eq ] = fromCompSeq comp
---   fromCompSeq (assert refl then comp         ) = fromCompSeq comp
+  fromCompSeq : {A : Set} {mx : Par A} {x : A} → CompSeq mx x → runPar mx ≡ just x
+  fromCompSeq (return refl                   ) = refl
+  fromCompSeq (_>>=_ {mx = mx} comp comp'    ) with runPar mx | inspect runPar mx
+  fromCompSeq (_>>=_           comp comp'    ) | just x  | [ eq ] with trans (sym eq) (fromCompSeq comp)
+  fromCompSeq (_>>=_           comp comp'    ) | just x  | [ eq ] | refl = fromCompSeq comp'
+  fromCompSeq (_>>=_           comp comp'    ) | nothing | [ eq ] with trans (sym eq) (fromCompSeq comp)
+  fromCompSeq (_>>=_           comp comp'    ) | nothing | [ eq ] | ()
+  fromCompSeq (⊕ count                       ) = fromCompSeq-runPars count 
+  fromCompSeq (catch-fst {mx = mx} comp      ) with runPar mx | inspect runPar mx
+  fromCompSeq (catch-fst           comp      ) | just x  | [ eq ] with trans (sym eq) (fromCompSeq comp)
+  fromCompSeq (catch-fst           comp      ) | just x  | [ eq ] | refl = refl
+  fromCompSeq (catch-fst           comp      ) | nothing | [ eq ] with trans (sym eq) (fromCompSeq comp)
+  fromCompSeq (catch-fst           comp      ) | nothing | [ eq ] | ()
+  fromCompSeq (catch-snd {mx = mx} fcomp comp) with runPar mx | inspect runPar mx
+  fromCompSeq (catch-snd {mx = mx} fcomp comp) | just x  | [ eq ] with trans (sym eq) (fromFailedCompSeq fcomp)
+  fromCompSeq (catch-snd {mx = mx} fcomp comp) | just x  | [ eq ] | ()
+  fromCompSeq (catch-snd {mx = mx} fcomp comp) | nothing | [ eq ] = fromCompSeq comp
+  fromCompSeq (assert refl then comp         ) = fromCompSeq comp
 
---   fromFailedCompSeq : {A : Set} {mx : Par A} → FailedCompSeq mx → runPar mx ≡ nothing
---   fromFailedCompSeq (bind-fst {mx = mx} fcomp      ) with runPar mx | inspect runPar mx
---   fromFailedCompSeq (bind-fst           fcomp      ) | just x  | [ eq ] with trans (sym eq) (fromFailedCompSeq fcomp)
---   fromFailedCompSeq (bind-fst           fcomp      ) | just x  | [ eq ] | ()
---   fromFailedCompSeq (bind-fst           fcomp      ) | nothing | [ eq ] = refl
---   fromFailedCompSeq (bind-snd {mx = mx} comp fcomp ) with runPar mx | inspect runPar mx
---   fromFailedCompSeq (bind-snd           comp fcomp ) | just x  | [ eq ] with trans (sym eq) (fromCompSeq comp)
---   fromFailedCompSeq (bind-snd           comp fcomp ) | just x  | [ eq ] | refl = fromFailedCompSeq fcomp
---   fromFailedCompSeq (bind-snd           comp fcomp ) | nothing | [ eq ] with trans (sym eq) (fromCompSeq comp)
---   fromFailedCompSeq (bind-snd           comp fcomp ) | nothing | [ eq ] | ()
---   fromFailedCompSeq fail                             = refl
---   fromFailedCompSeq (_⊕-fst_ {mx = mx} comp comp'  ) with runPar mx | inspect runPar mx
---   fromFailedCompSeq (_⊕-fst_ {my = my} comp comp'  ) | just x  | [ runPar-mx-eq ] with runPar my | inspect runPar my
---   fromFailedCompSeq (comp ⊕-fst comp'              ) | just x  | [ runPar-mx-eq ] | just y  | [ runPar-my-eq ] = refl
---   fromFailedCompSeq (comp ⊕-fst comp'              ) | just x  | [ runPar-mx-eq ] | nothing | [ runPar-my-eq ] with trans (sym runPar-my-eq)
---                                                                                                                           (fromCompSeq comp')
---   fromFailedCompSeq (comp ⊕-fst comp'              ) | just x  | [ runPar-mx-eq ] | nothing | [ runPar-my-eq ] | ()
---   fromFailedCompSeq (comp ⊕-fst comp'              ) | nothing | [ runPar-mx-eq ] with trans (sym runPar-mx-eq) (fromCompSeq comp)
---   fromFailedCompSeq (comp ⊕-fst comp'              ) | nothing | [ runPar-mx-eq ] | ()
---   fromFailedCompSeq (_⊕-snd_ {mx = mx} fcomp fcomp') with runPar mx | inspect runPar mx
---   fromFailedCompSeq (_⊕-snd_ {my = my} fcomp fcomp') | just x  | [ runPar-mx-eq ] with runPar my
---   fromFailedCompSeq (fcomp ⊕-snd fcomp'            ) | just x  | [ runPar-mx-eq ] | just y  = refl
---   fromFailedCompSeq (fcomp ⊕-snd fcomp'            ) | just x  | [ runPar-mx-eq ] | nothing with trans (sym runPar-mx-eq)
---                                                                                                        (fromFailedCompSeq fcomp)
---   fromFailedCompSeq (fcomp ⊕-snd fcomp'            ) | just x  | [ runPar-mx-eq ] | nothing | ()
---   fromFailedCompSeq (fcomp ⊕-snd fcomp'            ) | nothing | [ runPar-mx-eq ] = fromFailedCompSeq fcomp'
---   fromFailedCompSeq (catch {mx = mx} fcomp fcomp'  ) with runPar mx | inspect runPar mx
---   fromFailedCompSeq (catch           fcomp fcomp'  ) | just x  | [ eq ] with trans (sym eq) (fromFailedCompSeq fcomp)
---   fromFailedCompSeq (catch           fcomp fcomp'  ) | just x  | [ eq ] | ()
---   fromFailedCompSeq (catch           fcomp fcomp'  ) | nothing | [ eq ] = fromFailedCompSeq fcomp'
---   fromFailedCompSeq (assert-fst refl               ) = refl
---   fromFailedCompSeq (assert-snd refl fcomp         ) = fromFailedCompSeq fcomp
+  fromCompSeq-runPars : {A : Set} {mxs : List (Par A)} {x : A} → Count (flip CompSeq x) FailedCompSeq mxs 1 → runPars mxs ≡ just x
+  fromCompSeq-runPars {mxs = []      } ()
+  fromCompSeq-runPars {mxs = mx ∷ mxs} count with runPar mx | inspect runPar mx
+  fromCompSeq-runPars {mxs = mx ∷ mxs} (pos  comp count) | just x  | [ eq ] with trans (sym eq) (fromCompSeq comp)
+  fromCompSeq-runPars {mxs = mx ∷ mxs} (pos  comp count) | just x  | [ eq ] | refl = fromCompSeq-runPars' count
+  fromCompSeq-runPars {mxs = mx ∷ mxs} (neg fcomp count) | just x  | [ eq ] with trans (sym eq) (fromFailedCompSeq fcomp)
+  fromCompSeq-runPars {mxs = mx ∷ mxs} (neg fcomp count) | just x  | [ eq ] | ()
+  fromCompSeq-runPars {mxs = mx ∷ mxs} (pos  comp count) | nothing | [ eq ] with trans (sym eq) (fromCompSeq comp)
+  fromCompSeq-runPars {mxs = mx ∷ mxs} (pos  comp count) | nothing | [ eq ] | ()
+  fromCompSeq-runPars {mxs = mx ∷ mxs} (neg fcomp count) | nothing | [ eq ] = fromCompSeq-runPars count
+  
+  fromCompSeq-runPars' : {A : Set} {mxs : List (Par A)} {x : A} → Count (flip CompSeq x) FailedCompSeq mxs 0 → runPars' mxs x ≡ just x
+  fromCompSeq-runPars' {mxs = []      } count = refl
+  fromCompSeq-runPars' {mxs = mx ∷ mxs} count with runPar mx | inspect runPar mx
+  fromCompSeq-runPars' {mxs = mx ∷ mxs} (neg fcomp count) | just x  | [ eq ] with trans (sym eq) (fromFailedCompSeq fcomp)
+  fromCompSeq-runPars' {mxs = mx ∷ mxs} (neg fcomp count) | just x  | [ eq ] | ()
+  fromCompSeq-runPars' {mxs = mx ∷ mxs} (neg fcomp count) | nothing | [ eq ] = fromCompSeq-runPars' count
 
--- strong-bind-snd : {A B : Set} {mx : Par A} {f : A → Par B} → ((x : A) → FailedCompSeq (f x)) → FailedCompSeq (mx >>= f)
--- strong-bind-snd {mx = mx} {f} comps = toFailedCompSeq aux
---   where
---     aux : runPar (mx >>= f) ≡ nothing
---     aux with runPar mx | inspect runPar mx
---     aux | just x  | [ eq ] = fromFailedCompSeq (comps x)
---     aux | nothing | [ eq ] = refl
+  fromFailedCompSeq : {A : Set} {mx : Par A} → FailedCompSeq mx → runPar mx ≡ nothing
+  fromFailedCompSeq (bind-fst {mx = mx} fcomp      ) with runPar mx | inspect runPar mx
+  fromFailedCompSeq (bind-fst           fcomp      ) | just x  | [ eq ] with trans (sym eq) (fromFailedCompSeq fcomp)
+  fromFailedCompSeq (bind-fst           fcomp      ) | just x  | [ eq ] | ()
+  fromFailedCompSeq (bind-fst           fcomp      ) | nothing | [ eq ] = refl
+  fromFailedCompSeq (bind-snd {mx = mx} comp fcomp ) with runPar mx | inspect runPar mx
+  fromFailedCompSeq (bind-snd           comp fcomp ) | just x  | [ eq ] with trans (sym eq) (fromCompSeq comp)
+  fromFailedCompSeq (bind-snd           comp fcomp ) | just x  | [ eq ] | refl = fromFailedCompSeq fcomp
+  fromFailedCompSeq (bind-snd           comp fcomp ) | nothing | [ eq ] with trans (sym eq) (fromCompSeq comp)
+  fromFailedCompSeq (bind-snd           comp fcomp ) | nothing | [ eq ] | ()
+  fromFailedCompSeq fail                             = refl
+  fromFailedCompSeq (⊕-fst count                   ) = fromFailedCompSeq-runPars-fst count
+  fromFailedCompSeq (⊕-snd count                   ) = fromFailedCompSeq-runPars-snd count
+  fromFailedCompSeq (catch {mx = mx} fcomp fcomp'  ) with runPar mx | inspect runPar mx
+  fromFailedCompSeq (catch           fcomp fcomp'  ) | just x  | [ eq ] with trans (sym eq) (fromFailedCompSeq fcomp)
+  fromFailedCompSeq (catch           fcomp fcomp'  ) | just x  | [ eq ] | ()
+  fromFailedCompSeq (catch           fcomp fcomp'  ) | nothing | [ eq ] = fromFailedCompSeq fcomp'
+  fromFailedCompSeq (assert-fst refl               ) = refl
+  fromFailedCompSeq (assert-snd refl fcomp         ) = fromFailedCompSeq fcomp
 
--- record Iso (A B : Set) : Set₁ where
---   field
---     to   : A → Par B
---     from : B → Par A
---     to-from-inverse : {x : A} {y : B} → to x ↦ y → from y ↦ x
---     from-to-inverse : {y : B} {x : A} → from y ↦ x → to x ↦ y
+  fromFailedCompSeq-runPars-fst : {A : Set} {mxs : List (Par A)} → Count (Σ A ∘ CompSeq) FailedCompSeq mxs 0 → runPars mxs ≡ nothing
+  fromFailedCompSeq-runPars-fst {mxs = []      } count = refl
+  fromFailedCompSeq-runPars-fst {mxs = mx ∷ mxs} count with runPar mx | inspect runPar mx
+  fromFailedCompSeq-runPars-fst {mxs = mx ∷ mxs} (neg fcomp count) | just x  | [ eq ] with trans (sym eq) (fromFailedCompSeq fcomp)
+  fromFailedCompSeq-runPars-fst {mxs = mx ∷ mxs} (neg fcomp count) | just x  | [ eq ] | ()
+  fromFailedCompSeq-runPars-fst {mxs = mx ∷ mxs} (neg fcomp count) | nothing | [ eq ] = fromFailedCompSeq-runPars-fst count
 
--- infix 0 _≅_
+  fromFailedCompSeq-runPars-snd : {A : Set} {mxs : List (Par A)} {n : ℕ} →
+                                  Count (Σ A ∘ CompSeq) FailedCompSeq mxs (2 + n) → runPars mxs ≡ nothing
+  fromFailedCompSeq-runPars-snd {mxs = []      } ()
+  fromFailedCompSeq-runPars-snd {mxs = mx ∷ mxs} count with runPar mx | inspect runPar mx
+  fromFailedCompSeq-runPars-snd {mxs = mx ∷ mxs} (pos (_ , comp) count) | just x  | [ eq ] = fromFailedCompSeq-runPars' count
+  fromFailedCompSeq-runPars-snd {mxs = mx ∷ mxs} (neg fcomp      count) | just x  | [ eq ] with trans (sym eq) (fromFailedCompSeq fcomp)
+  fromFailedCompSeq-runPars-snd {mxs = mx ∷ mxs} (neg fcomp      count) | just x  | [ eq ] | ()
+  fromFailedCompSeq-runPars-snd {mxs = mx ∷ mxs} (pos (_ , comp) count) | nothing | [ eq ] with trans (sym eq) (fromCompSeq comp)
+  fromFailedCompSeq-runPars-snd {mxs = mx ∷ mxs} (pos (_ , comp) count) | nothing | [ eq ] | ()
+  fromFailedCompSeq-runPars-snd {mxs = mx ∷ mxs} (neg fcomp      count) | nothing | [ eq ] = fromFailedCompSeq-runPars-snd count
 
--- _≅_ : Set → Set → Set₁
--- _≅_ = Iso
+  fromFailedCompSeq-runPars' : {A : Set} {mxs : List (Par A)} {x : A} {n : ℕ} →
+                               Count (Σ A ∘ CompSeq) FailedCompSeq mxs (suc n) → runPars' mxs x ≡ nothing
+  fromFailedCompSeq-runPars' {mxs = []      } ()
+  fromFailedCompSeq-runPars' {mxs = mx ∷ mxs} count with runPar mx | inspect runPar mx
+  fromFailedCompSeq-runPars' {mxs = mx ∷ mxs} count | just x  | [ eq ] = refl
+  fromFailedCompSeq-runPars' {mxs = mx ∷ mxs} (pos (_ , comp) count) | nothing | [ eq ] with trans (sym eq) (fromCompSeq comp)
+  fromFailedCompSeq-runPars' {mxs = mx ∷ mxs} (pos (_ , comp) count) | nothing | [ eq ] | ()
+  fromFailedCompSeq-runPars' {mxs = mx ∷ mxs} (neg fcomp      count) | nothing | [ eq ] = fromFailedCompSeq-runPars' count
 
--- id-iso : {A : Set} → A ≅ A
--- id-iso = record
---   { to   = return
---   ; from = return
---   ; to-from-inverse = λ { {._} (return refl) → return refl }
---   ; from-to-inverse = λ { {._} (return refl) → return refl } }
+strong-bind-snd : {A B : Set} {mx : Par A} {f : A → Par B} → ((x : A) → FailedCompSeq (f x)) → FailedCompSeq (mx >>= f)
+strong-bind-snd {mx = mx} {f} comps = toFailedCompSeq aux
+  where
+    aux : runPar (mx >>= f) ≡ nothing
+    aux with runPar mx | inspect runPar mx
+    aux | just x  | [ eq ] = fromFailedCompSeq (comps x)
+    aux | nothing | [ eq ] = refl
 
--- sym-iso : {A B : Set} → A ≅ B → B ≅ A
--- sym-iso iso = record
---   { to   = Iso.from iso
---   ; from = Iso.to   iso
---   ; to-from-inverse = Iso.from-to-inverse iso
---   ; from-to-inverse = Iso.to-from-inverse iso }
+record Iso (A B : Set) : Set₁ where
+  field
+    to   : A → Par B
+    from : B → Par A
+    to-from-inverse : {x : A} {y : B} → to x ↦ y → from y ↦ x
+    from-to-inverse : {y : B} {x : A} → from y ↦ x → to x ↦ y
 
--- trans-iso : {A B C : Set} → A ≅ B → B ≅ C → A ≅ C
--- trans-iso {A} {B} {C} iso-l iso-r = record
---   { to   = Iso.to iso-r <=< Iso.to iso-l
---   ; from = Iso.from iso-l <=< Iso.from iso-r
---   ; from-to-inverse = λ { (r-comp >>= l-comp) → Iso.from-to-inverse iso-l l-comp >>= Iso.from-to-inverse iso-r r-comp }
---   ; to-from-inverse = λ { (l-comp >>= r-comp) → Iso.to-from-inverse iso-r r-comp >>= Iso.to-from-inverse iso-l l-comp } }
+infix 0 _≅_
 
--- prod-unit-iso : {A : Set} → A ≅ A × ⊤
--- prod-unit-iso = record
---   { to   = return ∘ flip _,_ tt
---   ; from = return ∘ proj₁
---   ; from-to-inverse = λ { {_} {._} (return refl) → return refl }
---   ; to-from-inverse = λ { {._}     (return refl) → return refl } }
+_≅_ : Set → Set → Set₁
+_≅_ = Iso
 
--- prod-comm-iso : {A B : Set} → A × B ≅ B × A
--- prod-comm-iso = record
---   { to   = return ∘ swap
---   ; from = return ∘ swap
---   ; from-to-inverse = λ { {_} {._} (return refl) → return refl }
---   ; to-from-inverse = λ { {_} {._} (return refl) → return refl } }
+id-iso : {A : Set} → A ≅ A
+id-iso = record
+  { to   = return
+  ; from = return
+  ; to-from-inverse = λ { {._} (return refl) → return refl }
+  ; from-to-inverse = λ { {._} (return refl) → return refl } }
+
+sym-iso : {A B : Set} → A ≅ B → B ≅ A
+sym-iso iso = record
+  { to   = Iso.from iso
+  ; from = Iso.to   iso
+  ; to-from-inverse = Iso.from-to-inverse iso
+  ; from-to-inverse = Iso.to-from-inverse iso }
+
+trans-iso : {A B C : Set} → A ≅ B → B ≅ C → A ≅ C
+trans-iso {A} {B} {C} iso-l iso-r = record
+  { to   = Iso.to iso-r <=< Iso.to iso-l
+  ; from = Iso.from iso-l <=< Iso.from iso-r
+  ; from-to-inverse = λ { (r-comp >>= l-comp) → Iso.from-to-inverse iso-l l-comp >>= Iso.from-to-inverse iso-r r-comp }
+  ; to-from-inverse = λ { (l-comp >>= r-comp) → Iso.to-from-inverse iso-r r-comp >>= Iso.to-from-inverse iso-l l-comp } }
+
+prod-unit-iso : {A : Set} → A ≅ A × ⊤
+prod-unit-iso = record
+  { to   = return ∘ flip _,_ tt
+  ; from = return ∘ proj₁
+  ; from-to-inverse = λ { {_} {._} (return refl) → return refl }
+  ; to-from-inverse = λ { {._}     (return refl) → return refl } }
+
+prod-comm-iso : {A B : Set} → A × B ≅ B × A
+prod-comm-iso = record
+  { to   = return ∘ swap
+  ; from = return ∘ swap
+  ; from-to-inverse = λ { {_} {._} (return refl) → return refl }
+  ; to-from-inverse = λ { {_} {._} (return refl) → return refl } }
