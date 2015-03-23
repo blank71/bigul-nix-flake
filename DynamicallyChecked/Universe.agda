@@ -1,9 +1,9 @@
 module DynamicallyChecked.Universe where
 
+open import DynamicallyChecked.Utilities
 open import DynamicallyChecked.Partiality
 
 open import Function using (_∘_; _∋_)
-open import Data.Unit
 open import Data.Product
 open import Data.Sum
 open import Data.Nat
@@ -97,11 +97,11 @@ mutual
   ⟦ left pat       ⟧ᴾ = ⟦ pat ⟧ᴾ
   ⟦ right pat      ⟧ᴾ = ⟦ pat ⟧ᴾ
   ⟦ prod lpat rpat ⟧ᴾ = ⟦ lpat ⟧ᴾ × ⟦ rpat ⟧ᴾ
-  ⟦ list pats      ⟧ᴾ = ⟦ pats ⟧ᴾˢ
+  ⟦ list pats      ⟧ᴾ = ⟦ pats ⟧ᴾᴸ
 
-  ⟦_⟧ᴾˢ : {n : ℕ} {F : Functor n} {G : U n} → List (Pattern F G) → Set
-  ⟦_⟧ᴾˢ {F = F} {G} [] = List (⟦ G ⟧ (μ F))
-  ⟦ pat ∷ pats ⟧ᴾˢ = ⟦ pat ⟧ᴾ × ⟦ pats ⟧ᴾˢ
+  ⟦_⟧ᴾᴸ : {n : ℕ} {F : Functor n} {G : U n} → List (Pattern F G) → Set
+  ⟦_⟧ᴾᴸ {F = F} {G} [] = List (⟦ G ⟧ (μ F))
+  ⟦ pat ∷ pats ⟧ᴾᴸ     = ⟦ pat ⟧ᴾ × ⟦ pats ⟧ᴾᴸ
 
 mutual
 
@@ -118,7 +118,7 @@ mutual
   deconstruct         (prod lpat rpat) (x , y ) = liftPar₂ _,_ (deconstruct lpat x) (deconstruct rpat y)
   deconstruct         (list pats     ) xs       = deconstruct-list pats xs
 
-  deconstruct-list : {n : ℕ} {F : Functor n} {G : U n} (pats : List (Pattern F G)) → List (⟦ G ⟧ (μ F)) → Par ⟦ pats ⟧ᴾˢ
+  deconstruct-list : {n : ℕ} {F : Functor n} {G : U n} (pats : List (Pattern F G)) → List (⟦ G ⟧ (μ F)) → Par ⟦ pats ⟧ᴾᴸ
   deconstruct-list []           xs       = return xs
   deconstruct-list (pat ∷ pats) []       = fail
   deconstruct-list (pat ∷ pats) (x ∷ xs) = liftPar₂ _,_ (deconstruct pat x) (deconstruct-list pats xs)
@@ -134,7 +134,7 @@ mutual
   construct (prod lpat rpat) (x , y) = construct lpat x , construct rpat y
   construct (list pats     ) xs      = construct-list pats xs
 
-  construct-list : {n : ℕ} {F : Functor n} {G : U n} (pats : List (Pattern F G)) → ⟦ pats ⟧ᴾˢ → List (⟦ G ⟧ (μ F))
+  construct-list : {n : ℕ} {F : Functor n} {G : U n} (pats : List (Pattern F G)) → ⟦ pats ⟧ᴾᴸ → List (⟦ G ⟧ (μ F))
   construct-list []           xs       = xs
   construct-list (pat ∷ pats) (x , xs) = construct pat x ∷ construct-list pats xs
 
@@ -156,7 +156,7 @@ mutual
   deconstruct-construct-inverse         (list pats     ) xs       deconstruct↦ = deconstruct-construct-inverse-list pats xs deconstruct↦
 
   deconstruct-construct-inverse-list :
-    {n : ℕ} {F : Functor n} {G : U n} (pats : List (Pattern F G)) (xs : List (⟦ G ⟧ (μ F))) {y : ⟦ pats ⟧ᴾˢ} →
+    {n : ℕ} {F : Functor n} {G : U n} (pats : List (Pattern F G)) (xs : List (⟦ G ⟧ (μ F))) {y : ⟦ pats ⟧ᴾᴸ} →
     deconstruct-list pats xs ↦ y → construct-list pats y ≡ xs
   deconstruct-construct-inverse-list []           xs       (return eq)       = sym eq
   deconstruct-construct-inverse-list (pat ∷ pats) []       ()
@@ -180,7 +180,7 @@ mutual
   construct-deconstruct-inverse         (list pats     ) y       = construct-deconstruct-inverse-list pats y
 
   construct-deconstruct-inverse-list :
-    {n : ℕ} {F : Functor n} {G : U n} (pats : List (Pattern F G)) (y : ⟦ pats ⟧ᴾˢ) → deconstruct-list pats (construct-list pats y) ↦ y
+    {n : ℕ} {F : Functor n} {G : U n} (pats : List (Pattern F G)) (y : ⟦ pats ⟧ᴾᴸ) → deconstruct-list pats (construct-list pats y) ↦ y
   construct-deconstruct-inverse-list []           y       = return refl
   construct-deconstruct-inverse-list (pat ∷ pats) (y , z) = construct-deconstruct-inverse pat y >>=
                                                             construct-deconstruct-inverse-list pats z >>= return refl
