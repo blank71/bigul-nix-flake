@@ -86,104 +86,79 @@ data Pattern {n : ℕ} (F : Functor n) : U n → Set where
   left  : {G H : U n} (pat : Pattern F G) → Pattern F (G ⊕ H)
   right : {G H : U n} (pat : Pattern F H) → Pattern F (G ⊕ H)
   prod  : {G H : U n} (lpat : Pattern F G) (rpat : Pattern F H) → Pattern F (G ⊗ H)
-  list  : {G : U n} (pats : List (Pattern F G)) → Pattern F (list G)
+  elem  : {G : U n} (epat : Pattern F G) (tpat : Pattern F (list G)) → Pattern F (list G)
 
-mutual
+⟦_⟧ᴾ : {n : ℕ} {F : Functor n} {G : U n} → Pattern F G → Set
+⟦_⟧ᴾ {F = F} {G} var = ⟦ G ⟧ (μ F)
+⟦ const x        ⟧ᴾ = ⊤
+⟦ child pat      ⟧ᴾ = ⟦ pat ⟧ᴾ
+⟦ left pat       ⟧ᴾ = ⟦ pat ⟧ᴾ
+⟦ right pat      ⟧ᴾ = ⟦ pat ⟧ᴾ
+⟦ prod lpat rpat ⟧ᴾ = ⟦ lpat ⟧ᴾ × ⟦ rpat ⟧ᴾ
+⟦ elem epat tpat ⟧ᴾ = ⟦ epat ⟧ᴾ × ⟦ tpat ⟧ᴾ
 
-  ⟦_⟧ᴾ : {n : ℕ} {F : Functor n} {G : U n} → Pattern F G → Set
-  ⟦_⟧ᴾ {F = F} {G} var = ⟦ G ⟧ (μ F)
-  ⟦ const x        ⟧ᴾ = ⊤
-  ⟦ child pat      ⟧ᴾ = ⟦ pat ⟧ᴾ
-  ⟦ left pat       ⟧ᴾ = ⟦ pat ⟧ᴾ
-  ⟦ right pat      ⟧ᴾ = ⟦ pat ⟧ᴾ
-  ⟦ prod lpat rpat ⟧ᴾ = ⟦ lpat ⟧ᴾ × ⟦ rpat ⟧ᴾ
-  ⟦ list pats      ⟧ᴾ = ⟦ pats ⟧ᴾᴸ
+deconstruct : {n : ℕ} {F : Functor n} {G : U n} (pat : Pattern F G) → ⟦ G ⟧ (μ F) → Par ⟦ pat ⟧ᴾ
+deconstruct         var              x        = return x
+deconstruct {G = G} (const x'      ) x        with U-dec G x' x
+deconstruct         (const x'      ) x        | yes _ = return tt
+deconstruct         (const x'      ) x        | no  _ = fail
+deconstruct         (child pat     ) (con x)  = deconstruct pat x
+deconstruct         (left pat      ) (inj₁ x) = deconstruct pat x
+deconstruct         (left pat      ) (inj₂ x) = fail
+deconstruct         (right pat     ) (inj₁ x) = fail
+deconstruct         (right pat     ) (inj₂ x) = deconstruct pat x
+deconstruct         (prod lpat rpat) (x , y ) = liftPar₂ _,_ (deconstruct lpat x) (deconstruct rpat y)
+deconstruct         (elem epat tpat) []       = fail
+deconstruct         (elem epat tpat) (x ∷ xs) = liftPar₂ _,_ (deconstruct epat x) (deconstruct tpat xs)
 
-  ⟦_⟧ᴾᴸ : {n : ℕ} {F : Functor n} {G : U n} → List (Pattern F G) → Set
-  ⟦_⟧ᴾᴸ {F = F} {G} [] = List (⟦ G ⟧ (μ F))
-  ⟦ pat ∷ pats ⟧ᴾᴸ     = ⟦ pat ⟧ᴾ × ⟦ pats ⟧ᴾᴸ
+construct : {n : ℕ} {F : Functor n} {G : U n} (pat : Pattern F G) → ⟦ pat ⟧ᴾ → ⟦ G ⟧ (μ F)
+construct var              x       = x
+construct (const x'      ) tt      = x'
+construct (child pat     ) x       = con (construct pat x)
+construct (left pat      ) x       = inj₁ (construct pat x)
+construct (right pat     ) x       = inj₂ (construct pat x)
+construct (prod lpat rpat) (x , y) = construct lpat x , construct rpat y
+construct (elem epat tpat) (x , y) = construct epat x ∷ construct tpat y
 
-mutual
+deconstruct-construct-inverse :
+  {n : ℕ} {F : Functor n} {G : U n} (pat : Pattern F G) (x : ⟦ G ⟧ (μ F)) {y : ⟦ pat ⟧ᴾ} →
+  deconstruct pat x ↦ y → construct pat y ≡ x
+deconstruct-construct-inverse         var              x        (return eq) = sym eq
+deconstruct-construct-inverse {G = G} (const x'      ) x        deconstruct↦ with U-dec G x' x
+deconstruct-construct-inverse         (const x'      ) x        deconstruct↦ | yes eq = eq
+deconstruct-construct-inverse         (const x'      ) x        ()           | no  _
+deconstruct-construct-inverse         (child pat     ) (con x)  deconstruct↦ =
+  cong con (deconstruct-construct-inverse pat x deconstruct↦)
+deconstruct-construct-inverse         (left pat      ) (inj₁ x) deconstruct↦ =
+  cong inj₁ (deconstruct-construct-inverse pat x deconstruct↦)
+deconstruct-construct-inverse         (left pat      ) (inj₂ y) ()
+deconstruct-construct-inverse         (right pat     ) (inj₁ x) ()
+deconstruct-construct-inverse         (right pat     ) (inj₂ y) deconstruct↦ =
+  cong inj₂ (deconstruct-construct-inverse pat y deconstruct↦)
+deconstruct-construct-inverse         (prod lpat rpat) (x , y)  (deconstruct-lpat-x↦ >>=
+                                                                 deconstruct-rpat-y↦ >>= return refl) =
+  cong₂ _,_ (deconstruct-construct-inverse lpat x deconstruct-lpat-x↦)
+            (deconstruct-construct-inverse rpat y deconstruct-rpat-y↦)
+deconstruct-construct-inverse         (elem epat tpat) []       ()
+deconstruct-construct-inverse         (elem epat tpat) (x ∷ xs) (deconstruct-epat-x↦ >>=
+                                                                 deconstruct-tpat-xs↦ >>= return refl) =
+  cong₂ _∷_ (deconstruct-construct-inverse epat x  deconstruct-epat-x↦ )
+            (deconstruct-construct-inverse tpat xs deconstruct-tpat-xs↦)
 
-  deconstruct : {n : ℕ} {F : Functor n} {G : U n} (pat : Pattern F G) → ⟦ G ⟧ (μ F) → Par ⟦ pat ⟧ᴾ
-  deconstruct         var              x        = return x
-  deconstruct {G = G} (const x'      ) x        with U-dec G x' x
-  deconstruct         (const x'      ) x        | yes _ = return tt
-  deconstruct         (const x'      ) x        | no  _ = fail
-  deconstruct         (child pat     ) (con x)  = deconstruct pat x
-  deconstruct         (left pat      ) (inj₁ x) = deconstruct pat x
-  deconstruct         (left pat      ) (inj₂ x) = fail
-  deconstruct         (right pat     ) (inj₁ x) = fail
-  deconstruct         (right pat     ) (inj₂ x) = deconstruct pat x
-  deconstruct         (prod lpat rpat) (x , y ) = liftPar₂ _,_ (deconstruct lpat x) (deconstruct rpat y)
-  deconstruct         (list pats     ) xs       = deconstruct-list pats xs
-
-  deconstruct-list : {n : ℕ} {F : Functor n} {G : U n} (pats : List (Pattern F G)) → List (⟦ G ⟧ (μ F)) → Par ⟦ pats ⟧ᴾᴸ
-  deconstruct-list []           xs       = return xs
-  deconstruct-list (pat ∷ pats) []       = fail
-  deconstruct-list (pat ∷ pats) (x ∷ xs) = liftPar₂ _,_ (deconstruct pat x) (deconstruct-list pats xs)
-
-mutual
-
-  construct : {n : ℕ} {F : Functor n} {G : U n} (pat : Pattern F G) → ⟦ pat ⟧ᴾ → ⟦ G ⟧ (μ F)
-  construct var              x       = x
-  construct (const x'      ) tt      = x'
-  construct (child pat     ) x       = con (construct pat x)
-  construct (left pat      ) x       = inj₁ (construct pat x)
-  construct (right pat     ) x       = inj₂ (construct pat x)
-  construct (prod lpat rpat) (x , y) = construct lpat x , construct rpat y
-  construct (list pats     ) xs      = construct-list pats xs
-
-  construct-list : {n : ℕ} {F : Functor n} {G : U n} (pats : List (Pattern F G)) → ⟦ pats ⟧ᴾᴸ → List (⟦ G ⟧ (μ F))
-  construct-list []           xs       = xs
-  construct-list (pat ∷ pats) (x , xs) = construct pat x ∷ construct-list pats xs
-
-mutual
-
-  deconstruct-construct-inverse :
-    {n : ℕ} {F : Functor n} {G : U n} (pat : Pattern F G) (x : ⟦ G ⟧ (μ F)) {y : ⟦ pat ⟧ᴾ} → deconstruct pat x ↦ y → construct pat y ≡ x
-  deconstruct-construct-inverse         var              x        (return eq) = sym eq
-  deconstruct-construct-inverse {G = G} (const x'      ) x        deconstruct↦ with U-dec G x' x
-  deconstruct-construct-inverse         (const x'      ) x        deconstruct↦ | yes eq = eq
-  deconstruct-construct-inverse         (const x'      ) x        ()           | no  _
-  deconstruct-construct-inverse         (child pat     ) (con x)  deconstruct↦ = cong con (deconstruct-construct-inverse pat x deconstruct↦)
-  deconstruct-construct-inverse         (left pat      ) (inj₁ x) deconstruct↦ = cong inj₁ (deconstruct-construct-inverse pat x deconstruct↦)
-  deconstruct-construct-inverse         (left pat      ) (inj₂ y) ()
-  deconstruct-construct-inverse         (right pat     ) (inj₁ x) ()
-  deconstruct-construct-inverse         (right pat     ) (inj₂ y) deconstruct↦ = cong inj₂ (deconstruct-construct-inverse pat y deconstruct↦)
-  deconstruct-construct-inverse         (prod lpat rpat) (x , y)  (deconstruct-lpat-x↦ >>= deconstruct-rpat-y↦ >>= return refl) =
-    cong₂ _,_ (deconstruct-construct-inverse lpat x deconstruct-lpat-x↦) (deconstruct-construct-inverse rpat y deconstruct-rpat-y↦)
-  deconstruct-construct-inverse         (list pats     ) xs       deconstruct↦ = deconstruct-construct-inverse-list pats xs deconstruct↦
-
-  deconstruct-construct-inverse-list :
-    {n : ℕ} {F : Functor n} {G : U n} (pats : List (Pattern F G)) (xs : List (⟦ G ⟧ (μ F))) {y : ⟦ pats ⟧ᴾᴸ} →
-    deconstruct-list pats xs ↦ y → construct-list pats y ≡ xs
-  deconstruct-construct-inverse-list []           xs       (return eq)       = sym eq
-  deconstruct-construct-inverse-list (pat ∷ pats) []       ()
-  deconstruct-construct-inverse-list (pat ∷ pats) (x ∷ xs) (deconstruct↦ >>= deconstruct-list↦ >>= return refl) =
-    cong₂ _∷_ (deconstruct-construct-inverse pat x deconstruct↦) (deconstruct-construct-inverse-list pats xs deconstruct-list↦)
-
-mutual
-
-  construct-deconstruct-inverse :
-    {n : ℕ} {F : Functor n} {G : U n} (pat : Pattern F G) (y : ⟦ pat ⟧ᴾ) → deconstruct pat (construct pat y) ↦ y
-  construct-deconstruct-inverse         var              y       = return refl
-  construct-deconstruct-inverse {G = G} (const x       ) y       with U-dec G x x
-  construct-deconstruct-inverse {G = G} (const x       ) y       | yes _  = return refl
-  construct-deconstruct-inverse {G = G} (const x       ) y       | no neq with neq refl
-  construct-deconstruct-inverse {G = G} (const x       ) y       | no neq | ()
-  construct-deconstruct-inverse         (child pat     ) y       = construct-deconstruct-inverse pat y
-  construct-deconstruct-inverse         (left pat      ) y       = construct-deconstruct-inverse pat y
-  construct-deconstruct-inverse         (right pat     ) y       = construct-deconstruct-inverse pat y
-  construct-deconstruct-inverse         (prod lpat rpat) (y , z) = construct-deconstruct-inverse lpat y >>=
-                                                                   construct-deconstruct-inverse rpat z >>= return refl
-  construct-deconstruct-inverse         (list pats     ) y       = construct-deconstruct-inverse-list pats y
-
-  construct-deconstruct-inverse-list :
-    {n : ℕ} {F : Functor n} {G : U n} (pats : List (Pattern F G)) (y : ⟦ pats ⟧ᴾᴸ) → deconstruct-list pats (construct-list pats y) ↦ y
-  construct-deconstruct-inverse-list []           y       = return refl
-  construct-deconstruct-inverse-list (pat ∷ pats) (y , z) = construct-deconstruct-inverse pat y >>=
-                                                            construct-deconstruct-inverse-list pats z >>= return refl
+construct-deconstruct-inverse :
+  {n : ℕ} {F : Functor n} {G : U n} (pat : Pattern F G) (y : ⟦ pat ⟧ᴾ) → deconstruct pat (construct pat y) ↦ y
+construct-deconstruct-inverse         var              y       = return refl
+construct-deconstruct-inverse {G = G} (const x       ) y       with U-dec G x x
+construct-deconstruct-inverse {G = G} (const x       ) y       | yes _  = return refl
+construct-deconstruct-inverse {G = G} (const x       ) y       | no neq with neq refl
+construct-deconstruct-inverse {G = G} (const x       ) y       | no neq | ()
+construct-deconstruct-inverse         (child pat     ) y       = construct-deconstruct-inverse pat y
+construct-deconstruct-inverse         (left pat      ) y       = construct-deconstruct-inverse pat y
+construct-deconstruct-inverse         (right pat     ) y       = construct-deconstruct-inverse pat y
+construct-deconstruct-inverse         (prod lpat rpat) (y , z) = construct-deconstruct-inverse lpat y >>=
+                                                                 construct-deconstruct-inverse rpat z >>= return refl
+construct-deconstruct-inverse         (elem epat tpat) (y , z) = construct-deconstruct-inverse epat y >>=
+                                                                 construct-deconstruct-inverse tpat z >>= return refl
 
 pat-iso : {n : ℕ} {F : Functor n} {G : U n} (pat : Pattern F G) → ⟦ G ⟧ (μ F) ≅ ⟦ pat ⟧ᴾ
 pat-iso pat = record
