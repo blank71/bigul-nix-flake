@@ -3,6 +3,7 @@ module DynamicallyChecked.Universe where
 open import DynamicallyChecked.Utilities
 open import DynamicallyChecked.Partiality
 
+open import Level using (Level)
 open import Function using (_∘_; _∋_)
 open import Data.Product
 open import Data.Sum
@@ -81,88 +82,93 @@ mutual
 
 data Pattern {n : ℕ} (F : Functor n) : U n → Set where
   var   : {G : U n} → Pattern F G
-  const : {G : U n} (x : ⟦ G ⟧ (μ F)) → Pattern F G
+  k     : {G : U n} (x : ⟦ G ⟧ (μ F)) → Pattern F G
   child : {i : Fin n} (pat : Pattern F (F i)) → Pattern F (var i)
   left  : {G H : U n} (pat : Pattern F G) → Pattern F (G ⊕ H)
   right : {G H : U n} (pat : Pattern F H) → Pattern F (G ⊕ H)
   prod  : {G H : U n} (lpat : Pattern F G) (rpat : Pattern F H) → Pattern F (G ⊗ H)
   elem  : {G : U n} (epat : Pattern F G) (tpat : Pattern F (list G)) → Pattern F (list G)
 
-⟦_⟧ᴾ : {n : ℕ} {F : Functor n} {G : U n} → Pattern F G → Set
-⟦_⟧ᴾ {F = F} {G} var = ⟦ G ⟧ (μ F)
-⟦ const x        ⟧ᴾ = ⊤
-⟦ child pat      ⟧ᴾ = ⟦ pat ⟧ᴾ
-⟦ left pat       ⟧ᴾ = ⟦ pat ⟧ᴾ
-⟦ right pat      ⟧ᴾ = ⟦ pat ⟧ᴾ
-⟦ prod lpat rpat ⟧ᴾ = ⟦ lpat ⟧ᴾ × ⟦ rpat ⟧ᴾ
-⟦ elem epat tpat ⟧ᴾ = ⟦ epat ⟧ᴾ × ⟦ tpat ⟧ᴾ
+⟦_⟧ᴾ : {l : Level} {n : ℕ} {F : Functor n} {G : U n} → Pattern F G → (U n → Set l) → Set l
+⟦ var {G}        ⟧ᴾ f = f G
+⟦ k x            ⟧ᴾ f = ⊤
+⟦ child pat      ⟧ᴾ f = ⟦ pat ⟧ᴾ f
+⟦ left pat       ⟧ᴾ f = ⟦ pat ⟧ᴾ f
+⟦ right pat      ⟧ᴾ f = ⟦ pat ⟧ᴾ f
+⟦ prod lpat rpat ⟧ᴾ f = ⟦ lpat ⟧ᴾ f × ⟦ rpat ⟧ᴾ f
+⟦ elem epat tpat ⟧ᴾ f = ⟦ epat ⟧ᴾ f × ⟦ tpat ⟧ᴾ f
 
-deconstruct : {n : ℕ} {F : Functor n} {G : U n} (pat : Pattern F G) → ⟦ G ⟧ (μ F) → Par ⟦ pat ⟧ᴾ
-deconstruct         var              x        = return x
-deconstruct {G = G} (const x'      ) x        with U-dec G x' x
-deconstruct         (const x'      ) x        | yes _ = return tt
-deconstruct         (const x'      ) x        | no  _ = fail
-deconstruct         (child pat     ) (con x)  = deconstruct pat x
-deconstruct         (left pat      ) (inj₁ x) = deconstruct pat x
-deconstruct         (left pat      ) (inj₂ x) = fail
-deconstruct         (right pat     ) (inj₁ x) = fail
-deconstruct         (right pat     ) (inj₂ x) = deconstruct pat x
-deconstruct         (prod lpat rpat) (x , y ) = liftPar₂ _,_ (deconstruct lpat x) (deconstruct rpat y)
-deconstruct         (elem epat tpat) []       = fail
-deconstruct         (elem epat tpat) (x ∷ xs) = liftPar₂ _,_ (deconstruct epat x) (deconstruct tpat xs)
+module PatternMatching {n : ℕ} {F : Functor n} where
 
-construct : {n : ℕ} {F : Functor n} {G : U n} (pat : Pattern F G) → ⟦ pat ⟧ᴾ → ⟦ G ⟧ (μ F)
-construct var              x       = x
-construct (const x'      ) tt      = x'
-construct (child pat     ) x       = con (construct pat x)
-construct (left pat      ) x       = inj₁ (construct pat x)
-construct (right pat     ) x       = inj₂ (construct pat x)
-construct (prod lpat rpat) (x , y) = construct lpat x , construct rpat y
-construct (elem epat tpat) (x , y) = construct epat x ∷ construct tpat y
+  PatResult : {G : U n} → Pattern F G → Set
+  PatResult pat = ⟦ pat ⟧ᴾ (λ G → ⟦ G ⟧ (μ F))
 
-deconstruct-construct-inverse :
-  {n : ℕ} {F : Functor n} {G : U n} (pat : Pattern F G) (x : ⟦ G ⟧ (μ F)) {y : ⟦ pat ⟧ᴾ} →
-  deconstruct pat x ↦ y → construct pat y ≡ x
-deconstruct-construct-inverse         var              x        (return eq) = sym eq
-deconstruct-construct-inverse {G = G} (const x'      ) x        deconstruct↦ with U-dec G x' x
-deconstruct-construct-inverse         (const x'      ) x        deconstruct↦ | yes eq = eq
-deconstruct-construct-inverse         (const x'      ) x        ()           | no  _
-deconstruct-construct-inverse         (child pat     ) (con x)  deconstruct↦ =
-  cong con (deconstruct-construct-inverse pat x deconstruct↦)
-deconstruct-construct-inverse         (left pat      ) (inj₁ x) deconstruct↦ =
-  cong inj₁ (deconstruct-construct-inverse pat x deconstruct↦)
-deconstruct-construct-inverse         (left pat      ) (inj₂ y) ()
-deconstruct-construct-inverse         (right pat     ) (inj₁ x) ()
-deconstruct-construct-inverse         (right pat     ) (inj₂ y) deconstruct↦ =
-  cong inj₂ (deconstruct-construct-inverse pat y deconstruct↦)
-deconstruct-construct-inverse         (prod lpat rpat) (x , y)  (deconstruct-lpat-x↦ >>=
-                                                                 deconstruct-rpat-y↦ >>= return refl) =
-  cong₂ _,_ (deconstruct-construct-inverse lpat x deconstruct-lpat-x↦)
-            (deconstruct-construct-inverse rpat y deconstruct-rpat-y↦)
-deconstruct-construct-inverse         (elem epat tpat) []       ()
-deconstruct-construct-inverse         (elem epat tpat) (x ∷ xs) (deconstruct-epat-x↦ >>=
-                                                                 deconstruct-tpat-xs↦ >>= return refl) =
-  cong₂ _∷_ (deconstruct-construct-inverse epat x  deconstruct-epat-x↦ )
-            (deconstruct-construct-inverse tpat xs deconstruct-tpat-xs↦)
+  deconstruct : {G : U n} (pat : Pattern F G) → ⟦ G ⟧ (μ F) → Par (PatResult pat)
+  deconstruct         var              x        = return x
+  deconstruct {G = G} (k x'          ) x        with U-dec G x' x
+  deconstruct         (k x'          ) x        | yes _ = return tt
+  deconstruct         (k x'          ) x        | no  _ = fail
+  deconstruct         (child pat     ) (con x)  = deconstruct pat x
+  deconstruct         (left pat      ) (inj₁ x) = deconstruct pat x
+  deconstruct         (left pat      ) (inj₂ x) = fail
+  deconstruct         (right pat     ) (inj₁ x) = fail
+  deconstruct         (right pat     ) (inj₂ x) = deconstruct pat x
+  deconstruct         (prod lpat rpat) (x , y ) = liftPar₂ _,_ (deconstruct lpat x) (deconstruct rpat y)
+  deconstruct         (elem epat tpat) []       = fail
+  deconstruct         (elem epat tpat) (x ∷ xs) = liftPar₂ _,_ (deconstruct epat x) (deconstruct tpat xs)
 
-construct-deconstruct-inverse :
-  {n : ℕ} {F : Functor n} {G : U n} (pat : Pattern F G) (y : ⟦ pat ⟧ᴾ) → deconstruct pat (construct pat y) ↦ y
-construct-deconstruct-inverse         var              y       = return refl
-construct-deconstruct-inverse {G = G} (const x       ) y       with U-dec G x x
-construct-deconstruct-inverse {G = G} (const x       ) y       | yes _  = return refl
-construct-deconstruct-inverse {G = G} (const x       ) y       | no neq with neq refl
-construct-deconstruct-inverse {G = G} (const x       ) y       | no neq | ()
-construct-deconstruct-inverse         (child pat     ) y       = construct-deconstruct-inverse pat y
-construct-deconstruct-inverse         (left pat      ) y       = construct-deconstruct-inverse pat y
-construct-deconstruct-inverse         (right pat     ) y       = construct-deconstruct-inverse pat y
-construct-deconstruct-inverse         (prod lpat rpat) (y , z) = construct-deconstruct-inverse lpat y >>=
-                                                                 construct-deconstruct-inverse rpat z >>= return refl
-construct-deconstruct-inverse         (elem epat tpat) (y , z) = construct-deconstruct-inverse epat y >>=
-                                                                 construct-deconstruct-inverse tpat z >>= return refl
+  construct : {G : U n} (pat : Pattern F G) → PatResult pat → ⟦ G ⟧ (μ F)
+  construct var              x       = x
+  construct (k x'          ) tt      = x'
+  construct (child pat     ) x       = con (construct pat x)
+  construct (left pat      ) x       = inj₁ (construct pat x)
+  construct (right pat     ) x       = inj₂ (construct pat x)
+  construct (prod lpat rpat) (x , y) = construct lpat x , construct rpat y
+  construct (elem epat tpat) (x , y) = construct epat x ∷ construct tpat y
 
-pat-iso : {n : ℕ} {F : Functor n} {G : U n} (pat : Pattern F G) → ⟦ G ⟧ (μ F) ≅ ⟦ pat ⟧ᴾ
-pat-iso pat = record
-  { to   = deconstruct pat
-  ; from = return ∘ construct pat
-  ; to-from-inverse = return ∘ deconstruct-construct-inverse pat _
-  ; from-to-inverse = λ { {_} {._} (return refl) → construct-deconstruct-inverse pat _ } }
+  deconstruct-construct-inverse : {G : U n} (pat : Pattern F G) (x : ⟦ G ⟧ (μ F)) {y : PatResult pat} →
+    deconstruct pat x ↦ y → construct pat y ≡ x
+  deconstruct-construct-inverse         var              x        (return eq) = sym eq
+  deconstruct-construct-inverse {G = G} (k x'          ) x        deconstruct↦ with U-dec G x' x
+  deconstruct-construct-inverse         (k x'          ) x        deconstruct↦ | yes eq = eq
+  deconstruct-construct-inverse         (k x'          ) x        ()           | no  _
+  deconstruct-construct-inverse         (child pat     ) (con x)  deconstruct↦ =
+    cong con (deconstruct-construct-inverse pat x deconstruct↦)
+  deconstruct-construct-inverse         (left pat      ) (inj₁ x) deconstruct↦ =
+    cong inj₁ (deconstruct-construct-inverse pat x deconstruct↦)
+  deconstruct-construct-inverse         (left pat      ) (inj₂ y) ()
+  deconstruct-construct-inverse         (right pat     ) (inj₁ x) ()
+  deconstruct-construct-inverse         (right pat     ) (inj₂ y) deconstruct↦ =
+    cong inj₂ (deconstruct-construct-inverse pat y deconstruct↦)
+  deconstruct-construct-inverse         (prod lpat rpat) (x , y)  (deconstruct-lpat-x↦ >>=
+                                                                   deconstruct-rpat-y↦ >>= return refl) =
+    cong₂ _,_ (deconstruct-construct-inverse lpat x deconstruct-lpat-x↦)
+              (deconstruct-construct-inverse rpat y deconstruct-rpat-y↦)
+  deconstruct-construct-inverse         (elem epat tpat) []       ()
+  deconstruct-construct-inverse         (elem epat tpat) (x ∷ xs) (deconstruct-epat-x↦ >>=
+                                                                   deconstruct-tpat-xs↦ >>= return refl) =
+    cong₂ _∷_ (deconstruct-construct-inverse epat x  deconstruct-epat-x↦ )
+              (deconstruct-construct-inverse tpat xs deconstruct-tpat-xs↦)
+
+  construct-deconstruct-inverse : {G : U n} (pat : Pattern F G) (y : PatResult pat) → deconstruct pat (construct pat y) ↦ y
+  construct-deconstruct-inverse         var              y       = return refl
+  construct-deconstruct-inverse {G = G} (k x           ) y       with U-dec G x x
+  construct-deconstruct-inverse {G = G} (k x           ) y       | yes _  = return refl
+  construct-deconstruct-inverse {G = G} (k x           ) y       | no neq with neq refl
+  construct-deconstruct-inverse {G = G} (k x           ) y       | no neq | ()
+  construct-deconstruct-inverse         (child pat     ) y       = construct-deconstruct-inverse pat y
+  construct-deconstruct-inverse         (left pat      ) y       = construct-deconstruct-inverse pat y
+  construct-deconstruct-inverse         (right pat     ) y       = construct-deconstruct-inverse pat y
+  construct-deconstruct-inverse         (prod lpat rpat) (y , z) = construct-deconstruct-inverse lpat y >>=
+                                                                   construct-deconstruct-inverse rpat z >>= return refl
+  construct-deconstruct-inverse         (elem epat tpat) (y , z) = construct-deconstruct-inverse epat y >>=
+                                                                   construct-deconstruct-inverse tpat z >>= return refl
+
+  pat-iso : {G : U n} (pat : Pattern F G) → ⟦ G ⟧ (μ F) ≅ PatResult pat
+  pat-iso pat = record
+    { to   = deconstruct pat
+    ; from = return ∘ construct pat
+    ; to-from-inverse = return ∘ deconstruct-construct-inverse pat _
+    ; from-to-inverse = λ { {_} {._} (return refl) → construct-deconstruct-inverse pat _ } }
+
+open PatternMatching public
