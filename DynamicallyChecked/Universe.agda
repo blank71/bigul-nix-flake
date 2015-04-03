@@ -54,7 +54,7 @@ mutual
 
   μ-dec : {n : ℕ} {F : Functor n} {i : Fin n} → Decidable (_≡_ {A = μ F i})
   μ-dec {F = F} {i} (con x) (con y) with U-dec (F i) x y
-  μ-dec {F = F} {i} (con x) (con y) | yes eq  = yes (cong con eq)
+  μ-dec {F = F} {i} (con x) (con y) | yes eq = yes (cong con eq)
   μ-dec {F = F} {i} (con x) (con y) | no neq = no (neq ∘ cong decon)
   
   U-dec : {n : ℕ} {F : Functor n} (G : U n) → Decidable (_≡_ {A = ⟦ G ⟧ (μ F)})

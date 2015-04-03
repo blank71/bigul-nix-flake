@@ -63,17 +63,21 @@ mutual
 
   data CompSeq : {A : Set} → Par A → A → Set₁ where
     return       : {A : Set} {x x' : A} → x ≡ x' → CompSeq (return x) x'
-    _>>=_        : {A B : Set} {x : A} {mx : Par A} {f : A → Par B} {y : B} → CompSeq mx x → CompSeq (f x) y → CompSeq (mx >>= f) y
+    _>>=_        : {A B : Set} {x : A} {mx : Par A} {f : A → Par B} {y : B} →
+                   CompSeq mx x → CompSeq (f x) y → CompSeq (mx >>= f) y
     catch-fst    : {A B : Set} {mx : Par A} {f : A → Par B} {my : Par B} {x : A} {z : B} →
                    CompSeq mx x → CompSeq (f x) z → CompSeq (catch mx f my) z
-    catch-snd    : {A B : Set} {mx : Par A} {f : A → Par B} {my : Par B} {z : B} → FailedCompSeq mx → CompSeq my z → CompSeq (catch mx f my) z
+    catch-snd    : {A B : Set} {mx : Par A} {f : A → Par B} {my : Par B} {z : B} →
+                   FailedCompSeq mx → CompSeq my z → CompSeq (catch mx f my) z
     assert_then_ : {A : Set} {b : Bool} {mx : Par A} {x : A} → b ≡ true → CompSeq mx x → CompSeq (assert b then mx) x
 
   data FailedCompSeq : {A : Set} → Par A → Set₁ where
     bind-fst   : {A B : Set} {mx : Par A} {f : A → Par B} → FailedCompSeq mx → FailedCompSeq (mx >>= f)
-    bind-snd   : {A B : Set} {mx : Par A} {x : A} {f : A → Par B} → CompSeq mx x → FailedCompSeq (f x) → FailedCompSeq (mx >>= f)
+    bind-snd   : {A B : Set} {mx : Par A} {x : A} {f : A → Par B} →
+                 CompSeq mx x → FailedCompSeq (f x) → FailedCompSeq (mx >>= f)
     fail       : {A : Set} → FailedCompSeq (fail {A})
-    catch-fst  : {A B : Set} {mx : Par A} {f : A → Par B} {my : Par B} → FailedCompSeq mx → FailedCompSeq my → FailedCompSeq (catch mx f my)
+    catch-fst  : {A B : Set} {mx : Par A} {f : A → Par B} {my : Par B} →
+                 FailedCompSeq mx → FailedCompSeq my → FailedCompSeq (catch mx f my)
     catch-snd  : {A B : Set} {mx : Par A} {f : A → Par B} {my : Par B} {x : A} →
                  CompSeq mx x → FailedCompSeq (f x) → FailedCompSeq (catch mx f my)
     assert-fst : {A : Set} {mx : Par A} {b : Bool} → b ≡ false → FailedCompSeq (assert b then mx)
@@ -92,19 +96,23 @@ mutual
   toCompSeq {mx = fail                } ()
   toCompSeq {mx = catch mx f my       } eq   with runPar mx | inspect runPar mx
   toCompSeq {mx = catch mx f my       } eq   | just x  | [ runPar-eq ] = catch-fst (toCompSeq runPar-eq) (toCompSeq eq)
-  toCompSeq {mx = catch mx f my       } eq   | nothing | [ runPar-eq ] = catch-snd (toFailedCompSeq runPar-eq) (toCompSeq eq)
+  toCompSeq {mx = catch mx f my       } eq   | nothing | [ runPar-eq ] = catch-snd (toFailedCompSeq runPar-eq)
+                                                                                   (toCompSeq eq)
   toCompSeq {mx = assert true  then mx} eq   = assert refl then toCompSeq eq
   toCompSeq {mx = assert false then mx} ()
 
   toFailedCompSeq : {A : Set} {mx : Par A} → runPar mx ≡ nothing → FailedCompSeq mx
   toFailedCompSeq {mx = return x            } ()
   toFailedCompSeq {mx = mx >>= f            } eq with runPar mx | inspect runPar mx
-  toFailedCompSeq {mx = mx >>= f            } eq | just x  | [ runPar-eq ] = bind-snd (toCompSeq runPar-eq) (toFailedCompSeq eq)
+  toFailedCompSeq {mx = mx >>= f            } eq | just x  | [ runPar-eq ] = bind-snd (toCompSeq runPar-eq)
+                                                                                      (toFailedCompSeq eq)
   toFailedCompSeq {mx = mx >>= f            } eq | nothing | [ runPar-eq ] = bind-fst (toFailedCompSeq runPar-eq)
   toFailedCompSeq {mx = fail                } eq = fail
   toFailedCompSeq {mx = catch mx f my       } eq with runPar mx | inspect runPar mx
-  toFailedCompSeq {mx = catch mx f my       } eq | just x  | [ runPar-eq ] = catch-snd (toCompSeq runPar-eq) (toFailedCompSeq eq)
-  toFailedCompSeq {mx = catch mx f my       } eq | nothing | [ runPar-eq ] = catch-fst (toFailedCompSeq runPar-eq) (toFailedCompSeq eq)
+  toFailedCompSeq {mx = catch mx f my       } eq | just x  | [ runPar-eq ] = catch-snd (toCompSeq runPar-eq)
+                                                                                       (toFailedCompSeq eq)
+  toFailedCompSeq {mx = catch mx f my       } eq | nothing | [ runPar-eq ] = catch-fst (toFailedCompSeq runPar-eq)
+                                                                                       (toFailedCompSeq eq)
   toFailedCompSeq {mx = assert true  then mx} eq = assert-snd refl (toFailedCompSeq eq)
   toFailedCompSeq {mx = assert false then mx} eq = assert-fst refl
 
@@ -150,6 +158,18 @@ mutual
   fromFailedCompSeq (catch-snd {mx = mx} comp fcomp  ) | nothing | [ eq ] | ()
   fromFailedCompSeq (assert-fst refl                 ) = refl
   fromFailedCompSeq (assert-snd refl fcomp           ) = fromFailedCompSeq fcomp
+
+succeed-or-fail : {A : Set} (mx : Par A) → (Σ A (CompSeq mx)) ⊎ FailedCompSeq mx
+succeed-or-fail mx with runPar mx | inspect runPar mx
+succeed-or-fail mx | just x  | [ eq ] = inj₁ (x , toCompSeq eq)
+succeed-or-fail mx | nothing | [ eq ] = inj₂ (toFailedCompSeq eq)
+
+either-succeed-or-fail : {A : Set} {mx : Par A} {x : A} → CompSeq mx x → FailedCompSeq mx → ⊥
+either-succeed-or-fail {mx = mx} comp fcomp with runPar mx | inspect runPar mx
+either-succeed-or-fail {mx = mx} comp fcomp | just x  | [ eq ] with trans (sym eq) (fromFailedCompSeq fcomp)
+either-succeed-or-fail {mx = mx} comp fcomp | just x  | [ eq ] | ()
+either-succeed-or-fail {mx = mx} comp fcomp | nothing | [ eq ] with trans (sym eq) (fromCompSeq comp)
+either-succeed-or-fail {mx = mx} comp fcomp | nothing | [ eq ] | ()
 
 strong-bind-snd : {A B : Set} {mx : Par A} {f : A → Par B} → ((x : A) → FailedCompSeq (f x)) → FailedCompSeq (mx >>= f)
 strong-bind-snd {mx = mx} {f} fcomps = toFailedCompSeq aux

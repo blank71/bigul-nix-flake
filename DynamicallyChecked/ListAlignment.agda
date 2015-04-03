@@ -48,7 +48,8 @@ filterᴾ-all-false {xs = x ∷ xs} (_>>=_ {x = true } p-x↦true  (filterᴾ-co
 filterᴾ-all-false {xs = x ∷ xs} (_>>=_ {x = false} p-x↦false (filterᴾ-comp >>= return refl)) =
   p-x↦false , filterᴾ-all-false filterᴾ-comp
 
-filterᴾ-filtered : {A : Set} {p : A → Par Bool} {xs : List A} → AllTrueᴾ p xs → Σ[ mys ∈ List (Maybe A) ] (filterᴾ p xs ↦ (xs , mys))
+filterᴾ-filtered : {A : Set} {p : A → Par Bool} {xs : List A} →
+                   AllTrueᴾ p xs → Σ[ mys ∈ List (Maybe A) ] (filterᴾ p xs ↦ (xs , mys))
 filterᴾ-filtered {xs = []    } all = , return refl
 filterᴾ-filtered {xs = x ∷ xs} all = , (proj₁ all >>= proj₂ (filterᴾ-filtered (proj₂ all)) >>= return refl)
 
@@ -56,7 +57,8 @@ filterᴾ-append-residual :
   {A : Set} {p : A → Par Bool} {xs ys zs : List A} {mws : List (Maybe A)} →
   AllFalseᴾ p xs → filterᴾ p ys ↦ (zs , mws) → Σ[ mws' ∈ List (Maybe A) ] (filterᴾ p (xs ++ ys) ↦ (zs , mws'))
 filterᴾ-append-residual {xs = []    } all comp = , comp
-filterᴾ-append-residual {xs = x ∷ xs} all comp = , (proj₁ all >>= proj₂ (filterᴾ-append-residual (proj₂ all) comp) >>= return refl)
+filterᴾ-append-residual {xs = x ∷ xs} all comp =
+  , (proj₁ all >>= proj₂ (filterᴾ-append-residual (proj₂ all) comp) >>= return refl)
 
 condense : {A : Set} → List (Maybe A) → List A
 condense []              = []
@@ -81,25 +83,30 @@ filterᴾ-unfilterᴾ-inverse : {A : Set} (p : A → Par Bool) (xs : List A) {xs
 filterᴾ-unfilterᴾ-inverse p []       (return refl) = refl
 filterᴾ-unfilterᴾ-inverse p (x ∷ xs) (_>>=_ {x = true } p-x↦true  (filterᴾ-comp >>= return refl)) =
   cong (_∷_ x) (filterᴾ-unfilterᴾ-inverse p xs filterᴾ-comp)
-filterᴾ-unfilterᴾ-inverse p (x ∷ xs) (_>>=_ {x = false} p-x↦false (_>>=_ {x = []       , mys} filterᴾ-comp (return refl))) =
+filterᴾ-unfilterᴾ-inverse p (x ∷ xs)
+  (_>>=_ {x = false} p-x↦false (_>>=_ {x = []       , mys} filterᴾ-comp (return refl))) =
   cong (_∷_ x) (filterᴾ-condense-inverse p xs filterᴾ-comp)
-filterᴾ-unfilterᴾ-inverse p (x ∷ xs) (_>>=_ {x = false} p-x↦false (_>>=_ {x = x' ∷ xs' , mys} filterᴾ-comp (return refl))) =
+filterᴾ-unfilterᴾ-inverse p (x ∷ xs)
+  (_>>=_ {x = false} p-x↦false (_>>=_ {x = x' ∷ xs' , mys} filterᴾ-comp (return refl))) =
   cong (_∷_ x) (filterᴾ-unfilterᴾ-inverse p xs filterᴾ-comp)
 
 condense-filterᴾ-inverse : {A : Set} {p : A → Par Bool} (mys : List (Maybe A)) →
                            AllFalseᴾᴹ p mys → Σ[ mws' ∈ List (Maybe A) ] (filterᴾ p (condense mys) ↦ ([] , mws'))
 condense-filterᴾ-inverse []              all = , return refl
 condense-filterᴾ-inverse (nothing ∷ mys) all = condense-filterᴾ-inverse mys all
-condense-filterᴾ-inverse (just y  ∷ mys) all = , (proj₁ all >>= proj₂ (condense-filterᴾ-inverse mys (proj₂ all)) >>= return refl)
+condense-filterᴾ-inverse (just y  ∷ mys) all =
+  , (proj₁ all >>= proj₂ (condense-filterᴾ-inverse mys (proj₂ all)) >>= return refl)
 
 unfilterᴾ-filterᴾ-inverse : {A : Set} {p : A → Par Bool} {xs zs : List A} {mys mws : List (Maybe A)} →
                             AllFalseᴾᴹ p mys → filterᴾ p xs ↦ (zs , mws) →
                             Σ[ mws' ∈ List (Maybe A) ] (filterᴾ p (unfilterᴾ xs mys) ↦ (zs , mws'))
 unfilterᴾ-filterᴾ-inverse {xs = xs    } {mys = []           } all filterᴾ-comp  = , filterᴾ-comp
 unfilterᴾ-filterᴾ-inverse {xs = []    } {mys = my      ∷ mys} all (return refl) = condense-filterᴾ-inverse (my ∷ mys) all
-unfilterᴾ-filterᴾ-inverse {xs = x ∷ xs} {mys = nothing ∷ mys} all (_>>=_ {x = true } p-x↦true  (filterᴾ-comp >>= return refl)) =
+unfilterᴾ-filterᴾ-inverse {xs = x ∷ xs} {mys = nothing ∷ mys} all
+  (_>>=_ {x = true } p-x↦true  (filterᴾ-comp >>= return refl)) =
   , (p-x↦true >>= proj₂ (unfilterᴾ-filterᴾ-inverse {mys = mys} all filterᴾ-comp) >>= return refl)
-unfilterᴾ-filterᴾ-inverse {xs = x ∷ xs} {mys = nothing ∷ mys} all (_>>=_ {x = false} p-x↦false (filterᴾ-comp >>= return refl)) =
+unfilterᴾ-filterᴾ-inverse {xs = x ∷ xs} {mys = nothing ∷ mys} all
+  (_>>=_ {x = false} p-x↦false (filterᴾ-comp >>= return refl)) =
   , (p-x↦false >>= proj₂ (unfilterᴾ-filterᴾ-inverse {mys = mys} all filterᴾ-comp) >>= return refl)
 unfilterᴾ-filterᴾ-inverse {xs = x ∷ xs} {mys = just y  ∷ mys} all filterᴾ-comp =
   , (proj₁ all >>= proj₂ (unfilterᴾ-filterᴾ-inverse {mys = mys} (proj₂ all) filterᴾ-comp) >>= return refl)
@@ -140,7 +147,8 @@ module AlignLens {S V : Set} (source-condition : S → Par Bool) (match? : S →
 
   conceal-source-list : List S → Par (List S)
   conceal-source-list = foldrPar (λ s ss' → conceal s >>=
-                                            maybe (λ s' → source-condition s' >>= λ b → assert (not b) then return (s' ∷ ss'))
+                                            maybe (λ s' → source-condition s' >>= λ b →
+                                                          assert (not b) then return (s' ∷ ss'))
                                                   (return ss')) []
 
   conceal-source-list-all-false : {ss ss' : List S} → conceal-source-list ss ↦ ss' → AllFalseᴾ source-condition ss'
@@ -148,7 +156,8 @@ module AlignLens {S V : Set} (source-condition : S → Par Bool) (match? : S →
   conceal-source-list-all-false {s ∷ ss}
     (conceal-source-list↦ >>= (_>>=_ {x = just s'} conceal↦ (_>>=_ {x = true } source-condition↦ (assert () then _))))
   conceal-source-list-all-false {s ∷ ss}
-    (conceal-source-list↦ >>= (_>>=_ {x = just s'} conceal↦ (_>>=_ {x = false} source-condition↦ (assert _ then return refl)))) =
+    (conceal-source-list↦ >>= (_>>=_ {x = just s'} conceal↦ (_>>=_ {x = false} source-condition↦
+                                                                               (assert _ then return refl)))) =
     source-condition↦ , (conceal-source-list-all-false conceal-source-list↦)
   conceal-source-list-all-false {s ∷ ss} (conceal-source-list↦ >>= (_>>=_ {x = nothing} conceal↦ (return refl))) =
     conceal-source-list-all-false conceal-source-list↦
@@ -157,7 +166,8 @@ module AlignLens {S V : Set} (source-condition : S → Par Bool) (match? : S →
   align []       ss       = liftPar (flip _,_ []) (conceal-source-list ss)
   align (v ∷ vs) []       = liftPar (_,_ []) (create-source-list (v ∷ vs))
   align (v ∷ vs) (s ∷ ss) = first-match v (s ∷ ss) >>=
-                            maybe (λ { (s' , ss') → put-and-check s' v >>= λ s'' → liftPar (Product.map id (_∷_ s'')) (align vs ss') })
+                            maybe (λ { (s' , ss') → put-and-check s' v >>= λ s'' →
+                                                    liftPar (Product.map id (_∷_ s'')) (align vs ss') })
                                   (liftPar₂ (λ s' → Product.map id (_∷_ s')) (create-and-check v) (align vs (s ∷ ss)))
 
   align-all-true : (vs : List V) (ss : List S) {unmatched aligned : List S} →
@@ -166,7 +176,7 @@ module AlignLens {S V : Set} (source-condition : S → Par Bool) (match? : S →
   align-all-true (v ∷ vs) []       (comp >>= return refl) = create-source-list-all-true comp
   align-all-true (v ∷ vs) (s ∷ ss) (_>>=_ {x = just (s' , ss')} first-match↦ (put-and-check↦ >>= align↦ >>= return refl)) =
     put-and-check-true put-and-check↦ , align-all-true vs ss' align↦
-  align-all-true (v ∷ vs) (s ∷ ss) (_>>=_ {x = nothing        } first-match↦ (create-and-check↦ >>= align↦ >>= return refl)) =
+  align-all-true (v ∷ vs) (s ∷ ss) (_>>=_ {x = nothing} first-match↦ (create-and-check↦ >>= align↦ >>= return refl)) =
     create-and-check-true create-and-check↦ , align-all-true vs (s ∷ ss) align↦
 
   align-all-false : (vs : List V) (ss : List S) {unmatched aligned : List S} →
@@ -175,7 +185,7 @@ module AlignLens {S V : Set} (source-condition : S → Par Bool) (match? : S →
   align-all-false (v ∷ vs) []       (_ >>= return refl) = tt
   align-all-false (v ∷ vs) (s ∷ ss) (_>>=_ {x = just (s' , ss')} first-match↦ (put-and-check↦ >>= align↦ >>= return refl)) =
     align-all-false vs ss' align↦
-  align-all-false (v ∷ vs) (s ∷ ss) (_>>=_ {x = nothing        } first-match↦ (create-and-check↦ >>= align↦ >>= return refl)) =
+  align-all-false (v ∷ vs) (s ∷ ss) (_>>=_ {x = nothing} first-match↦ (create-and-check↦ >>= align↦ >>= return refl)) =
     align-all-false vs (s ∷ ss) align↦
 
   put : List S → List V → Par (List S)
@@ -190,7 +200,8 @@ module AlignLens {S V : Set} (source-condition : S → Par Bool) (match? : S →
   get = mapPar get-and-check ∘ proj₁ <=< filterᴾ source-condition
 
   PutGet-put-and-check : {s s' : S} {v : V} → put-and-check s v ↦ s' → get-and-check s' ↦ v
-  PutGet-put-and-check (put-s-v↦s' >>= match?-s'-v↦true >>= assert refl then source-condition-s'↦true >>= assert refl then return refl) =
+  PutGet-put-and-check (put-s-v↦s' >>= match?-s'-v↦true >>=
+                        assert refl then source-condition-s'↦true >>= assert refl then return refl) =
     Lens.PutGet elem-lens put-s-v↦s' >>= match?-s'-v↦true >>= assert refl then return refl
 
   PutGet-create-and-check : {v : V} {s : S} → create-and-check v ↦ s → get-and-check s ↦ v
@@ -216,7 +227,8 @@ module AlignLens {S V : Set} (source-condition : S → Par Bool) (match? : S →
       (proj₂ (filterᴾ-append-residual (align-all-false vs filtered align↦)
          (proj₂ (filterᴾ-filtered (align-all-true vs filtered align↦)))))) >>= PutGet-align vs filtered align↦
 
-  GetPut-align : (vs : List V) (ss : List S) → AllTrueᴾ source-condition ss → mapPar get-and-check ss ↦ vs → align vs ss ↦ ([] , ss)
+  GetPut-align : (vs : List V) (ss : List S) →
+                 AllTrueᴾ source-condition ss → mapPar get-and-check ss ↦ vs → align vs ss ↦ ([] , ss)
   GetPut-align []        []       all comp = return refl >>= return refl
   GetPut-align []        (_ ∷ _)  all (_ >>= _ >>= return ())
   GetPut-align (v ∷ vs)  []       all (return ())

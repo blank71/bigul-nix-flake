@@ -12,6 +12,8 @@ open import Data.Product
 open import Data.Bool
 open import Data.List 
 open import Data.Fin
+open import Relation.Nullary
+open import Relation.Binary.PropositionalEquality
 
 
 data VarPath : {G : U n} → Pattern F G → U n → Set₁ where
@@ -53,18 +55,22 @@ eval spat vpat expr = liftPar (construct spat ∘ evals spat vpat expr) ∘ deco
 NDExpr : {G : U n} → Pattern F G → {H : U n} → Pattern F H → Set₁
 NDExpr vpat spat = ⟦ vpat ⟧ᴾ (List ∘ VarPath spat)
 
+devals-var : {G : U n} (spat : Pattern F G) {H : U n} → List (VarPath spat H) → PatResult spat → Par (⟦ H ⟧ (μ F))
+devals-var spat     []            ss = fail
+devals-var spat     (p ∷ [])      ss = return (retrieve p ss)
+devals-var spat {H} (p ∷ p' ∷ ps) ss = devals-var spat (p' ∷ ps) ss >>= λ x →
+                                       case U-dec H (retrieve p ss) x of λ { (yes _) → return x ; (no _) → fail }
+
 devals : {G : U n} (spat : Pattern F G) {H : U n} (vpat : Pattern F H) →
          NDExpr vpat spat → PatResult spat → Par (PatResult vpat)
-devals spat  var             []                 ss = fail
-devals spat  var             (p ∷ [])           ss = return (retrieve p ss)
-devals spat  var             (_ ∷ _ ∷ _)        ss = fail
+devals spat  var              ps                ss = devals-var spat ps ss
 devals spat (k x           )  ndexpr            ss = return tt
 devals spat (child pat     )  ndexpr            ss = devals spat pat ndexpr ss
 devals spat (left pat      )  ndexpr            ss = devals spat pat ndexpr ss
 devals spat (right pat     )  ndexpr            ss = devals spat pat ndexpr ss
 devals spat (prod lpat rpat) (ndexpr , ndexpr') ss = liftPar₂ _,_ (devals spat lpat ndexpr  ss)
                                                                   (devals spat rpat ndexpr' ss)
-devals spat (elem hpat tpat) (ndexpr , ndexpr') ss = liftPar₂ _,_ (devals spat hpat ndexpr ss)
+devals spat (elem hpat tpat) (ndexpr , ndexpr') ss = liftPar₂ _,_ (devals spat hpat ndexpr  ss)
                                                                   (devals spat tpat ndexpr' ss)
 
 deval : {G : U n} (spat : Pattern F G) {H : U n} (vpat : Pattern F H) → NDExpr vpat spat → ⟦ G ⟧ (μ F) → Par (⟦ H ⟧ (μ F))
@@ -90,21 +96,21 @@ empty-ndexpr spat (right pat     ) = empty-ndexpr spat pat
 empty-ndexpr spat (prod lpat rpat) = empty-ndexpr spat lpat , empty-ndexpr spat rpat
 empty-ndexpr spat (elem hpat tpat) = empty-ndexpr spat hpat , empty-ndexpr spat tpat
 
-invert-paths : {G : U n} {spat : Pattern F G} {G' : U n} (spat' : Pattern F G') {H : U n} (vpat : Pattern F H) →
-               ({T : U n} → VarPath spat' T → VarPath spat T) →
-               Expr spat' vpat → NDExpr vpat spat → NDExpr vpat spat
-invert-paths var              vpat initp p              = update-tip p (_∷_ (initp var))
-invert-paths (k x           ) vpat initp expr           = id
-invert-paths (child pat     ) vpat initp expr           = invert-paths pat vpat (initp ∘ child) expr
-invert-paths (left pat      ) vpat initp expr           = invert-paths pat vpat (initp ∘ left ) expr
-invert-paths (right pat     ) vpat initp expr           = invert-paths pat vpat (initp ∘ right) expr
-invert-paths (prod lpat rpat) vpat initp (expr , expr') = invert-paths rpat vpat (initp ∘ second) expr' ∘
-                                                          invert-paths lpat vpat (initp ∘ first ) expr
-invert-paths (elem hpat tpat) vpat initp (expr , expr') = invert-paths tpat vpat (initp ∘ tail) expr' ∘
-                                                          invert-paths hpat vpat (initp ∘ head) expr
+invert-expr : {G : U n} {spat : Pattern F G} {G' : U n} (spat' : Pattern F G') {H : U n} (vpat : Pattern F H) →
+         ({T : U n} → VarPath spat' T → VarPath spat T) →
+         Expr spat' vpat → NDExpr vpat spat → NDExpr vpat spat
+invert-expr var              vpat initp p              = update-tip p (_∷_ (initp var))
+invert-expr (k x           ) vpat initp expr           = id
+invert-expr (child pat     ) vpat initp expr           = invert-expr pat vpat (initp ∘ child) expr
+invert-expr (left pat      ) vpat initp expr           = invert-expr pat vpat (initp ∘ left ) expr
+invert-expr (right pat     ) vpat initp expr           = invert-expr pat vpat (initp ∘ right) expr
+invert-expr (prod lpat rpat) vpat initp (expr , expr') = invert-expr rpat vpat (initp ∘ second) expr' ∘
+                                                         invert-expr lpat vpat (initp ∘ first ) expr
+invert-expr (elem hpat tpat) vpat initp (expr , expr') = invert-expr tpat vpat (initp ∘ tail) expr' ∘
+                                                         invert-expr hpat vpat (initp ∘ head) expr
 
 toNDExpr : {G : U n} (spat : Pattern F G) {H : U n} (vpat : Pattern F H) → Expr spat vpat → NDExpr vpat spat
-toNDExpr spat vpat expr = invert-paths spat vpat id expr (empty-ndexpr spat vpat)
+toNDExpr spat vpat expr = invert-expr spat vpat id expr (empty-ndexpr spat vpat)
 
 check-completeness : {G : U n} (spat : Pattern F G) {H : U n} (vpat : Pattern F H) → NDExpr vpat spat → Par ⊤
 check-completeness spat var              []             = fail
@@ -121,7 +127,15 @@ check-completeness spat (elem hpat tpat) (expr , expr') = check-completeness spa
 from-view : {G : U n} (spat : Pattern F G) {H : U n} (vpat : Pattern F H) →
             Expr spat vpat → ⟦ H ⟧ (μ F) → Par (⟦ G ⟧ (μ F))
 from-view spat vpat expr v =
-  check-completeness spat vpat (invert-paths spat vpat id expr (empty-ndexpr spat vpat)) >> eval spat vpat expr v
+  check-completeness spat vpat (toNDExpr spat vpat expr) >> eval spat vpat expr v
 
 to-view : {G : U n} (spat : Pattern F G) {H : U n} (vpat : Pattern F H) → Expr spat vpat → ⟦ G ⟧ (μ F) → Par (⟦ H ⟧ (μ F))
-to-view spat vpat expr = deval spat vpat (invert-paths spat vpat id expr (empty-ndexpr spat vpat))
+to-view spat vpat expr = deval spat vpat (toNDExpr spat vpat expr)
+
+view-rearrangement-iso : {G : U n} (spat : Pattern F G) {H : U n} (vpat : Pattern F H) →
+                         Expr spat vpat → ⟦ G ⟧ (μ F) ≅ ⟦ H ⟧ (μ F)
+view-rearrangement-iso spat vpat expr = record
+  { to   = to-view   spat vpat expr
+  ; from = from-view spat vpat expr
+  ; to-from-inverse = {!!}
+  ; from-to-inverse = {!!} }
