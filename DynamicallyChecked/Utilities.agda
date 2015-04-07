@@ -5,6 +5,7 @@ open import Function
 open import Data.Bool
 open import Data.Maybe
 open import Data.Nat
+open import Data.List
 open import Data.Fin
 open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
@@ -54,3 +55,7 @@ eqFin {i = i} {j} () | no _
 pred' : {n : ℕ} → Fin (suc n) → Maybe (Fin n)
 pred' zero    = nothing  
 pred' (suc n) = just n
+
+revcat : {l : Level} {A : Set l} → List A → List A → List A
+revcat []       ys = ys
+revcat (x ∷ xs) ys = revcat xs (x ∷ ys)
