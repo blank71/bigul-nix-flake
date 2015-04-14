@@ -10,6 +10,8 @@ import Data.Product as Product; open Product
 import Data.Sum as Sum; open Sum
 open import Data.Nat
 open import Data.List
+open import Relation.Nullary
+open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
 
 
@@ -225,3 +227,23 @@ prod-comm-iso = record
   ; from = return ∘ swap
   ; from-to-inverse = λ { {_} {._} (return refl) → return refl }
   ; to-from-inverse = λ { {_} {._} (return refl) → return refl } }
+
+dependency-iso : {A B : Set} → (A → B) → Decidable (_≡_ {A = B}) → A × B ≅ A
+dependency-iso {A} {B} f dec =
+  record { to = to; from = from; to-from-inverse = to-from-inverse; from-to-inverse = from-to-inverse }
+  where
+    to : A × B → Par A
+    to (a , b) with dec (f a) b
+    to (a , b) | yes _ = return a
+    to (a , b) | no  _ = fail
+    from : A → Par (A × B)
+    from = return ∘ < id , f >
+    to-from-inverse : {ab : A × B} {a' : A} → to ab ↦ a' → from a' ↦ ab
+    to-from-inverse {a , b} comp with dec (f a) b
+    to-from-inverse (return refl) | yes refl = return refl
+    to-from-inverse ()            | no  _
+    from-to-inverse : {a : A} {a'b : A × B} → from a ↦ a'b → to a'b ↦ a
+    from-to-inverse {a} (return refl) with dec (f a) (f a)
+    from-to-inverse     (return refl) | yes _  = return refl
+    from-to-inverse     (return refl) | no neq with neq refl
+    from-to-inverse     (return refl) | no neq | ()
