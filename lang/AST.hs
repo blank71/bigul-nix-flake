@@ -1,4 +1,19 @@
-data BiGUL = Fail
+data BiGUL :: * -> * -> * where
+  Fail :: BiGUL s v
+  Skip :: BiGUL s ()
+  Replace :: BiGUL s s
+  Rearr :: Expr v v' -> BiGUL s v' -> BiGUL s v
+  Iter :: BiGUL s v ->BiGUL [s] [v]
+  Align :: (s -> m Bool)
+        -> (s -> v -> m B)
+        -> BiGUL s v
+        -> (v -> m s)
+        -> (s -> m (Maybe s))
+        -> BiGUL s v
+  CaseS ::
+
+
+data BiGUL  = Fail
            | Skip
            | Replace -- id_lens: get is id, put ignore s
            | Rearr XQExpr BiGUL
