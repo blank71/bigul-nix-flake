@@ -1,19 +1,128 @@
-data BiGUL :: * -> * -> * where
-  Fail :: BiGUL s v
-  Skip :: BiGUL s ()
-  Replace :: BiGUL s s
-  Rearr :: Expr v v' -> BiGUL s v' -> BiGUL s v
-  Iter :: BiGUL s v ->BiGUL [s] [v]
-  Align :: (s -> m Bool)
-        -> (s -> v -> m B)
-        -> BiGUL s v
-        -> (v -> m s)
-        -> (s -> m (Maybe s))
-        -> BiGUL s v
-  CaseS ::
+{-# LANGUAGE GADTs, KindSignatures, MultiParamTypeClasses, FlexibleContexts, DeriveGeneric #-}
 
+import Control.Monad.Except
+import GHC.Generics
+import GHC.InOut
 
-data BiGUL  = Fail
+class MonadError e m => MonadError' e m where
+  catchBind :: m a -> (a -> m b) -> (e -> m b) -> m b
+
+type Name = String
+
+data Pat :: * -> * -> * where
+  PVar   :: Pat a a
+  PConst :: Eq a => a -> Pat a ()
+  PProd  :: Pat a a' -> Pat b b' -> Pat (a, b) (a', b')
+  PLeft  :: Pat a a' -> Pat (Either a b) a'
+  PRight :: Pat b b' -> Pat (Either a b) b'
+  PChild :: InOut a => Pat (F a) b -> Pat a b
+  PElem  :: Pat a b -> Pat [a] b' -> Pat [a] (b, b')
+
+deconstruct :: MonadError' String m => Pat a b -> a -> m b
+deconstruct  PVar             x         = return x
+deconstruct (PConst y)        x         = if x == y then return () else throwError "unmatched constant pattern"
+deconstruct (PProd lpat rpat) (x, y)    = liftM2 (,) (deconstruct lpat x) (deconstruct rpat y)
+deconstruct (PLeft  pat)      (Left  x) = deconstruct pat x
+deconstruct (PLeft  pat)      (Right y) = throwError "left pattern for right value"
+deconstruct (PRight pat)      (Left  x) = throwError "right pattern for left value"
+deconstruct (PRight pat)      (Right y) = deconstruct pat y
+deconstruct (PChild pat)      x         = deconstruct pat (out x)
+deconstruct (PElem hpat tpat) []        = throwError "head-tail pattern for empty list"
+deconstruct (PElem hpat tpat) (x : xs)  = liftM2 (,) (deconstruct hpat x) (deconstruct tpat xs)
+
+construct :: Pat a b -> b -> a
+construct  PVar             x      = x
+construct (PConst y)        _      = y
+construct (PProd lpat rpat) (x, y) = (construct lpat x, construct rpat y)
+construct (PLeft  pat)      x      = Left  (construct pat x)
+construct (PRight pat)      y      = Right (construct pat y)
+construct (PChild pat)      x      = inn (construct pat x)
+construct (PElem hpat tpat) (x, y) = construct hpat x : construct tpat y
+
+data UPat :: (* -> *) -> * -> * -> * where
+  UVar   :: BiGUL m s v -> UPat m s v
+  UConst :: Eq s => s -> UPat m s ()
+  UProd  :: UPat m s v -> UPat m s' v' -> UPat m (s, s') (v, v')
+  ULeft  :: UPat m s  v -> UPat m (Either s s') v
+  URight :: UPat m s' v -> UPat m (Either s s') v
+  UChild :: InOut s => UPat m (F s) v -> UPat m s v
+  UElem  :: UPat m s v -> UPat m [s] v' -> UPat m [s] (v, v')
+
+data CaseSBranch m s v = Normal (BiGUL m s v) | Adaptive (s -> m s)
+
+data CaseVBranch m s v where
+  CaseVBranch :: Pat v v' -> BiGUL m s v' -> CaseVBranch m s v
+
+data BiGUL :: (* -> *) -> * -> * -> * where
+  Fail    :: BiGUL m s v
+  Skip    :: BiGUL m s ()
+  Replace :: BiGUL m s s
+  Update  :: UPat m s v -> BiGUL m s v
+  Rearr   :: Expr v v' -> BiGUL m s v' -> BiGUL m s v
+  Dep     :: (v -> v') -> BiGUL m s v -> BiGUL m s (v, v')
+  CaseS   :: MonadError' e m => [(s -> m Bool, CaseSBranch m s v)] -> BiGUL m s v
+  CaseV   :: [CaseVBranch m s v] -> BiGUL m s v
+  Iter    :: BiGUL m s v -> BiGUL m [s] [v]
+  Align   :: MonadError' e m
+          => (s -> m Bool)
+          -> (s -> v -> m Bool)
+          -> BiGUL m s v
+          -> (v -> m s)
+          -> (s -> m (Maybe s))
+          -> BiGUL m [s] [v]
+  Lens    :: MonadError' e m
+          => (s -> v -> m s)
+          -> (s -> m v)
+          -> BiGUL m s v
+
+data Path :: * -> * -> * where
+  STip   :: Path a a
+  SChild :: InOut a => Path (F a) t -> Path a t
+  SProdL :: Path a t -> Path (a, b) t
+  SProdR :: Path b t -> Path (a, b) t
+  SLeft  :: Path a t -> Path (Either a b) t
+  SRight :: Path b t -> Path (Either a b) t
+  SElemH :: Path  a  t -> Path [a] t
+  SElemT :: Path [a] t -> Path [a] t
+
+retrieve :: MonadError' String m => Path a t -> a -> m t
+retrieve  STip      x         = return x
+retrieve (SChild p) x         = retrieve p (out x)
+retrieve (SProdL p) (x, y)    = retrieve p x
+retrieve (SProdR p) (x, y)    = retrieve p y
+retrieve (SLeft  p) (Left  x) = retrieve p x
+retrieve (SLeft  p) (Right y) = throwError "left path for right value"
+retrieve (SRight p) (Left  x) = throwError "right path for left value"
+retrieve (SRight p) (Right y) = retrieve p y
+retrieve (SElemH p) []        = throwError "head path for empty list"
+retrieve (SElemH p) (x : xs)  = retrieve p x
+retrieve (SElemT p) []        = throwError "tail path for empty list"
+retrieve (SElemT p) (x : xs)  = retrieve p xs
+
+data Expr :: * -> * -> * where
+  EPath  :: Path orig a -> Expr orig a
+  EConst :: a -> Expr orig a
+  EUnit  :: Expr orig ()
+  EProd  :: Expr orig a -> Expr orig b -> Expr orig (a, b)
+  ELeft  :: Expr orig a -> Expr orig (Either a b)
+  ERight :: Expr orig b -> Expr orig (Either a b)
+  EElem  :: Expr orig a -> Expr orig [a] -> Expr orig [a]
+
+data SBook = SBook String [String] Double Int deriving (Show, Generic)
+data VBook = VBook String Double deriving (Show, Generic)
+
+bookstore :: MonadError' String m => BiGUL m [SBook] [VBook]
+bookstore =
+  Align (const (return True))
+        (\(SBook stitle _ _ _) (VBook vtitle _) -> return (stitle == vtitle))
+        (Rearr ((EPath (SChild (SProdL STip)) `EProd` EUnit) `EProd` (EPath (SChild (SProdR STip)) `EProd` EUnit))
+               (Update (UChild ((UVar Replace `UProd` UVar Skip) `UProd` (UVar Replace `UProd` UVar Skip)))))
+        (\(VBook title price) -> return (SBook title [] price 0))
+        (const (return Nothing))
+
+{-
+
+data BiGUL = Fail
            | Skip
            | Replace -- id_lens: get is id, put ignore s
            | Rearr XQExpr BiGUL
@@ -44,3 +153,5 @@ data XQExpr = XQEmpty              -- ()
   deriving (Eq,Show)
 
 type XVar = String
+
+-}
