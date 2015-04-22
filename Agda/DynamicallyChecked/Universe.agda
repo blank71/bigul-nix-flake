@@ -90,16 +90,15 @@ data Pattern {n : ℕ} (F : Functor n) : U n → Set where
   prod  : {G H : U n} (lpat : Pattern F G) (rpat : Pattern F H) → Pattern F (G ⊗ H)
   elem  : {G : U n} (hpat : Pattern F G) (tpat : Pattern F (list G)) → Pattern F (list G)
 
-⟦_⟧ᴾ : {l : Level} {n : ℕ} {F : Functor n} {G : U n} → Pattern F G → (U n → Set l) → (U n → Set l) → Set l
-⟦ var  {G}       ⟧ᴾ f g = f G
-⟦ bvar {G}       ⟧ᴾ f g = g G
-⟦ k x            ⟧ᴾ f g = ⊤
-⟦ child pat      ⟧ᴾ f g = ⟦ pat ⟧ᴾ f g
-⟦ left pat       ⟧ᴾ f g = ⟦ pat ⟧ᴾ f g
-⟦ right pat      ⟧ᴾ f g = ⟦ pat ⟧ᴾ f g
-⟦ prod lpat rpat ⟧ᴾ f g = ⟦ lpat ⟧ᴾ f g × ⟦ rpat ⟧ᴾ f g
-⟦ elem hpat tpat ⟧ᴾ f g = ⟦ hpat ⟧ᴾ f g × ⟦ tpat ⟧ᴾ f g
-
+⟦_⟧ᴾ : {l : Level} {n : ℕ} {F : Functor n} {G : U n} → Pattern F G → (U n → Set l) → Set l
+⟦ var  {G}       ⟧ᴾ f = f G
+⟦ bvar {G}       ⟧ᴾ f = ⊤
+⟦ k x            ⟧ᴾ f = ⊤
+⟦ child pat      ⟧ᴾ f = ⟦ pat ⟧ᴾ f
+⟦ left pat       ⟧ᴾ f = ⟦ pat ⟧ᴾ f
+⟦ right pat      ⟧ᴾ f = ⟦ pat ⟧ᴾ f
+⟦ prod lpat rpat ⟧ᴾ f = ⟦ lpat ⟧ᴾ f × ⟦ rpat ⟧ᴾ f
+⟦ elem hpat tpat ⟧ᴾ f = ⟦ hpat ⟧ᴾ f × ⟦ tpat ⟧ᴾ f
 
 module PatternMatching {n : ℕ} {F : Functor n} where
 
@@ -113,13 +112,13 @@ module PatternMatching {n : ℕ} {F : Functor n} where
   ⟦ prod lpat rpat ⟧ᴾᵁ f g = ⟦ lpat ⟧ᴾᵁ f g ⊗ ⟦ rpat ⟧ᴾᵁ f g
   ⟦ elem hpat tpat ⟧ᴾᵁ f g = ⟦ hpat ⟧ᴾᵁ f g ⊗ ⟦ tpat ⟧ᴾᵁ f g
 
-  PatResultU : {G : U n} → Pattern F G → U n
-  PatResultU pat = ⟦ pat ⟧ᴾᵁ id id
+  MainMatchU : {G : U n} → Pattern F G → U n
+  MainMatchU pat = ⟦ pat ⟧ᴾᵁ id id
 
-  PatResult : {G : U n} → Pattern F G → Set
-  PatResult pat = ⟦ PatResultU pat ⟧ (μ F)
+  MainMatch : {G : U n} → Pattern F G → Set
+  MainMatch pat = ⟦ MainMatchU pat ⟧ (μ F)
 
-  deconstruct : {G : U n} (pat : Pattern F G) → ⟦ G ⟧ (μ F) → Par (PatResult pat)
+  deconstruct : {G : U n} (pat : Pattern F G) → ⟦ G ⟧ (μ F) → Par (MainMatch pat)
   deconstruct         var              x        = return x
   deconstruct         bvar             x        = return x
   deconstruct {G = G} (k x'          ) x        with U-dec G x' x
@@ -134,7 +133,7 @@ module PatternMatching {n : ℕ} {F : Functor n} where
   deconstruct         (elem hpat tpat) []       = fail
   deconstruct         (elem hpat tpat) (x ∷ xs) = liftPar₂ _,_ (deconstruct hpat x) (deconstruct tpat xs)
 
-  construct : {G : U n} (pat : Pattern F G) → PatResult pat → ⟦ G ⟧ (μ F)
+  construct : {G : U n} (pat : Pattern F G) → MainMatch pat → ⟦ G ⟧ (μ F)
   construct var              x       = x
   construct bvar             x       = x
   construct (k x'          ) tt      = x'
@@ -144,7 +143,7 @@ module PatternMatching {n : ℕ} {F : Functor n} where
   construct (prod lpat rpat) (x , y) = construct lpat x , construct rpat y
   construct (elem hpat tpat) (x , y) = construct hpat x ∷ construct tpat y
 
-  deconstruct-construct-inverse : {G : U n} (pat : Pattern F G) (x : ⟦ G ⟧ (μ F)) {y : PatResult pat} →
+  deconstruct-construct-inverse : {G : U n} (pat : Pattern F G) (x : ⟦ G ⟧ (μ F)) {y : MainMatch pat} →
     deconstruct pat x ↦ y → construct pat y ≡ x
   deconstruct-construct-inverse         var              x        (return eq) = sym eq
   deconstruct-construct-inverse         bvar             x        (return eq) = sym eq
@@ -169,7 +168,7 @@ module PatternMatching {n : ℕ} {F : Functor n} where
     cong₂ _∷_ (deconstruct-construct-inverse hpat x  deconstruct-epat-x↦ )
               (deconstruct-construct-inverse tpat xs deconstruct-tpat-xs↦)
 
-  construct-deconstruct-inverse : {G : U n} (pat : Pattern F G) (y : PatResult pat) → deconstruct pat (construct pat y) ↦ y
+  construct-deconstruct-inverse : {G : U n} (pat : Pattern F G) (y : MainMatch pat) → deconstruct pat (construct pat y) ↦ y
   construct-deconstruct-inverse         var              y       = return refl
   construct-deconstruct-inverse         bvar             y       = return refl
   construct-deconstruct-inverse {G = G} (k x           ) y       with U-dec G x x
@@ -184,18 +183,18 @@ module PatternMatching {n : ℕ} {F : Functor n} where
   construct-deconstruct-inverse         (elem hpat tpat) (y , z) = construct-deconstruct-inverse hpat y >>=
                                                                    construct-deconstruct-inverse tpat z >>= return refl
 
-  pat-iso : {G : U n} (pat : Pattern F G) → ⟦ G ⟧ (μ F) ≅ PatResult pat
+  pat-iso : {G : U n} (pat : Pattern F G) → ⟦ G ⟧ (μ F) ≅ MainMatch pat
   pat-iso pat = record
     { to   = deconstruct pat
     ; from = return ∘ construct pat
     ; to-from-inverse = return ∘ deconstruct-construct-inverse pat _
     ; from-to-inverse = λ { {_} {._} (return refl) → construct-deconstruct-inverse pat _ } }
 
-  RevealedU : {G : U n} → Pattern F G → U n
-  RevealedU pat = ⟦ pat ⟧ᴾᵁ id (const (k ⊤ (λ _ _ → yes refl)))
+  PatResultU : {G : U n} → Pattern F G → U n
+  PatResultU pat = ⟦ pat ⟧ᴾᵁ id (const (k ⊤ (λ _ _ → yes refl)))
 
-  Revealed : {G : U n} → Pattern F G → Set
-  Revealed pat = ⟦ RevealedU pat ⟧ (μ F)
+  PatResult : {G : U n} → Pattern F G → Set
+  PatResult pat = ⟦ PatResultU pat ⟧ (μ F)
 
   BlockedU : {G : U n} → Pattern F G → U n
   BlockedU pat = ⟦ pat ⟧ᴾᵁ (const (k ⊤ (λ _ _ → yes refl))) id
@@ -203,7 +202,7 @@ module PatternMatching {n : ℕ} {F : Functor n} where
   Blocked : {G : U n} → Pattern F G → Set
   Blocked pat = ⟦ BlockedU pat ⟧ (μ F)
 
-  block : {G : U n} (pat : Pattern F G) → PatResult pat → Revealed pat × Blocked pat
+  block : {G : U n} (pat : Pattern F G) → MainMatch pat → PatResult pat × Blocked pat
   block var              r       = r , tt
   block bvar             r       = tt , r
   block (k x           ) r       = tt , tt
@@ -213,7 +212,7 @@ module PatternMatching {n : ℕ} {F : Functor n} where
   block (prod lpat rpat) (x , y) = Data.Product.zip _,_ _,_ (block lpat x) (block rpat y)
   block (elem hpat tpat) (h , t) = Data.Product.zip _,_ _,_ (block hpat h) (block tpat t)
 
-  unblock : {G : U n} (pat : Pattern F G) → Revealed pat × Blocked pat → PatResult pat
+  unblock : {G : U n} (pat : Pattern F G) → PatResult pat × Blocked pat → MainMatch pat
   unblock var              (x , _)               = x
   unblock bvar             (_ , x)               = x
   unblock (k x           ) _                     = tt
@@ -223,7 +222,7 @@ module PatternMatching {n : ℕ} {F : Functor n} where
   unblock (prod lpat rpat) ((r , r') , (b , b')) = unblock lpat (r , b) , unblock rpat (r' , b')
   unblock (elem hpat tpat) ((r , r') , (b , b')) = unblock hpat (r , b) , unblock tpat (r' , b')
 
-  block-unblock-inverse : {G : U n} (pat : Pattern F G) {r : PatResult pat} → unblock pat (block pat r) ≡ r
+  block-unblock-inverse : {G : U n} (pat : Pattern F G) {r : MainMatch pat} → unblock pat (block pat r) ≡ r
   block-unblock-inverse var              = refl
   block-unblock-inverse bvar             = refl
   block-unblock-inverse (k x           ) = refl
@@ -233,7 +232,7 @@ module PatternMatching {n : ℕ} {F : Functor n} where
   block-unblock-inverse (prod lpat rpat) = cong₂ _,_ (block-unblock-inverse lpat) (block-unblock-inverse rpat)
   block-unblock-inverse (elem hpat tpat) = cong₂ _,_ (block-unblock-inverse hpat) (block-unblock-inverse tpat)
 
-  unblock-block-inverse : {G : U n} (pat : Pattern F G) {rb : Revealed pat × Blocked pat} → block pat (unblock pat rb) ≡ rb
+  unblock-block-inverse : {G : U n} (pat : Pattern F G) {rb : PatResult pat × Blocked pat} → block pat (unblock pat rb) ≡ rb
   unblock-block-inverse var              = refl
   unblock-block-inverse bvar             = refl
   unblock-block-inverse (k x           ) = refl
@@ -245,7 +244,7 @@ module PatternMatching {n : ℕ} {F : Functor n} where
   unblock-block-inverse (elem hpat tpat) = cong₂ (Data.Product.zip _,_ _,_)
                                                  (unblock-block-inverse hpat) (unblock-block-inverse tpat)
 
-  blocking-iso : {G : U n} (pat : Pattern F G) → PatResult pat ≅ Revealed pat × Blocked pat
+  blocking-iso : {G : U n} (pat : Pattern F G) → MainMatch pat ≅ PatResult pat × Blocked pat
   blocking-iso pat = record
     { to   = return ∘ block   pat
     ; from = return ∘ unblock pat

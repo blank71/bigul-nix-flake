@@ -15,11 +15,19 @@ open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
 
 
-PatLenses :  {G : U n} → Pattern F G → Set₁
-PatLenses pat = ⟦ pat ⟧ᴾ (λ G → Σ[ V ∈ Set ] (⟦ G ⟧ (μ F) ⇆ V))
+PatLenses : {G : U n} → Pattern F G → Set₁
+PatLenses {G} var          = Σ[ V ∈ Set ] (⟦ G ⟧ (μ F) ⇆ V)
+PatLenses bvar             = ⊤
+PatLenses (k x           ) = ⊤
+PatLenses (child pat     ) = PatLenses pat
+PatLenses (left pat      ) = PatLenses pat
+PatLenses (right pat     ) = PatLenses pat
+PatLenses (prod lpat rpat) = PatLenses lpat × PatLenses rpat
+PatLenses (elem hpat tpat) = PatLenses hpat × PatLenses tpat
 
 PatLensesViews : {G : U n} (pat : Pattern F G) → PatLenses pat → Set
 PatLensesViews var              (V , _)    = V
+PatLensesViews bvar             tt         = ⊤
 PatLensesViews (k x           ) tt         = ⊤
 PatLensesViews (child pat     ) ls         = PatLensesViews pat ls
 PatLensesViews (left pat      ) ls         = PatLensesViews pat ls
@@ -31,6 +39,7 @@ module SourceUpdateLens where
 
   put : {G : U n} (pat : Pattern F G) (ls : PatLenses pat) → PatResult pat → PatLensesViews pat ls → Par (PatResult pat)
   put     var              (V , l)     s        v       = Lens.put l s v
+  put     bvar             tt          s        v       = return tt
   put {G} (k x           ) ls          tt       v       = return tt
   put     (child pat     ) ls          s        v       = put pat ls s v
   put     (left pat      ) ls          s        v       = put pat ls s v
@@ -40,6 +49,7 @@ module SourceUpdateLens where
 
   get : {G : U n} (pat : Pattern F G) (ls : PatLenses pat) → PatResult pat → Par (PatLensesViews pat ls)
   get var              (V , l)     s       = Lens.get l s
+  get bvar             tt          s       = return tt
   get (k x           ) ls          tt      = return tt
   get (child pat     ) ls          s       = get pat ls s
   get (left pat      ) ls          s       = get pat ls s
@@ -50,27 +60,29 @@ module SourceUpdateLens where
   PutGet : {G : U n} (pat : Pattern F G) (ls : PatLenses pat)
            {s : PatResult pat} {v : PatLensesViews pat ls} {s' : PatResult pat} →
            put pat ls s v ↦ s' → get pat ls s' ↦ v
-  PutGet var              (V , l)    put↦  = Lens.PutGet l put↦
+  PutGet var              (V , l)    put↦ = Lens.PutGet l put↦
+  PutGet bvar             tt         put↦ = return refl
   PutGet (k x           ) ls         put↦ = return refl
   PutGet (child pat     ) ls         put↦ = PutGet pat ls put↦
   PutGet (left pat      ) ls         put↦ = PutGet pat ls put↦
   PutGet (right pat     ) ls         put↦ = PutGet pat ls put↦
-  PutGet (prod lpat rpat) (ls , ls') (lput↦ >>= rput↦ >>= return refl) = PutGet lpat ls  lput↦ >>=
-                                                                         PutGet rpat ls' rput↦ >>= return refl
-  PutGet (elem hpat tpat) (ls , ls') (eput↦ >>= tput↦ >>= return refl) = PutGet hpat ls  eput↦ >>=
-                                                                         PutGet tpat ls' tput↦ >>= return refl
+  PutGet (prod lpat rpat) (ls , ls') (lput↦ >>= rput↦ >>= return refl) =
+    PutGet lpat ls lput↦ >>= PutGet rpat ls' rput↦ >>= return refl
+  PutGet (elem hpat tpat) (ls , ls') (hput↦ >>= tput↦ >>= return refl) =
+    PutGet hpat ls hput↦ >>= PutGet tpat ls' tput↦ >>= return refl
 
   GetPut : {G : U n} (pat : Pattern F G) (ls : PatLenses pat) {s : PatResult pat} {v : PatLensesViews pat ls} →
            get pat ls s ↦ v → put pat ls s v ↦ s
-  GetPut var              (V , l)    get↦  = Lens.GetPut l get↦
+  GetPut var              (V , l)    get↦ = Lens.GetPut l get↦
+  GetPut bvar             tt         get↦ = return refl
   GetPut (k x           ) ls         get↦ = return refl
   GetPut (child pat     ) ls         get↦ = GetPut pat ls get↦
   GetPut (left pat      ) ls         get↦ = GetPut pat ls get↦
   GetPut (right pat     ) ls         get↦ = GetPut pat ls get↦
   GetPut (prod lpat rpat) (ls , ls') (lget↦ >>= rget↦ >>= return refl) =
     GetPut lpat ls lget↦ >>= GetPut rpat ls' rget↦ >>= return refl
-  GetPut (elem hpat tpat) (ls , ls') (eget↦ >>= tget↦ >>= return refl) =
-    GetPut hpat ls eget↦ >>= GetPut tpat ls' tget↦ >>= return refl
+  GetPut (elem hpat tpat) (ls , ls') (hget↦ >>= tget↦ >>= return refl) =
+    GetPut hpat ls hget↦ >>= GetPut tpat ls' tget↦ >>= return refl
 
 open SourceUpdateLens
 
