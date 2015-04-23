@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs, KindSignatures, MultiParamTypeClasses, FlexibleContexts, DeriveGeneric #-}
+{-# LANGUAGE GADTs, KindSignatures, MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, DeriveGeneric #-}
 
 import Control.Monad.Except
 import GHC.Generics
@@ -7,7 +7,9 @@ import GHC.InOut
 class MonadError e m => MonadError' e m where
   catchBind :: m a -> (a -> m b) -> (e -> m b) -> m b
 
-type Name = String
+instance MonadError' e (Either e) where
+  -- catchBind :: Either e a -> (a -> Either e b) -> (e -> Either e b) -> Either e b
+  catchBind ma f g = either g f ma
 
 data Pat :: * -> * -> * where
   PVar   :: Pat a a
@@ -62,7 +64,6 @@ data BiGUL :: (* -> *) -> * -> * -> * where
   Dep     :: (v -> v') -> BiGUL m s v -> BiGUL m s (v, v')
   CaseS   :: MonadError' e m => [(s -> m Bool, CaseSBranch m s v)] -> BiGUL m s v
   CaseV   :: [CaseVBranch m s v] -> BiGUL m s v
-  Iter    :: BiGUL m s v -> BiGUL m [s] [v]
   Align   :: MonadError' e m
           => (s -> m Bool)
           -> (s -> v -> m Bool)
@@ -70,10 +71,6 @@ data BiGUL :: (* -> *) -> * -> * -> * where
           -> (v -> m s)
           -> (s -> m (Maybe s))
           -> BiGUL m [s] [v]
-  Lens    :: MonadError' e m
-          => (s -> v -> m s)
-          -> (s -> m v)
-          -> BiGUL m s v
 
 data Path :: * -> * -> * where
   STip   :: Path a a
