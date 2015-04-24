@@ -17,7 +17,6 @@ open import Relation.Binary.PropositionalEquality
 
 PatLenses : {G : U n} → Pattern F G → Set₁
 PatLenses {G} var          = Σ[ V ∈ Set ] (⟦ G ⟧ (μ F) ⇆ V)
-PatLenses bvar             = ⊤
 PatLenses (k x           ) = ⊤
 PatLenses (child pat     ) = PatLenses pat
 PatLenses (left pat      ) = PatLenses pat
@@ -27,7 +26,6 @@ PatLenses (elem hpat tpat) = PatLenses hpat × PatLenses tpat
 
 PatLensesViews : {G : U n} (pat : Pattern F G) → PatLenses pat → Set
 PatLensesViews var              (V , _)    = V
-PatLensesViews bvar             tt         = ⊤
 PatLensesViews (k x           ) tt         = ⊤
 PatLensesViews (child pat     ) ls         = PatLensesViews pat ls
 PatLensesViews (left pat      ) ls         = PatLensesViews pat ls
@@ -39,7 +37,6 @@ module SourceUpdateLens where
 
   put : {G : U n} (pat : Pattern F G) (ls : PatLenses pat) → PatResult pat → PatLensesViews pat ls → Par (PatResult pat)
   put     var              (V , l)     s        v       = Lens.put l s v
-  put     bvar             tt          s        v       = return tt
   put {G} (k x           ) ls          tt       v       = return tt
   put     (child pat     ) ls          s        v       = put pat ls s v
   put     (left pat      ) ls          s        v       = put pat ls s v
@@ -49,7 +46,6 @@ module SourceUpdateLens where
 
   get : {G : U n} (pat : Pattern F G) (ls : PatLenses pat) → PatResult pat → Par (PatLensesViews pat ls)
   get var              (V , l)     s       = Lens.get l s
-  get bvar             tt          s       = return tt
   get (k x           ) ls          tt      = return tt
   get (child pat     ) ls          s       = get pat ls s
   get (left pat      ) ls          s       = get pat ls s
@@ -61,7 +57,6 @@ module SourceUpdateLens where
            {s : PatResult pat} {v : PatLensesViews pat ls} {s' : PatResult pat} →
            put pat ls s v ↦ s' → get pat ls s' ↦ v
   PutGet var              (V , l)    put↦ = Lens.PutGet l put↦
-  PutGet bvar             tt         put↦ = return refl
   PutGet (k x           ) ls         put↦ = return refl
   PutGet (child pat     ) ls         put↦ = PutGet pat ls put↦
   PutGet (left pat      ) ls         put↦ = PutGet pat ls put↦
@@ -74,7 +69,6 @@ module SourceUpdateLens where
   GetPut : {G : U n} (pat : Pattern F G) (ls : PatLenses pat) {s : PatResult pat} {v : PatLensesViews pat ls} →
            get pat ls s ↦ v → put pat ls s v ↦ s
   GetPut var              (V , l)    get↦ = Lens.GetPut l get↦
-  GetPut bvar             tt         get↦ = return refl
   GetPut (k x           ) ls         get↦ = return refl
   GetPut (child pat     ) ls         get↦ = GetPut pat ls get↦
   GetPut (left pat      ) ls         get↦ = GetPut pat ls get↦

@@ -38,7 +38,6 @@ retrieve (tail   p) (x , y) = retrieve p y
 
 Expr : {G : U n} → Pattern F G → {H : U n} → Pattern F H → Set₁
 Expr {G} var          vpat = VarPath vpat G
-Expr bvar             vpat = ⊤
 Expr (k x           ) vpat = ⊤
 Expr (child pat     ) vpat = Expr pat vpat
 Expr (left pat      ) vpat = Expr pat vpat
@@ -48,7 +47,6 @@ Expr (elem hpat tpat) vpat = Expr hpat vpat × Expr tpat vpat
 
 eval : {G : U n} (spat : Pattern F G) {H : U n} (vpat : Pattern F H) → Expr spat vpat → PatResult vpat → PatResult spat
 eval var              vpat p              vs = retrieve p vs
-eval bvar             vpat p              vs = tt
 eval (k x           ) vpat expr           vs = tt
 eval (child spat    ) vpat expr           vs = eval spat vpat expr vs
 eval (left spat     ) vpat expr           vs = eval spat vpat expr vs
