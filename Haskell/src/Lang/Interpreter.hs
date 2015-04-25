@@ -11,7 +11,7 @@ put Fail s v = throwError $ ErrorInfo "update fails"
 put Skip s v = return s
 put Replace s v = return v
 put (Update upat) s v = putUPat upat s v
-put (Rearr pat expr bigul) s v = deconstruct pat v >>= putExpr expr  >>= put bigul s
+--put (Rearr pat expr bigul) s v = deconstruct pat v >>= putExpr expr  >>= put bigul s
 put (Dep f bigul) s (v, v') = if f v == v' then put bigul s v else throwError $ ErrorInfo "view dependency not match"
 put (CaseS branchList) s v = putCaseS branchList s v
 put (CaseV branchList) s v = putCaseV branchList s v
@@ -168,7 +168,7 @@ get Fail s = throwError $ ErrorInfo "get failed"
 get Skip s = return $ ()
 get Replace s = return s
 get (Update upat) s = getUPat upat s
-get (Rearr pat expr bigul) s = liftM (construct pat) (get bigul s >>= getExpr pat expr)
+--get (Rearr pat expr bigul) s = liftM (construct pat) (get bigul s >>= getExpr pat expr)
 get (Dep f bigul) s = get bigul s >>= \v -> return $ (v, f v)
 get (CaseS sbranches) s = getCaseS sbranches s
 get (CaseV vbranches) s = getCaseV vbranches s
@@ -186,8 +186,8 @@ getUPat (UChild  upat) s        = getUPat upat (out s)
 getUPat (UElem upath upatt) []  = throwError $ ErrorInfo "UElem cannot accept empty source list"
 getUPat (UElem upath upatt) (x: xs) = liftM2 (,) (getUPat upath x) (getUPat upatt xs)
 
-getExpr :: MonadError' ErrorInfo m => Pat v v' c -> Expr v' v'' -> v'' -> m v'
-getExpr pat expr v'' = undefined
+--getExpr :: MonadError' ErrorInfo m => Pat v v' c -> Expr v' v'' -> v'' -> m v'
+--getExpr pat expr v'' = undefined
 --getExpr (EPath path)         v' = putbackPath path v' -- TODO:
 --getExpr (EConst c )          v' = if v' == c then
 
@@ -214,15 +214,23 @@ getExprEnv (EElem exprh exprt)  (vh' : vt's)  =
             (\e -> throwError $ ErrorInfo "Expr Elem head failed" )
 
 
-
-
-
-
 getCaseS :: MonadError' ErrorInfo m => [(s -> m Bool, CaseSBranch m s v)] -> s -> m v
-getCaseS = undefined
+getCaseS []  s = throwError $ ErrorInfo "Get: caseS branch is empty"
+getCaseS (branch@(p, caseSBranch) : restBranches) s =
+  p s >>= \b ->
+    if b
+    then case caseSBranch of
+              Normal bigul -> get bigul s
+              Adaptive f   -> throwError $ ErrorInfo "Get: caseS shall not match adaptive branch"
+    else getCaseS restBranches s
+
 
 getCaseV :: MonadError' ErrorInfo m => [CaseVBranch m s v] -> s -> m v
-getCaseV = undefined
+getCaseV [] s = throwError $ ErrorInfo "Get: caseV branch is empty"
+getCaseV (branch@(CaseVBranch pat bigul) : restBranches) s =
+  catchBind (get bigul s)
+            (\v' -> return $ construct pat v')
+            (\e -> catchBind (getCaseV restBranches s) (\v -> catchBind (deconstruct pat v) (\v' -> throwError $ ErrorInfo "Get: caseV previous pattern matched.") (\e -> return v)) (\e2 -> throwError $ ErrorInfo "failed."))
 
 getAlign :: MonadError' ErrorInfo m =>
              (s -> m Bool)
