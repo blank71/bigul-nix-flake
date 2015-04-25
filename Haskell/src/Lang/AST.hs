@@ -4,6 +4,7 @@ module Lang.AST where
 import Control.Monad.Except
 import GHC.Generics
 import GHC.InOut
+import Text.PrettyPrint
 
 class MonadError e m => MonadError' e m where
   catchBind :: m a -> (a -> m b) -> (e -> m b) -> m b
@@ -12,18 +13,35 @@ instance MonadError' e (Either e) where
   -- catchBind :: Either e a -> (a -> Either e b) -> (e -> Either e b) -> Either e b
   catchBind ma f g = either g f ma
 
+
+class PrettyPrintable s where
+  pPrint :: s -> Doc
+
+--instance PrettyPrintable s where
+
+
+-- break point (expression), source, view, inner error info.
 data ErrorInfo = ErrorInfo String
 
-data Pat :: * -> * -> * where
-  PVar   :: Pat a a
-  PConst :: Eq a => a -> Pat a ()
-  PProd  :: Pat a a' -> Pat b b' -> Pat (a, b) (a', b')
-  PLeft  :: Pat a a' -> Pat (Either a b) a'
-  PRight :: Pat b b' -> Pat (Either a b) b'
-  PChild :: InOut a => Pat (F a) b -> Pat a b
-  PElem  :: Pat a b -> Pat [a] b' -> Pat [a] (b, b')
+-- | storing error information
+-- simplified error information
+-- break point (expression)
+-- current source
+-- current view
+-- inner structured error informations
+--data ErrorInfo where
+--  ErrorInfo :: (PrettyPrintable s, PrettyPrintable v) => Doc -> Doc -> s -> v -> [ErrorInfo] -> ErrorInfo
 
-deconstruct :: MonadError' ErrorInfo m => Pat a b -> a -> m b
+data Pat :: * -> * -> * -> *  where
+  PVar   :: Pat a a (Maybe a)
+  PConst :: Eq a => a -> Pat a () ()
+  PProd  :: Pat a a' a'' -> Pat b b' b'' -> Pat (a, b) (a', b') (a'', b'')
+  PLeft  :: Pat a a' a'' -> Pat (Either a b) a' a''
+  PRight :: Pat b b' b'' -> Pat (Either a b) b' b''
+  PChild :: InOut a => Pat (F a) b c -> Pat a b c
+  PElem  :: Pat a b c -> Pat [a] b' c' -> Pat [a] (b, b') (c, c')
+
+deconstruct :: MonadError' ErrorInfo m => Pat a b c -> a -> m b
 deconstruct  PVar             x         = return x
 deconstruct (PConst y)        x         = if x == y then return () else throwError $ ErrorInfo "unmatched constant pattern"
 deconstruct (PProd lpat rpat) (x, y)    = liftM2 (,) (deconstruct lpat x) (deconstruct rpat y)
@@ -35,7 +53,7 @@ deconstruct (PChild pat)      x         = deconstruct pat (out x)
 deconstruct (PElem hpat tpat) []        = throwError $ ErrorInfo "head-tail pattern for empty list"
 deconstruct (PElem hpat tpat) (x : xs)  = liftM2 (,) (deconstruct hpat x) (deconstruct tpat xs)
 
-construct :: Pat a b -> b -> a
+construct :: Pat a b c -> b -> a
 construct  PVar             x      = x
 construct (PConst y)        _      = y
 construct (PProd lpat rpat) (x, y) = (construct lpat x, construct rpat y)
@@ -43,6 +61,26 @@ construct (PLeft  pat)      x      = Left  (construct pat x)
 construct (PRight pat)      y      = Right (construct pat y)
 construct (PChild pat)      x      = inn (construct pat x)
 construct (PElem hpat tpat) (x, y) = construct hpat x : construct tpat y
+
+
+construct' :: MonadError' ErrorInfo m =>  Pat a b c -> c -> m b
+construct' PVar              (Just x) = return x
+construct' PVar              Nothing  = throwError $ ErrorInfo "Nothing"
+construct' (PConst c)        ()       = return ()
+construct' (PProd lpat rpat) (l, r)   =
+  catchBind (construct' lpat l)
+            (\l' -> catchBind (construct' rpat r) (\r' -> return (l', r')) (\e -> throwError $ ErrorInfo "product right failed.")
+              )
+            (\e -> throwError $ ErrorInfo "product left failed.")
+construct' (PLeft pat)      c        = catchError (construct' pat c) (\e -> throwError $ ErrorInfo "Either Left failed.")
+construct' (PRight pat)     c        = catchError (construct' pat c) (\e -> throwError $ ErrorInfo "Either Right failed.")
+construct' (PChild pat)     c        = construct' pat c
+construct' (PElem path patt) (ch, ct) =
+  catchBind (construct' path ch)
+            (\ch' -> catchBind (construct' patt ct) (\ct' -> return (ch', ct')) (\e -> throwError $ ErrorInfo "Element pattern, tail fail.")
+              )
+            (\e -> throwError $ ErrorInfo "Element pattern, head fail")
+
 
 data UPat :: (* -> *) -> * -> * -> * where
   UVar   :: BiGUL m s v -> UPat m s v
@@ -56,14 +94,14 @@ data UPat :: (* -> *) -> * -> * -> * where
 data CaseSBranch m s v = Normal (BiGUL m s v) | Adaptive (s -> m s)
 
 data CaseVBranch m s v where
-  CaseVBranch :: Pat v v' -> BiGUL m s v' -> CaseVBranch m s v
+  CaseVBranch :: Pat v v' v'' -> BiGUL m s v' -> CaseVBranch m s v
 
 data BiGUL :: (* -> *) -> * -> * -> * where
   Fail    :: BiGUL m s v
   Skip    :: BiGUL m s ()
   Replace :: BiGUL m s s
   Update  :: UPat m s v -> BiGUL m s v
-  Rearr   :: Expr v v' -> BiGUL m s v' -> BiGUL m s v
+  Rearr   :: Pat v v' c -> Expr v' v'' -> BiGUL m s v'' -> BiGUL m s v
   Dep     :: (Eq v') => (v -> v') -> BiGUL m s v -> BiGUL m s (v, v')
   CaseS   :: [(s -> m Bool, CaseSBranch m s v)] -> BiGUL m s v
   CaseV   :: [CaseVBranch m s v] -> BiGUL m s v
@@ -74,33 +112,21 @@ data BiGUL :: (* -> *) -> * -> * -> * where
           -> (s -> m (Maybe s))
           -> BiGUL m [s] [v]
 
+-- You need explicitly specify the type arguments at the type level when using Path type.
+-- From type, you could know the type of the data you want.
 data Path :: * -> * -> * where
-  STip   :: Path a a
-  SChild :: InOut a => Path (F a) t -> Path a t
-  SProdL :: Path a t -> Path (a, b) t
-  SProdR :: Path b t -> Path (a, b) t
-  SLeft  :: Path a t -> Path (Either a b) t
-  SRight :: Path b t -> Path (Either a b) t
-  SElemH :: Path  a  t -> Path [a] t
-  SElemT :: Path [a] t -> Path [a] t
+  ST  :: Path a a
+  SL :: Path a t -> Path (a, b) t
+  SR :: Path b t -> Path (a, b) t
 
-retrieve :: MonadError' ErrorInfo m => Path a t -> a -> m t
-retrieve  STip      x         = return x
-retrieve (SChild p) x         = retrieve p (out x)
-retrieve (SProdL p) (x, y)    = retrieve p x
-retrieve (SProdR p) (x, y)    = retrieve p y
-retrieve (SLeft  p) (Left  x) = retrieve p x
-retrieve (SLeft  p) (Right y) = throwError $ ErrorInfo "left path for right value"
-retrieve (SRight p) (Left  x) = throwError $ ErrorInfo "right path for left value"
-retrieve (SRight p) (Right y) = retrieve p y
-retrieve (SElemH p) []        = throwError $ ErrorInfo "head path for empty list"
-retrieve (SElemH p) (x : xs)  = retrieve p x
-retrieve (SElemT p) []        = throwError $ ErrorInfo "tail path for empty list"
-retrieve (SElemT p) (x : xs)  = retrieve p xs
+retrieve :: Path a t -> a -> t
+retrieve  ST      x         = x
+retrieve (SL p) (x, y)    = retrieve p x
+retrieve (SR p) (x, y)    = retrieve p y
 
 data Expr :: * -> * -> * where
   EPath  :: Path orig a -> Expr orig a
-  EConst :: a -> Expr orig a
+  EConst :: (Eq a) =>  a -> Expr orig a
   EChild :: InOut a => Expr orig (F a) -> Expr orig a
   EProd  :: Expr orig a -> Expr orig b -> Expr orig (a, b)
   ELeft  :: Expr orig a -> Expr orig (Either a b)
@@ -115,8 +141,7 @@ bookstore :: MonadError' String m => BiGUL m [SBook] [VBook]
 bookstore =
   Align (\_ -> return True)
         (\(SBook stitle _ _ _) (VBook vtitle _) -> return $ stitle == vtitle)
-        --(Update (UChild ()))
-        (Rearr (EProd (EProd (EPath (SChild (SProdL (STip)))) (EConst ())) (EProd (EPath (SChild (SProdR (STip)))) (EConst ()))) (Update (UChild (UProd (UProd (UVar Replace) (UVar Skip)) (UProd (UVar Replace) (UVar Skip))))))
+        (Rearr (PChild PVar)(EProd (EProd (EPath (SL ST)) (EConst ())) (EProd (EPath (SR ST)) (EConst ()))) (Update (UChild (UProd (UProd (UVar Replace) (UVar Skip)) (UProd (UVar Replace) (UVar Skip))))))
         (\(VBook vtitle vprice) -> return $ SBook vtitle [] vprice 2012 )
         (\_ -> return Nothing)
 
