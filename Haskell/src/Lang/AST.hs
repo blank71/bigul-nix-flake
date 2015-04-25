@@ -32,15 +32,13 @@ data ErrorInfo = ErrorInfo String
 --data ErrorInfo where
 --  ErrorInfo :: (PrettyPrintable s, PrettyPrintable v) => Doc -> Doc -> s -> v -> [ErrorInfo] -> ErrorInfo
 
-newtype Var a = Var a
-
 data Pat :: * -> * -> *  where
   PVar   :: Pat a a
   PConst :: Eq a => a -> Pat a ()
   PProd  :: Pat a a' -> Pat b b' -> Pat (a, b) (a', b')
   PLeft  :: Pat a a' -> Pat (Either a b) a'
   PRight :: Pat b b'  -> Pat (Either a b) b'
-  PChild :: InOut a => Pat (F a) b -> Pat a b
+  POut :: InOut a => Pat (F a) b -> Pat a b
   PElem  :: Pat a b -> Pat [a] b' -> Pat [a] (b, b')
 
 deconstruct :: MonadError' ErrorInfo m => Pat a b -> a -> m b
@@ -51,7 +49,7 @@ deconstruct (PLeft  pat)      (Left  x) = deconstruct pat x
 deconstruct (PLeft  pat)      (Right y) = throwError $ ErrorInfo  "left pattern for right value"
 deconstruct (PRight pat)      (Left  x) = throwError $ ErrorInfo "right pattern for left value"
 deconstruct (PRight pat)      (Right y) = deconstruct pat y
-deconstruct (PChild pat)      x         = deconstruct pat (out x)
+deconstruct (POut pat)      x         = deconstruct pat (out x)
 deconstruct (PElem hpat tpat) []        = throwError $ ErrorInfo "head-tail pattern for empty list"
 deconstruct (PElem hpat tpat) (x : xs)  = liftM2 (,) (deconstruct hpat x) (deconstruct tpat xs)
 
@@ -61,7 +59,7 @@ construct (PConst y)        _      = y
 construct (PProd lpat rpat) (x, y) = (construct lpat x, construct rpat y)
 construct (PLeft  pat)      x      = Left  (construct pat x)
 construct (PRight pat)      y      = Right (construct pat y)
-construct (PChild pat)      x      = inn (construct pat x)
+construct (POut pat)      x      = inn (construct pat x)
 construct (PElem hpat tpat) (x, y) = construct hpat x : construct tpat y
 
 
@@ -76,7 +74,7 @@ construct (PElem hpat tpat) (x, y) = construct hpat x : construct tpat y
 --             (\e -> throwError $ ErrorInfo "product left failed.")
 -- construct' (PLeft pat)      c        = catchError (construct' pat c) (\e -> throwError $ ErrorInfo "Either Left failed.")
 -- construct' (PRight pat)     c        = catchError (construct' pat c) (\e -> throwError $ ErrorInfo "Either Right failed.")
--- construct' (PChild pat)     c        = construct' pat c
+-- construct' (POut pat)     c        = construct' pat c
 -- construct' (PElem path patt) (ch, ct) =
 --   catchBind (construct' path ch)
 --             (\ch' -> catchBind (construct' patt ct) (\ct' -> return (ch', ct')) (\e -> throwError $ ErrorInfo "Element pattern, tail fail.")
@@ -90,7 +88,7 @@ data UPat :: (* -> *) -> * -> * -> * where
   UProd  :: UPat m s v -> UPat m s' v' -> UPat m (s, s') (v, v')
   ULeft  :: UPat m s v -> UPat m (Either s s') v
   URight :: UPat m s' v -> UPat m (Either s s') v
-  UChild :: InOut s => UPat m (F s) v -> UPat m s v
+  UOut :: InOut s => UPat m (F s) v -> UPat m s v
   UElem  :: UPat m s v -> UPat m [s] v' -> UPat m [s] (v, v')
 
 data CaseSBranch m s v = Normal (BiGUL m s v) | Adaptive (s -> m s)
@@ -103,7 +101,7 @@ data BiGUL :: (* -> *) -> * -> * -> * where
   Skip    :: BiGUL m s ()
   Replace :: BiGUL m s s
   Update  :: UPat m s v -> BiGUL m s v
-  -- Rearr   :: Pat v v' c -> Expr v' v'' -> BiGUL m s v'' -> BiGUL m s v
+  Rearr   :: RPat v env con -> Expr env v' -> BiGUL m s v' -> BiGUL m s v
   Dep     :: (Eq v') => (v -> v') -> BiGUL m s v -> BiGUL m s (v, v')
   CaseS   :: [(s -> m Bool, CaseSBranch m s v)] -> BiGUL m s v
   CaseV   :: [CaseVBranch m s v] -> BiGUL m s v
@@ -114,26 +112,56 @@ data BiGUL :: (* -> *) -> * -> * -> * where
           -> (s -> m (Maybe s))
           -> BiGUL m [s] [v]
 
--- You need explicitly specify the type arguments at the type level when using Path type.
--- From type, you could know the type of the data you want.
-data Path :: * -> * -> * where
-  ST  :: Path a a
-  SL :: Path a t -> Path (a, b) t
-  SR :: Path b t -> Path (a, b) t
+newtype Var a = Var a
 
-retrieve :: Path a t -> a -> t
-retrieve  ST      x         = x
-retrieve (SL p) (x, y)    = retrieve p x
-retrieve (SR p) (x, y)    = retrieve p y
+-- RPat (view type) (environment type) (container type)
+data RPat :: * -> * -> * -> * where
+  RVar   :: RPat a (Var a) (Maybe a)
+  RConst :: Eq a => a -> RPat a () ()
+  RProd  :: RPat a a' a'' -> RPat b b' b'' -> RPat (a, b) (a', b') (a'', b'')
+  RLeft  :: RPat a a' a'' -> RPat (Either a b) a' a''
+  RRight :: RPat b b' b'' -> RPat (Either a b) b' b''
+  ROut :: InOut a => RPat (F a) b c -> RPat a b c
+  RElem  :: RPat a b c -> RPat [a] b' c' -> RPat [a] (b, b') (c, c')
+
+{-
+
+deconstructR :: MonadError' ErrorInfo m => RPat v env con -> v -> m env
+constructR   :: MonadError' ErrorInfo m => RPat v env con -> con -> m v
+
+emptyContainer :: RPat v env con -> con
+
+-}
+
+-- You need explicitly specify the type arguments at the type level when using the Direction type.
+-- From type, you could know the type of the data you want.
+data Direction :: * -> * -> * where
+  DVar    :: Direction (Var a) a
+  DMaybe  :: Direction (Maybe a) (Maybe a)
+  DLeft   :: Direction a t -> Direction (a, b) t
+  DRright :: Direction b t -> Direction (a, b) t
+
+retrieve :: Direction a t -> a -> t
+retrieve  DVar      (Var x) = x
+retrieve  DMaybe    mx      = mx
+retrieve (DLeft  p) (x, y)  = retrieve p x
+retrieve (DRight p) (x, y)  = retrieve p y
 
 data Expr :: * -> * -> * where
-  EPath  :: Path orig a -> Expr orig a
+  EDir   :: Direction orig a -> Expr orig a
   EConst :: (Eq a) =>  a -> Expr orig a
-  EChild :: InOut a => Expr orig (F a) -> Expr orig a
+  EIn    :: InOut a => Expr orig (F a) -> Expr orig a
   EProd  :: Expr orig a -> Expr orig b -> Expr orig (a, b)
   ELeft  :: Expr orig a -> Expr orig (Either a b)
   ERight :: Expr orig b -> Expr orig (Either a b)
   EElem  :: Expr orig a -> Expr orig [a] -> Expr orig [a]
+
+{-
+
+eval   :: Expr env v' -> env -> v'
+uneval :: (MonadError' ErrorInfo m, Eq v') => RPat v env con -> Expr env v' -> con -> v' -> m con
+
+-}
 
 data SBook = SBook String [String] Double Int deriving (Show, Generic)
 data VBook = VBook String Double deriving (Show, Generic)
@@ -144,7 +172,7 @@ bookstore :: MonadError' String m => BiGUL m [SBook] [VBook]
 bookstore =
   Align (\_ -> return True)
         (\(SBook stitle _ _ _) (VBook vtitle _) -> return $ stitle == vtitle)
-        (Rearr (PChild PVar)(EProd (EProd (EPath (SL ST)) (EConst ())) (EProd (EPath (SR ST)) (EConst ()))) (Update (UChild (UProd (UProd (UVar Replace) (UVar Skip)) (UProd (UVar Replace) (UVar Skip))))))
+        (Rearr (POut PVar)(EProd (EProd (EPath (SL ST)) (EConst ())) (EProd (EPath (SR ST)) (EConst ()))) (Update (UOut (UProd (UProd (UVar Replace) (UVar Skip)) (UProd (UVar Replace) (UVar Skip))))))
         (\(VBook vtitle vprice) -> return $ SBook vtitle [] vprice 2012 )
         (\_ -> return Nothing)
 
@@ -152,8 +180,8 @@ bookstore :: MonadError' String m => BiGUL m [SBook] [VBook]
 bookstore =
   Align (const (return True))
         (\(SBook stitle _ _ _) (VBook vtitle _) -> return (stitle == vtitle))
-        (Rearr ((EPath (SChild (SProdL STip)) `EProd` EConst ()) `EProd` (EPath (SChild (SProdR STip)) `EProd` (EConst ())))
-               (Update (UChild ((UVar Replace `UProd` UVar Skip) `UProd` (UVar Replace `UProd` UVar Skip)))))
+        (Rearr ((EPath (SOut (SProdL STip)) `EProd` EConst ()) `EProd` (EPath (SOut (SProdR STip)) `EProd` (EConst ())))
+               (Update (UOut ((UVar Replace `UProd` UVar Skip) `UProd` (UVar Replace `UProd` UVar Skip)))))
         (\(VBook title price) -> return (SBook title [] price 0))
         (const (return Nothing))
 
