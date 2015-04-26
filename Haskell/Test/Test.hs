@@ -2,7 +2,7 @@ import Lang.AST
 import Lang.Interpreter
 
 s = [SBook "Real World Haskell is Not GOOD!" ["zantao"] 30.0 2015]
-v = [VBook "Real World Haskell is GOOD!"  20.0]
+v = [VBook "Real World Haskell is Not GOOD!" 10.0, VBook "Learn You Haskell is GOOD!"  20.0]
 
 
 
