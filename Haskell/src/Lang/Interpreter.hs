@@ -11,7 +11,7 @@ put Fail s v = throwError $ ErrorInfo "update fails"
 put Skip s v = return s
 put Replace s v = return v
 put (Update upat) s v = putUPat upat s v
---put (Rearr pat expr bigul) s v = deconstruct pat v >>= putExpr expr  >>= put bigul s
+put (Rearr rpat expr bigul) s v = deconstructR rpat v >>= \env ->  put bigul s (eval expr env)
 put (Dep f bigul) s (v, v') = if f v == v' then put bigul s v else throwError $ ErrorInfo "view dependency not match"
 put (CaseS branchList) s v = putCaseS branchList s v
 put (CaseV branchList) s v = putCaseV branchList s v
@@ -29,7 +29,7 @@ putUPat (ULeft upat) (Left s) v = putUPat upat s v >>= \s' -> return $ Left s'
 putUPat (ULeft _   ) _ _ = throwError $ ErrorInfo "Either Left not match"
 putUPat (URight upat) (Right s) v = putUPat upat s v >>= \s' -> return $ Right s'
 putUPat (URight _) _ _ = throwError $ ErrorInfo "Either Right not match"
-putUPat (UChild upat) s v = putUPat upat (out s) v >>= \s' -> return $ inn s'
+putUPat (UOut upat) s v = putUPat upat (out s) v >>= \s' -> return $ inn s'
 putUPat (UElem upath upatt) (s:[]) (v, vs)  = do -- TODO: how about vs ?
   s' <- putUPat upath s v
   return $ (s':[])
@@ -37,23 +37,6 @@ putUPat (UElem upath upatt) (s:xs) (v, vs) = do
   s' <- putUPat upath s v
   xs' <- putUPat upatt xs vs
   return (s':xs')
-
-
--- Here v is more like an environment, a product.
-putExpr :: MonadError' ErrorInfo m => Expr v v' -> v -> m v'
-putExpr (EPath epath) v = return $ retrieve epath v
-putExpr (EConst c)    v = return c
-putExpr (EChild expr) v = putExpr expr v >>= \v' -> return $ inn v'
-putExpr (EProd exprl exprr) v = do
-  vl' <- putExpr exprl v
-  vr' <- putExpr exprr v
-  return (vl', vr')
-putExpr (ELeft exprl) v = putExpr exprl v >>= \v' -> return $ Left v'
-putExpr (ERight exprr) v = putExpr exprr v >>= \v' -> return $ Right v'
-putExpr (EElem exprh exprt) v = do
-  vh <- putExpr exprh v
-  vt <- putExpr exprt v
-  return $ (vh: vt)
 
 
 putCaseS :: MonadError' ErrorInfo m => [(s -> m Bool, CaseSBranch m s v)] -> s -> v -> m s
@@ -168,7 +151,7 @@ get Fail s = throwError $ ErrorInfo "get failed"
 get Skip s = return $ ()
 get Replace s = return s
 get (Update upat) s = getUPat upat s
---get (Rearr pat expr bigul) s = liftM (construct pat) (get bigul s >>= getExpr pat expr)
+get (Rearr rpat expr bigul) s = get bigul s >>= uneval rpat expr (emptyContainer rpat) >>=  constructR rpat
 get (Dep f bigul) s = get bigul s >>= \v -> return $ (v, f v)
 get (CaseS sbranches) s = getCaseS sbranches s
 get (CaseV vbranches) s = getCaseV vbranches s
@@ -182,37 +165,9 @@ getUPat (UConst c  ) s = return ()
 getUPat (UProd upatl upatr) (s, s') = liftM2 (,) (getUPat upatl s) (getUPat upatr s')
 getUPat (ULeft  upat) (Left s)  = getUPat upat s
 getUPat (URight upat) (Right s) = getUPat upat s
-getUPat (UChild  upat) s        = getUPat upat (out s)
+getUPat (UOut  upat) s        = getUPat upat (out s)
 getUPat (UElem upath upatt) []  = throwError $ ErrorInfo "UElem cannot accept empty source list"
 getUPat (UElem upath upatt) (x: xs) = liftM2 (,) (getUPat upath x) (getUPat upatt xs)
-
---getExpr :: MonadError' ErrorInfo m => Pat v v' c -> Expr v' v'' -> v'' -> m v'
---getExpr pat expr v'' = undefined
---getExpr (EPath path)         v' = putbackPath path v' -- TODO:
---getExpr (EConst c )          v' = if v' == c then
-
--- v' is decided at the construction time when using constructor SubTree.
-data SubTree v  where
-  SubTree :: v' -> Path v v' -> SubTree v
-
-getExprEnv :: MonadError' ErrorInfo m => Expr v v' -> v' -> m [SubTree v]
-getExprEnv (EPath path)         v'          = return $ [ (SubTree v' path)]
-getExprEnv (EConst c  )         v'          = if v' == c then return [] else (throwError $ ErrorInfo "v is not a constant")
-getExprEnv (EChild expr)        v'          = getExprEnv expr (out v')
-getExprEnv (EProd  exprl exprr) (vl', vr')  =
-  catchBind (getExprEnv exprl vl')
-            (\vls -> catchBind (getExprEnv exprr vr') (\vrs -> return (vls ++ vrs)) (\e -> throwError $ ErrorInfo "product right fail"))
-            (\e -> throwError $ ErrorInfo "product left fail")
-getExprEnv (ELeft expr)         (Left v')   = getExprEnv expr v'
-getExprEnv (ELeft expr)         _           = throwError $ ErrorInfo "v' not match Either Left"
-getExprEnv (ERight expr)        (Right v')  = getExprEnv expr v'
-getExprEnv (ERight expr)        _           = throwError $ ErrorInfo "v' not match Either Right"
-getExprEnv (EElem exprh exprt)  []          = throwError $ ErrorInfo "v' Elem cannot be empty"
-getExprEnv (EElem exprh exprt)  (vh' : vt's)  =
-  catchBind (getExprEnv exprh vh')
-            (\vhs -> catchBind (getExprEnv exprt vt's) (\vts -> return (vhs ++ vts)) (\e -> throwError $ ErrorInfo "Expr Elem tail failed."))
-            (\e -> throwError $ ErrorInfo "Expr Elem head failed" )
-
 
 getCaseS :: MonadError' ErrorInfo m => [(s -> m Bool, CaseSBranch m s v)] -> s -> m v
 getCaseS []  s = throwError $ ErrorInfo "Get: caseS branch is empty"
@@ -240,4 +195,9 @@ getAlign :: MonadError' ErrorInfo m =>
           -> (s -> m (Maybe s))
           -> [s]
           -> m [v]
-getAlign = undefined
+getAlign sourceCond matchCond bigul create conceal ss =
+  filterSourceList sourceCond ss >>= \(filteredSource, residualSource) ->
+    mapM (get bigul) filteredSource
+
+getAndCheck :: MonadError' ErrorInfo m => s -> BiGUL m s v -> (s -> v -> m Bool) -> m v
+getAndCheck s bigul matchCond = get bigul s >>= \v -> matchCond s v >>= \b -> if b then return v else throwError $ ErrorInfo "get: matchCond not satisfied."
