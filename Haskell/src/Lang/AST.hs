@@ -1,4 +1,4 @@
-{-# LANGUAGE GADTs, KindSignatures, MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, DeriveGeneric #-}
+{-# LANGUAGE GADTs, KindSignatures, MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, DeriveGeneric, TupleSections #-}
 module Lang.AST where
 
 import Control.Monad.Except
@@ -23,7 +23,8 @@ class PrettyPrintable s where
 -- break point (expression), source, view, inner error info.
 data ErrorInfo = ErrorInfo String
   deriving (Show)
--- | storing error information
+
+-- | Storing error information
 -- simplified error information
 -- break point (expression)
 -- current source
@@ -31,7 +32,7 @@ data ErrorInfo = ErrorInfo String
 -- inner structured error informations
 --data ErrorInfo where
 --  ErrorInfo :: (PrettyPrintable s, PrettyPrintable v) => Doc -> Doc -> s -> v -> [ErrorInfo] -> ErrorInfo
-
+--
 data Pat :: * -> * -> *  where
   PVar   :: Pat a a
   PConst :: Eq a => a -> Pat a ()
@@ -116,7 +117,7 @@ newtype Var a = Var a
 
 -- RPat (view type) (environment type) (container type)
 data RPat :: * -> * -> * -> * where
-  RVar   :: RPat a (Var a) (Maybe a)
+  RVar   :: Eq a => RPat a (Var a) (Maybe a)
   RConst :: Eq a => a -> RPat a () ()
   RProd  :: RPat a a' a'' -> RPat b b' b'' -> RPat (a, b) (a', b') (a'', b'')
   RLeft  :: RPat a a' a'' -> RPat (Either a b) a' a''
@@ -127,10 +128,12 @@ data RPat :: * -> * -> * -> * where
 
 deconstructR :: MonadError' ErrorInfo m => RPat v env con -> v -> m env
 deconstructR RVar                v          = return $ Var v
-deconstructR (RConst c)          v          = if v == v then return () else throwError $ ErrorInfo "view must be a constant"
+deconstructR (RConst c)          v          = if c == v then return () else throwError $ ErrorInfo "view must be a constant"
 deconstructR (RProd rpatl rpatr) (vl, vr)   = liftM2 (,) (deconstructR rpatl vl) (deconstructR rpatr vr)
 deconstructR (RLeft rpatl)       (Left vl)  = deconstructR rpatl vl
+deconstructR (RLeft rpatl)       _          = throwError $ ErrorInfo "RLeft pattern error"
 deconstructR (RRight rpatr)      (Right vr) = deconstructR rpatr vr
+deconstructR (RRight rpatr)      _          = throwError $ ErrorInfo "RRight pattern error"
 deconstructR (ROut rpat)         v          = deconstructR rpat (out v)
 deconstructR (RElem rpath rpatt) []         = throwError $ ErrorInfo "view element cannot be empty"
 deconstructR (RElem rpath rpatt) (v: vs)    = liftM2 (,) (deconstructR rpath v) (deconstructR rpatt vs)
@@ -138,14 +141,14 @@ deconstructR (RElem rpath rpatt) (v: vs)    = liftM2 (,) (deconstructR rpath v) 
 
 
 constructR   :: MonadError' ErrorInfo m => RPat v env con -> con -> m v
-constructR RVar                  Nothing  = throwError $ ErrorInfo "RVar canot be empty"
-constructR RVar                  (Just v)     = return v
-constructR (RConst c)            ()           = return c
-constructR (RProd rpatl rpatr)   (conl, conr) = liftM2 (,) (constructR rpatl conl) (constructR rpatr conr)
-constructR (RLeft rpat)          con          = constructR rpat con >>= \v -> return (Left v)
-constructR (RRight rpat)         con          = constructR rpat con >>= \v -> return (Right v)
-constructR (ROut rpat)           con          = constructR rpat con >>= \v -> return (inn v)
-constructR (RElem rpath rpatt)   (conh, cont) = liftM2 (:) (constructR rpath conh) (constructR rpatt cont)
+constructR RVar                Nothing      = throwError $ ErrorInfo "RVar canot be empty"
+constructR RVar                (Just v)     = return v
+constructR (RConst c)          con          = return c
+constructR (RProd rpatl rpatr) (conl, conr) = liftM2 (,) (constructR rpatl conl) (constructR rpatr conr)
+constructR (RLeft rpat)        con          = liftM Left (constructR rpat con)
+constructR (RRight rpat)       con          = liftM Right (constructR rpat con)
+constructR (ROut rpat)         con          = liftM inn (constructR rpat con)
+constructR (RElem rpath rpatt) (conh, cont) = liftM2 (:) (constructR rpath conh) (constructR rpatt cont)
 
 emptyContainer :: RPat v env con -> con
 emptyContainer RVar                           = Nothing
@@ -161,13 +164,11 @@ emptyContainer (RElem rpath rpatt)            = (emptyContainer rpath, emptyCont
 -- !comment: DMaybe did not used.
 data Direction :: * -> * -> * where
   DVar    :: Direction (Var a) a
-  DMaybe  :: Direction (Maybe a) (Maybe a)
   DLeft   :: Direction a t -> Direction (a, b) t
   DRright :: Direction b t -> Direction (a, b) t
 
 retrieve :: Direction a t -> a -> t
 retrieve  DVar      (Var x) = x
-retrieve  DMaybe    mx      = mx
 retrieve (DLeft  p) (x, y)  = retrieve p x
 retrieve (DRright p) (x, y)  = retrieve p y
 
@@ -181,39 +182,40 @@ data Expr :: * -> * -> * where
   EElem  :: Expr orig a -> Expr orig [a] -> Expr orig [a]
 
 eval :: Expr env v' -> env -> v'
-eval (EDir dir)               env = retrieve dir env
-eval (EConst c)               env = c
-eval (EIn expr)               env = inn (eval expr env)
-eval (EProd exprl exprr)      env = (eval exprl env, eval exprr env)
-eval (ELeft expr       )      env = Left $ eval expr env
-eval (ERight expr      )      env = Right $ eval expr env
-eval (EElem exprh exprt)      env = eval exprh env : eval exprt env
+eval (EDir dir)          env = retrieve dir env
+eval (EConst c)          env = c
+eval (EIn expr)          env = inn (eval expr env)
+eval (EProd exprl exprr) env = (eval exprl env, eval exprr env)
+eval (ELeft expr       ) env = Left $ eval expr env
+eval (ERight expr      ) env = Right $ eval expr env
+eval (EElem exprh exprt) env = eval exprh env : eval exprt env
 
 -- The goal is to update the "Maybe" con to fill in proper values.
 -- con follow the structure of RPat
 -- we have updated value v', which follows the structure of Expr
-uneval :: (MonadError' ErrorInfo m ) => RPat v env con -> Expr env v' -> con -> v' -> m con
-uneval rpat (EDir dir)              con v'         = updateRPat rpat dir con v'
-uneval rpat (EConst c)              con v'         = return con
-uneval rpat (EIn expr)              con v' = uneval rpat expr con (out v')
-uneval rpat (EProd exprl exprr)     con (vl', vr') = uneval rpat exprl con vl' >>= \con' -> uneval rpat exprr con' vr'
-uneval rpat (ELeft expr)            con (Left vl') = uneval rpat expr con vl'
-uneval rpat (ELeft expr)            con _          = throwError $ ErrorInfo "view shall be Either Left."
-uneval rpat (ERight expr)           con (Right vr')= uneval rpat expr con vr'
-uneval rpat (ERight expr)           con _          = throwError $ ErrorInfo "view shall be Either Right."
-uneval rpat (EElem exprh exprt)     con []         = throwError $ ErrorInfo "view list length is not correct."
-uneval rpat (EElem exprh exprt)     con (vh' : vs')= uneval rpat exprh con vh' >>= \con' -> uneval rpat exprt con' vs'
+uneval :: (MonadError' ErrorInfo m ) => RPat v env con -> Expr env v' -> v' -> con -> m con
+uneval rpat (EDir dir)          v'          con = updateRPat rpat dir v' con
+uneval rpat (EConst c)          v'          con = if c == v' then return con else throwError $ ErrorInfo "const not matched."
+uneval rpat (EIn expr)          v'          con = uneval rpat expr (out v') con
+uneval rpat (EProd exprl exprr) (vl', vr')  con = uneval rpat exprl vl' con >>= uneval rpat exprr vr'
+uneval rpat (ELeft expr)        (Left vl')  con = uneval rpat expr vl' con
+uneval rpat (ELeft expr)        _           con = throwError $ ErrorInfo "view shall be Either Left."
+uneval rpat (ERight expr)       (Right vr') con = uneval rpat expr vr' con
+uneval rpat (ERight expr)       _           con = throwError $ ErrorInfo "view shall be Either Right."
+uneval rpat (EElem exprh exprt) []          con = throwError $ ErrorInfo "view list length is not correct."
+uneval rpat (EElem exprh exprt) (vh' : vs') con = uneval rpat exprh vh' con >>= uneval rpat exprt vs'
 
-updateRPat :: (MonadError' ErrorInfo m) => RPat v env con -> Direction env v' -> con -> v' -> m con
-updateRPat RVar                    DVar           con  v'                  = return $ Just v'
-updateRPat (RConst c)              _              _    _                   = throwError $ ErrorInfo "update directed to constant is illegal" -- TODO
-updateRPat (RProd rpatl rpatr)     (DLeft dir)    (conl, conr)  v'         = liftM (flip (,) conr) (updateRPat rpatl dir conl v')
-updateRPat (RProd rpatl rpatr)     (DRright dir)  (conl, conr)  v'         = liftM ((,) conl) (updateRPat rpatr dir conr v')
-updateRPat (RLeft rpatl      )     dir            con           v'         = updateRPat rpatl dir con v'
-updateRPat (RRight rpatr     )     dir            con           v'         = updateRPat rpatr dir con v'
-updateRPat (ROut  rpat       )     dir            con           v'         = updateRPat rpat  dir con v'
-updateRPat (RElem rpath rpatt)     (DLeft dir)    (conl, conr)  v'         = liftM (flip (,) conr) (updateRPat rpath dir conl v')
-updateRPat (RElem rpath rpatt)     (DRright dir)  (conl, conr)  v'         = liftM ((,) conl) (updateRPat rpatt dir conr v')
+updateRPat :: (MonadError' ErrorInfo m) => RPat v env con -> Direction env v' -> v' -> con -> m con
+updateRPat RVar                DVar          v' (Just v'')   = if v' == v'' then return (Just v') else throwError $ ErrorInfo "multiple updating un equal"
+updateRPat RVar                DVar          v' Nothing      = return $ Just v'
+updateRPat (RConst c)          _             v' con          = return con
+updateRPat (RProd rpatl rpatr) (DLeft dir)   v' (conl, conr) = liftM (, conr) (updateRPat rpatl dir v' conl)
+updateRPat (RProd rpatl rpatr) (DRright dir) v' (conl, conr) = liftM (conl ,) (updateRPat rpatr dir v' conr)
+updateRPat (RLeft rpatl      ) dir           v' con          = updateRPat rpatl dir v' con
+updateRPat (RRight rpatr     ) dir           v' con          = updateRPat rpatr dir v' con
+updateRPat (ROut  rpat       ) dir           v' con          = updateRPat rpat  dir v' con
+updateRPat (RElem rpath rpatt) (DLeft dir)   v' (conl, conr) = liftM (, conr) (updateRPat rpath dir v' conl)
+updateRPat (RElem rpath rpatt) (DRright dir) v' (conl, conr) = liftM (conl ,) (updateRPat rpatt dir v' conr)
 
 
 
