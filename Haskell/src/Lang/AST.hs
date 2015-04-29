@@ -165,12 +165,12 @@ emptyContainer (RElem rpath rpatt)            = (emptyContainer rpath, emptyCont
 data Direction :: * -> * -> * where
   DVar    :: Direction (Var a) a
   DLeft   :: Direction a t -> Direction (a, b) t
-  DRright :: Direction b t -> Direction (a, b) t
+  DRight :: Direction b t -> Direction (a, b) t
 
 retrieve :: Direction a t -> a -> t
 retrieve  DVar      (Var x) = x
 retrieve (DLeft  p) (x, y)  = retrieve p x
-retrieve (DRright p) (x, y)  = retrieve p y
+retrieve (DRight p) (x, y)  = retrieve p y
 
 data Expr :: * -> * -> * where
   EDir   :: Direction orig a -> Expr orig a
@@ -210,28 +210,16 @@ updateRPat RVar                DVar          v' (Just v'')   = if v' == v'' then
 updateRPat RVar                DVar          v' Nothing      = return $ Just v'
 updateRPat (RConst c)          _             v' con          = return con
 updateRPat (RProd rpatl rpatr) (DLeft dir)   v' (conl, conr) = liftM (, conr) (updateRPat rpatl dir v' conl)
-updateRPat (RProd rpatl rpatr) (DRright dir) v' (conl, conr) = liftM (conl ,) (updateRPat rpatr dir v' conr)
+updateRPat (RProd rpatl rpatr) (DRight dir)  v' (conl, conr) = liftM (conl ,) (updateRPat rpatr dir v' conr)
 updateRPat (RLeft rpatl      ) dir           v' con          = updateRPat rpatl dir v' con
 updateRPat (RRight rpatr     ) dir           v' con          = updateRPat rpatr dir v' con
 updateRPat (ROut  rpat       ) dir           v' con          = updateRPat rpat  dir v' con
 updateRPat (RElem rpath rpatt) (DLeft dir)   v' (conl, conr) = liftM (, conr) (updateRPat rpath dir v' conl)
-updateRPat (RElem rpath rpatt) (DRright dir) v' (conl, conr) = liftM (conl ,) (updateRPat rpatt dir v' conr)
+updateRPat (RElem rpath rpatt) (DRight dir)  v' (conl, conr) = liftM (conl ,) (updateRPat rpatt dir v' conr)
 
 
 
 
-data SBook = SBook String [String] Double Int deriving (Show, Generic)
-data VBook = VBook String Double deriving (Show, Generic)
-
-bookstore :: MonadError' ErrorInfo m => BiGUL m [SBook] [VBook]
-bookstore =
-  Align (\_ -> return True)
-        (\(SBook stitle _ _ _) (VBook vtitle _) -> return $ stitle == vtitle)
-        (Rearr (ROut (RProd RVar RVar))  --(ROut RVar)
-               (EProd (EProd (EDir (DLeft DVar)) (EConst ())) (EProd (EDir (DRright DVar)) (EConst ())))
-               (Update (UOut (UProd (UProd (UVar Replace) (UVar Skip)) (UProd (UVar Replace) (UVar Skip))))))
-        (\(VBook vtitle vprice) -> return $ SBook vtitle [] vprice 2012 )
-        (\_ -> return Nothing)
 {-
 
 

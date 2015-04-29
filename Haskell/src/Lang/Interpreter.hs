@@ -55,7 +55,7 @@ putCaseV (x@(CaseVBranch patv2v' bigul) :xs) s v =
   catchBind (deconstruct patv2v' v)
             (put bigul s)
             (\_ -> putCaseV xs s v >>= \s' -> catchBind (get bigul s') (\_ -> throwError $ ErrorInfo "get of previous caseV satisfied") (\_ -> return s'))
-
+-- catchBind (get bigul s') (\v' -> if v == v' then return s' else throwError $ ErrorInfo ""  ) (\_ -> return s')
 
 
 
