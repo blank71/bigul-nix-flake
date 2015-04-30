@@ -18,26 +18,6 @@ import Data.Map (Map(..))
 type List1 a = (a,[a])
 type Mb a = Either () a
 
-data Str = Str { unStr :: String }
-    deriving (Eq, Show)
-
-
-
-instance Generic Str where
-  type Rep Str = K1 R Str
-  from x = K1 x
-  to (K1 x) = x
-
---data BEither a b = BLeft a
---                 | BRight b
---    deriving (Show, Eq)
---
---instance Generic BEither where
---  type Rep BEither = K1 R a :+: K1 R b
---  from (BLeft a) = L1 (K1 a)
---  from (BRight b) = R1 (K1 b)
---  to (L1 (K1 a)) = BLeft a
---  to (R1 (K1 b)) = BRight b
 
 mb2maybe :: Mb a -> Maybe a
 mb2maybe (Right a) = Just a

@@ -9,7 +9,8 @@ import Data.List
 import Text.PrettyPrint
 import System.IO
 import Text.XML.HaXml.XmlContent
---import Text.XML.HaXml.XmlContent.Haskell (fReadXml, fWriteXml
+import BiFlux.DTD.Type
+
 
 run :: String -> Maybe a -> IO a
 run err = maybe (error err) return
@@ -36,6 +37,7 @@ genHaskellDTD dtdFileName hsFileName = do
     "import Text.XML.HaXml.XmlContent hiding (List1)\n"++
     "import Text.XML.HaXml.Types\n"++
     "import BiFlux.DTD.TypeDef\n"++
+    "import BiFlux.DTD.Type\n" ++
     "import Text.XML.HaXml.DtdToHaskell.TypeDef (Name(..))\n"++
     "import Control.Monad\n"++
     "import GHC.Generics \n\n"++

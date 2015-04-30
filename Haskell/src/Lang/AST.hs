@@ -5,34 +5,9 @@ import Control.Monad.Except
 import GHC.Generics
 import GHC.InOut
 import Text.PrettyPrint
-
-class MonadError e m => MonadError' e m where
-  catchBind :: m a -> (a -> m b) -> (e -> m b) -> m b
-
-instance MonadError' e (Either e) where
-  -- catchBind :: Either e a -> (a -> Either e b) -> (e -> Either e b) -> Either e b
-  catchBind ma f g = either g f ma
+import Lang.MonadBiGULError
 
 
-class PrettyPrintable s where
-  pPrint :: s -> Doc
-
---instance PrettyPrintable s where
-
-
--- break point (expression), source, view, inner error info.
-data ErrorInfo = ErrorInfo String
-  deriving (Show)
-
--- | Storing error information
--- simplified error information
--- break point (expression)
--- current source
--- current view
--- inner structured error informations
---data ErrorInfo where
---  ErrorInfo :: (PrettyPrintable s, PrettyPrintable v) => Doc -> Doc -> s -> v -> [ErrorInfo] -> ErrorInfo
---
 data Pat :: * -> * -> *  where
   PVar   :: Pat a a
   PConst :: Eq a => a -> Pat a ()
@@ -63,24 +38,6 @@ construct (PRight pat)      y      = Right (construct pat y)
 construct (POut pat)      x      = inn (construct pat x)
 construct (PElem hpat tpat) (x, y) = construct hpat x : construct tpat y
 
-
--- construct' :: MonadError' ErrorInfo m =>  Pat a b c -> c -> m b
--- construct' PVar              (Just x) = return x
--- construct' PVar              Nothing  = throwError $ ErrorInfo "Nothing"
--- construct' (PConst c)        ()       = return ()
--- construct' (PProd lpat rpat) (l, r)   =
---   catchBind (construct' lpat l)
---             (\l' -> catchBind (construct' rpat r) (\r' -> return (l', r')) (\e -> throwError $ ErrorInfo "product right failed.")
---               )
---             (\e -> throwError $ ErrorInfo "product left failed.")
--- construct' (PLeft pat)      c        = catchError (construct' pat c) (\e -> throwError $ ErrorInfo "Either Left failed.")
--- construct' (PRight pat)     c        = catchError (construct' pat c) (\e -> throwError $ ErrorInfo "Either Right failed.")
--- construct' (POut pat)     c        = construct' pat c
--- construct' (PElem path patt) (ch, ct) =
---   catchBind (construct' path ch)
---             (\ch' -> catchBind (construct' patt ct) (\ct' -> return (ch', ct')) (\e -> throwError $ ErrorInfo "Element pattern, tail fail.")
---               )
---             (\e -> throwError $ ErrorInfo "Element pattern, head fail")
 
 
 data UPat :: (* -> *) -> * -> * -> * where

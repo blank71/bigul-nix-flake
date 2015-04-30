@@ -1,5 +1,6 @@
 {-# LANGUAGE TypeOperators, TypeFamilies, FlexibleContexts  #-}
 
+import Lang.MonadBiGULError
 import Lang.AST
 import Lang.Interpreter
 import Control.Monad

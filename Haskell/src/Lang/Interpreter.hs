@@ -2,6 +2,7 @@
 module Lang.Interpreter where
 
 import Lang.AST
+import Lang.MonadBiGULError
 import Control.Monad
 import Control.Monad.Except
 import GHC.InOut
