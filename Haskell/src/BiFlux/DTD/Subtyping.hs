@@ -23,12 +23,11 @@ type Rule = (Eq a, Eq b) => Type a -> Type b -> Response a b
 rules :: [Rule]
 rules = [either_left, either_right, either_elim, pair_cong, list, singleton_list, empty_string]
   where
-   -- TODO
-   -- reflexivity :: Rule
-   -- --reflexivity ta tb = if ta == tb then Success (id, Just) else Fail
-   -- reflexivity ta tb = case teq ta tb of
-   --                          Just Eq -> Success (id, Just)
-   --                          Nothing       -> Fail
+    reflexivity :: Rule
+    --reflexivity ta tb = if ta == tb then Success (id, Just) else Fail
+    reflexivity ta tb = case teq ta tb of
+                             Just Eq -> Success (id, Just)
+                             Nothing       -> Fail
 
     either_left :: Rule
     either_left ta (Either tb0 tb1) = OnePremise ta tb0 (\(u, d) -> (Left . u, either d (const Nothing)))

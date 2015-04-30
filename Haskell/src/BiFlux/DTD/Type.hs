@@ -9,6 +9,9 @@ import Control.Monad
 import BiFlux.DTD.TypeDef hiding (mkAtt)
 import Data.List (intersperse)
 import Text.PrettyPrint as PP (Doc, parens, brackets, comma, colon, text, punctuate, empty, (<>), (<+>), ($+$))
+import Unsafe.Coerce
+
+
 -- A wrap string type.
 data Str = Str { unStr :: String }
 
@@ -56,7 +59,7 @@ instance Eq (Type a) where
          Nothing -> False
 
 data Equal a b where
-  Eq :: Equal a b
+  Eq :: Equal a a
 
 teq :: MonadPlus m => Type a -> Type b -> m (Equal a b)
 teq Int              Int                = return Eq
@@ -73,13 +76,13 @@ teq (Prod a b)       (Prod c d)         = do
   Eq <- teq b d
   return Eq
 teq (List a)        (List b)            = do
-  teq a b
+  Eq <- teq a b
   return Eq
 teq (Data n a)      (Data m b)          = do
   guard (hName n == hName m)
-  teq a b
-  return Eq
-teq a b = mzero
+  --teq a b
+  --return Eq
+  return (unsafeCoerce Eq)
 
 
 
@@ -120,3 +123,4 @@ gshow (Data   (Name _ n) a) x          = n ++ "[" ++ gshow a (out x) ++ "]"
 
 --gpPrint :: Type a -> a -> Doc
 --gpPrint = undefined
+-- A wrap string type.
