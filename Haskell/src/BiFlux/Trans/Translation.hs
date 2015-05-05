@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts, GADTs, TypeFamilies, ViewPatterns #-}
+{-# LANGUAGE FlexibleContexts, GADTs, TypeFamilies, ViewPatterns, RankNTypes #-}
 module BiFlux.Trans.Translation where
 
 import Lang.AST
@@ -39,10 +39,10 @@ update2bigul (SingleReplace maybePat cpath xqexpr ) whereConds ts tv typeEnv = u
 -- exist a s', and a UPat m' s' v, we could compute UPat m' s v.
 -- not all s' is accetable.
 data CUPat m m' s v where
-  CUPat :: Type s' -> (Type v' -> UPat m' s' v' -> Expr v v' -> m (UPatExprTuple m' s v)) -> CUPat m m' s v
+  CUPat :: Type s' -> (Eq v' => Type v' -> UPat m' s' v' -> Expr v v' -> m (UPatExprTuple m' s v)) -> CUPat m m' s v
 
 data UPatExprTuple  m' s v where
-  UPatExprTuple :: Type v'' -> UPat m' s v'' -> Expr v v'' -> UPatExprTuple m' s v
+  UPatExprTuple :: Eq v'' => Type v'' -> UPat m' s v'' -> Expr v v'' -> UPatExprTuple m' s v
 
 
 cpath2UPat :: (MonadError Doc m, MonadError' ErrorInfo m') => CPath -> Type s -> Type v -> m (CUPat m m' s v)
