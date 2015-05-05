@@ -7,10 +7,10 @@ import GHC.Generics
 import GHC.InOut
 import Control.Monad
 import BiFlux.DTD.TypeDef hiding (mkAtt)
-import Data.List (intersperse)
+import Data.List (intersperse, isPrefixOf)
 import Text.PrettyPrint as PP (Doc, parens, brackets, comma, colon, text, punctuate, empty, (<>), (<+>), ($+$))
 import Unsafe.Coerce
-
+import qualified Data.Map as Map
 
 -- A wrap string type.
 data Str = Str { unStr :: String }
@@ -29,6 +29,21 @@ instance Eq Str where
 instance Ord Str where
   compare (Str x) (Str y) = compare x y
 
+data DynType where
+    DynT :: Eq a => Type a -> DynType
+
+instance Show DynType where
+  show (DynT t) = "DynT " ++ show t
+
+instance Ord DynType where
+  a <= b = show a <= show b
+
+instance Eq DynType where
+  (DynT a) == (DynT b) = case teq a b of { Just Eq -> True; otherwise -> False }
+
+type TypeEnv = Map.Map String DynType
+
+
 data Type a where
   Int :: Type Int
   Float :: Type Float
@@ -39,6 +54,10 @@ data Type a where
   Prod :: (Eq a, Eq b) => Type a -> Type b -> Type (a, b)
   List :: Eq a => Type a -> Type [a]
   Data :: (Eq a, Eq (F a), InOut a) => Name -> Type (F a) -> Type a
+  List1 :: Eq a => Type a -> Type (a, [a])
+  Tag :: (Eq a) => String -> Type a -> Type a
+  Doc :: (Eq a) => Type a -> Type a
+  -- DTD --> Type translated DTD's List1 to this List1
 
 instance Show (Type a) where
   show Int          = "Int"
@@ -51,6 +70,9 @@ instance Show (Type a) where
   show (List   a  ) = "(List "    ++ show a ++ ")"
   --TODO: Data Name is ax XML attribute
   show (Data (Name x n) t) = "((Data (Name " ++ show x ++ " " ++ show n ++ ") " ++ "typeof) :: Type " ++ n ++ ")"
+  show (List1  a  ) = "(List1 " ++ show a ++ ")"
+  show (Tag    x t) = "(Tag " ++ show x ++ " " ++ show t ++ ")"
+  show (Doc    a  ) = "(Doc " ++ show a ++ ")"
 
 instance Eq (Type a) where
   x == y =
@@ -83,7 +105,15 @@ teq (Data n a)      (Data m b)          = do
   --teq a b
   --return Eq
   return (unsafeCoerce Eq)
-
+teq (List1 a)       (List1 b)           = do
+  Eq <- teq a b
+  return Eq
+teq (Tag m a)       (Tag n b)           = do
+  guard (m == n)
+  teq a b
+teq (Doc a)         (Doc b)             = do
+  Eq <- teq a b
+  return Eq
 
 
 
@@ -119,8 +149,32 @@ gshow (Either a b)          (Right r)  = "(Right " ++ gshow b r ++ ")"
 gshow (Prod   a b)          (l, r)     = "(" ++ gshow a l ++ ", " ++ gshow b r ++ ")"
 gshow (List   a  )          xs         = "[" ++ concat (intersperse (", ") (map (gshow a) xs)) ++ "]"
 gshow (Data   (Name _ n) a) x          = n ++ "[" ++ gshow a (out x) ++ "]"
+gshow (List1  a  )          (x, xs)    = "(" ++ gshow a x ++ ", " ++ gshow (List a) xs ++ ")"
+gshow (Tag    n a)          x          = gshow a x
+gshow (Doc    a  )          x          = gshow a x
 --gshow a                     _          = error $ "gshow not defined for " ++ show a
 
 --gpPrint :: Type a -> a -> Doc
 --gpPrint = undefined
 -- A wrap string type.
+
+
+
+
+
+isVar n = isPrefixOf "$" n
+mkVar n = 'n' : n
+isAtt n = isPrefixOf "@" n
+mkAtt n = '@' : n
+
+varName :: String -> String
+varName ('$': n) = n
+varName s        = error $ show s ++ " not a variable"
+
+attName :: String -> String
+attName ('@': n) = n
+attName s        = error $ show s ++ " not an attribute"
+
+isVarTag :: Type a -> Maybe (String, Type a)
+isVarTag (Tag n v) = if isVar n then Just (n, v) else Nothing
+isVarTag _         = Nothing

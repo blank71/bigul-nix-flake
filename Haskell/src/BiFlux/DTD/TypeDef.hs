@@ -38,6 +38,35 @@ possibleMbA from at = maybe2mb . XmlContent.possibleA from at
 mbToAttr :: (String->a->Maybe Attribute) -> String -> Mb a -> Maybe Attribute
 mbToAttr to n = XmlContent.maybeToAttr to n . mb2maybe
 
+
+mkTypeable :: String -> TypeDef -> Doc
+mkTypeable modname (DataDef _ n [] []) = text "instance" <+> text "Typeable" <+> ppHName modname n <+> text "where" $$
+        nest 2 (text "typeof" <+> text "=" <+> text "Data" <+> text (showName n) <+> text "One")
+mkTypeable modname (DataDef _ n atts []) = mkTypeableAtts True n atts modname
+mkTypeable modname (DataDef _ n atts _) = mkTypeable' modname n $$ mkTypeableAtts False n atts modname
+mkTypeable modname (EnumDef n _) = mkTypeable' modname n
+mkTypeable' modname n = text "instance" <+> text "Typeable" <+> ppHName modname n <+> text "where" $$
+        nest 2 (text "typeof" <+> text "=" <+> text "Data" <+> text (showName n) <+> text "typeof")
+
+mkTypeableAtts :: Bool -> Name -> AttrFields -> String -> Doc
+mkTypeableAtts s n [] modname = empty
+mkTypeableAtts s n atts modname = text "instance" <+> text "Typeable" <+> ppName n <+> text "where" $$
+        nest 2 (text "typeof" <+> text "=" <+> text "Data" <+> text (cName n) <+> mkAtts atts)
+    where ppName = if s then ppHName modname else ppAName modname
+          cName = if s then showName else showAttName
+
+-- use right-biased strategy.
+mkAtts :: AttrFields -> Doc
+mkAtts [a] = mkAtt a
+mkAtts (a: as) = text "Prod" <+> mkAtts [a] <+> text "(" <+> mkAtts as <+> text ")"
+
+mkAtt :: (Name, StructType) -> Doc
+mkAtt (n, Maybe s) = parens (text "Either One" <+> parens (text "Tag" <+> text (show ('@':xName n)) <+> text "typeof")) -- optional attributes
+mkAtt (n, s      ) = parens (text "Tag" <+> text (show ('@': xName n)) <+> text "typeof")
+
+showName (Name x h) = "(Text.XML.HaXml.DtdToHaskell.TypeDef.Name "++show x++" "++show h++")"
+showAttName (Name x h) = "(Text.XML.HaXml.DtdToHaskell.TypeDef.Name "++show "@"++" "++show (h++"_Attrs")++")"
+
 -- | Trim the Haskell File path
 trim :: [Char] -> [Char]
 trim name | '/' `elem` name  = (trim . tail . dropWhile (/='/')) name

@@ -5,6 +5,9 @@ import Lang.AST
 import Lang.Interpreter
 import Control.Monad
 import GHC.Generics
+import qualified Netscape
+import qualified Xbel
+
 
 data SBook = SBook String [String] Double Int deriving (Show)
 data VBook = VBook String Double deriving (Show)
@@ -42,3 +45,69 @@ putBook1 :: Either ErrorInfo String
 putBook1 =liftM (show) (put bookstore s v)
 
 getBook = catchBind (get bookstore s) (\v -> Right (show v)) (\e -> Left e)
+
+
+top :: MonadError' ErrorInfo m =>  BiGUL m Netscape.Html Xbel.Xbel
+top = Update (UOut (UVar (
+                  Rearr (ROut RVar) (EDir DVar) (
+                    Update (UVar (
+                            Rearr RVar (EDir DVar) (
+                                Align  --TODO: source, view is not a list.
+                                  (\_ -> return True)
+                                  (\_ _ -> return True)
+                                  (
+                                     (Update (UOut (UProd
+                                       (UVar Skip)
+                                       (UOut (UProd
+                                         (UVar (Rearr (ROut (RProd (ROut Var) RVar))
+                                                      (EDir (DLeft DVar))
+                                                      Replace))
+                                         (UOut (UVar (Rearr
+                                                       (ROut (RProd (ROut Var) RVar))
+                                                       (EDir (DRight DVar))
+                                                       (contents) -- not supported yet.
+                                        )))
+                                      ))
+                                     )))
+                                    )
+                                  (..)
+                                  (\_ -> return Nothing)
+                              )
+                           ))
+                   )
+                  )))
+
+
+contents :: MonadError' ErrorInfo m =>  BiGUL m [(Either Netscape.Dt Netscape.Dd)] [(Either Xbel.Bookmark Xbel.Foler)]
+contents = Update (UVar (
+                    Rearr RVar
+                          (EDir DVar)
+                          (Align
+                            (\_ -> return True)
+                            (\_ _ -> return True)
+                            (Rearr RVar (EDir DVar)
+                                  (CaseV [
+                                    CaseVBranch (POut (PProd (POut PVar) (POut PVar)))
+                                                (Rearr (ROut (RProd (ROut RVar) (ROut RVar)))
+                                                       (EIn (EIn (EProd (EIn (EDir (DLeft DVar))) (EDir (DRight DVar))))) --TODO: check attribute representation.
+                                                       (Update (UVar Replace))),
+                                    CaseVBranch (POut (PProd (POut PVar) PVar))
+                                                (--caseS
+                                                  Update (UVar
+                                                         ([
+                                                           (evalPatToBool(dd...), Normal (Update (UOut (UProd
+                                                                (UVar (Rearr (POut (PProd (POut PVar) (PVar))) (EDir (DLeft DVar)) Replace))
+                                                                (UVar (Rearr (POut (PProd (POut PVar) (PVar))) (EDir (DRight DVar)) contents )))))),
+                                                           (const (return True), Adaptive (\_ -> createS(expr)) ) -- ADAPT SOURCE s -> m s
+                                                          ]))
+                                                  )
+                                  ])
+                            )
+                            (..)
+                            (\_ -> return Nothing)
+                          )
+                  ))
+
+
+
+

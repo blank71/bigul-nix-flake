@@ -59,7 +59,7 @@ data BiGUL :: (* -> *) -> * -> * -> * where
   Skip    :: BiGUL m s ()
   Replace :: BiGUL m s s
   Update  :: UPat m s v -> BiGUL m s v
-  Rearr   :: RPat v env con -> Expr env v' -> BiGUL m s v' -> BiGUL m s v
+  Rearr   :: (Eq v') => RPat v env con -> Expr env v' -> BiGUL m s v' -> BiGUL m s v
   Dep     :: (Eq v') => (v -> v') -> BiGUL m s v -> BiGUL m s (v, v')
   CaseS   :: [(s -> m Bool, CaseSBranch m s v)] -> BiGUL m s v
   CaseV   :: [CaseVBranch m s v] -> BiGUL m s v
@@ -122,23 +122,24 @@ emptyContainer (RElem rpath rpatt)            = (emptyContainer rpath, emptyCont
 data Direction :: * -> * -> * where
   DVar    :: Direction (Var a) a
   DLeft   :: Direction a t -> Direction (a, b) t
-  DRight :: Direction b t -> Direction (a, b) t
+  DRight  :: Direction b t -> Direction (a, b) t
 
-retrieve :: Direction a t -> a -> t
+retrieve :: (Eq t) => Direction a t -> a -> t
 retrieve  DVar      (Var x) = x
 retrieve (DLeft  p) (x, y)  = retrieve p x
 retrieve (DRight p) (x, y)  = retrieve p y
 
 data Expr :: * -> * -> * where
-  EDir   :: Direction orig a -> Expr orig a
+  EDir   :: (Eq a) => Direction orig a -> Expr orig a
   EConst :: (Eq a) =>  a -> Expr orig a
-  EIn    :: InOut a => Expr orig (F a) -> Expr orig a
-  EProd  :: Expr orig a -> Expr orig b -> Expr orig (a, b)
-  ELeft  :: Expr orig a -> Expr orig (Either a b)
-  ERight :: Expr orig b -> Expr orig (Either a b)
-  EElem  :: Expr orig a -> Expr orig [a] -> Expr orig [a]
+  EIn    :: (InOut a, Eq (F a)) => Expr orig (F a) -> Expr orig a
+  EProd  :: (Eq a, Eq b) => Expr orig a -> Expr orig b -> Expr orig (a, b)
+  ELeft  :: (Eq a, Eq b) => Expr orig a -> Expr orig (Either a b)
+  ERight :: (Eq a, Eq b) => Expr orig b -> Expr orig (Either a b)
+  EElem  :: (Eq a) => Expr orig a -> Expr orig [a] -> Expr orig [a]
+  ECompare :: (Eq a) => Expr orig a -> a -> Expr orig (Either () a)
 
-eval :: Expr env v' -> env -> v'
+eval :: (Eq v') => Expr env v' -> env -> v'
 eval (EDir dir)          env = retrieve dir env
 eval (EConst c)          env = c
 eval (EIn expr)          env = inn (eval expr env)
@@ -146,6 +147,8 @@ eval (EProd exprl exprr) env = (eval exprl env, eval exprr env)
 eval (ELeft expr       ) env = Left $ eval expr env
 eval (ERight expr      ) env = Right $ eval expr env
 eval (EElem exprh exprt) env = eval exprh env : eval exprt env
+eval (ECompare expr v  ) env = let v' = eval expr env
+                                in if v == v' then Left () else Right v'
 
 -- The goal is to update the "Maybe" con to fill in proper values.
 -- con follow the structure of RPat

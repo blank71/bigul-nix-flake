@@ -50,6 +50,8 @@ genHaskellDTD dtdFileName hsFileName = do
   hPutStrLn out "\n"
   mapM (hPutStrLn out . render . mkInstance realName) dtdDecls
   hPutStrLn out "\n"
+  mapM (hPutStrLn out . render . mkTypeable realName) dtdDecls
+  hPutStrLn out "\n"
   mapM (hPutStrLn out . render . ppDataTypeGeneric realName) dtdDecls
   hClose out
 

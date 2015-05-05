@@ -14,8 +14,7 @@
 
 -- ------------------------------------------------------------
 
-module Text.XML.BiFluX.XPath.HXT.XPathKeywords
-where
+module BiFlux.XPath.HXT.XPathKeywords where
 
 -- ------------------------------------------------------------
 --

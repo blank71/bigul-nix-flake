@@ -15,7 +15,7 @@
 
 -- ------------------------------------------------------------
 
-module Text.XML.BiFluX.XPath.HXT.XPathParser
+module BiFluX.XPath.HXT.XPathParser
     ( parseNumber
     , parseXPath
     )
@@ -25,8 +25,8 @@ import Text.ParserCombinators.Parsec
 
 import Text.XML.HXT.DOM.TypeDefs
 
-import Text.XML.BiFluX.XPath.HXT.XPathKeywords
-import Text.XML.BiFluX.XPath.HXT.XPathDataTypes
+import BiFlux.XPath.HXT.XPathKeywords
+import BiFlux.XPath.HXT.XPathDataTypes
 
 import Text.XML.HXT.Parser.XmlCharParser        ( XParser
                                                 , XPState(..)

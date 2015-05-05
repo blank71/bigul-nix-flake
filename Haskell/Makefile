@@ -1,5 +1,5 @@
 bigul:
-	ghci -isrc `cat ghc-options` Test/Test.hs
+	ghci -isrc:Test/test/bookmark  Test/Test.hs
 
 dtd:
 	ghci -isrc Test/TestGenDTD.hs
@@ -12,3 +12,6 @@ type:
 
 subtype:
 	ghci -isrc -XGADTs -XViewPatterns -XImpredicativeTypes -XTypeFamilies -XTypeOperators -XFlexibleContexts -XRank2Types -XTemplateHaskell -XFlexibleInstances -XUndecidableInstances -XScopedTypeVariables Test/TestSubTyping.hs
+
+tran:
+	ghci -isrc Test/TestTranslation.hs

@@ -17,8 +17,8 @@
 
 -- ------------------------------------------------------------
 
-module Text.XML.BiFluX.XPath.HXT.XPathDataTypes
-    ( module Text.XML.BiFluX.XPath.HXT.XPathDataTypes
+module BiFlux.XPath.HXT.XPathDataTypes
+    ( module BiFlux.XPath.HXT.XPathDataTypes
     , module Text.XML.HXT.XPath.NavTree
     )
 where
