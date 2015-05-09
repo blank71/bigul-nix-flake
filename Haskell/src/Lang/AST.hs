@@ -72,6 +72,7 @@ data BiGUL :: (* -> *) -> * -> * -> * where
 
 newtype Var a = Var a
 
+
 -- RPat (view type) (environment type) (container type)
 data RPat :: * -> * -> * -> * where
   RVar   :: Eq a => RPat a (Var a) (Maybe a)
@@ -81,7 +82,6 @@ data RPat :: * -> * -> * -> * where
   RRight :: RPat b b' b'' -> RPat (Either a b) b' b''
   ROut :: InOut a => RPat (F a) b c -> RPat a b c
   RElem  :: RPat a b c -> RPat [a] b' c' -> RPat [a] (b, b') (c, c')
-
 
 deconstructR :: MonadError' ErrorInfo m => RPat v env con -> v -> m env
 deconstructR RVar                v          = return $ Var v

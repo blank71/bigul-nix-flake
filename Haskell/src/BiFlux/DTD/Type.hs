@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators, TypeFamilies, GADTs, FlexibleContexts #-}
+{-# LANGUAGE TypeOperators, TypeFamilies, GADTs, FlexibleContexts, RankNTypes #-}
 module BiFlux.DTD.Type where
 
 import Text.XML.HaXml.DtdToHaskell.TypeDef hiding (List, Maybe, List1, Any, String, mkAtt)
@@ -11,7 +11,7 @@ import Data.List (intersperse, isPrefixOf)
 import Text.PrettyPrint as PP (Doc, parens, brackets, comma, colon, text, punctuate, empty, (<>), (<+>), ($+$))
 import Unsafe.Coerce
 import qualified Data.Map as Map
-
+import Lang.AST (Var, Var(..))
 -- A wrap string type.
 data Str = Str { unStr :: String }
 
@@ -41,8 +41,11 @@ instance Ord DynType where
 instance Eq DynType where
   (DynT a) == (DynT b) = case teq a b of { Just Eq -> True; otherwise -> False }
 
-type TypeEnv = Map.Map String DynType
 
+applyDynT :: (forall a.  Eq a => Type a -> b) -> DynType -> b
+applyDynT f (DynT t) = f t
+
+type TypeEnv = Map.Map String DynType
 
 data Type a where
   Int :: Type Int
@@ -57,6 +60,7 @@ data Type a where
   List1 :: Eq a => Type a -> Type (a, [a])
   Tag :: (Eq a) => String -> Type a -> Type a
   Doc :: (Eq a) => Type a -> Type a
+  VVar :: (Eq a) => Type a -> Type (Var a)
   -- DTD --> Type translated DTD's List1 to this List1
 
 instance Show (Type a) where
@@ -73,6 +77,10 @@ instance Show (Type a) where
   show (List1  a  ) = "(List1 " ++ show a ++ ")"
   show (Tag    x t) = "(Tag " ++ show x ++ " " ++ show t ++ ")"
   show (Doc    a  ) = "(Doc " ++ show a ++ ")"
+  show (VVar    a  ) = "(Var " ++ show a  ++ ")"
+
+instance (Eq a) =>  Eq (Var a) where
+  (Var a) == (Var b) = a == b
 
 instance Eq (Type a) where
   x == y =
@@ -114,7 +122,9 @@ teq (Tag m a)       (Tag n b)           = do
 teq (Doc a)         (Doc b)             = do
   Eq <- teq a b
   return Eq
-
+teq (VVar a)        (VVar b)            = do
+  Eq <- teq a b
+  return Eq
 
 
 -- | Explicit Haskell Type Representations
@@ -152,6 +162,7 @@ gshow (Data   (Name _ n) a) x          = n ++ "[" ++ gshow a (out x) ++ "]"
 gshow (List1  a  )          (x, xs)    = "(" ++ gshow a x ++ ", " ++ gshow (List a) xs ++ ")"
 gshow (Tag    n a)          x          = gshow a x
 gshow (Doc    a  )          x          = gshow a x
+--gshow (VVar    a  )          x          = gshow a x
 --gshow a                     _          = error $ "gshow not defined for " ++ show a
 
 --gpPrint :: Type a -> a -> Doc
@@ -178,3 +189,12 @@ attName s        = error $ show s ++ " not an attribute"
 isVarTag :: Type a -> Maybe (String, Type a)
 isVarTag (Tag n v) = if isVar n then Just (n, v) else Nothing
 isVarTag _         = Nothing
+
+getLiteral :: Type a -> Maybe (Type a)
+getLiteral a = if isLiteral a then Just a else Nothing
+
+isLiteral Int = True
+isLiteral Float = True
+isLiteral Bool = True
+isLiteral String = True
+isLiteral a = False

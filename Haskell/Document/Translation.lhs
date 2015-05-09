@@ -160,12 +160,14 @@ E8. CaseV
    BiFlux:
 >     case $v of
 >       bookmark[$title AS string] -> u1
->       folder[$name as string, $bookmarks as bookmarkd*] -> u2
+>       folder[$name as string, $bookmarks as bookmarkd*] -> REPLACE $sname WITH $name; REPLACE $sbookmarks WITH $bookmarks
    BiGUL:
 >    Rearr RVar (EDir DVar) (
 >          CaseV [
 >            CaseVBranch (PLeft (POut PVar)) (t(u1)),
->            CaseVBranch (PRight (POut (PProd PVar PVar))) (t(u2)) 
+>            CaseVBranch (PRight (POut (PProd PVar PVar)))
+>                        (Rearr (RProd RVar RVar) (EProd (EDir ELeft) (EDir ERight)) (Update (UProd Replace Replace)))
+                         (Update (UProd (UVar (Rearr (RRight (..)) (EDir (...)) (Replace))) (UVar ()))) --如果在caseV前面有source pat把source拆开了，那么需要pass到here再做真正的更新
 >          ]
 >    )
    If the pat is like this :
