@@ -1,9 +1,9 @@
 module DynamicallyChecked.Lens where
 
 open import DynamicallyChecked.Partiality
+open import DynamicallyChecked.Utilities
 
 open import Function
-open import Data.Unit
 open import Data.Product
 open import Relation.Binary.PropositionalEquality
 
@@ -19,6 +19,20 @@ infix 1 _⇆_
 
 _⇆_ : Set → Set → Set₁
 _⇆_ = Lens
+
+_≼ᴾ_ : {A : Set} → Par A → Par A → Set₁
+mx ≼ᴾ my = ∀ {a} → mx ↦ a → my ↦ a
+
+_≡ᴾ_ : {A : Set} → Par A → Par A → Set₁
+mx ≡ᴾ my = (mx ≼ᴾ my) × (my ≼ᴾ mx)
+
+uniqueness-lemma : {S V : Set} (l l' : S ⇆ V) {s : S} {v : V} →
+                   ({s : S} {v : V} → Lens.put l s v ≼ᴾ Lens.put l' s v) → Lens.get l s ↦ v → Lens.get l' s ↦ v
+uniqueness-lemma l l' put-≼ = Lens.PutGet l' ∘ put-≼ ∘ Lens.GetPut l
+
+uniqueness : {S V : Set} (l l' : S ⇆ V) {s : S} {v : V} → 
+             ({s : S} {v : V} → Lens.put l s v ≡ᴾ Lens.put l' s v) → {s : S} → Lens.get l s ≡ᴾ Lens.get l' s
+uniqueness l l' put-eq = uniqueness-lemma l l' (proj₁ put-eq) , uniqueness-lemma l' l (proj₂ put-eq)
 
 infixr 3 _↔_
 

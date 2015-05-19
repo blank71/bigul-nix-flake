@@ -1,0 +1,46 @@
+\documentclass{llncs}
+
+%include agda.fmt
+
+%subst keyword a = "\keyword{" a "}"
+%subst conid a = "\identifier{" a "}"
+%subst varid a = "\identifier{" a "}"
+%format MAPSTO = "\mathrel{\mapsto}"
+
+\newcommand{\keyword}[1]{\mathbf{#1}}
+\newcommand{\identifier}[1]{\mathit{#1}}
+
+\usepackage{amsmath}
+
+\newcommand{\reason}[1]{\quad\{\,\text{#1}\,\}}
+
+\newcommand{\BiGUL}{\textsc{BiGUL}}
+\newcommand{\PutGet}{\textsc{PutGet}}
+\newcommand{\GetPut}{\textsc{GetPut}}
+
+\newtheorem{Definition}{definition}
+
+\begin{document}
+
+\title{A Minimalist Datatype-Generic Putback-Based Bidirectional Programming Language}
+\author{Hsiang-Shang Ko\kern.05em\inst{2} \and Tao Zan\kern.05em\inst{1} \and Zhenjiang Hu\kern.05em\inst{1,\,2}}
+\institute{%
+SOKENDAI (The Graduate University for Advanced Studies), Japan
+\and
+National Institute of Informatics, Japan}
+\maketitle
+
+\cite{Foster-lenses}
+
+\begin{align*}
+           & |get s MAPSTO v| \\
+\Rightarrow& \reason{\GetPut\ for |get|} \\
+           & |put s v MAPSTO s| \\
+\Rightarrow& \reason{\PutGet\ for |get'|} \\
+           & |get' s MAPSTO v|
+\end{align*}
+
+\bibliographystyle{plain}
+\bibliography{/Users/joshko/Documents/bib}
+
+\end{document}

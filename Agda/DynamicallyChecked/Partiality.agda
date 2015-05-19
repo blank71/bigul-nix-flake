@@ -39,7 +39,7 @@ embed = maybe return fail
 _>>_ : {A B : Set} → Par A → Par B → Par B
 mx >> my = mx >>= const my
 
-infixr 8 _<=<_
+infixl 8 _<=<_
 
 _<=<_ : {A B C : Set} → (B → Par C) → (A → Par B) → (A → Par C)
 (f <=< g) x = g x >>= f

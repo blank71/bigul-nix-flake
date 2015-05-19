@@ -13,6 +13,8 @@ open import Relation.Binary.PropositionalEquality
 
 record ⊤ {l : Level} : Set l where
   constructor tt
+  
+data ⊥ {l : Level} : Set l where
 
 infix 5 _≟ᶠ_
 
