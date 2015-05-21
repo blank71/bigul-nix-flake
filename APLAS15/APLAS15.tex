@@ -1,14 +1,46 @@
-\documentclass{llncs}
+\documentclass[fleqn]{llncs}
 
 %include agda.fmt
 
 %subst keyword a = "\keyword{" a "}"
 %subst conid a = "\identifier{" a "}"
 %subst varid a = "\identifier{" a "}"
+%format Set = "\constructor{Set}"
+%format Set1 = "\constructor{Set_1}"
 %format MAPSTO = "\mathrel{\mapsto}"
+%format Maybe = "\constructor{Maybe}"
+%format nothing = "\constructor{nothing}"
+%format just = "\constructor{just}"
+%format Bool = "\constructor{Bool}"
+%format true = "\constructor{true}"
+%format false = "\constructor{false}"
+%format Par = "\constructor{Par}"
+%format return = "\constructor{return}"
+%format _>>=_ = _ "{" >>= "}\kern-\underscorespace" _
+%format fail = "\constructor{fail}"
+%format catch = "\constructor{catch}"
+%format assert = "\constructor{assert}"
+%link assert assert_then_
+%format then = "\constructor{then}"
+%link then assert_then_
+%format assert_then_ = assert _ then "\kern-\underscorespace" _
+%link >>= _>>=_
+%format (HIDE(x)) = "{}^{\color{gray}" x "}"
+
+\newlength{\underscorespace}
+\setlength{\underscorespace}{.8pt}
 
 \newcommand{\keyword}[1]{\mathbf{#1}}
 \newcommand{\identifier}[1]{\mathit{#1}}
+\newcommand{\constructor}[1]{\mathsf{#1}}
+
+\usepackage[hidelinks]{hyperref}
+\renewcommand{\chapterautorefname}{Chapter}
+\renewcommand{\sectionautorefname}{Section}
+\renewcommand{\subsectionautorefname}{Section}
+\renewcommand{\figureautorefname}{Figure}
+
+\usepackage[color=yellow,textsize=footnotesize]{todonotes}
 
 \usepackage{amsmath}
 
@@ -30,7 +62,78 @@ SOKENDAI (The Graduate University for Advanced Studies), Japan
 National Institute of Informatics, Japan}
 \maketitle
 
+\section{Introduction}
+\label{sec:introduction}
+
 \cite{Foster-lenses}
+
+\section{Decidable partiality}
+\label{sec:partiality}
+
+By ``decidable partiality'' we mean that the transformations are actually total functions which wrap their results in the standard |Maybe| datatype:
+\begin{code}
+data ^^^Maybe (A : Set) : Set where
+  ^^^just     : A -> Maybe A
+  ^^^nothing  : Maybe A
+\end{code}
+This is different from the usual partial functions as formalised in terms of complete partial orders:
+In \autoref{sec:BiGUL} we will need to define programs that produce some result or fail respectively when their input fails or produces some result, but this is not possible in the setting of complete partial orders, since such functions violate monotonicity, a necessary condition for computability.
+
+\begin{code}
+data ^^^Par : Set -> Set1 where
+  ^^^return        : (HIDE({A : Set} ->)) A -> Par A
+  ^^^_>>=_         : (HIDE({A B : Set} ->)) Par A -> (A -> Par B) -> Par B
+  ^^^fail          : (HIDE({A : Set} ->)) Par A
+  ^^^catch         : (HIDE({A B : Set} →)) Par A → (A → Par B) → Par B → Par B
+  ^^^assert_then_  : (HIDE({A : Set} →)) Bool → Par A → Par A
+\end{code}
+
+\begin{code}
+^^^runPar : {A : Set} -> Par A -> Maybe A
+runPar (return x               )  = just x
+runPar (mx >>= f               )  with runPar mx
+runPar (mx >>= f               )  | just x   = runPar (f x)
+runPar (mx >>= f               )  | nothing  = nothing
+runPar fail                       = nothing
+runPar (catch mx f my          )  with runPar mx
+runPar (catch mx f my          )  | just x   = runPar (f x)
+runPar (catch mx f my          )  | nothing  = runPar my
+runPar (assert true   then mx  )  = runPar mx
+runPar (assert false  then mx  )  = nothing
+\end{code}
+
+\begin{figure}
+\begin{code}
+mutual
+
+  data CompSeq : {A : Set} → Par A → A → Set₁ where
+    ret          :  {A : Set} {x x' : A} → x ≡ x' → CompSeq (return x) x'
+    bind         :  {A B : Set} {x : A} {mx : Par A} {f : A → Par B} {y : B} →
+                    CompSeq mx x → CompSeq (f x) y → CompSeq (mx >>= f) y
+    catch-fst    :  {A B : Set} {mx : Par A} {f : A → Par B} {my : Par B} {x : A} {z : B} →
+                    CompSeq mx x → CompSeq (f x) z → CompSeq (catch mx f my) z
+    catch-snd    :  {A B : Set} {mx : Par A} {f : A → Par B} {my : Par B} {z : B} →
+                    FailedCompSeq mx → CompSeq my z → CompSeq (catch mx f my) z
+    assert-then  :  {A : Set} {b : Bool} {mx : Par A} {x : A} → b ≡ true → CompSeq mx x → CompSeq (assert b then mx) x
+
+  data FailedCompSeq : {A : Set} → Par A → Set₁ where
+    bind-fst   : {A B : Set} {mx : Par A} {f : A → Par B} → FailedCompSeq mx → FailedCompSeq (mx >>= f)
+    bind-snd   : {A B : Set} {mx : Par A} {x : A} {f : A → Par B} →
+                 CompSeq mx x → FailedCompSeq (f x) → FailedCompSeq (mx >>= f)
+    fail       : {A : Set} → FailedCompSeq (fail {A})
+    catch-fst  : {A B : Set} {mx : Par A} {f : A → Par B} {my : Par B} →
+                 FailedCompSeq mx → FailedCompSeq my → FailedCompSeq (catch mx f my)
+    catch-snd  : {A B : Set} {mx : Par A} {f : A → Par B} {my : Par B} {x : A} →
+                 CompSeq mx x → FailedCompSeq (f x) → FailedCompSeq (catch mx f my)
+    assert-fst : {A : Set} {mx : Par A} {b : Bool} → b ≡ false → FailedCompSeq (assert b then mx)
+    assert-snd : {A : Set} {mx : Par A} {b : Bool} → b ≡ true → FailedCompSeq mx → FailedCompSeq (assert b then mx)
+\end{code}
+\caption{Definitions of |CompSeq| and |FailedCompSeq|.}
+\label{fig:CompSeq}
+\end{figure}
+
+\section{Putback-based bidirectional transformations}
+\label{sec:BX}
 
 \begin{align*}
            & |get s MAPSTO v| \\
@@ -39,6 +142,17 @@ National Institute of Informatics, Japan}
 \Rightarrow& \reason{\PutGet\ for |get'|} \\
            & |get' s MAPSTO v|
 \end{align*}
+
+\section{\BiGUL}
+\label{sec:BiGUL}
+
+\section{Reduction of common features}
+\label{sec:reduction}
+
+\section{Discussion}
+\label{sec:discussion}
+
+\todo[inline]{Haskell implementation}
 
 \bibliographystyle{plain}
 \bibliography{/Users/joshko/Documents/bib}
