@@ -1,7 +1,7 @@
 open import DynamicallyChecked.Universe
 open import Data.Nat
 
-module DynamicallyChecked.ViewRearrangement (n : ℕ) (F : Functor n) where
+module DynamicallyChecked.ViewRearrangement {n : ℕ} {F : Functor n} where
 
 open import DynamicallyChecked.Utilities
 open import DynamicallyChecked.Partiality
@@ -152,28 +152,6 @@ AbsInterpCCT (right pat)      c        t        = AbsInterpCCT pat c t
 AbsInterpCCT (prod lpat rpat) (c , c') (t , t') = AbsInterpCCT lpat c t × AbsInterpCCT rpat c' t'
 AbsInterpCCT (elem hpat tpat) (c , c') (t , t') = AbsInterpCCT hpat c t × AbsInterpCCT tpat c' t'
 
-Consistent : {G : U n} (pat : Pattern F G) → PatResult pat → Container pat → Set
-Consistent     var               x        nothing  = ⊤
-Consistent {G} var               x        (just y) = x ≡ y
-Consistent     (k x)             r        c        = ⊤
-Consistent     (child pat)       r        c        = Consistent pat r c
-Consistent     (left pat)        r        c        = Consistent pat r c
-Consistent     (right pat)       r        c        = Consistent pat r c
-Consistent     (prod lpat rpat) (r , r') (c , c')  = Consistent lpat r c × Consistent rpat r' c'
-Consistent     (elem hpat tpat) (r , r') (c , c')  = Consistent hpat r c × Consistent tpat r' c' 
-
-empty-container-consistent :
-  {G : U n} (pat : Pattern F G) (r : PatResult pat) → Consistent pat r (empty-container pat)
-empty-container-consistent var              r        = tt
-empty-container-consistent (k x)            r        = tt
-empty-container-consistent (child pat)      r        = empty-container-consistent pat r
-empty-container-consistent (left  pat)      r        = empty-container-consistent pat r
-empty-container-consistent (right pat)      r        = empty-container-consistent pat r
-empty-container-consistent (prod lpat rpat) (r , r') = empty-container-consistent lpat r ,
-                                                       empty-container-consistent rpat r'
-empty-container-consistent (elem hpat tpat) (r , r') = empty-container-consistent hpat r ,
-                                                       empty-container-consistent tpat r'
-
 empty-AbsInterpCCT : {G : U n} (pat : Pattern F G) → AbsInterpCCT pat (empty-container pat) (empty-checkTree pat)
 empty-AbsInterpCCT var              = tt
 empty-AbsInterpCCT (k x)            = tt
@@ -238,15 +216,37 @@ completeCCT (elem hpat tpat) (c , c') (t , t') (p , p') (comp >>= comp') =
       (r' , r'-comp) = completeCCT tpat c' t' p' comp'
   in  (r , r') , (r-comp >>= r'-comp >>= return refl)
 
+Consistent : {G : U n} (pat : Pattern F G) → PatResult pat → Container pat → Set
+Consistent     var               x        nothing  = ⊤
+Consistent {G} var               x        (just y) = x ≡ y
+Consistent     (k x)             r        c        = ⊤
+Consistent     (child pat)       r        c        = Consistent pat r c
+Consistent     (left pat)        r        c        = Consistent pat r c
+Consistent     (right pat)       r        c        = Consistent pat r c
+Consistent     (prod lpat rpat) (r , r') (c , c')  = Consistent lpat r c × Consistent rpat r' c'
+Consistent     (elem hpat tpat) (r , r') (c , c')  = Consistent hpat r c × Consistent tpat r' c' 
+
+empty-container-consistent :
+  {G : U n} (pat : Pattern F G) (r : PatResult pat) → Consistent pat r (empty-container pat)
+empty-container-consistent var              r        = tt
+empty-container-consistent (k x)            r        = tt
+empty-container-consistent (child pat)      r        = empty-container-consistent pat r
+empty-container-consistent (left  pat)      r        = empty-container-consistent pat r
+empty-container-consistent (right pat)      r        = empty-container-consistent pat r
+empty-container-consistent (prod lpat rpat) (r , r') = empty-container-consistent lpat r ,
+                                                       empty-container-consistent rpat r'
+empty-container-consistent (elem hpat tpat) (r , r') = empty-container-consistent hpat r ,
+                                                       empty-container-consistent tpat r'
+
 fromContainer-consistent-complete :
   {G : U n} (pat : Pattern F G) (r : PatResult pat) (c : Container pat) →
   Consistent pat r c → {r' : PatResult pat} → fromContainer pat c ↦ r' → r ≡ r'
-fromContainer-consistent-complete {G} var          r (just .r) refl (return refl) = refl
-fromContainer-consistent-complete var              r nothing   p    ()
-fromContainer-consistent-complete (k x)            r c         p    comp = refl
-fromContainer-consistent-complete (child pat)      r c         p    comp = fromContainer-consistent-complete pat r c p comp
-fromContainer-consistent-complete (left  pat)      r c         p    comp = fromContainer-consistent-complete pat r c p comp
-fromContainer-consistent-complete (right pat)      r c         p    comp = fromContainer-consistent-complete pat r c p comp
+fromContainer-consistent-complete {G} var     r (just .r) refl (return refl) = refl
+fromContainer-consistent-complete var         r nothing   p    ()
+fromContainer-consistent-complete (k x)       r c p comp = refl
+fromContainer-consistent-complete (child pat) r c p comp = fromContainer-consistent-complete pat r c p comp
+fromContainer-consistent-complete (left  pat) r c p comp = fromContainer-consistent-complete pat r c p comp
+fromContainer-consistent-complete (right pat) r c p comp = fromContainer-consistent-complete pat r c p comp
 fromContainer-consistent-complete (prod lpat rpat) (r , r') (c , c') (p , p') (comp >>= comp' >>= return refl) =
   cong₂ _,_ (fromContainer-consistent-complete lpat r c p comp) (fromContainer-consistent-complete rpat r' c' p' comp')
 fromContainer-consistent-complete (elem hpat tpat) (r , r') (c , c') (p , p') (comp >>= comp' >>= return refl) =
