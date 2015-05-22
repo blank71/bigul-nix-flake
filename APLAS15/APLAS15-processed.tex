@@ -1,0 +1,630 @@
+\documentclass[fleqn]{llncs}
+
+%% ODER: format ==         = "\mathrel{==}"
+%% ODER: format /=         = "\neq "
+%
+%
+\makeatletter
+\@ifundefined{lhs2tex.lhs2tex.sty.read}%
+  {\@namedef{lhs2tex.lhs2tex.sty.read}{}%
+   \newcommand\SkipToFmtEnd{}%
+   \newcommand\EndFmtInput{}%
+   \long\def\SkipToFmtEnd#1\EndFmtInput{}%
+  }\SkipToFmtEnd
+
+\newcommand\ReadOnlyOnce[1]{\@ifundefined{#1}{\@namedef{#1}{}}\SkipToFmtEnd}
+\usepackage{amstext}
+\usepackage{amssymb}
+\usepackage{stmaryrd}
+\DeclareFontFamily{OT1}{cmtex}{}
+\DeclareFontShape{OT1}{cmtex}{m}{n}
+  {<5><6><7><8>cmtex8
+   <9>cmtex9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmtex10}{}
+\DeclareFontShape{OT1}{cmtex}{m}{it}
+  {<-> ssub * cmtt/m/it}{}
+\newcommand{\texfamily}{\fontfamily{cmtex}\selectfont}
+\DeclareFontShape{OT1}{cmtt}{bx}{n}
+  {<5><6><7><8>cmtt8
+   <9>cmbtt9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmbtt10}{}
+\DeclareFontShape{OT1}{cmtex}{bx}{n}
+  {<-> ssub * cmtt/bx/n}{}
+\newcommand{\tex}[1]{\text{\texfamily#1}}	% NEU
+
+\newcommand{\Sp}{\hskip.33334em\relax}
+
+
+\newcommand{\Conid}[1]{\mathit{#1}}
+\newcommand{\Varid}[1]{\mathit{#1}}
+\newcommand{\anonymous}{\kern0.06em \vbox{\hrule\@width.5em}}
+\newcommand{\plus}{\mathbin{+\!\!\!+}}
+\newcommand{\bind}{\mathbin{>\!\!\!>\mkern-6.7mu=}}
+\newcommand{\rbind}{\mathbin{=\mkern-6.7mu<\!\!\!<}}% suggested by Neil Mitchell
+\newcommand{\sequ}{\mathbin{>\!\!\!>}}
+\renewcommand{\leq}{\leqslant}
+\renewcommand{\geq}{\geqslant}
+\usepackage{polytable}
+
+%mathindent has to be defined
+\@ifundefined{mathindent}%
+  {\newdimen\mathindent\mathindent\leftmargini}%
+  {}%
+
+\def\resethooks{%
+  \global\let\SaveRestoreHook\empty
+  \global\let\ColumnHook\empty}
+\newcommand*{\savecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\savecolumns[#1]}}
+\newcommand*{\restorecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\restorecolumns[#1]}}
+\newcommand*{\aligncolumn}[2]%
+  {\g@addto@macro\ColumnHook{\column{#1}{#2}}}
+
+\resethooks
+
+\newcommand{\onelinecommentchars}{\quad-{}- }
+\newcommand{\commentbeginchars}{\enskip\{-}
+\newcommand{\commentendchars}{-\}\enskip}
+
+\newcommand{\visiblecomments}{%
+  \let\onelinecomment=\onelinecommentchars
+  \let\commentbegin=\commentbeginchars
+  \let\commentend=\commentendchars}
+
+\newcommand{\invisiblecomments}{%
+  \let\onelinecomment=\empty
+  \let\commentbegin=\empty
+  \let\commentend=\empty}
+
+\visiblecomments
+
+\newlength{\blanklineskip}
+\setlength{\blanklineskip}{0.66084ex}
+
+\newcommand{\hsindent}[1]{\quad}% default is fixed indentation
+\let\hspre\empty
+\let\hspost\empty
+\newcommand{\NB}{\textbf{NB}}
+\newcommand{\Todo}[1]{$\langle$\textbf{To do:}~#1$\rangle$}
+
+\EndFmtInput
+\makeatother
+%
+%
+%
+%
+%
+%
+% This package provides two environments suitable to take the place
+% of hscode, called "plainhscode" and "arrayhscode". 
+%
+% The plain environment surrounds each code block by vertical space,
+% and it uses \abovedisplayskip and \belowdisplayskip to get spacing
+% similar to formulas. Note that if these dimensions are changed,
+% the spacing around displayed math formulas changes as well.
+% All code is indented using \leftskip.
+%
+% Changed 19.08.2004 to reflect changes in colorcode. Should work with
+% CodeGroup.sty.
+%
+\ReadOnlyOnce{polycode.fmt}%
+\makeatletter
+
+\newcommand{\hsnewpar}[1]%
+  {{\parskip=0pt\parindent=0pt\par\vskip #1\noindent}}
+
+% can be used, for instance, to redefine the code size, by setting the
+% command to \small or something alike
+\newcommand{\hscodestyle}{}
+
+% The command \sethscode can be used to switch the code formatting
+% behaviour by mapping the hscode environment in the subst directive
+% to a new LaTeX environment.
+
+\newcommand{\sethscode}[1]%
+  {\expandafter\let\expandafter\hscode\csname #1\endcsname
+   \expandafter\let\expandafter\endhscode\csname end#1\endcsname}
+
+% "compatibility" mode restores the non-polycode.fmt layout.
+
+\newenvironment{compathscode}%
+  {\par\noindent
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \let\hspre\(\let\hspost\)%
+   \pboxed}%
+  {\endpboxed\)%
+   \par\noindent
+   \ignorespacesafterend}
+
+\newcommand{\compaths}{\sethscode{compathscode}}
+
+% "plain" mode is the proposed default.
+% It should now work with \centering.
+% This required some changes. The old version
+% is still available for reference as oldplainhscode.
+
+\newenvironment{plainhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\hspre\(\let\hspost\)%
+   \pboxed}%
+  {\endpboxed%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+\newenvironment{oldplainhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \(\pboxed}%
+  {\endpboxed\)%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+% Here, we make plainhscode the default environment.
+
+\newcommand{\plainhs}{\sethscode{plainhscode}}
+\newcommand{\oldplainhs}{\sethscode{oldplainhscode}}
+\plainhs
+
+% The arrayhscode is like plain, but makes use of polytable's
+% parray environment which disallows page breaks in code blocks.
+
+\newenvironment{arrayhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \(\parray}%
+  {\endparray\)%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+\newcommand{\arrayhs}{\sethscode{arrayhscode}}
+
+% The mathhscode environment also makes use of polytable's parray 
+% environment. It is supposed to be used only inside math mode 
+% (I used it to typeset the type rules in my thesis).
+
+\newenvironment{mathhscode}%
+  {\parray}{\endparray}
+
+\newcommand{\mathhs}{\sethscode{mathhscode}}
+
+% texths is similar to mathhs, but works in text mode.
+
+\newenvironment{texthscode}%
+  {\(\parray}{\endparray\)}
+
+\newcommand{\texths}{\sethscode{texthscode}}
+
+% The framed environment places code in a framed box.
+
+\def\codeframewidth{\arrayrulewidth}
+\RequirePackage{calc}
+
+\newenvironment{framedhscode}%
+  {\parskip=\abovedisplayskip\par\noindent
+   \hscodestyle
+   \arrayrulewidth=\codeframewidth
+   \tabular{@{}|p{\linewidth-2\arraycolsep-2\arrayrulewidth-2pt}|@{}}%
+   \hline\framedhslinecorrect\\{-1.5ex}%
+   \let\endoflinesave=\\
+   \let\\=\@normalcr
+   \(\pboxed}%
+  {\endpboxed\)%
+   \framedhslinecorrect\endoflinesave{.5ex}\hline
+   \endtabular
+   \parskip=\belowdisplayskip\par\noindent
+   \ignorespacesafterend}
+
+\newcommand{\framedhslinecorrect}[2]%
+  {#1[#2]}
+
+\newcommand{\framedhs}{\sethscode{framedhscode}}
+
+% The inlinehscode environment is an experimental environment
+% that can be used to typeset displayed code inline.
+
+\newenvironment{inlinehscode}%
+  {\(\def\column##1##2{}%
+   \let\>\undefined\let\<\undefined\let\\\undefined
+   \newcommand\>[1][]{}\newcommand\<[1][]{}\newcommand\\[1][]{}%
+   \def\fromto##1##2##3{##3}%
+   \def\nextline{}}{\) }%
+
+\newcommand{\inlinehs}{\sethscode{inlinehscode}}
+
+% The joincode environment is a separate environment that
+% can be used to surround and thereby connect multiple code
+% blocks.
+
+\newenvironment{joincode}%
+  {\let\orighscode=\hscode
+   \let\origendhscode=\endhscode
+   \def\endhscode{\def\hscode{\endgroup\def\@currenvir{hscode}\\}\begingroup}
+   %\let\SaveRestoreHook=\empty
+   %\let\ColumnHook=\empty
+   %\let\resethooks=\empty
+   \orighscode\def\hscode{\endgroup\def\@currenvir{hscode}}}%
+  {\origendhscode
+   \global\let\hscode=\orighscode
+   \global\let\endhscode=\origendhscode}%
+
+\makeatother
+\EndFmtInput
+%
+%
+\ReadOnlyOnce{agda.fmt}%
+
+
+\RequirePackage[T1]{fontenc}
+\RequirePackage[utf8x]{inputenc}
+\RequirePackage{ucs}
+\RequirePackage{amsfonts}
+
+\providecommand\mathbbm{\mathbb}
+
+% TODO: Define more of these ...
+\DeclareUnicodeCharacter{737}{\textsuperscript{l}}
+\DeclareUnicodeCharacter{8718}{\ensuremath{\blacksquare}}
+\DeclareUnicodeCharacter{8759}{::}
+\DeclareUnicodeCharacter{9669}{\ensuremath{\triangleleft}}
+\DeclareUnicodeCharacter{8799}{\ensuremath{\stackrel{\scriptscriptstyle ?}{=}}}
+\DeclareUnicodeCharacter{10214}{\ensuremath{\llbracket}}
+\DeclareUnicodeCharacter{10215}{\ensuremath{\rrbracket}}
+
+% TODO: This is in general not a good idea.
+\providecommand\textepsilon{$\epsilon$}
+\providecommand\textmu{$\mu$}
+
+
+%Actually, varsyms should not occur in Agda output.
+
+% TODO: Make this configurable. IMHO, italics doesn't work well
+% for Agda code.
+
+\renewcommand\Varid[1]{\mathord{\textsf{#1}}}
+\let\Conid\Varid
+\newcommand\Keyword[1]{\textsf{\textbf{#1}}}
+\EndFmtInput
+
+
+
+\newlength{\underscorespace}
+\setlength{\underscorespace}{.8pt}
+\newlength{\binderspace}
+\setlength{\binderspace}{.8pt}
+\newlength{\binderskip}
+\setlength{\binderskip}{.8pt}
+
+\newcommand{\keyword}[1]{\mathbf{#1}}
+\newcommand{\identifier}[1]{\mathit{#1}}
+\newcommand{\constructor}[1]{\mathsf{#1}}
+
+\usepackage[hidelinks]{hyperref}
+\renewcommand{\chapterautorefname}{Chapter}
+\renewcommand{\sectionautorefname}{Section}
+\renewcommand{\subsectionautorefname}{Section}
+\renewcommand{\figureautorefname}{Figure}
+
+\usepackage[color=yellow,textsize=footnotesize]{todonotes}
+
+\usepackage{amsmath}
+
+\newcommand{\reason}[1]{\quad\{\,\text{#1}\,\}}
+
+\newcommand{\BiGUL}{\textsc{BiGUL}}
+\newcommand{\Agda}{\textsc{Agda}}
+\newcommand{\PutGet}{\textsc{PutGet}}
+\newcommand{\GetPut}{\textsc{GetPut}}
+
+\newtheorem{Definition}{definition}
+
+\begin{document}
+
+\title{A Minimalist Datatype-Generic Putback-Based Bidirectional Programming Language}
+\author{Hsiang-Shang Ko\kern.05em\inst{2} \and Tao Zan\kern.05em\inst{1} \and Zhenjiang Hu\kern.05em\inst{1,\,2}}
+\institute{%
+SOKENDAI (The Graduate University for Advanced Studies), Japan
+\and
+National Institute of Informatics, Japan}
+\maketitle
+
+\section{Introduction}
+\label{sec:introduction}
+
+\cite{Foster-lenses}
+
+\section{Decidable partiality}
+\label{sec:partiality}
+
+The bidirectional transformations discussed in this paper are ``decidably partial''.
+By ``decidable partiality'' we mean that the transformations are actually total functions which wrap their results in the standard \ensuremath{\protect\hyperlink{M4d61796265}{\constructor{Maybe}}} datatype\todo{Explanation of \Agda\ datatype definition}:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{15}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\keyword{data}\;\raisebox{\ht\strutbox}{\hypertarget{M4d61796265}{}}\constructor{Maybe}\index{M4d61796265@\ensuremath{\constructor{Maybe}}}\;(\identifier{A}\;{:}\;\constructor{Set})\;{:}\;\constructor{Set}\;\keyword{where}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\raisebox{\ht\strutbox}{\hypertarget{J6a757374}{}}\constructor{just}\index{J6a757374@\ensuremath{\constructor{just}}}\;{}\<[15]%
+\>[15]{}{:}\;\identifier{A}\;\to \;\protect\hyperlink{M4d61796265}{\constructor{Maybe}}\;\identifier{A}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\raisebox{\ht\strutbox}{\hypertarget{N6e6f7468696e67}{}}\constructor{nothing}\index{N6e6f7468696e67@\ensuremath{\constructor{nothing}}}\;{}\<[15]%
+\>[15]{}{:}\;\protect\hyperlink{M4d61796265}{\constructor{Maybe}}\;\identifier{A}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+The result of a piece of successful computation is wrapped in the \ensuremath{\protect\hyperlink{J6a757374}{\constructor{just}}} constructor, while failed computation is represented by \ensuremath{\protect\hyperlink{N6e6f7468696e67}{\constructor{nothing}}}.
+The behaviour of decidably partial functions is different from the usual partial functions as formalised in terms of complete partial orders (see, e.g.,~\cite{Gibbons-calculating-functional-programs}):
+In \autoref{sec:BiGUL} we will need to define programs that produce some result or fail respectively when a sub-program fails or produces some result, but this is not possible in the setting of complete partial orders (since such functions violate monotonicity, a necessary condition for computability).
+
+We can choose to write our decidably partial bidirectional transformations directly as \ensuremath{\protect\hyperlink{M4d61796265}{\constructor{Maybe}}}-programs, but when proving their well-behavedness, we will need to analyse or establish how a piece of decidably partial computation succeeds or fails, and this task would be much easier if the computation steps leading to success or failure are reified as data.
+The reification starts from a deep embedding of the combinators that we will use for writing decidably partial programs:\todo{\Agda\ naming rules}
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{20}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{46}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\keyword{data}\;\raisebox{\ht\strutbox}{\hypertarget{P506172}{}}\constructor{Par}\index{P506172@\ensuremath{\constructor{Par}}}\;{:}\;\constructor{Set}\;\to \;\constructor{Set_1}\;\keyword{where}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\raisebox{\ht\strutbox}{\hypertarget{R72657475726e}{}}\constructor{return}\index{R72657475726e@\ensuremath{\constructor{return}}}\;{}\<[20]%
+\>[20]{}{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{A}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\to }\;{}\<[46]%
+\>[46]{}\identifier{A}\;\to \;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{A}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\raisebox{\ht\strutbox}{\hypertarget{_5f3e3e3d5f}{}}\anonymous {\bind }\kern-\underscorespace\anonymous \index{_5f3e3e3d5f@\ensuremath{\anonymous {\bind }\kern-\underscorespace\anonymous }}\;{}\<[20]%
+\>[20]{}{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{A}\;\identifier{B}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\to }\;{}\<[46]%
+\>[46]{}\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{A}\;\to \;(\identifier{A}\;\to \;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{B})\;\to \;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{B}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\raisebox{\ht\strutbox}{\hypertarget{F6661696c}{}}\constructor{fail}\index{F6661696c@\ensuremath{\constructor{fail}}}\;{}\<[20]%
+\>[20]{}{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{A}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\to }\;{}\<[46]%
+\>[46]{}\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{A}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\raisebox{\ht\strutbox}{\hypertarget{C6361746368}{}}\constructor{catch}\index{C6361746368@\ensuremath{\constructor{catch}}}\;{}\<[20]%
+\>[20]{}{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{A}\;\identifier{B}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\to }\;{}\<[46]%
+\>[46]{}\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{A}\;\to \;(\identifier{A}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{B})\;\to \;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{B}\;\to \;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{B}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\raisebox{\ht\strutbox}{\hypertarget{A6173736572745f7468656e5f}{}}\constructor{assert}\anonymous \constructor{then}\kern-\underscorespace\anonymous \index{A6173736572745f7468656e5f@\ensuremath{\constructor{assert}\anonymous \constructor{then}\kern-\underscorespace\anonymous }}\;{}\<[20]%
+\>[20]{}{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{A}\;\identifier{B}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\to }\;{}\<[46]%
+\>[46]{}\constructor{Bool}\;\to \;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{A}\;\to \;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{A}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+Informally:
+A value of type \ensuremath{\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{A}} represents a piece of decidably partial computation that successfully produces a value of type~\ensuremath{\identifier{A}} or fails.
+The first two constructors \ensuremath{\protect\hyperlink{R72657475726e}{\constructor{return}}} and \ensuremath{\protect\hyperlink{_5f3e3e3d5f}{\anonymous {\bind }\kern-\underscorespace\anonymous }} represent the usual monadic operators~\cite{Moggi-monads,Wadler-essence}, and \ensuremath{\protect\hyperlink{F6661696c}{\constructor{fail}}} indicates failed computation.
+We will also need error handling, which is represented by the \ensuremath{\protect\hyperlink{C6361746368}{\constructor{catch}}} constructor.
+The behaviour of our \ensuremath{\protect\hyperlink{C6361746368}{\constructor{catch}}} is slightly different from the usual one: execution of \ensuremath{\protect\hyperlink{C6361746368}{\constructor{catch}}\;\identifier{mx}\;\identifier{f}\;\identifier{my}} binds the result of~\ensuremath{\identifier{mx}} to~\ensuremath{\identifier{f}} if \ensuremath{\identifier{mx}}~computes successfully, or goes to execution of~\ensuremath{\identifier{my}} if \ensuremath{\identifier{mx}}~fails to compute.
+Also we will frequently need to ensure that a \ensuremath{\constructor{Bool}} value is \ensuremath{\constructor{true}} before continuing with the rest of a program, so the constructor \ensuremath{\protect\hyperlink{A6173736572745f7468656e5f}{\constructor{assert}\anonymous \constructor{then}\kern-\underscorespace\anonymous }} is included for convenience --- execution of \ensuremath{\protect\hyperlink{A6173736572745f7468656e5f}{\constructor{assert}}\;\identifier{b}\;\protect\hyperlink{A6173736572745f7468656e5f}{\constructor{then}}\;\identifier{p}} becomes execution of~\ensuremath{\identifier{p}} when \ensuremath{\identifier{b}}~is \ensuremath{\constructor{true}}, or fails otherwise.
+Formally, the meaning of the constructors of \ensuremath{\protect\hyperlink{P506172}{\constructor{Par}}} is given by the following interpreter to \ensuremath{\protect\hyperlink{M4d61796265}{\constructor{Maybe}}}:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{20}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{23}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{25}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{31}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{33}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{36}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\raisebox{\ht\strutbox}{\hypertarget{R72756e506172}{}}\identifier{runPar}\index{R72756e506172@\ensuremath{\identifier{runPar}}}\;{:}\;\{\mskip1.5mu \identifier{A}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\to \;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{A}\;\to \;\protect\hyperlink{M4d61796265}{\constructor{Maybe}}\;\identifier{A}{}\<[E]%
+\\
+\>[B]{}\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;(\protect\hyperlink{R72657475726e}{\constructor{return}}\;\identifier{x})\;\mathrel{=}\;\protect\hyperlink{J6a757374}{\constructor{just}}\;\identifier{x}{}\<[E]%
+\\
+\>[B]{}\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;(\identifier{mx}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\identifier{f})\;{}\<[20]%
+\>[20]{}\keyword{with}\;\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;\identifier{mx}{}\<[E]%
+\\
+\>[B]{}\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;(\identifier{mx}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\identifier{f})\;{}\<[20]%
+\>[20]{}\mid \;\protect\hyperlink{J6a757374}{\constructor{just}}\;\identifier{x}\;{}\<[31]%
+\>[31]{}\mathrel{=}\;\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;(\identifier{f}\;\identifier{x}){}\<[E]%
+\\
+\>[B]{}\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;(\identifier{mx}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\identifier{f})\;{}\<[20]%
+\>[20]{}\mid \;\protect\hyperlink{N6e6f7468696e67}{\constructor{nothing}}\;{}\<[31]%
+\>[31]{}\mathrel{=}\;\protect\hyperlink{N6e6f7468696e67}{\constructor{nothing}}{}\<[E]%
+\\
+\>[B]{}\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;\protect\hyperlink{F6661696c}{\constructor{fail}}\;\mathrel{=}\;\protect\hyperlink{N6e6f7468696e67}{\constructor{nothing}}{}\<[E]%
+\\
+\>[B]{}\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;(\protect\hyperlink{C6361746368}{\constructor{catch}}\;\identifier{mx}\;\identifier{f}\;\identifier{my})\;{}\<[25]%
+\>[25]{}\keyword{with}\;\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;\identifier{mx}{}\<[E]%
+\\
+\>[B]{}\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;(\protect\hyperlink{C6361746368}{\constructor{catch}}\;\identifier{mx}\;\identifier{f}\;\identifier{my})\;{}\<[25]%
+\>[25]{}\mid \;\protect\hyperlink{J6a757374}{\constructor{just}}\;\identifier{x}\;{}\<[36]%
+\>[36]{}\mathrel{=}\;\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;(\identifier{f}\;\identifier{x}){}\<[E]%
+\\
+\>[B]{}\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;(\protect\hyperlink{C6361746368}{\constructor{catch}}\;\identifier{mx}\;\identifier{f}\;\identifier{my})\;{}\<[25]%
+\>[25]{}\mid \;\protect\hyperlink{N6e6f7468696e67}{\constructor{nothing}}\;{}\<[36]%
+\>[36]{}\mathrel{=}\;\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;\identifier{my}{}\<[E]%
+\\
+\>[B]{}\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;(\protect\hyperlink{A6173736572745f7468656e5f}{\constructor{assert}}\;\constructor{true}\;{}\<[23]%
+\>[23]{}\protect\hyperlink{A6173736572745f7468656e5f}{\constructor{then}}\;\identifier{mx})\;{}\<[33]%
+\>[33]{}\mathrel{=}\;\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;\identifier{mx}{}\<[E]%
+\\
+\>[B]{}\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;(\protect\hyperlink{A6173736572745f7468656e5f}{\constructor{assert}}\;\constructor{false}\;{}\<[23]%
+\>[23]{}\protect\hyperlink{A6173736572745f7468656e5f}{\constructor{then}}\;\identifier{mx})\;{}\<[33]%
+\>[33]{}\mathrel{=}\;\protect\hyperlink{N6e6f7468696e67}{\constructor{nothing}}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+We say that \ensuremath{\identifier{mx}\;{:}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{A}} computes to \ensuremath{\identifier{x}\;{:}\;\identifier{A}} exactly when \ensuremath{\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;\identifier{mx}\;\identifier{≡}\;\protect\hyperlink{J6a757374}{\constructor{just}}\;\identifier{x}}, and that \ensuremath{\identifier{mx}}~fails to compute exactly when \ensuremath{\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;\identifier{mx}\;\identifier{≡}\;\protect\hyperlink{N6e6f7468696e67}{\constructor{nothing}}}.\todo{Equality type}\
+These two equalities are what we aim to reify as data next.
+
+\begin{figure}[t]
+\begin{center}
+\setlength{\mathindent}{0em}
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{21}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{22}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{26}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{27}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{29}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{30}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\keyword{mutual}{}\<[E]%
+\\[\blanklineskip]%
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\raisebox{\ht\strutbox}{\hypertarget{_5f21a65f}{}}\anonymous \kern.5\underscorespace{\mathrel{\mapsto}}\kern-\underscorespace\anonymous \index{_5f21a65f@\ensuremath{\anonymous \kern.5\underscorespace{\mathrel{\mapsto}}\kern-\underscorespace\anonymous }}\;{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{A}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\identifier{→}}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{A}\;\identifier{→}\;\identifier{A}\;\identifier{→}\;\constructor{Set_1}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\protect\hyperlink{R72657475726e}{\constructor{return}}\;\identifier{x}\;{}\<[21]%
+\>[21]{}\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x'}\;{}\<[27]%
+\>[27]{}\mathrel{=}\;{}\<[30]%
+\>[30]{}\identifier{x}\;\identifier{≡}\;\identifier{x'}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\identifier{mx}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\identifier{f}\;{}\<[21]%
+\>[21]{}\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{y}\;{}\<[27]%
+\>[27]{}\mathrel{=}\;{}\<[30]%
+\>[30]{}(\identifier{x}\;{:}\;\identifier{A})\;\identifier{×}\;(\identifier{mx}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x})\;\identifier{×}\;(\identifier{f}\;\identifier{x}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{y}){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\protect\hyperlink{F6661696c}{\constructor{fail}}\;{}\<[21]%
+\>[21]{}\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x}\;{}\<[27]%
+\>[27]{}\mathrel{=}\;{}\<[30]%
+\>[30]{}\identifier{⊥}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\protect\hyperlink{C6361746368}{\constructor{catch}}\;\identifier{mx}\;\identifier{f}\;\identifier{my}\;{}\<[21]%
+\>[21]{}\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{z}\;{}\<[27]%
+\>[27]{}\mathrel{=}\;{}\<[30]%
+\>[30]{}((\identifier{x}\;{:}\;\identifier{A})\;\identifier{×}\;(\identifier{mx}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x})\;\identifier{×}\;(\identifier{f}\;\identifier{x}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{z}))\;\mathrel{\uplus}\;{}\<[E]%
+\\
+\>[30]{}((\identifier{mx}\;\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}})\;\identifier{×}\;(\identifier{my}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{z})){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\protect\hyperlink{A6173736572745f7468656e5f}{\constructor{assert}}\;\identifier{b}\;\protect\hyperlink{A6173736572745f7468656e5f}{\constructor{then}}\;\identifier{mx}\;{}\<[21]%
+\>[21]{}\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x}\;{}\<[27]%
+\>[27]{}\mathrel{=}\;{}\<[30]%
+\>[30]{}(\identifier{b}\;\identifier{≡}\;\constructor{true})\;\identifier{×}\;(\identifier{mx}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x}){}\<[E]%
+\\[\blanklineskip]%
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\raisebox{\ht\strutbox}{\hypertarget{_5f2f21a6}{}}\anonymous \kern.5\underscorespace{\mathrel{\not\mapsto}}\index{_5f2f21a6@\ensuremath{\anonymous \kern.5\underscorespace{\mathrel{\not\mapsto}}}}\;{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{A}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\identifier{→}}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{A}\;\identifier{→}\;\constructor{Set_1}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\protect\hyperlink{R72657475726e}{\constructor{return}}\;\identifier{x}\;{}\<[22]%
+\>[22]{}\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}}\;{}\<[26]%
+\>[26]{}\mathrel{=}\;{}\<[29]%
+\>[29]{}\identifier{⊥}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\identifier{mx}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\identifier{f}\;{}\<[22]%
+\>[22]{}\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}}\;{}\<[26]%
+\>[26]{}\mathrel{=}\;{}\<[29]%
+\>[29]{}(\identifier{mx}\;\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}})\;\mathrel{\uplus}\;((\identifier{x}\;{:}\;\identifier{A})\;\identifier{×}\;(\identifier{mx}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x})\;\identifier{×}\;(\identifier{f}\;\identifier{x}\;\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}})){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\protect\hyperlink{F6661696c}{\constructor{fail}}\;{}\<[22]%
+\>[22]{}\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}}\;{}\<[26]%
+\>[26]{}\mathrel{=}\;{}\<[29]%
+\>[29]{}\identifier{⊤}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\protect\hyperlink{C6361746368}{\constructor{catch}}\;\identifier{mx}\;\identifier{f}\;\identifier{my}\;{}\<[22]%
+\>[22]{}\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}}\;{}\<[26]%
+\>[26]{}\mathrel{=}\;{}\<[29]%
+\>[29]{}((\identifier{mx}\;\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}})\;\identifier{×}\;(\identifier{my}\;\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}}))\;\mathrel{\uplus}\;{}\<[E]%
+\\
+\>[29]{}((\identifier{x}\;{:}\;\identifier{A})\;\identifier{×}\;(\identifier{mx}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x})\;\identifier{×}\;(\identifier{f}\;\identifier{x}\;\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}})){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\protect\hyperlink{A6173736572745f7468656e5f}{\constructor{assert}}\;\identifier{b}\;\protect\hyperlink{A6173736572745f7468656e5f}{\constructor{then}}\;\identifier{mx}\;{}\<[22]%
+\>[22]{}\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}}\;{}\<[26]%
+\>[26]{}\mathrel{=}\;{}\<[29]%
+\>[29]{}(\identifier{b}\;\identifier{≡}\;\constructor{false})\;\mathrel{\uplus}\;((\identifier{b}\;\identifier{≡}\;\constructor{true})\;\identifier{×}\;(\identifier{mx}\;\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}})){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\end{center}
+\caption{Definitions of \ensuremath{\protect\hyperlink{_5f21a65f}{\anonymous \kern.5\underscorespace{\mathrel{\mapsto}}\kern-\underscorespace\anonymous }}~and~\ensuremath{\protect\hyperlink{_5f2f21a6}{\anonymous \kern.5\underscorespace{\mathrel{\not\mapsto}}}}.}
+\label{fig:CompSeq}
+\end{figure}
+
+Our reification of decidably partial computation as the datatype \ensuremath{\protect\hyperlink{P506172}{\constructor{Par}}} and \Agda's support of full dependent types allow us to compute for any \ensuremath{\identifier{mx}\;{:}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{A}} and \ensuremath{\identifier{x}\;{:}\;\identifier{A}} a type \ensuremath{\identifier{mx}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x}} whose inhabitants explain how \ensuremath{\identifier{mx}}~computes to~\ensuremath{\identifier{x}}.
+The definition of this family of types is shown in \autoref{fig:CompSeq}:
+\ensuremath{\protect\hyperlink{R72657475726e}{\constructor{return}}\;\identifier{x}} computes to~\ensuremath{\identifier{x'}} when \ensuremath{\identifier{x}}~is exactly~\ensuremath{\identifier{x'}}, and \ensuremath{\identifier{mx}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\identifier{f}} computes to~\ensuremath{\identifier{y}} when there exists \ensuremath{\identifier{x}\;{:}\;\identifier{A}} such that \ensuremath{\identifier{mx}}~computes to~\ensuremath{\identifier{x}} and \ensuremath{\identifier{f}\;\identifier{x}} computes to~\ensuremath{\identifier{y}}, and so on.
+Here our use of the term ``computes to'' is justified, since we can prove that
+\[ \ensuremath{\identifier{mx}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x}} \qquad\text{and}\qquad \ensuremath{\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;\identifier{mx}\;\identifier{≡}\;\protect\hyperlink{J6a757374}{\constructor{just}}\;\identifier{x}} \]
+are equivalent, i.e., there are functions converting between the two types.
+In other words, we can prove \ensuremath{\identifier{mx}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x}} if and only if \ensuremath{\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;\identifier{mx}\;\identifier{≡}\;\protect\hyperlink{J6a757374}{\constructor{just}}\;\identifier{x}}, meaning that our reification of \ensuremath{\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;\identifier{mx}\;\identifier{≡}\;\protect\hyperlink{J6a757374}{\constructor{just}}\;\identifier{x}} as \ensuremath{\identifier{mx}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x}} is accurate.
+In the clause for \ensuremath{\protect\hyperlink{C6361746368}{\constructor{catch}}\;\identifier{mx}\;\identifier{f}\;\identifier{my}}, a possible situation for the computation to succeed is when \ensuremath{\identifier{mx}}~fails but \ensuremath{\identifier{my}}~succeeds subsequently.
+Thus the ways a piece of computation fails have to be reified as a family of types too.
+This family of types is defined as \ensuremath{\protect\hyperlink{_5f2f21a6}{\anonymous \kern.5\underscorespace{\mathrel{\not\mapsto}}}} (mutually with \ensuremath{\protect\hyperlink{_5f21a65f}{\anonymous \kern.5\underscorespace{\mathrel{\mapsto}}\kern-\underscorespace\anonymous }}), also in \autoref{fig:CompSeq}.
+Similarly, we can prove that
+\[ \ensuremath{\identifier{mx}\;\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}}} \qquad\text{and}\qquad \ensuremath{\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;\identifier{mx}\;\identifier{≡}\;\protect\hyperlink{N6e6f7468696e67}{\constructor{nothing}}} \]
+are equivalent, showing that the reification of \ensuremath{\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;\identifier{mx}\;\identifier{≡}\;\protect\hyperlink{N6e6f7468696e67}{\constructor{nothing}}} as \ensuremath{\identifier{mx}\;\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}}} is, again, accurate.
+We are thus entitled to use \ensuremath{\protect\hyperlink{_5f21a65f}{\anonymous \kern.5\underscorespace{\mathrel{\mapsto}}\kern-\underscorespace\anonymous }} and \ensuremath{\protect\hyperlink{_5f2f21a6}{\anonymous \kern.5\underscorespace{\mathrel{\not\mapsto}}}} for stating various properties involving success or failure of decidably partial computation, in particular well-behavedness of bidirectional transformations in the next section.
+
+\section{Putback-based bidirectional transformations}
+\label{sec:BX}
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{16}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{48}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\keyword{record}\;\raisebox{\ht\strutbox}{\hypertarget{L4c656e73}{}}\constructor{Lens}\index{L4c656e73@\ensuremath{\constructor{Lens}}}\;(\identifier{S}\;\identifier{V}\;{:}\;\constructor{Set})\;{:}\;\constructor{Set_1}\;\keyword{where}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\keyword{field}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\identifier{put}\;{}\<[10]%
+\>[10]{}{:}\;\identifier{S}\;\identifier{→}\;\identifier{V}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{S}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\identifier{get}\;{}\<[10]%
+\>[10]{}{:}\;\identifier{S}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{V}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\raisebox{\ht\strutbox}{\hypertarget{P507574476574}{}}\identifier{PutGet}\index{P507574476574@\ensuremath{\identifier{PutGet}}}\;{}\<[16]%
+\>[16]{}{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{s}\;\identifier{s'}\;{:}\;\identifier{S}\mskip1.5mu\}\;\{\mskip1.5mu \identifier{v}\;{:}\;\identifier{V}\mskip1.5mu\}\;\identifier{→}}\;{}\<[48]%
+\>[48]{}(\identifier{put}\;\identifier{s}\;\identifier{v}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{s'})\;\identifier{→}\;(\identifier{get}\;\identifier{s'}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{v}){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\raisebox{\ht\strutbox}{\hypertarget{G476574507574}{}}\identifier{GetPut}\index{G476574507574@\ensuremath{\identifier{GetPut}}}\;{}\<[16]%
+\>[16]{}{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{s}\;{:}\;\identifier{S}\mskip1.5mu\}\;\{\mskip1.5mu \identifier{v}\;{:}\;\identifier{V}\mskip1.5mu\}\;\identifier{→}}\;{}\<[48]%
+\>[48]{}(\identifier{get}\;\identifier{s}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{v})\;\identifier{→}\;(\identifier{put}\;\identifier{s}\;\identifier{v}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{s}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+
+\begin{align*}
+           & \ensuremath{\identifier{get}\;\identifier{s}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{v}} \\
+\Rightarrow& \reason{\ensuremath{\protect\hyperlink{G476574507574}{\identifier{GetPut}}} for \ensuremath{\identifier{get}}} \\
+           & \ensuremath{\identifier{put}\;\identifier{s}\;\identifier{v}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{s}} \\
+\Rightarrow& \reason{\ensuremath{\protect\hyperlink{P507574476574}{\identifier{PutGet}}} for \ensuremath{\identifier{get'}}} \\
+           & \ensuremath{\identifier{get'}\;\identifier{s}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{v}}
+\end{align*}
+
+\section{\BiGUL\ and its lens semantics}
+\label{sec:BiGUL}
+
+\section{Reduction of common features}
+\label{sec:reduction}
+
+\section{Discussion}
+\label{sec:discussion}
+
+\todo[inline]{Haskell implementation}
+
+\todo[inline]{Towards a dependently typed version}
+
+\todo[inline]{Presentation in \Agda}
+
+\bibliographystyle{plain}
+\bibliography{/Users/joshko/Documents/bib}
+
+\end{document}

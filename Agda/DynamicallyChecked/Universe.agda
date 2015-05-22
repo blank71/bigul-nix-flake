@@ -18,6 +18,7 @@ open import Relation.Binary.PropositionalEquality
 data U (n : ℕ) : Set₁ where
   var  : (i : Fin n) → U n
   k    : (A : Set) (dec : Decidable (_≡_ {A = A})) → U n
+  one  : U n
   _⊕_  : (F G : U n) → U n
   _⊗_  : (F G : U n) → U n
   list : (F : U n)   → U n
@@ -25,6 +26,7 @@ data U (n : ℕ) : Set₁ where
 ⟦_⟧ : {n : ℕ} → U n → (Fin n → Set) → Set
 ⟦ var  i  ⟧ Xs = Xs i
 ⟦ k A dec ⟧ Xs = A
+⟦ one     ⟧ Xs = ⊤
 ⟦ F ⊕ G   ⟧ Xs = ⟦ F ⟧ Xs ⊎ ⟦ G ⟧ Xs
 ⟦ F ⊗ G   ⟧ Xs = ⟦ F ⟧ Xs × ⟦ G ⟧ Xs
 ⟦ list F  ⟧ Xs = List (⟦ F ⟧ Xs)
@@ -60,6 +62,7 @@ mutual
   U-dec : {n : ℕ} {F : Functor n} (G : U n) → Decidable (_≡_ {A = ⟦ G ⟧ (μ F)})
   U-dec (var i  ) x        y         = μ-dec x y
   U-dec (k A dec) x        y         = dec x y
+  U-dec  one      x        y         = yes refl
   U-dec (G ⊕ H  ) (inj₁ x) (inj₁ x') with U-dec G x x'
   U-dec (G ⊕ H  ) (inj₁ x) (inj₁ x') | yes eq = yes (cong inj₁ eq)
   U-dec (G ⊕ H  ) (inj₁ x) (inj₁ x') | no neq = no (neq ∘ decong-inj₁)
@@ -98,11 +101,21 @@ data Pattern {n : ℕ} (F : Functor n) : U n → Set where
 ⟦ prod lpat rpat ⟧ᴾ f = ⟦ lpat ⟧ᴾ f × ⟦ rpat ⟧ᴾ f
 ⟦ elem hpat tpat ⟧ᴾ f = ⟦ hpat ⟧ᴾ f × ⟦ tpat ⟧ᴾ f
 
+defaultᴾ : {l : Level} {n : ℕ} {F : Functor n} {G : U n}
+           (pat : Pattern F G) (f : U n → Set l) → ((H : U n) → f H) → ⟦ pat ⟧ᴾ f
+defaultᴾ (var {G}       ) f g = g G
+defaultᴾ (k x           ) f g = tt
+defaultᴾ (child pat     ) f g = defaultᴾ pat f g
+defaultᴾ (left pat      ) f g = defaultᴾ pat f g
+defaultᴾ (right pat     ) f g = defaultᴾ pat f g
+defaultᴾ (prod lpat rpat) f g = defaultᴾ lpat f g , defaultᴾ rpat f g
+defaultᴾ (elem hpat tpat) f g = defaultᴾ hpat f g , defaultᴾ tpat f g
+
 module PatternMatching {n : ℕ} {F : Functor n} where
 
   ⟦_⟧ᴾᵁ : {G : U n} → Pattern F G → (U n → U n) → (U n → U n) → U n
   ⟦ var  {G}       ⟧ᴾᵁ f g = f G
-  ⟦ k x            ⟧ᴾᵁ f g = k ⊤ (λ _ _ → yes refl)
+  ⟦ k x            ⟧ᴾᵁ f g = one
   ⟦ child pat      ⟧ᴾᵁ f g = ⟦ pat  ⟧ᴾᵁ f g
   ⟦ left pat       ⟧ᴾᵁ f g = ⟦ pat  ⟧ᴾᵁ f g
   ⟦ right pat      ⟧ᴾᵁ f g = ⟦ pat  ⟧ᴾᵁ f g

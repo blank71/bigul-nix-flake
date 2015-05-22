@@ -187,7 +187,8 @@ module AlignLens {S V : Set} (source-condition : S → Par Bool) (match? : S →
     align-all-false vs ss' align↦
   align-all-false (v ∷ vs) (s ∷ ss) (_>>=_ {x = nothing} first-match↦ (create-and-check↦ >>= align↦ >>= return refl)) =
     align-all-false vs (s ∷ ss) align↦
- put : List S → List V → Par (List S)
+
+  put : List S → List V → Par (List S)
   put ss vs = filterᴾ source-condition ss >>= λ { (filtered , residual) →
               align vs filtered >>= λ { (concealed , synced) →
               return (unfilterᴾ (concealed ++ synced) residual) } }
