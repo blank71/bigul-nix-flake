@@ -8,4 +8,22 @@ J.~Nathan Foster, Michael~B. Greenwald, Jonathan~T. Moore, Benjamin~C. Pierce,
 \newblock {\em ACM Transactions on Programming Languages and Systems},
   29(3):17, 2007.
 
+\bibitem{Gibbons-calculating-functional-programs}
+Jeremy Gibbons.
+\newblock Calculating functional programs.
+\newblock In {\em Algebraic and Coalgebraic Methods in the Mathematics of
+  Program Construction}, number 2297 in Lecture Notes in Computer Science,
+  chapter~5, pages 149--201. Springer-Verlag, 2002.
+
+\bibitem{Moggi-monads}
+Eugenio Moggi.
+\newblock Notions of computation and monads.
+\newblock {\em Information and Computation}, 93(1):55--92, 1991.
+
+\bibitem{Wadler-essence}
+Philip Wadler.
+\newblock The essence of functional programming.
+\newblock In {\em Principles of Programming Languages}, POPL'92, pages 1--14.
+  ACM, 1992.
+
 \end{thebibliography}

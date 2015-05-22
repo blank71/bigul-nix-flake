@@ -49,11 +49,17 @@ bookstore-CompleteExpr = (return refl >>= return refl) , tt , tt , tt , tt
 sbooks : ⟦ list SBookU ⟧ emptyTEnv
 sbooks = ("Harry Potter" , "JK Rowling" , 1997 , 950) ∷ ("The Lord of the Rings" , "JRR Tolkien" , 1954 , 450) ∷ []
 
+vbooks' : ⟦ list VBookU ⟧ emptyTEnv
+vbooks' = ("Harry Potter" , 850) ∷ ("The Hitchhiker's Guide to the Galaxy" , 650) ∷ []
+
 vbooks : ⟦ list VBookU ⟧ emptyTEnv
-vbooks = ("Harry Potter" , 850) ∷ ("The Hitchhiker's Guide to the Galaxy" , 650) ∷ []
+vbooks = ("Harry Potter" , 950) ∷ ("The Lord of the Rings" , 450) ∷ []
 
 test-get : Maybe (⟦ list VBookU ⟧ emptyTEnv)
 test-get = runPar (Lens.get (interp emptyF bookstore bookstore-CompleteExpr) sbooks)
 
 test-put : Maybe (⟦ list SBookU ⟧ emptyTEnv)
 test-put = runPar (Lens.put (interp emptyF bookstore bookstore-CompleteExpr) sbooks vbooks)
+
+test-put' : Maybe (⟦ list SBookU ⟧ emptyTEnv)
+test-put' = runPar (Lens.put (interp emptyF bookstore bookstore-CompleteExpr) sbooks vbooks')

@@ -5,9 +5,20 @@
 %subst keyword a = "\keyword{" a "}"
 %subst conid a = "\identifier{" a "}"
 %subst varid a = "\identifier{" a "}"
+%format (HIDE(x)) = "{}^{\color{gray}" x "}"
 %format Set = "\constructor{Set}"
 %format Set1 = "\constructor{Set_1}"
-%format MAPSTO = "\mathrel{\mapsto}"
+%format Set₁ = Set1
+%format : = "{:}"
+%format ↦ = "\mathrel{\mapsto}"
+%link ↦ _↦_
+%format _↦_ = _ "\kern.5\underscorespace{" ↦ "}\kern-\underscorespace" _
+%format MAPSTO = ↦
+%format /↦ = "\mathrel{\not\mapsto}"
+%link /↦ _/↦
+%format _/↦ = _ "\kern.5\underscorespace{" /↦ "}"
+%format (Sigma(t)) = "\mathrm{\Sigma}\kern\binderspace[\," t "\,]\hskip\binderskip"
+%format ⊎ = "\mathrel{\uplus}"
 %format Maybe = "\constructor{Maybe}"
 %format nothing = "\constructor{nothing}"
 %format just = "\constructor{just}"
@@ -25,10 +36,14 @@
 %link then assert_then_
 %format assert_then_ = assert _ then "\kern-\underscorespace" _
 %link >>= _>>=_
-%format (HIDE(x)) = "{}^{\color{gray}" x "}"
+%format Lens = "\constructor{Lens}"
 
 \newlength{\underscorespace}
 \setlength{\underscorespace}{.8pt}
+\newlength{\binderspace}
+\setlength{\binderspace}{.8pt}
+\newlength{\binderskip}
+\setlength{\binderskip}{.8pt}
 
 \newcommand{\keyword}[1]{\mathbf{#1}}
 \newcommand{\identifier}[1]{\mathit{#1}}
@@ -47,6 +62,7 @@
 \newcommand{\reason}[1]{\quad\{\,\text{#1}\,\}}
 
 \newcommand{\BiGUL}{\textsc{BiGUL}}
+\newcommand{\Agda}{\textsc{Agda}}
 \newcommand{\PutGet}{\textsc{PutGet}}
 \newcommand{\GetPut}{\textsc{GetPut}}
 
@@ -70,80 +86,114 @@ National Institute of Informatics, Japan}
 \section{Decidable partiality}
 \label{sec:partiality}
 
-By ``decidable partiality'' we mean that the transformations are actually total functions which wrap their results in the standard |Maybe| datatype:
+The bidirectional transformations discussed in this paper are ``decidably partial''.
+By ``decidable partiality'' we mean that the transformations are actually total functions which wrap their results in the standard |Maybe| datatype\todo{Explanation of \Agda\ datatype definition}:
 \begin{code}
 data ^^^Maybe (A : Set) : Set where
   ^^^just     : A -> Maybe A
   ^^^nothing  : Maybe A
 \end{code}
-This is different from the usual partial functions as formalised in terms of complete partial orders:
-In \autoref{sec:BiGUL} we will need to define programs that produce some result or fail respectively when their input fails or produces some result, but this is not possible in the setting of complete partial orders, since such functions violate monotonicity, a necessary condition for computability.
+The result of a piece of successful computation is wrapped in the |just| constructor, while failed computation is represented by |nothing|.
+The behaviour of decidably partial functions is different from the usual partial functions as formalised in terms of complete partial orders (see, e.g.,~\cite{Gibbons-calculating-functional-programs}):
+In \autoref{sec:BiGUL} we will need to define programs that produce some result or fail respectively when a sub-program fails or produces some result, but this is not possible in the setting of complete partial orders (since such functions violate monotonicity, a necessary condition for computability).
 
+We can choose to write our decidably partial bidirectional transformations directly as |Maybe|-programs, but when proving their well-behavedness, we will need to analyse or establish how a piece of decidably partial computation succeeds or fails, and this task would be much easier if the computation steps leading to success or failure are reified as data.
+The reification starts from a deep embedding of the combinators that we will use for writing decidably partial programs:\todo{\Agda\ naming rules}
 \begin{code}
 data ^^^Par : Set -> Set1 where
-  ^^^return        : (HIDE({A : Set} ->)) A -> Par A
-  ^^^_>>=_         : (HIDE({A B : Set} ->)) Par A -> (A -> Par B) -> Par B
-  ^^^fail          : (HIDE({A : Set} ->)) Par A
-  ^^^catch         : (HIDE({A B : Set} →)) Par A → (A → Par B) → Par B → Par B
-  ^^^assert_then_  : (HIDE({A : Set} →)) Bool → Par A → Par A
+  ^^^return        : (HIDE({A : Set} ->))    A -> Par A
+  ^^^_>>=_         : (HIDE({A B : Set} ->))  Par A -> (A -> Par B) -> Par B
+  ^^^fail          : (HIDE({A : Set} ->))    Par A
+  ^^^catch         : (HIDE({A B : Set} ->))  Par A -> (A → Par B) -> Par B -> Par B
+  ^^^assert_then_  : (HIDE({A B : Set} ->))  Bool -> Par A -> Par A
 \end{code}
-
+Informally:
+A value of type |Par A| represents a piece of decidably partial computation that successfully produces a value of type~|A| or fails.
+The first two constructors |return| and |_>>=_| represent the usual monadic operators~\cite{Moggi-monads,Wadler-essence}, and |fail| indicates failed computation.
+We will also need error handling, which is represented by the |catch| constructor.
+The behaviour of our |catch| is slightly different from the usual one: execution of |catch mx f my| binds the result of~|mx| to~|f| if |mx|~computes successfully, or goes to execution of~|my| if |mx|~fails to compute.
+Also we will frequently need to ensure that a |Bool| value is |true| before continuing with the rest of a program, so the constructor |assert_then_| is included for convenience --- execution of |assert b then p| becomes execution of~|p| when |b|~is |true|, or fails otherwise.
+Formally, the meaning of the constructors of |Par| is given by the following interpreter to |Maybe|:
 \begin{code}
 ^^^runPar : {A : Set} -> Par A -> Maybe A
-runPar (return x               )  = just x
-runPar (mx >>= f               )  with runPar mx
-runPar (mx >>= f               )  | just x   = runPar (f x)
-runPar (mx >>= f               )  | nothing  = nothing
-runPar fail                       = nothing
-runPar (catch mx f my          )  with runPar mx
-runPar (catch mx f my          )  | just x   = runPar (f x)
-runPar (catch mx f my          )  | nothing  = runPar my
-runPar (assert true   then mx  )  = runPar mx
-runPar (assert false  then mx  )  = nothing
+runPar (return x) = just x
+runPar (mx >>= f)  with runPar mx
+runPar (mx >>= f)  | just x   = runPar (f x)
+runPar (mx >>= f)  | nothing  = nothing
+runPar fail = nothing
+runPar (catch mx f my)  with runPar mx
+runPar (catch mx f my)  | just x   = runPar (f x)
+runPar (catch mx f my)  | nothing  = runPar my
+runPar (assert true   then mx)  = runPar mx
+runPar (assert false  then mx)  = nothing
 \end{code}
+We say that |mx : Par A| computes to |x : A| exactly when |runPar mx ≡ just x|, and that |mx|~fails to compute exactly when |runPar mx ≡ nothing|.\todo{Equality type}\
+These two equalities are what we aim to reify as data next.
 
-\begin{figure}
+\begin{figure}[t]
+\begin{center}
+\setlength{\mathindent}{0em}
 \begin{code}
 mutual
 
-  data CompSeq : {A : Set} → Par A → A → Set₁ where
-    ret          :  {A : Set} {x x' : A} → x ≡ x' → CompSeq (return x) x'
-    bind         :  {A B : Set} {x : A} {mx : Par A} {f : A → Par B} {y : B} →
-                    CompSeq mx x → CompSeq (f x) y → CompSeq (mx >>= f) y
-    catch-fst    :  {A B : Set} {mx : Par A} {f : A → Par B} {my : Par B} {x : A} {z : B} →
-                    CompSeq mx x → CompSeq (f x) z → CompSeq (catch mx f my) z
-    catch-snd    :  {A B : Set} {mx : Par A} {f : A → Par B} {my : Par B} {z : B} →
-                    FailedCompSeq mx → CompSeq my z → CompSeq (catch mx f my) z
-    assert-then  :  {A : Set} {b : Bool} {mx : Par A} {x : A} → b ≡ true → CompSeq mx x → CompSeq (assert b then mx) x
+  ^^^_↦_ : (HIDE({A : Set} →)) Par A → A → Set₁
+  return x          ↦ x'  =  x ≡ x'
+  mx >>= f          ↦ y   =  (x : A) × (mx ↦ x) × (f x ↦ y)
+  fail              ↦ x   =  ⊥
+  catch mx f my     ↦ z   =  ((x : A) × (mx ↦ x) × (f x ↦ z)) ⊎
+                             ((mx /↦) × (my ↦ z))
+  assert b then mx  ↦ x   =  (b ≡ true) × (mx ↦ x)
 
-  data FailedCompSeq : {A : Set} → Par A → Set₁ where
-    bind-fst   : {A B : Set} {mx : Par A} {f : A → Par B} → FailedCompSeq mx → FailedCompSeq (mx >>= f)
-    bind-snd   : {A B : Set} {mx : Par A} {x : A} {f : A → Par B} →
-                 CompSeq mx x → FailedCompSeq (f x) → FailedCompSeq (mx >>= f)
-    fail       : {A : Set} → FailedCompSeq (fail {A})
-    catch-fst  : {A B : Set} {mx : Par A} {f : A → Par B} {my : Par B} →
-                 FailedCompSeq mx → FailedCompSeq my → FailedCompSeq (catch mx f my)
-    catch-snd  : {A B : Set} {mx : Par A} {f : A → Par B} {my : Par B} {x : A} →
-                 CompSeq mx x → FailedCompSeq (f x) → FailedCompSeq (catch mx f my)
-    assert-fst : {A : Set} {mx : Par A} {b : Bool} → b ≡ false → FailedCompSeq (assert b then mx)
-    assert-snd : {A : Set} {mx : Par A} {b : Bool} → b ≡ true → FailedCompSeq mx → FailedCompSeq (assert b then mx)
+  ^^^_/↦ : (HIDE({A : Set} →)) Par A → Set₁
+  return x           /↦  =  ⊥
+  mx >>= f           /↦  =  (mx /↦) ⊎ ((x : A) × (mx ↦ x) × (f x /↦))
+  fail               /↦  =  ⊤
+  catch mx f my      /↦  =  ((mx /↦) × (my /↦)) ⊎
+                            ((x : A) × (mx ↦ x) × (f x /↦))
+  assert b then mx   /↦  =  (b ≡ false) ⊎ ((b ≡ true) × (mx /↦))
 \end{code}
-\caption{Definitions of |CompSeq| and |FailedCompSeq|.}
+\end{center}
+\caption{Definitions of |_↦_|~and~|_/↦|.}
 \label{fig:CompSeq}
 \end{figure}
+
+Our reification of decidably partial computation as the datatype |Par| and \Agda's support of full dependent types allow us to compute for any |mx : Par A| and |x : A| a type |mx ↦ x| whose inhabitants explain how |mx|~computes to~|x|.
+The definition of this family of types is shown in \autoref{fig:CompSeq}:
+|return x| computes to~|x'| when |x|~is exactly~|x'|, and |mx >>= f| computes to~|y| when there exists |x : A| such that |mx|~computes to~|x| and |f x| computes to~|y|, and so on.
+Here our use of the term ``computes to'' is justified, since we can prove that
+\[ |mx ↦ x| \qquad\text{and}\qquad |runPar mx ≡ just x| \]
+are equivalent, i.e., there are functions converting between the two types.
+In other words, we can prove |mx ↦ x| if and only if |runPar mx ≡ just x|, meaning that our reification of |runPar mx ≡ just x| as |mx ↦ x| is accurate.
+In the clause for |catch mx f my|, a possible situation for the computation to succeed is when |mx|~fails but |my|~succeeds subsequently.
+Thus the ways a piece of computation fails have to be reified as a family of types too.
+This family of types is defined as |_/↦| (mutually with |_↦_|), also in \autoref{fig:CompSeq}.
+Similarly, we can prove that
+\[ |mx /↦| \qquad\text{and}\qquad |runPar mx ≡ nothing| \]
+are equivalent, showing that the reification of |runPar mx ≡ nothing| as |mx /↦| is, again, accurate.
+We are thus entitled to use |_↦_| and |_/↦| for stating various properties involving success or failure of decidably partial computation, in particular well-behavedness of bidirectional transformations in the next section.
 
 \section{Putback-based bidirectional transformations}
 \label{sec:BX}
 
+\begin{code}
+record ^^^Lens (S V : Set) : Set₁ where
+  field
+    put  : S → V → Par S
+    get  : S → Par V
+    ^^^PutGet  : (HIDE({s s' : S} {v : V} →))  (put s v ↦ s') → (get s' ↦ v)
+    ^^^GetPut  : (HIDE({s : S} {v : V} →))     (get s ↦ v) → (put s v ↦ s)
+\end{code}
+
+
 \begin{align*}
            & |get s MAPSTO v| \\
-\Rightarrow& \reason{\GetPut\ for |get|} \\
+\Rightarrow& \reason{|GetPut| for |get|} \\
            & |put s v MAPSTO s| \\
-\Rightarrow& \reason{\PutGet\ for |get'|} \\
+\Rightarrow& \reason{|PutGet| for |get'|} \\
            & |get' s MAPSTO v|
 \end{align*}
 
-\section{\BiGUL}
+\section{\BiGUL\ and its lens semantics}
 \label{sec:BiGUL}
 
 \section{Reduction of common features}
@@ -153,6 +203,10 @@ mutual
 \label{sec:discussion}
 
 \todo[inline]{Haskell implementation}
+
+\todo[inline]{Towards a dependently typed version}
+
+\todo[inline]{Presentation in \Agda}
 
 \bibliographystyle{plain}
 \bibliography{/Users/joshko/Documents/bib}
