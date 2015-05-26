@@ -8,6 +8,12 @@ J.~Nathan Foster, Michael~B. Greenwald, Jonathan~T. Moore, Benjamin~C. Pierce,
 \newblock {\em ACM Transactions on Programming Languages and Systems},
   29(3):17, 2007.
 
+\bibitem{Gibbons-BMF}
+Jeremy Gibbons.
+\newblock An introduction to the {Bird}-{Meertens} formalism.
+\newblock In {\em New Zealand Formal Program Development Colloquium}, pages
+  1--12, 1994.
+
 \bibitem{Gibbons-calculating-functional-programs}
 Jeremy Gibbons.
 \newblock Calculating functional programs.
@@ -19,6 +25,17 @@ Jeremy Gibbons.
 Eugenio Moggi.
 \newblock Notions of computation and monads.
 \newblock {\em Information and Computation}, 93(1):55--92, 1991.
+
+\bibitem{Pacheco-putlenses}
+Hugo Pacheco, Zhenjiang Hu, and Sebastian Fischer.
+\newblock Monadic combinators for ``putback'' style bidirectional programming.
+\newblock In {\em Partial Evaluation and Program Manipulation}, PEPM'14, pages
+  39--50. ACM, 2014.
+
+\bibitem{UFP-HoTT}
+{The Univalent Foundations Program}.
+\newblock {\em Homotopy Type Theory: Univalent Foundations of Mathematics}.
+\newblock Institute for Advanced Study, Princeton, 2013.
 
 \bibitem{Wadler-essence}
 Philip Wadler.

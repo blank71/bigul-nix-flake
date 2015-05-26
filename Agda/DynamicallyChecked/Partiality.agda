@@ -193,6 +193,13 @@ infix 0 _≅_
 _≅_ : Set → Set → Set₁
 _≅_ = Iso
 
+empty-iso : {A B : Set} → A ≅ B
+empty-iso = record
+  { to   = const fail
+  ; from = const fail
+  ; to-from-inverse = λ ()
+  ; from-to-inverse = λ () }
+
 id-iso : {A : Set} → A ≅ A
 id-iso = record
   { to   = return
@@ -213,20 +220,6 @@ trans-iso {A} {B} {C} iso-l iso-r = record
   ; from = Iso.from iso-l <=< Iso.from iso-r
   ; from-to-inverse = λ { (r-comp >>= l-comp) → Iso.from-to-inverse iso-l l-comp >>= Iso.from-to-inverse iso-r r-comp }
   ; to-from-inverse = λ { (l-comp >>= r-comp) → Iso.to-from-inverse iso-r r-comp >>= Iso.to-from-inverse iso-l l-comp } }
-
-prod-unit-iso : {A : Set} → A ≅ A × ⊤
-prod-unit-iso = record
-  { to   = return ∘ flip _,_ tt
-  ; from = return ∘ proj₁
-  ; from-to-inverse = λ { {_} {._} (return refl) → return refl }
-  ; to-from-inverse = λ { {._}     (return refl) → return refl } }
-
-prod-comm-iso : {A B : Set} → A × B ≅ B × A
-prod-comm-iso = record
-  { to   = return ∘ swap
-  ; from = return ∘ swap
-  ; from-to-inverse = λ { {_} {._} (return refl) → return refl }
-  ; to-from-inverse = λ { {_} {._} (return refl) → return refl } }
 
 dependency-iso : {A B : Set} → (A → B) → Decidable (_≡_ {A = B}) → A × B ≅ A
 dependency-iso {A} {B} f dec =

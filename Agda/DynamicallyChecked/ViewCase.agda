@@ -1,4 +1,8 @@
-module DynamicallyChecked.ViewCase (S V : Set) where
+open import Relation.Nullary
+open import Relation.Binary
+open import Relation.Binary.PropositionalEquality
+
+module DynamicallyChecked.ViewCase (S V : Set) (dec : Decidable (_≡_ {A = V})) where
 
 open import DynamicallyChecked.Partiality
 open import DynamicallyChecked.Utilities
@@ -13,8 +17,6 @@ open import Data.Maybe
 open import Data.Nat
 open import Data.Fin
 open import Data.List
-open import Relation.Nullary
-open import Relation.Binary.PropositionalEquality
 
 
 Branch : Set₁
@@ -26,7 +28,14 @@ get-selected lens iso s = Lens.get lens s >>= Iso.to iso
 put : (bs : List Branch) → S → V → Par S
 put []                       s v = fail
 put ((V' , lens , iso) ∷ bs) s v = catch (Iso.from iso v) (Lens.put lens s)
-                                         (put bs s v >>= λ s' → catch (get-selected lens iso s') (const fail) (return s'))
+                                         (put bs s v >>= λ s' → catch (get-selected lens iso s')
+                                                                      (guarded-return s' v)
+                                                                      (return s'))
+  where
+    guarded-return : S → V → V → Par S
+    guarded-return s' v v' with dec v v'
+    guarded-return s' v v' | yes _ = return s'
+    guarded-return s' v v' | no  _ = fail
 
 get : (bs : List Branch) → S → Par V
 get []                       s = fail
@@ -37,7 +46,10 @@ PutGet : (bs : List Branch) {s s' : S} {v : V} → put bs s v ↦ s' → get bs 
 PutGet []                       ()
 PutGet ((V' , lens , iso) ∷ bs) (catch-fst from-v↦v' l-put-s-v'↦s') =
   catch-fst (Lens.PutGet lens l-put-s-v'↦s' >>= Iso.from-to-inverse iso from-v↦v') (return refl)
-PutGet ((V' , lens , iso) ∷ bs) (catch-snd from↦ᶠ (l-put↦ >>= catch-fst _ ()))
+PutGet ((V' , lens , iso) ∷ bs) {v = v} (catch-snd from↦ᶠ (l-put↦ >>= catch-fst {x = v'} _ comp)) with dec v v'
+PutGet ((V' , lens , iso) ∷ bs) (catch-snd from↦ᶠ (l-put↦ >>= catch-fst get↦ (return refl))) | yes refl =
+  catch-fst get↦ (return refl)
+PutGet ((V' , lens , iso) ∷ bs) {v = v} (catch-snd from↦ᶠ (l-put↦ >>= catch-fst {x = v'} _ ())) | no  _
 PutGet ((V' , lens , iso) ∷ bs) (catch-snd from↦ᶠ (l-put↦ >>= catch-snd get-selected↦ᶠ (return refl))) =
   catch-snd get-selected↦ᶠ (PutGet bs l-put↦ >>= catch-snd from↦ᶠ (return refl))
 

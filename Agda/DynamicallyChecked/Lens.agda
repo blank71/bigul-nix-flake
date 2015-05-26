@@ -57,13 +57,6 @@ iso-lens iso = record
   ; PutGet = Iso.from-to-inverse iso
   ; GetPut = Iso.to-from-inverse iso }
 
-fail-lens : {S V : Set} → S ⇆ V
-fail-lens = record
-  { put = λ s v → fail
-  ; get = λ s → fail
-  ; PutGet = λ ()
-  ; GetPut = λ () }
-
 skip-lens : {S : Set} → S ⇆ ⊤
 skip-lens = record
   { put = λ s _ → return s

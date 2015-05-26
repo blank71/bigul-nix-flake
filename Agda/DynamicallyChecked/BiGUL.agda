@@ -29,6 +29,7 @@ mutual
     update  : {S : U n} → (pat : Pattern F S) (bs : PatBiGUL pat) → BiGUL S (PatBiGULViews pat bs)
     rearr   : {S V V' : U n} → (vpat : Pattern F V) (vpat' : Pattern F V') (expr : Expr vpat vpat')
                                (b : BiGUL S V') → BiGUL S V
+    dep     : {S V V' : U n} → (⟦ V ⟧ (μ F) → ⟦ V' ⟧ (μ F)) → BiGUL S V → BiGUL S (V ⊗ V')
     caseS   : {S V : U n} → (branches : List (CaseSBranch S V)) → BiGUL S V
     caseV   : {S V : U n} → (branches : List (CaseVBranch S V)) → BiGUL S V
     align   : {S V : U n} → (source-condition : ⟦ S ⟧ (μ F) → Par Bool) (match? : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → Par Bool)
@@ -71,6 +72,7 @@ mutual
   BiGULCompleteExpr replace = ⊤
   BiGULCompleteExpr (update pat bs) = PatBiGULCompleteExpr pat bs
   BiGULCompleteExpr (rearr vpat vpat' expr b) = CompleteExpr vpat vpat' expr × BiGULCompleteExpr b
+  BiGULCompleteExpr (dep f b) = BiGULCompleteExpr b
   BiGULCompleteExpr (caseS branches) = CaseSBranchesCompleteExpr branches
   BiGULCompleteExpr (caseV branches) = CaseVBranchesCompleteExpr branches
   BiGULCompleteExpr (align source-condition match? b create conceal) = BiGULCompleteExpr b
@@ -96,13 +98,14 @@ mutual
 mutual
 
   interp : {S V : U n} (b : BiGUL S V) → BiGULCompleteExpr b → ⟦ S ⟧ (μ F) ⇆ ⟦ V ⟧ (μ F)
-  interp fail c = fail-lens
+  interp fail c = iso-lens empty-iso
   interp skip c = skip-lens
   interp replace c = iso-lens id-iso
   interp (update pat bs) c = iso-lens (pat-iso pat) ↔ interp-update pat bs c
   interp (rearr vpat vpat' expr b) (c , c') = interp b c' ↔ iso-lens (view-rearrangement-iso vpat vpat' expr c)
+  interp (dep {V' = V'} f b) c = interp b c ↔ iso-lens (sym-iso (dependency-iso f (U-dec V')))
   interp (caseS branches) c = caseS-lens _ _ (interp-CaseSBranch branches c)
-  interp (caseV branches) c = caseV-lens _ _ (interp-CaseVBranch branches c)
+  interp (caseV {V = V} branches) c = caseV-lens _ _ (U-dec V) (interp-CaseVBranch branches c)
   interp (align source-condition match? b create conceal) c = align-lens source-condition match? (interp b c) create conceal
 
   interp-update : {S : U n} (pat : Pattern F S) (bs : PatBiGUL pat) → PatBiGULCompleteExpr pat bs →
@@ -122,7 +125,7 @@ mutual
   interp-CaseSBranch ((p , adaptive u) ∷ branches) c        = (p , adaptive u) ∷ interp-CaseSBranch branches c
   
   interp-CaseVBranch : {S V : U n} (branches : List (CaseVBranch S V)) → CaseVBranchesCompleteExpr branches →
-                       List (ViewCase.Branch (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)))
+                       List (ViewCase.Branch (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)) (U-dec V))
   interp-CaseVBranch []                     c        = []
   interp-CaseVBranch ((pat , b) ∷ branches) (c , c') =
     (PatResult pat , interp b c , sym-iso (pat-iso pat)) ∷ interp-CaseVBranch branches c'
