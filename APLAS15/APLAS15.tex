@@ -6,6 +6,7 @@
 %subst conid a = "\identifier{" a "}"
 %subst varid a = "\identifier{" a "}"
 %format (HIDE(x)) = "{}^{\color{gray}" x "}"
+%format = = "\kern.15em{=}\kern.15em"
 %format -> = →
 %format Set = "\constructor{Set}"
 %format Set1 = "\constructor{Set_1}"
@@ -15,7 +16,10 @@
 %format - = "\text-\kern-.75\underscorespace"
 %format . = "\kern.6\underscorespace\text."
 %format SEP = "\kern1.55\underscorespace;"
+%format ABBRV = "\colorbox[gray]{.9}{\rlap{\ldots}\phantom{\hskip 1.2em}\vphantom{\vrule height 1.1ex}}"
+%format tt = "\constructor{tt}"
 %format _≡_ = _ "\kern\underscorespace{" ≡ "}" _
+%link ≡ _≡_
 %format ↦ = "\mathrel{\mapsto}"
 %link ↦ _↦_
 %format _↦_ = _ "\kern.5\underscorespace{" ↦ "}\kern-\underscorespace" _
@@ -25,9 +29,12 @@
 %format _/↦ = _ "\kern.5\underscorespace{" /↦ "}"
 %format _×_ = _ "{" × "}\kern-\underscorespace" _
 %link × _×_
+%format _,_ = _ "\kern\underscorespace" , _
 %format ⊎ = "\mathrel{\uplus}"
 %format _⊎_ = _ "\kern\underscorespace{" ⊎ "}" _
 %link ⊎ _⊎_
+%format inj₁ = "\constructor{inj_1}"
+%format inj₂ = "\constructor{inj_2}"
 %format Maybe = "\constructor{Maybe}"
 %format nothing = "\constructor{nothing}"
 %format just = "\constructor{just}"
@@ -65,6 +72,39 @@
 %format put-r-b↦b' = put - r - b "{\mapsto}" b'
 %format put-l-a-b'↦a' = put - l - a - b' "{\mapsto}" a'
 %format get-r-b↦c = get - r - b "{\mapsto}" c
+%format List = "\constructor{List}"
+%format U = "\constructor{U}"
+%format list = "\constructor{list}"
+%format μ = "\mu"
+%format Pattern = "\constructor{Pattern}"
+%format var = "\constructor{var}"
+%format k = "\constructor{k}"
+%format one = "\constructor{one}"
+%format child = "\constructor{child}"
+%format left = "\constructor{left}"
+%format right = "\constructor{right}"
+%format prod = "\constructor{prod}"
+%format elem = "\constructor{elem}"
+%format Expr = "\constructor{Expr}"
+%format BiGUL = "\constructor{BiGUL}"
+%format failB = "\constructor{fail}"
+%format skip = "\constructor{skip}"
+%format replace = "\constructor{replace}"
+%format update = "\constructor{update}"
+%format rearr = "\constructor{rearr}"
+%format dep = "\constructor{dep}"
+%format caseS = "\constructor{caseS}"
+%format caseV = "\constructor{caseV}"
+%format align = "\constructor{align}"
+%format BiGULs = "\constructor{BiGULs}"
+%format CaseSBranch = "\constructor{CaseSBranch}"
+%format CaseSBranchType = "\constructor{CaseSBranchType}"
+%format normal = "\constructor{normal}"
+%format adaptive = "\constructor{adaptive}"
+%format CaseVBranch = "\constructor{CaseVBranch}"
+%format replace-lens = "\mathit{replace}" - lens
+%format fail-lens = "\mathit{fail}" - lens
+%format skip-lens = "\mathit{skip}" - lens
 
 \newlength{\underscorespace}
 \setlength{\underscorespace}{.8pt}
@@ -214,9 +254,9 @@ mutual
 
 Our reification of decidably partial computation as the datatype |Par| and \Agda's support of full dependent types allow us to compute for any |mx : Par A| and |x : A| a type |mx ↦ x| whose inhabitants explain how |mx|~computes to~|x| step by step.
 The definition of this family of types is shown in \autoref{fig:CompSeq}:%
-\footnote{The type |^^^⊤ : Set| has only one inhabitant, while the type |^^^⊥ : Set| has no inhabitant --- logically they are read as truth and falsity respectively.
+\footnote{The type |^^^⊤ : Set| has exactly one constructor |tt : ⊤|, while the type |^^^⊥ : Set| has no inhabitant --- logically they are read as truth and falsity respectively.
 The type family |^^^_≡_ : {A : Set} -> A -> A -> Set| is defined such that |x ≡ y| is inhabited if and only if |x|~and~|y| are equal.
-The type former |^^^_⊎_ : Set -> Set -> Set| is disjoint union (disjunction), and the type former |^^^_×_ : Set -> Set -> Set| is cartesian product (conjunction).
+The type former |^^^_⊎_ : Set -> Set -> Set| is disjoint union (disjunction) whose constructors are |inj₁ : (HIDE({A B : Set} ->)) A -> A ⊎ B| and |inj₂ : (HIDE({A B : Set} ->)) B -> A ⊎ B|, and the type former |^^^_×_ : Set -> Set -> Set| is cartesian product (conjunction), whose constructor is~|_,_|\kern1pt.
 The symbol~`|×|' is also overloaded to denote \emph{dependent pair types} --- the inhabitants of a dependent pair type |(x : A) × B x| are pairs where the type of the second component depends on the value of the first component.
 Logically, dependent pair types are read as existentially quantified propositions --- |(x : A) × B x| is read as ``there exists |x : A| such that the property~|B| holds for~|x|''.\par
 An underscore in a right-hand side expression instructs \Agda\ to infer what should be placed there.}
@@ -244,7 +284,7 @@ satisfying the \emph{PutGet} law:
 \[ |put s v ↦ s'| \quad\text{implies}\quad |get s' ↦ v| \qquad\text{for all |s|,~|s' : S| and |v : V|} \]
 and the \emph{GetPut} law:
 \[ |get s ↦ v| \quad\text{implies}\quad |put s v ↦ s| \qquad\text{for all |s : S| and |v : V|.} \]
-In \Agda\ the above becomes just a record definition:\footnote{%
+In \Agda\ the above becomes just a record definition:\/\footnote{%
 An \Agda\ record is defined by listing the names and types of all its components, and a component type can depend on previous components.
 To access a component of an inhabitant of a record type, we should use the corresponding component extraction function.
 For example, |Lens.get : (HIDE({S V : Set} ->)) Lens S V -> S -> Par V| is for extracting the |get| component of a |Lens|.}
@@ -276,14 +316,14 @@ record ^^^Iso (A B : Set) : Set₁ where
 \begin{code}
 ^^^iso-lens : {A B : Set} → Iso A B → Lens A B
 iso-lens iso = record
-  {    put  = λ a b → Iso.from iso b
+  {    put  = λ _ b → Iso.from iso b
   SEP  get  = Iso.to iso
   SEP  PutGet  = Iso.from-to-inverse iso
   SEP  GetPut  = Iso.to-from-inverse iso }
 \end{code}
 This conversion gives us a first way to produce lenses.
 For example, the identity isomorphism between the same type --- whose |to| and |from| are both |return| --- gives rise to the ``replacing'' lens, and the empty isomorphism between any two types --- whose |to| and |from| are both |\ _ -> fail| --- gives rise to the ``failure'' lens.
-Both lenses will appear in \autoref{sec:BiGUL}.
+Both lenses will appear in \autoref{sec:basic-lenses}.
 
 To give the reader a taste of how well-behavedness proofs are constructed in our \Agda\ setting, let us try to define an operator~|_↔_| for lens composition:
 \begin{code}
@@ -328,33 +368,148 @@ For the proofs in the rest of this paper we will merely provide a sketch, but th
 
 Various bidirectional programming languages have been built based on the idea of lenses.
 Such languages would contain a set of primitive lenses, like those we build by |iso-lens|, and a set of combinators which combine smaller lenses into larger ones, like what |_↔_|~does.
-Usually these languages are designed to suggest that what they describe are |get| programs, but it has recently been proposed that the opposite \emph{putback-based} approach should be adopted instead, due to the following theorem:
+Usually these languages are designed to suggest that what they describe are |get| programs, but it has recently been argued that the opposite \emph{putback-based} approach should be adopted instead.
+The argument is based on the following theorem:
 \begin{theorem}[putback is the essence]
-Define, for any |mx|,~|my : Par A|, the type |mx ^^^≈ my| to mean that |mx MAPSTO z| if and only if |my MAPSTO z| for any |z : A|.
+Define, for every |mx|,~|my : Par A|, a type |mx ^^^≈ my| to mean that |mx MAPSTO z| if and only if |my MAPSTO z| for any |z : A|.
 Then for any |S|,~|V : Set| and two lenses |l|,~|r : Lens S V| such that
 \[ |Lens.put l s v ≈ Lens.put r s v| \qquad\text{for all |s : S| and |v : V|,} \]
 we have
 \[ |Lens.get l s ≈ Lens.get r s| \qquad\text{for all |s : S|.} \]
 \end{theorem}
-The theorem tells us that, when designing a bidirectional combinator, if we can justify the design of its |put| component, then the design of its |get| component needs no further justification, since there is no other |get| that can be paired with the same |put|.
+The theorem tells us that, when designing a bidirectional combinator, if we can justify the design of its |put| component, then its |get| component needs no further justification, since there is no other |get| that can be paired with the same |put|.
 This is in sharp contrast with the |get|-based approach, with which the designer needs to choose for each |get| one or a few possible |put| strategies to be paired with the |get|.
 This complicates the design as there would be multiple combinators with the same |get| semantics, distinguished only by differences in their |put| semantics --- this is rather counterintuitive since the programmer is supposed to think in terms of |get| instead of |put| when programming in |get|-based languages.
-Also the design is harder to justify as to why the set of particular |put| strategies are chosen, and it may well happen that, after the programmer describes a |get|, the corresponding |put| synthesised by the language is not what the programmer wants.
+Also it is harder to justify the design as to why the set of particular |put| strategies are chosen, and it may well happen that, after the programmer describes a |get|, the corresponding |put| synthesised by the language is not what the programmer wants.
 All these problems simply do not exist for the putback-based approach.
 
 
 \section{\BiGUL\ and its lens semantics}
 \label{sec:BiGUL}
 
-\section{Reduction of common features}
-\label{sec:reduction}
+Following the putback-based approach, our language \BiGUL\ describes |put| functions, i.e., updates to a source using a view.
+In general, an update proceeds by decomposing the source into several parts to be updated independently~(\autoref{sec:source-update}), and accordingly rearranging the view to match with these parts~(\autoref{sec:view-rearrangement}), until the source and the view are reduced to the extent that atomic operations can be applied~(\autoref{sec:basic-lenses}).
+When both the source and the view are lists, there is a powerful aligning operation for synchronising the two lists~(\autoref{sec:list-alignment}).
+And we can do case analyses on either the source~(\autoref{sec:source-case}) or the view~(\autoref{sec:view-case}) for describing more flexible update strategies.
+
+In the rest of this section we will present the lens semantics of each of the bidirectional operations mentioned above, and then summarise the whole language in a datatype |BiGUL| and its interpreter to |Lens| in \autoref{sec:deep-embedding}.
+
+\subsection{Replacing, failure, and skipping}
+\label{sec:basic-lenses}
+
+The three most basic lenses are replacing, failure, and skipping.
+\emph{Replacing} is applicable when the source and the view are of the same type, and its |put| semantics is discarding the original source and returning the view as the updated source.
+As mentioned in \autoref{sec:BX}, we can in fact derive the lens from the identity isomorphism:
+\begin{code}
+replace-lens : {S : Set} -> Lens S S
+replace-lens = iso-lens (record {to = return SEP from = return SEP ABBRV })
+\end{code}
+The corresponding |get| semantics is therefore just the identity function.
+Also mentioned in \autoref{sec:BX} is that we can derive the \emph{failure} lens from the empty isomorphism in the same way:
+\begin{code}
+fail-lens : {S V : Set} -> Lens S V
+fail-lens = iso-lens (record {to = fail SEP from = fail SEP ABBRV })
+\end{code}
+Both |put| and |get| of this lens fail for any input.
+On the other hand, \emph{skipping}, whose putback semantics discards the view and returns the original source, is not an instance of |iso-lens|.
+It is the first lens that we define from scratch.
+\begin{code}
+skip-lens : {S : Set} -> Lens S ⊤
+skip-lens = record { put = \ s _ -> return s SEP get = \ _ -> return tt SEP ABBRV }
+\end{code}
+Note that the view type is specified as~|⊤|, whose inhabitant can only be~|tt|: had the view type been a more complex type, there would have been no way for |get| to decide what to return.
+In general, |put| must embed all view information into the updated source so |get| can completely recover the view from the updated source, establishing |PutGet|.
+|⊤|~is a type with no information, and hence |Lens.put skip-lens| can safely ignore its view argument of type~|⊤|.
+
+\subsection{Case analysis on source}
+\label{sec:source-case}
+
+\subsection{Case analysis on view}
+\label{sec:view-case}
+
+\subsection{List alignment}
+\label{sec:list-alignment}
+
+\subsection{Source update}
+\label{sec:source-update}
+
+\subsection{View rearrangement}
+\label{sec:view-rearrangement}
+
+\subsection{Deep embedding}
+\label{sec:deep-embedding}
+
+\begin{figure}
+\hrule
+\begin{center}
+\setlength{\mathindent}{0em}
+\begin{code}
+mutual
+
+  data ^^^BiGUL : U → U → Set₁ where
+    replace  : (HIDE({S : U} →))       BiGUL S S
+    failB    : (HIDE({S V : U} →))     BiGUL S V
+    skip     : (HIDE({S : U} →))       BiGUL S one
+    update   : (HIDE({S : U} →))       (pat : Pattern S) (bs : BiGULs pat) → BiGUL S (ViewsU pat bs)
+    rearr    : (HIDE({S V V' : U} →))  (vpat : Pattern V) (vpat' : Pattern V') → Expr vpat vpat' →
+                                       BiGUL S V' → BiGUL S V
+    caseS    : (HIDE({S V : U} →))     List (CaseSBranch S V) → BiGUL S V
+    caseV    : (HIDE({S V : U} →))     List (CaseVBranch S V) → BiGUL S V
+    align    : (HIDE({S V : U} →))     (⟦ S ⟧ → Par Bool) → (⟦ S ⟧ → ⟦ V ⟧ → Par Bool) →
+                                       BiGUL S V → (⟦ V ⟧ → Par ⟦ S ⟧) →
+                                       (⟦ S ⟧ → Par (Maybe ⟦ S ⟧)) → BiGUL (list S) (list V)
+
+  BiGULs : {X : U} → Pattern X → Set₁
+  BiGULs {X} var          = (Y : U) × BiGUL X Y
+  BiGULs (k x           ) = ⊤
+  BiGULs (left pat      ) = BiGULs pat
+  BiGULs (right pat     ) = BiGULs pat
+  BiGULs (prod lpat rpat) = BiGULs lpat × BiGULs rpat
+  BiGULs (elem hpat tpat) = BiGULs hpat × BiGULs tpat
+
+  Views : {X : U} (pat : Pattern X) → BiGULs pat → U
+  Views var              (Y , _)    = Y
+  Views (k x           ) tt         = one
+  Views (left pat      ) bs         = Views pat bs
+  Views (right pat     ) bs         = Views pat bs
+  Views (prod lpat rpat) (bs , bs') = Views lpat bs ⊗ Views rpat bs'
+  Views (elem hpat tpat) (bs , bs') = Views hpat bs ⊗ Views tpat bs'
+
+  data CaseSBranchType (S V : U) : Set₁ where
+    normal   : BiGUL S V → CaseSBranchType S V
+    adaptive : (⟦ S ⟧ → Par ⟦ S ⟧) → CaseSBranchType S V
+
+  CaseSBranch : (S V : U) → Set₁
+  CaseSBranch S V = (⟦ S ⟧ → Par Bool) × CaseSBranchType S V
+
+  CaseVBranch : (S V : U) → Set₁
+  CaseVBranch S V = (pat : Pattern V) × BiGUL S (PatResultU pat)
+\end{code}
+\end{center}
+\label{fig:BiGUL}
+\end{figure}
+
+\section{Examples}
+\label{sec:examples}
+
+\todo[inline]{bookstore for align, update, and rearrangement}
+
+\todo[inline]{\textsc{BiYacc} for source and view cases}
+
+\todo[inline]{source/view if, map in terms of align}
 
 \section{Discussion}
 \label{sec:discussion}
 
+\todo[inline]{recursion (the lack thereof)}
+
+\todo[inline]{extensions: for example, iteration, view dependency}
+
 \todo[inline]{Haskell implementation}
 
 \todo[inline]{Towards a dependently typed version}
+
+\todo[inline]{stems from work on \textsc{BiFluX}; comparison with putlenses}
 
 \todo[inline]{Theory construction in terms of \Agda\ programming\\
 Regarding formalisation: ``[W]e are interested in extending what can be calculated precisely because we are not interested in the calculations themselves. Developing techniques that allow more of a derivation to be calculated allows attention to be focussed on the creative parts, which cannot be calculated.''~\cite{Gibbons-BMF}\\
