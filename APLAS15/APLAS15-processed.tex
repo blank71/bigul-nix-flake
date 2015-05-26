@@ -345,11 +345,7 @@ National Institute of Informatics, Japan\\
 \label{sec:partiality}
 
 The bidirectional transformations discussed in this paper are ``decidably partial''.
-By ``decidable partiality'' we mean that the transformations are actually total functions which wrap their results in the standard \ensuremath{\protect\hyperlink{M4d61796265}{\constructor{Maybe}}} datatype:%
-\footnote{An \Agda\ datatype is defined by listing all of its constructors along with their types in full.
-A datatype can be \emph{parametrised}, as in the case of \ensuremath{\protect\hyperlink{M4d61796265}{\constructor{Maybe}}}, which has a parameter \ensuremath{\identifier{A}\;{:}\;\constructor{Set}}, specified between the name of the datatype and the colon on the first line.
-(\ensuremath{\constructor{Set}} is the type of all (small) types.)
-Parameters can be referred to throughout a datatype definition.}
+By ``decidable partiality'' we mean that the transformations are actually total functions which wrap their results in the standard \ensuremath{\protect\hyperlink{M4d61796265}{\constructor{Maybe}}} datatype:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -420,26 +416,14 @@ In \autoref{sec:view-case} we will need to define programs that produce some res
 \ColumnHook
 \end{hscode}\resethooks
 \end{center}
+\vskip-5ex
 \caption{Definition of the interpreter of \ensuremath{\protect\hyperlink{P506172}{\constructor{Par}}} to \ensuremath{\protect\hyperlink{M4d61796265}{\constructor{Maybe}}}}
 \label{fig:runPar}
 \end{figure}
 
 We can choose to write our decidably partial bidirectional transformations directly as \ensuremath{\protect\hyperlink{M4d61796265}{\constructor{Maybe}}}-programs, but when proving their well-behavedness, we will need to analyse or establish how a piece of decidably partial computation succeeds or fails, and the task would be much easier if the computation steps leading to success or failure are reified as data.
 (An example of such proofs is given in the definition of lens composition~\ensuremath{\protect\hyperlink{_5f21945f}{\anonymous {\scalebox{.75}[1]{$\leftrightarrow$}}\kern-\underscorespace\anonymous }} in \autoref{sec:BX}.)
-The reification starts from the following datatype \ensuremath{\protect\hyperlink{P506172}{\constructor{Par}}}, which is a deep embedding of the combinators that we will use for writing decidably partial programs:%
-\footnote{Here the datatype \ensuremath{\protect\hyperlink{P506172}{\constructor{Par}}} is \emph{indexed} by \ensuremath{\constructor{Set}} (which appears to the right of the colon on the first line), meaning that \ensuremath{\protect\hyperlink{P506172}{\constructor{Par}}} is in fact a \ensuremath{\constructor{Set}}-indexed family of simultaneously defined types.\par
-As for the constructors, let us look at the simplest case, \ensuremath{\protect\hyperlink{F6661696c}{\constructor{fail}}}:
-The constructor \ensuremath{\protect\hyperlink{F6661696c}{\constructor{fail}}} constructs a value of type \ensuremath{\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{A}} for any \ensuremath{\identifier{A}\;{:}\;\constructor{Set}}.
-There is thus one argument to \ensuremath{\protect\hyperlink{F6661696c}{\constructor{fail}}}, namely \ensuremath{\identifier{A}\;{:}\;\constructor{Set}}, and the type of \ensuremath{\protect\hyperlink{F6661696c}{\constructor{fail}}}'s result depends on the value of this argument (which happens to be a type).
-This is an example of \emph{dependent function types}, whose result type can depend on the value of the argument.
-Logically, dependent function types are read as universally quantified propositions --- the dependent function type \ensuremath{\{\mskip1.5mu \identifier{x}\;{:}\;\identifier{A}\mskip1.5mu\}\;\identifier{→}\;\identifier{B}\;\identifier{x}} is read as ``for all \ensuremath{\identifier{x}\;{:}\;\identifier{A}} the property~\ensuremath{\identifier{B}} holds for~\ensuremath{\identifier{x}}''.
-(Ordinary function types, on the other hand, denote implications logically.)\par
-Back to \ensuremath{\protect\hyperlink{F6661696c}{\constructor{fail}}}: most of the time \Agda\ can infer what \ensuremath{\protect\hyperlink{F6661696c}{\constructor{fail}}}'s argument should be based on how \ensuremath{\protect\hyperlink{F6661696c}{\constructor{fail}}} is used, so we make the argument \emph{implicit} by enclosing it in curly brackets.
-(Explicit arguments, on the other hand, are enclosed in round brackets.)
-We can then invoke \ensuremath{\protect\hyperlink{F6661696c}{\constructor{fail}}} without supplying the argument, leaving it for \Agda\ to infer.
-We de-emphasise implicit arguments typographically when they cause visual annoyance, as in this case.\par
-An \Agda\ name can be used as an infix (or, in general, mixfix) operator when the name contains underscores, in which case the underscores indicate where the arguments should go.
-For example, we can apply \ensuremath{\protect\hyperlink{_5f3e3e3d5f}{\anonymous {\bind }\kern-\underscorespace\anonymous }} to arguments \ensuremath{\identifier{mx}}~and~\ensuremath{\identifier{f}} by writing either \ensuremath{\protect\hyperlink{_5f3e3e3d5f}{\anonymous {\bind }\kern-\underscorespace\anonymous }\;\identifier{mx}\;\identifier{f}} or \ensuremath{\identifier{mx}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\identifier{f}}.}
+The reification starts from the following datatype \ensuremath{\protect\hyperlink{P506172}{\constructor{Par}}}, which is a deep embedding of the combinators that we will use for writing decidably partial programs:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -483,119 +467,37 @@ Also we will frequently need to ensure that a \ensuremath{\constructor{Bool}} va
 
 Formally, the meaning of the constructors of \ensuremath{\protect\hyperlink{P506172}{\constructor{Par}}} is given by the interpreter \ensuremath{\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;{:}\;\{\mskip1.5mu \identifier{A}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{A}\;\identifier{→}\;\protect\hyperlink{M4d61796265}{\constructor{Maybe}}\;\identifier{A}} shown in \autoref{fig:runPar}.
 We say that \ensuremath{\identifier{mx}\;{:}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{A}} computes to \ensuremath{\identifier{x}\;{:}\;\identifier{A}} exactly when \ensuremath{\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;\identifier{mx}\;\protect\hyperlink{_5f22615f}{\identifier{≡}}\;\protect\hyperlink{J6a757374}{\constructor{just}}\;\identifier{x}}, and that \ensuremath{\identifier{mx}}~fails to compute exactly when \ensuremath{\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;\identifier{mx}\;\protect\hyperlink{_5f22615f}{\identifier{≡}}\;\protect\hyperlink{N6e6f7468696e67}{\constructor{nothing}}}.
-These two equalities are what we aim to reify as data next.
-
-\begin{figure}[t]
-\begin{center}
-\setlength{\mathindent}{0em}
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{21}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{22}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{26}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{27}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{29}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{30}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[B]{}\keyword{mutual}{}\<[E]%
-\\[\blanklineskip]%
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\raisebox{\ht\strutbox}{\hypertarget{_5f21a65f}{}}\anonymous \kern.5\underscorespace{\mathrel{\mapsto}}\kern-\underscorespace\anonymous \index{_5f21a65f@\ensuremath{\anonymous \kern.5\underscorespace{\mathrel{\mapsto}}\kern-\underscorespace\anonymous }}\;{:}\;\{\mskip1.5mu \identifier{A}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{A}\;\identifier{→}\;\identifier{A}\;\identifier{→}\;\constructor{Set_1}{}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\protect\hyperlink{R72657475726e}{\constructor{return}}\;\identifier{x}\;{}\<[21]%
-\>[21]{}\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x'}\;{}\<[27]%
-\>[27]{}\kern.15em{=}\kern.15em\;{}\<[30]%
-\>[30]{}\identifier{x}\;\protect\hyperlink{_5f22615f}{\identifier{≡}}\;\identifier{x'}{}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\identifier{mx}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\identifier{f}\;{}\<[21]%
-\>[21]{}\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{y}\;{}\<[27]%
-\>[27]{}\kern.15em{=}\kern.15em\;{}\<[30]%
-\>[30]{}(\identifier{x}\;{:}\;\anonymous )\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;(\identifier{mx}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;(\identifier{f}\;\identifier{x}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{y}){}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\protect\hyperlink{F6661696c}{\constructor{fail}}\;{}\<[21]%
-\>[21]{}\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x}\;{}\<[27]%
-\>[27]{}\kern.15em{=}\kern.15em\;{}\<[30]%
-\>[30]{}\protect\hyperlink{_22a5}{\identifier{⊥}}{}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\protect\hyperlink{C6361746368}{\constructor{catch}}\;\identifier{mx}\;\identifier{f}\;\identifier{my}\;{}\<[21]%
-\>[21]{}\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{y}\;{}\<[27]%
-\>[27]{}\kern.15em{=}\kern.15em\;{}\<[30]%
-\>[30]{}((\identifier{x}\;{:}\;\anonymous )\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;(\identifier{mx}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;(\identifier{f}\;\identifier{x}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{y}))\;\protect\hyperlink{_5f228e5f}{\mathrel{\uplus}}\;{}\<[E]%
-\\
-\>[30]{}((\identifier{mx}\;\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;(\identifier{my}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{y})){}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\protect\hyperlink{A6173736572745f7468656e5f}{\constructor{assert}}\;\identifier{b}\;\protect\hyperlink{A6173736572745f7468656e5f}{\constructor{then}}\;\identifier{mx}\;{}\<[21]%
-\>[21]{}\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x}\;{}\<[27]%
-\>[27]{}\kern.15em{=}\kern.15em\;{}\<[30]%
-\>[30]{}(\identifier{b}\;\protect\hyperlink{_5f22615f}{\identifier{≡}}\;\constructor{true})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;(\identifier{mx}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x}){}\<[E]%
-\\[\blanklineskip]%
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\raisebox{\ht\strutbox}{\hypertarget{_5f2f21a6}{}}\anonymous \kern.5\underscorespace{\mathrel{\not\mapsto}}\index{_5f2f21a6@\ensuremath{\anonymous \kern.5\underscorespace{\mathrel{\not\mapsto}}}}\;{:}\;\{\mskip1.5mu \identifier{A}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{A}\;\identifier{→}\;\constructor{Set_1}{}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\protect\hyperlink{R72657475726e}{\constructor{return}}\;\identifier{x}\;{}\<[22]%
-\>[22]{}\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}}\;{}\<[26]%
-\>[26]{}\kern.15em{=}\kern.15em\;{}\<[29]%
-\>[29]{}\protect\hyperlink{_22a5}{\identifier{⊥}}{}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\identifier{mx}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\identifier{f}\;{}\<[22]%
-\>[22]{}\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}}\;{}\<[26]%
-\>[26]{}\kern.15em{=}\kern.15em\;{}\<[29]%
-\>[29]{}(\identifier{mx}\;\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}})\;\protect\hyperlink{_5f228e5f}{\mathrel{\uplus}}\;((\identifier{x}\;{:}\;\anonymous )\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;(\identifier{mx}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;(\identifier{f}\;\identifier{x}\;\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}})){}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\protect\hyperlink{F6661696c}{\constructor{fail}}\;{}\<[22]%
-\>[22]{}\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}}\;{}\<[26]%
-\>[26]{}\kern.15em{=}\kern.15em\;{}\<[29]%
-\>[29]{}\protect\hyperlink{_22a4}{\identifier{⊤}}{}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\protect\hyperlink{C6361746368}{\constructor{catch}}\;\identifier{mx}\;\identifier{f}\;\identifier{my}\;{}\<[22]%
-\>[22]{}\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}}\;{}\<[26]%
-\>[26]{}\kern.15em{=}\kern.15em\;{}\<[29]%
-\>[29]{}((\identifier{mx}\;\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;(\identifier{my}\;\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}}))\;\protect\hyperlink{_5f228e5f}{\mathrel{\uplus}}\;{}\<[E]%
-\\
-\>[29]{}((\identifier{x}\;{:}\;\anonymous )\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;(\identifier{mx}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;(\identifier{f}\;\identifier{x}\;\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}})){}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\protect\hyperlink{A6173736572745f7468656e5f}{\constructor{assert}}\;\identifier{b}\;\protect\hyperlink{A6173736572745f7468656e5f}{\constructor{then}}\;\identifier{mx}\;{}\<[22]%
-\>[22]{}\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}}\;{}\<[26]%
-\>[26]{}\kern.15em{=}\kern.15em\;{}\<[29]%
-\>[29]{}(\identifier{b}\;\protect\hyperlink{_5f22615f}{\identifier{≡}}\;\constructor{false})\;\protect\hyperlink{_5f228e5f}{\mathrel{\uplus}}\;((\identifier{b}\;\protect\hyperlink{_5f22615f}{\identifier{≡}}\;\constructor{true})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;(\identifier{mx}\;\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}})){}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-\end{center}
-\caption{Definitions of successful and failed computation steps}
-\label{fig:CompSeq}
-\end{figure}
+These first equality is what we aim to reify as data next.
 
 Our reification of decidably partial computation as the datatype \ensuremath{\protect\hyperlink{P506172}{\constructor{Par}}} and \Agda's support of full dependent types allow us to compute for any \ensuremath{\identifier{mx}\;{:}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{A}} and \ensuremath{\identifier{x}\;{:}\;\identifier{A}} a type \ensuremath{\identifier{mx}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x}} whose inhabitants explain how \ensuremath{\identifier{mx}}~computes to~\ensuremath{\identifier{x}} step by step.
-The definition of this family of types is shown in \autoref{fig:CompSeq}:%
-\footnote{The type \ensuremath{\raisebox{\ht\strutbox}{\hypertarget{_22a4}{}}\identifier{⊤}\index{_22a4@\ensuremath{\identifier{⊤}}}\;{:}\;\constructor{Set}} has exactly one constructor \ensuremath{\constructor{tt}\;{:}\;\protect\hyperlink{_22a4}{\identifier{⊤}}}, while the type \ensuremath{\raisebox{\ht\strutbox}{\hypertarget{_22a5}{}}\identifier{⊥}\index{_22a5@\ensuremath{\identifier{⊥}}}\;{:}\;\constructor{Set}} has no inhabitant --- logically they are read as truth and falsity respectively.
-The type family \ensuremath{\raisebox{\ht\strutbox}{\hypertarget{_5f22615f}{}}\anonymous \kern\underscorespace{\identifier{≡}}\anonymous \index{_5f22615f@\ensuremath{\anonymous \kern\underscorespace{\identifier{≡}}\anonymous }}\;{:}\;\{\mskip1.5mu \identifier{A}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\identifier{→}\;\identifier{A}\;\identifier{→}\;\identifier{A}\;\identifier{→}\;\constructor{Set}} is defined such that \ensuremath{\identifier{x}\;\protect\hyperlink{_5f22615f}{\identifier{≡}}\;\identifier{y}} is inhabited if and only if \ensuremath{\identifier{x}}~and~\ensuremath{\identifier{y}} are equal.
-The type former \ensuremath{\raisebox{\ht\strutbox}{\hypertarget{_5f228e5f}{}}\anonymous \kern\underscorespace{\mathrel{\uplus}}\anonymous \index{_5f228e5f@\ensuremath{\anonymous \kern\underscorespace{\mathrel{\uplus}}\anonymous }}\;{:}\;\constructor{Set}\;\identifier{→}\;\constructor{Set}\;\identifier{→}\;\constructor{Set}} is disjoint union (disjunction) whose constructors are \ensuremath{\constructor{inj_1}\;{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{A}\;\identifier{B}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\identifier{→}}\;\identifier{A}\;\identifier{→}\;\identifier{A}\;\protect\hyperlink{_5f228e5f}{\mathrel{\uplus}}\;\identifier{B}} and \ensuremath{\constructor{inj_2}\;{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{A}\;\identifier{B}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\identifier{→}}\;\identifier{B}\;\identifier{→}\;\identifier{A}\;\protect\hyperlink{_5f228e5f}{\mathrel{\uplus}}\;\identifier{B}}, and the type former \ensuremath{\raisebox{\ht\strutbox}{\hypertarget{_5fd75f}{}}\anonymous {\identifier{×}}\kern-\underscorespace\anonymous \index{_5fd75f@\ensuremath{\anonymous {\identifier{×}}\kern-\underscorespace\anonymous }}\;{:}\;\constructor{Set}\;\identifier{→}\;\constructor{Set}\;\identifier{→}\;\constructor{Set}} is cartesian product (conjunction), whose constructor is~\ensuremath{\anonymous \kern\underscorespace\identifier{,}\anonymous }\kern1pt.
-The symbol~`\ensuremath{\protect\hyperlink{_5fd75f}{\identifier{×}}}' is also overloaded to denote \emph{dependent pair types} --- the inhabitants of a dependent pair type \ensuremath{(\identifier{x}\;{:}\;\identifier{A})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;\identifier{B}\;\identifier{x}} are pairs where the type of the second component depends on the value of the first component.
-Logically, dependent pair types are read as existentially quantified propositions --- \ensuremath{(\identifier{x}\;{:}\;\identifier{A})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;\identifier{B}\;\identifier{x}} is read as ``there exists \ensuremath{\identifier{x}\;{:}\;\identifier{A}} such that the property~\ensuremath{\identifier{B}} holds for~\ensuremath{\identifier{x}}''.\par
-An underscore in a right-hand side expression instructs \Agda\ to infer what should be placed there.}
-\ensuremath{\protect\hyperlink{R72657475726e}{\constructor{return}}\;\identifier{x}} computes to~\ensuremath{\identifier{x'}} when \ensuremath{\identifier{x}}~is exactly~\ensuremath{\identifier{x'}}, and \ensuremath{\identifier{mx}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\identifier{f}} computes to~\ensuremath{\identifier{y}} when there exists \ensuremath{\identifier{x}\;{:}\;\identifier{A}} such that \ensuremath{\identifier{mx}}~computes to~\ensuremath{\identifier{x}} and \ensuremath{\identifier{f}\;\identifier{x}} computes to~\ensuremath{\identifier{y}}, and so on.
+Below is a sample of the definition of~\ensuremath{\protect\hyperlink{_5f21a65f}{\anonymous \kern.5\underscorespace{\mathrel{\mapsto}}\kern-\underscorespace\anonymous }}\kern1pt:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{11}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{17}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{20}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\raisebox{\ht\strutbox}{\hypertarget{_5f21a65f}{}}\anonymous \kern.5\underscorespace{\mathrel{\mapsto}}\kern-\underscorespace\anonymous \index{_5f21a65f@\ensuremath{\anonymous \kern.5\underscorespace{\mathrel{\mapsto}}\kern-\underscorespace\anonymous }}\;{:}\;\{\mskip1.5mu \identifier{A}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{A}\;\identifier{→}\;\identifier{A}\;\identifier{→}\;\constructor{Set_1}{}\<[E]%
+\\
+\>[B]{}\protect\hyperlink{R72657475726e}{\constructor{return}}\;\identifier{x}\;{}\<[11]%
+\>[11]{}\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x'}\;{}\<[17]%
+\>[17]{}\kern.15em{=}\kern.15em\;{}\<[20]%
+\>[20]{}\identifier{x}\;\protect\hyperlink{_5f22615f}{\identifier{≡}}\;\identifier{x'}{}\<[E]%
+\\
+\>[B]{}\identifier{mx}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\identifier{f}\;{}\<[11]%
+\>[11]{}\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{y}\;{}\<[17]%
+\>[17]{}\kern.15em{=}\kern.15em\;{}\<[20]%
+\>[20]{}(\identifier{x}\;{:}\;\anonymous )\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;(\identifier{mx}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;(\identifier{f}\;\identifier{x}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{y}){}\<[E]%
+\\
+\>[B]{}\colorbox[gray]{.9}{\rlap{\ldots}\phantom{\hskip 1.2em}\vphantom{\vrule height 1.1ex}}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+That is, \ensuremath{\protect\hyperlink{R72657475726e}{\constructor{return}}\;\identifier{x}} computes to~\ensuremath{\identifier{x'}} when \ensuremath{\identifier{x}}~is exactly~\ensuremath{\identifier{x'}}, and \ensuremath{\identifier{mx}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\identifier{f}} computes to~\ensuremath{\identifier{y}} when there exists \ensuremath{\identifier{x}\;{:}\;\identifier{A}} such that \ensuremath{\identifier{mx}}~computes to~\ensuremath{\identifier{x}} and \ensuremath{\identifier{f}\;\identifier{x}} computes to~\ensuremath{\identifier{y}} (and so on).
 Here our use of the term ``computes to'' is justified, since we can prove that
 \[ \ensuremath{\identifier{mx}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x}} \qquad\text{and}\qquad \ensuremath{\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;\identifier{mx}\;\protect\hyperlink{_5f22615f}{\identifier{≡}}\;\protect\hyperlink{J6a757374}{\constructor{just}}\;\identifier{x}} \]
 are equivalent.
 That is, a term of type \ensuremath{\identifier{mx}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x}} can be constructed if and only if \ensuremath{\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;\identifier{mx}\;\protect\hyperlink{_5f22615f}{\identifier{≡}}\;\protect\hyperlink{J6a757374}{\constructor{just}}\;\identifier{x}}, meaning that our reification of \ensuremath{\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;\identifier{mx}\;\protect\hyperlink{_5f22615f}{\identifier{≡}}\;\protect\hyperlink{J6a757374}{\constructor{just}}\;\identifier{x}} as \ensuremath{\identifier{mx}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{x}} is accurate.
-In the clause for \ensuremath{\protect\hyperlink{C6361746368}{\constructor{catch}}\;\identifier{mx}\;\identifier{f}\;\identifier{my}}, a possible situation for the computation to succeed is when \ensuremath{\identifier{mx}}~fails but \ensuremath{\identifier{my}}~succeeds subsequently.
-Thus the ways a piece of computation fails have to be reified as a family of types as well.
-This family of types is defined as \ensuremath{\protect\hyperlink{_5f2f21a6}{\anonymous \kern.5\underscorespace{\mathrel{\not\mapsto}}}} (mutually with \ensuremath{\protect\hyperlink{_5f21a65f}{\anonymous \kern.5\underscorespace{\mathrel{\mapsto}}\kern-\underscorespace\anonymous }}), also in \autoref{fig:CompSeq}.
-Similarly, we can prove that
-\[ \ensuremath{\identifier{mx}\;\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}}} \qquad\text{and}\qquad \ensuremath{\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;\identifier{mx}\;\protect\hyperlink{_5f22615f}{\identifier{≡}}\;\protect\hyperlink{N6e6f7468696e67}{\constructor{nothing}}} \]
-are equivalent, showing that the reification of \ensuremath{\protect\hyperlink{R72756e506172}{\identifier{runPar}}\;\identifier{mx}\;\protect\hyperlink{_5f22615f}{\identifier{≡}}\;\protect\hyperlink{N6e6f7468696e67}{\constructor{nothing}}} as \ensuremath{\identifier{mx}\;\protect\hyperlink{_5f2f21a6}{\mathrel{\not\mapsto}}} is again accurate.
-We are thus entitled to use \ensuremath{\protect\hyperlink{_5f21a65f}{\anonymous \kern.5\underscorespace{\mathrel{\mapsto}}\kern-\underscorespace\anonymous }} and \ensuremath{\protect\hyperlink{_5f2f21a6}{\anonymous \kern.5\underscorespace{\mathrel{\not\mapsto}}}} for stating various properties involving success or failure of decidably partial computation, in particular well-behavedness of bidirectional transformations in the next section.
+We are thus entitled to use \ensuremath{\protect\hyperlink{_5f21a65f}{\anonymous \kern.5\underscorespace{\mathrel{\mapsto}}\kern-\underscorespace\anonymous }} for stating various properties involving successful decidably partial computation, in particular well-behavedness of bidirectional transformations in the next section.
 
 \section{Putback-based bidirectional transformations}
 \label{sec:BX}
@@ -608,10 +510,7 @@ satisfying the \emph{PutGet} law:
 \[ \ensuremath{\protect\hyperlink{P707574}{\identifier{put}}\;\identifier{s}\;\identifier{v}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{s'}} \quad\text{implies}\quad \ensuremath{\protect\hyperlink{G676574}{\identifier{get}}\;\identifier{s'}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{v}} \qquad\text{for all \ensuremath{\identifier{s}},~\ensuremath{\identifier{s'}\;{:}\;\identifier{S}} and \ensuremath{\identifier{v}\;{:}\;\identifier{V}}} \]
 and the \emph{GetPut} law:
 \[ \ensuremath{\protect\hyperlink{G676574}{\identifier{get}}\;\identifier{s}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{v}} \quad\text{implies}\quad \ensuremath{\protect\hyperlink{P707574}{\identifier{put}}\;\identifier{s}\;\identifier{v}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{s}} \qquad\text{for all \ensuremath{\identifier{s}\;{:}\;\identifier{S}} and \ensuremath{\identifier{v}\;{:}\;\identifier{V}}.} \]
-In \Agda\ the above becomes just a record definition:\/\footnote{%
-An \Agda\ record is defined by listing the names and types of all its components, and a component type can depend on previous components.
-To access a component of an inhabitant of a record type, we should use the corresponding component extraction function.
-For example, \ensuremath{\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.6\underscorespace\text.\protect\hyperlink{G676574}{\identifier{get}}\;{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{S}\;\identifier{V}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\identifier{→}}\;\protect\hyperlink{L4c656e73}{\constructor{Lens}}\;\identifier{S}\;\identifier{V}\;\identifier{→}\;\identifier{S}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{V}} is for extracting the \ensuremath{\protect\hyperlink{G676574}{\identifier{get}}} component of a \ensuremath{\protect\hyperlink{L4c656e73}{\constructor{Lens}}}.}
+In \Agda\ the above becomes just a record definition:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -764,15 +663,6 @@ That is, we need to write a function converting an inhabitant of the type \ensur
 \>[4]{}\protect\hyperlink{P707574}{\identifier{put}}\;\identifier{a}\;\identifier{c}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{a'}{}\<[E]%
 \\
 \>[B]{}\kern.15em{=}\kern.15em\;{}\<[4]%
-\>[4]{}(\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.6\underscorespace\text.\protect\hyperlink{G676574}{\identifier{get}}\;\identifier{l}\;\identifier{a}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\lambda\;\identifier{b}\;\identifier{→}\;\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.6\underscorespace\text.\protect\hyperlink{P707574}{\identifier{put}}\;\identifier{r}\;\identifier{b}\;\identifier{c}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.6\underscorespace\text.\protect\hyperlink{P707574}{\identifier{put}}\;\identifier{l}\;\identifier{a})\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{a'}{}\<[E]%
-\\
-\>[B]{}\kern.15em{=}\kern.15em\;{}\<[4]%
-\>[4]{}(\identifier{b}\;{:}\;\identifier{B})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;{}\<[15]%
-\>[15]{}(\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.6\underscorespace\text.\protect\hyperlink{G676574}{\identifier{get}}\;\identifier{l}\;\identifier{a}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{b})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;{}\<[E]%
-\\
-\>[15]{}((\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.6\underscorespace\text.\protect\hyperlink{P707574}{\identifier{put}}\;\identifier{r}\;\identifier{b}\;\identifier{c}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.6\underscorespace\text.\protect\hyperlink{P707574}{\identifier{put}}\;\identifier{l}\;\identifier{a})\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{a'}){}\<[E]%
-\\
-\>[B]{}\kern.15em{=}\kern.15em\;{}\<[4]%
 \>[4]{}(\identifier{b}\;{:}\;\identifier{B})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;{}\<[15]%
 \>[15]{}(\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.6\underscorespace\text.\protect\hyperlink{G676574}{\identifier{get}}\;\identifier{l}\;\identifier{a}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{b})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;{}\<[E]%
 \\
@@ -785,9 +675,6 @@ and
 \column{4}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[4]{}\protect\hyperlink{G676574}{\identifier{get}}\;\identifier{a'}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{c}{}\<[E]%
-\\
-\>[B]{}\kern.15em{=}\kern.15em\;{}\<[4]%
-\>[4]{}(\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.6\underscorespace\text.\protect\hyperlink{G676574}{\identifier{get}}\;\identifier{l}\;\identifier{a'}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.6\underscorespace\text.\protect\hyperlink{G676574}{\identifier{get}}\;\identifier{r})\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{c}{}\<[E]%
 \\
 \>[B]{}\kern.15em{=}\kern.15em\;{}\<[4]%
 \>[4]{}(\identifier{b}\;{:}\;\identifier{B})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;(\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.6\underscorespace\text.\protect\hyperlink{G676574}{\identifier{get}}\;\identifier{l}\;\identifier{a'}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{b})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;(\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.6\underscorespace\text.\protect\hyperlink{G676574}{\identifier{get}}\;\identifier{r}\;\identifier{b}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{c}){}\<[E]%
@@ -838,7 +725,7 @@ In general, an update proceeds by decomposing the source into several parts to b
 When both the source and the view are lists, there is a powerful aligning operation for synchronising the two lists~(\autoref{sec:list-alignment}).
 And we can do case analyses on either the source~(\autoref{sec:source-case}) or the view~(\autoref{sec:view-case}) for describing more flexible update strategies.
 
-In the rest of this section we will present the lens semantics of each of the bidirectional operations mentioned above, and then summarise the whole language in a datatype \ensuremath{\constructor{BiGUL}} and its interpreter to \ensuremath{\protect\hyperlink{L4c656e73}{\constructor{Lens}}} in \autoref{sec:deep-embedding}.
+In the rest of this section we will present the lens semantics of each of the bidirectional operations mentioned above, and then summarise the whole language in a datatype \ensuremath{\constructor{BiGUL}} and its interpreter to \ensuremath{\protect\hyperlink{L4c656e73}{\constructor{Lens}}} in \autoref{sec:deep-embedding}.\todo{or maybe not}
 
 \subsection{Replacing, failure, and skipping}
 \label{sec:basic-lenses}
@@ -904,9 +791,9 @@ In general, \ensuremath{\protect\hyperlink{P707574}{\identifier{put}}} must embe
 \column{41}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{45}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[B]{}\mathit{caseS}\text-\kern-.75\underscorespace\identifier{lens}\;{:}\;\{\mskip1.5mu \identifier{S}\;\identifier{V}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\identifier{→}\;\constructor{List}\;(\protect\hyperlink{C43617365534272616e6368}{\constructor{CaseSBranch}}\;\identifier{S}\;\identifier{V})\;\identifier{→}\;\protect\hyperlink{L4c656e73}{\constructor{Lens}}\;\identifier{S}\;\identifier{V}{}\<[E]%
+\>[B]{}\mathit{caseS}\text-\kern-.75\underscorespace\identifier{lens}\;{:}\;(\identifier{S}\;\identifier{V}\;{:}\;\constructor{Set})\;\identifier{→}\;\constructor{List}\;(\protect\hyperlink{C43617365534272616e6368}{\constructor{CaseSBranch}}\;\identifier{S}\;\identifier{V})\;\identifier{→}\;\protect\hyperlink{L4c656e73}{\constructor{Lens}}\;\identifier{S}\;\identifier{V}{}\<[E]%
 \\
-\>[B]{}\mathit{caseS}\text-\kern-.75\underscorespace\identifier{lens}\;\{\mskip1.5mu \identifier{S}\mskip1.5mu\}\;\{\mskip1.5mu \identifier{V}\mskip1.5mu\}\;\identifier{bs}\;\kern.15em{=}\kern.15em\;\keyword{record}{}\<[E]%
+\>[B]{}\mathit{caseS}\text-\kern-.75\underscorespace\identifier{lens}\;\identifier{S}\;\identifier{V}\;\identifier{bs}\;\kern.15em{=}\kern.15em\;\keyword{record}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
 \>[3]{}\{\mskip1.5mu {}\<[8]%
@@ -998,6 +885,7 @@ In general, \ensuremath{\protect\hyperlink{P707574}{\identifier{put}}} must embe
 \ColumnHook
 \end{hscode}\resethooks
 \end{center}
+\vskip-5ex
 \caption{Definition of source case analysis}
 \label{fig:source-case}
 \end{figure}
@@ -1043,7 +931,7 @@ The type of \ensuremath{\mathit{caseS}\text-\kern-.75\underscorespace\identifier
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[B]{}\mathit{caseS}\text-\kern-.75\underscorespace\identifier{lens}\;{:}\;\{\mskip1.5mu \identifier{S}\;\identifier{V}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\identifier{→}\;\constructor{List}\;(\protect\hyperlink{C43617365534272616e6368}{\constructor{CaseSBranch}}\;\identifier{S}\;\identifier{V})\;\identifier{→}\;\protect\hyperlink{L4c656e73}{\constructor{Lens}}\;\identifier{S}\;\identifier{V}{}\<[E]%
+\>[B]{}\mathit{caseS}\text-\kern-.75\underscorespace\identifier{lens}\;{:}\;(\identifier{S}\;\identifier{V}\;{:}\;\constructor{Set})\;\identifier{→}\;\constructor{List}\;(\protect\hyperlink{C43617365534272616e6368}{\constructor{CaseSBranch}}\;\identifier{S}\;\identifier{V})\;\identifier{→}\;\protect\hyperlink{L4c656e73}{\constructor{Lens}}\;\identifier{S}\;\identifier{V}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 and its definition is shown in \autoref{fig:source-case}.
@@ -1065,21 +953,36 @@ The corresponding \ensuremath{\protect\hyperlink{G676574}{\identifier{get}}} sim
 \column{5}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{35}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{36}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{47}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{37}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{48}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{50}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{49}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{51}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{52}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{58}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[B]{}\mathit{caseV}\text-\kern-.75\underscorespace\identifier{lens}\;{:}\;\{\mskip1.5mu \identifier{S}\;\identifier{V}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\identifier{→}\;\constructor{List}\;\protect\hyperlink{C43617365564272616e6368}{\constructor{CaseVBranch}}\;\identifier{→}\;\protect\hyperlink{L4c656e73}{\constructor{Lens}}\;\identifier{S}\;\identifier{V}{}\<[E]%
+\>[B]{}\mathit{caseV}\text-\kern-.75\underscorespace\identifier{lens}\;{:}\;(\identifier{S}\;\identifier{V}\;{:}\;\constructor{Set})\;\identifier{→}\;\constructor{DecEq}\;\identifier{V}\;\identifier{→}\;\constructor{List}\;\protect\hyperlink{C43617365564272616e6368}{\constructor{CaseVBranch}}\;\identifier{S}\;\identifier{V}\;\identifier{→}\;\protect\hyperlink{L4c656e73}{\constructor{Lens}}\;\identifier{S}\;\identifier{V}{}\<[E]%
 \\
-\>[B]{}\mathit{caseV}\text-\kern-.75\underscorespace\identifier{lens}\;\{\mskip1.5mu \identifier{S}\mskip1.5mu\}\;\{\mskip1.5mu \identifier{V}\mskip1.5mu\}\;\identifier{bs}\;\kern.15em{=}\kern.15em\;\keyword{record}\;\{\mskip1.5mu \protect\hyperlink{P707574}{\identifier{put}}\;\kern.15em{=}\kern.15em\;\mathit{put}\;\kern1.55\underscorespace;\;\protect\hyperlink{G676574}{\identifier{get}}\;\kern.15em{=}\kern.15em\;\mathit{get}\;\kern1.55\underscorespace;\;\colorbox[gray]{.9}{\rlap{\ldots}\phantom{\hskip 1.2em}\vphantom{\vrule height 1.1ex}}\mskip1.5mu\}{}\<[E]%
+\>[B]{}\mathit{caseV}\text-\kern-.75\underscorespace\identifier{lens}\;\identifier{S}\;\identifier{V}\;\identifier{dec}\;\identifier{bs}\;\kern.15em{=}\kern.15em\;\keyword{record}\;\{\mskip1.5mu \protect\hyperlink{P707574}{\identifier{put}}\;\kern.15em{=}\kern.15em\;\mathit{put}\;\kern1.55\underscorespace;\;\protect\hyperlink{G676574}{\identifier{get}}\;\kern.15em{=}\kern.15em\;\mathit{get}\;\kern1.55\underscorespace;\;\colorbox[gray]{.9}{\rlap{\ldots}\phantom{\hskip 1.2em}\vphantom{\vrule height 1.1ex}}\mskip1.5mu\}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
 \>[3]{}\keyword{where}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\mathit{put}\;{:}\;\constructor{List}\;\protect\hyperlink{C43617365564272616e6368}{\constructor{CaseVBranch}}\;\identifier{→}\;\identifier{S}\;\identifier{→}\;\identifier{V}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{S}{}\<[E]%
+\>[5]{}\identifier{guarded}\text-\kern-.75\underscorespace\mathit{return}\;{:}\;\identifier{S}\;\identifier{→}\;\identifier{V}\;\identifier{→}\;\identifier{V}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{S}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\identifier{guarded}\text-\kern-.75\underscorespace\mathit{return}\;\identifier{s'}\;\identifier{v}\;\identifier{v'}\;\keyword{with}\;\identifier{dec}\;\identifier{v}\;\identifier{v'}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\identifier{guarded}\text-\kern-.75\underscorespace\mathit{return}\;\identifier{s'}\;\identifier{v}\;\identifier{v'}\;\mid \;\constructor{inj_1}\;{}\<[36]%
+\>[36]{}\anonymous \;\kern.15em{=}\kern.15em\;\protect\hyperlink{R72657475726e}{\constructor{return}}\;\identifier{s'}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\identifier{guarded}\text-\kern-.75\underscorespace\mathit{return}\;\identifier{s'}\;\identifier{v}\;\identifier{v'}\;\mid \;\constructor{inj_2}\;{}\<[36]%
+\>[36]{}\anonymous \;\kern.15em{=}\kern.15em\;\protect\hyperlink{F6661696c}{\constructor{fail}}{}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\mathit{put}\;{:}\;\constructor{List}\;\protect\hyperlink{C43617365564272616e6368}{\constructor{CaseVBranch}}\;\identifier{S}\;\identifier{V}\;\identifier{→}\;\identifier{S}\;\identifier{→}\;\identifier{V}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{S}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\mathit{put}\;\identifier{[]}\;{}\<[35]%
@@ -1096,27 +999,28 @@ The corresponding \ensuremath{\protect\hyperlink{G676574}{\identifier{get}}} sim
 \>[51]{}\protect\hyperlink{C6361746368}{\constructor{catch}}\;{}\<[58]%
 \>[58]{}(\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.6\underscorespace\text.\protect\hyperlink{G676574}{\identifier{get}}\;\identifier{lens}\;\identifier{s'}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\protect\hyperlink{I49736f}{\constructor{Iso}}\kern.6\underscorespace\text.\protect\hyperlink{T746f}{\identifier{to}}\;\identifier{iso})\;{}\<[E]%
 \\
-\>[58]{}(\lambda \;\anonymous \;\identifier{→}\;\protect\hyperlink{F6661696c}{\constructor{fail}})\;(\protect\hyperlink{R72657475726e}{\constructor{return}}\;\identifier{s'})){}\<[E]%
+\>[58]{}(\identifier{guarded}\text-\kern-.75\underscorespace\mathit{return}\;\identifier{s'}\;\identifier{v})\;(\protect\hyperlink{R72657475726e}{\constructor{return}}\;\identifier{s'})){}\<[E]%
 \\[\blanklineskip]%
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\mathit{get}\;{:}\;\constructor{List}\;\protect\hyperlink{C43617365564272616e6368}{\constructor{CaseVBranch}}\;\identifier{→}\;\identifier{S}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{V}{}\<[E]%
+\>[5]{}\mathit{get}\;{:}\;\constructor{List}\;\protect\hyperlink{C43617365564272616e6368}{\constructor{CaseVBranch}}\;\identifier{S}\;\identifier{V}\;\identifier{→}\;\identifier{S}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{V}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\mathit{get}\;\identifier{[]}\;{}\<[36]%
-\>[36]{}\identifier{s}\;\kern.15em{=}\kern.15em\;\protect\hyperlink{F6661696c}{\constructor{fail}}{}\<[E]%
+\>[5]{}\mathit{get}\;\identifier{[]}\;{}\<[37]%
+\>[37]{}\identifier{s}\;\kern.15em{=}\kern.15em\;\protect\hyperlink{F6661696c}{\constructor{fail}}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\mathit{get}\;((\anonymous \;\identifier{,}\;\identifier{lens}\;\identifier{,}\;\identifier{iso})\;\identifier{∷}\;\identifier{bs})\;{}\<[36]%
-\>[36]{}\identifier{s}\;\kern.15em{=}\kern.15em\;\protect\hyperlink{C6361746368}{\constructor{catch}}\;{}\<[47]%
-\>[47]{}(\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.6\underscorespace\text.\protect\hyperlink{G676574}{\identifier{get}}\;\identifier{lens}\;\identifier{s}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\protect\hyperlink{I49736f}{\constructor{Iso}}\kern.6\underscorespace\text.\protect\hyperlink{T746f}{\identifier{to}}\;\identifier{iso})\;\protect\hyperlink{R72657475726e}{\constructor{return}}\;{}\<[E]%
+\>[5]{}\mathit{get}\;((\anonymous \;\identifier{,}\;\identifier{lens}\;\identifier{,}\;\identifier{iso})\;\identifier{∷}\;\identifier{bs})\;{}\<[37]%
+\>[37]{}\identifier{s}\;\kern.15em{=}\kern.15em\;\protect\hyperlink{C6361746368}{\constructor{catch}}\;{}\<[49]%
+\>[49]{}(\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.6\underscorespace\text.\protect\hyperlink{G676574}{\identifier{get}}\;\identifier{lens}\;\identifier{s}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\protect\hyperlink{I49736f}{\constructor{Iso}}\kern.6\underscorespace\text.\protect\hyperlink{T746f}{\identifier{to}}\;\identifier{iso})\;\protect\hyperlink{R72657475726e}{\constructor{return}}\;{}\<[E]%
 \\
-\>[47]{}({}\<[50]%
-\>[50]{}\mathit{get}\;\identifier{bs}\;\identifier{s}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\lambda\;\identifier{v}\;\identifier{→}{}\<[E]%
+\>[49]{}({}\<[52]%
+\>[52]{}\mathit{get}\;\identifier{bs}\;\identifier{s}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\lambda\;\identifier{v}\;\identifier{→}{}\<[E]%
 \\
-\>[50]{}\protect\hyperlink{C6361746368}{\constructor{catch}}\;(\protect\hyperlink{I49736f}{\constructor{Iso}}\kern.6\underscorespace\text.\protect\hyperlink{F66726f6d}{\identifier{from}}\;\identifier{iso}\;\identifier{v})\;(\lambda \;\anonymous \;\identifier{→}\;\protect\hyperlink{F6661696c}{\constructor{fail}})\;(\protect\hyperlink{R72657475726e}{\constructor{return}}\;\identifier{v})){}\<[E]%
+\>[52]{}\protect\hyperlink{C6361746368}{\constructor{catch}}\;(\protect\hyperlink{I49736f}{\constructor{Iso}}\kern.6\underscorespace\text.\protect\hyperlink{F66726f6d}{\identifier{from}}\;\identifier{iso}\;\identifier{v})\;(\lambda \;\anonymous \;\identifier{→}\;\protect\hyperlink{F6661696c}{\constructor{fail}})\;(\protect\hyperlink{R72657475726e}{\constructor{return}}\;\identifier{v})){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 \end{center}
+\vskip-5ex
 \caption{Definition of view case analysis}
 \label{fig:view-case}
 \end{figure}
@@ -1236,5 +1140,39 @@ Regarding formalisation: ``[W]e are interested in extending what can be calculat
 
 \bibliographystyle{plain}
 \bibliography{/Users/joshko/Documents/bib}
+
+\newpage
+
+\section*{Appendix: \Agda\ syntax}
+
+An \Agda\ datatype is defined by listing all of its constructors along with their types in full.
+A datatype can be \emph{parametrised}, as in the case of \ensuremath{\protect\hyperlink{M4d61796265}{\constructor{Maybe}}}, which has a parameter \ensuremath{\identifier{A}\;{:}\;\constructor{Set}}, specified between the name of the datatype and the colon on the first line.
+(\ensuremath{\constructor{Set}} is the type of all (small) types.)
+Parameters can be referred to throughout a datatype definition.
+
+Here the datatype \ensuremath{\protect\hyperlink{P506172}{\constructor{Par}}} is \emph{indexed} by \ensuremath{\constructor{Set}} (which appears to the right of the colon on the first line), meaning that \ensuremath{\protect\hyperlink{P506172}{\constructor{Par}}} is in fact a \ensuremath{\constructor{Set}}-indexed family of simultaneously defined types.\par
+As for the constructors, let us look at the simplest case, \ensuremath{\protect\hyperlink{F6661696c}{\constructor{fail}}}:
+The constructor \ensuremath{\protect\hyperlink{F6661696c}{\constructor{fail}}} constructs a value of type \ensuremath{\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{A}} for any \ensuremath{\identifier{A}\;{:}\;\constructor{Set}}.
+There is thus one argument to \ensuremath{\protect\hyperlink{F6661696c}{\constructor{fail}}}, namely \ensuremath{\identifier{A}\;{:}\;\constructor{Set}}, and the type of \ensuremath{\protect\hyperlink{F6661696c}{\constructor{fail}}}'s result depends on the value of this argument (which happens to be a type).
+This is an example of \emph{dependent function types}, whose result type can depend on the value of the argument.
+Logically, dependent function types are read as universally quantified propositions --- the dependent function type \ensuremath{\{\mskip1.5mu \identifier{x}\;{:}\;\identifier{A}\mskip1.5mu\}\;\identifier{→}\;\identifier{B}\;\identifier{x}} is read as ``for all \ensuremath{\identifier{x}\;{:}\;\identifier{A}} the property~\ensuremath{\identifier{B}} holds for~\ensuremath{\identifier{x}}''.
+(Ordinary function types, on the other hand, denote implications logically.)\par
+Back to \ensuremath{\protect\hyperlink{F6661696c}{\constructor{fail}}}: most of the time \Agda\ can infer what \ensuremath{\protect\hyperlink{F6661696c}{\constructor{fail}}}'s argument should be based on how \ensuremath{\protect\hyperlink{F6661696c}{\constructor{fail}}} is used, so we make the argument \emph{implicit} by enclosing it in curly brackets.
+(Explicit arguments, on the other hand, are enclosed in round brackets.)
+We can then invoke \ensuremath{\protect\hyperlink{F6661696c}{\constructor{fail}}} without supplying the argument, leaving it for \Agda\ to infer.
+We de-emphasise implicit arguments typographically when they cause visual annoyance, as in this case.\par
+An \Agda\ name can be used as an infix (or, in general, mixfix) operator when the name contains underscores, in which case the underscores indicate where the arguments should go.
+For example, we can apply \ensuremath{\protect\hyperlink{_5f3e3e3d5f}{\anonymous {\bind }\kern-\underscorespace\anonymous }} to arguments \ensuremath{\identifier{mx}}~and~\ensuremath{\identifier{f}} by writing either \ensuremath{\protect\hyperlink{_5f3e3e3d5f}{\anonymous {\bind }\kern-\underscorespace\anonymous }\;\identifier{mx}\;\identifier{f}} or \ensuremath{\identifier{mx}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\identifier{f}}.
+
+The type \ensuremath{\raisebox{\ht\strutbox}{\hypertarget{_22a4}{}}\identifier{⊤}\index{_22a4@\ensuremath{\identifier{⊤}}}\;{:}\;\constructor{Set}} has exactly one constructor \ensuremath{\constructor{tt}\;{:}\;\protect\hyperlink{_22a4}{\identifier{⊤}}}, while the type \ensuremath{\raisebox{\ht\strutbox}{\hypertarget{_22a5}{}}\identifier{⊥}\index{_22a5@\ensuremath{\identifier{⊥}}}\;{:}\;\constructor{Set}} has no inhabitant --- logically they are read as truth and falsity respectively.
+The type family \ensuremath{\raisebox{\ht\strutbox}{\hypertarget{_5f22615f}{}}\anonymous \kern\underscorespace{\identifier{≡}}\anonymous \index{_5f22615f@\ensuremath{\anonymous \kern\underscorespace{\identifier{≡}}\anonymous }}\;{:}\;\{\mskip1.5mu \identifier{A}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\identifier{→}\;\identifier{A}\;\identifier{→}\;\identifier{A}\;\identifier{→}\;\constructor{Set}} is defined such that \ensuremath{\identifier{x}\;\protect\hyperlink{_5f22615f}{\identifier{≡}}\;\identifier{y}} is inhabited if and only if \ensuremath{\identifier{x}}~and~\ensuremath{\identifier{y}} are equal.
+The type former \ensuremath{\raisebox{\ht\strutbox}{\hypertarget{_5f228e5f}{}}\anonymous \kern\underscorespace{\mathrel{\uplus}}\anonymous \index{_5f228e5f@\ensuremath{\anonymous \kern\underscorespace{\mathrel{\uplus}}\anonymous }}\;{:}\;\constructor{Set}\;\identifier{→}\;\constructor{Set}\;\identifier{→}\;\constructor{Set}} is disjoint union (disjunction) whose constructors are \ensuremath{\constructor{inj_1}\;{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{A}\;\identifier{B}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\identifier{→}}\;\identifier{A}\;\identifier{→}\;\identifier{A}\;\protect\hyperlink{_5f228e5f}{\mathrel{\uplus}}\;\identifier{B}} and \ensuremath{\constructor{inj_2}\;{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{A}\;\identifier{B}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\identifier{→}}\;\identifier{B}\;\identifier{→}\;\identifier{A}\;\protect\hyperlink{_5f228e5f}{\mathrel{\uplus}}\;\identifier{B}}, and the type former \ensuremath{\raisebox{\ht\strutbox}{\hypertarget{_5fd75f}{}}\anonymous {\identifier{×}}\kern-\underscorespace\anonymous \index{_5fd75f@\ensuremath{\anonymous {\identifier{×}}\kern-\underscorespace\anonymous }}\;{:}\;\constructor{Set}\;\identifier{→}\;\constructor{Set}\;\identifier{→}\;\constructor{Set}} is cartesian product (conjunction), whose constructor is~\ensuremath{\anonymous \kern\underscorespace\identifier{,}\anonymous }\kern1pt.
+The symbol~`\ensuremath{\protect\hyperlink{_5fd75f}{\identifier{×}}}' is also overloaded to denote \emph{dependent pair types} --- the inhabitants of a dependent pair type \ensuremath{(\identifier{x}\;{:}\;\identifier{A})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;\identifier{B}\;\identifier{x}} are pairs where the type of the second component depends on the value of the first component.
+Logically, dependent pair types are read as existentially quantified propositions --- \ensuremath{(\identifier{x}\;{:}\;\identifier{A})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;\identifier{B}\;\identifier{x}} is read as ``there exists \ensuremath{\identifier{x}\;{:}\;\identifier{A}} such that the property~\ensuremath{\identifier{B}} holds for~\ensuremath{\identifier{x}}''.\par
+An underscore in a right-hand side expression instructs \Agda\ to infer what should be placed there.
+
+An \Agda\ record is defined by listing the names and types of all its components, and a component type can depend on previous components.
+To access a component of an inhabitant of a record type, we should use the corresponding component extraction function.
+For example, \ensuremath{\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.6\underscorespace\text.\protect\hyperlink{G676574}{\identifier{get}}\;{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{S}\;\identifier{V}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\identifier{→}}\;\protect\hyperlink{L4c656e73}{\constructor{Lens}}\;\identifier{S}\;\identifier{V}\;\identifier{→}\;\identifier{S}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{V}} is for extracting the \ensuremath{\protect\hyperlink{G676574}{\identifier{get}}} component of a \ensuremath{\protect\hyperlink{L4c656e73}{\constructor{Lens}}}.
 
 \end{document}

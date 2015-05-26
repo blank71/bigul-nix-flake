@@ -105,7 +105,7 @@ mutual
   interp (rearr vpat vpat' expr b) (c , c') = interp b c' ↔ iso-lens (view-rearrangement-iso vpat vpat' expr c)
   interp (dep {V' = V'} f b) c = interp b c ↔ iso-lens (sym-iso (dependency-iso f (U-dec V')))
   interp (caseS branches) c = caseS-lens _ _ (interp-CaseSBranch branches c)
-  interp (caseV branches) c = caseV-lens _ _ (interp-CaseVBranch branches c)
+  interp (caseV {V = V} branches) c = caseV-lens _ _ (U-dec V) (interp-CaseVBranch branches c)
   interp (align source-condition match? b create conceal) c = align-lens source-condition match? (interp b c) create conceal
 
   interp-update : {S : U n} (pat : Pattern F S) (bs : PatBiGUL pat) → PatBiGULCompleteExpr pat bs →
@@ -125,7 +125,7 @@ mutual
   interp-CaseSBranch ((p , adaptive u) ∷ branches) c        = (p , adaptive u) ∷ interp-CaseSBranch branches c
   
   interp-CaseVBranch : {S V : U n} (branches : List (CaseVBranch S V)) → CaseVBranchesCompleteExpr branches →
-                       List (ViewCase.Branch (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)))
+                       List (ViewCase.Branch (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)) (U-dec V))
   interp-CaseVBranch []                     c        = []
   interp-CaseVBranch ((pat , b) ∷ branches) (c , c') =
     (PatResult pat , interp b c , sym-iso (pat-iso pat)) ∷ interp-CaseVBranch branches c'

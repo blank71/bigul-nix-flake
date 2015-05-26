@@ -29,9 +29,13 @@ put : (bs : List Branch) → S → V → Par S
 put []                       s v = fail
 put ((V' , lens , iso) ∷ bs) s v = catch (Iso.from iso v) (Lens.put lens s)
                                          (put bs s v >>= λ s' → catch (get-selected lens iso s')
-                                                                      (λ v' → case dec v v' of (λ { (yes _) → return s'
-                                                                                                  ; (no  _) → fail }))
+                                                                      (guarded-return s' v)
                                                                       (return s'))
+  where
+    guarded-return : S → V → V → Par S
+    guarded-return s' v v' with dec v v'
+    guarded-return s' v v' | yes _ = return s'
+    guarded-return s' v v' | no  _ = fail
 
 get : (bs : List Branch) → S → Par V
 get []                       s = fail
