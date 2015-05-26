@@ -368,7 +368,7 @@ Parameters can be referred to throughout a datatype definition.}
 \end{hscode}\resethooks
 The result of a piece of successful computation is wrapped in the \ensuremath{\protect\hyperlink{J6a757374}{\constructor{just}}} constructor, while failed computation is represented by \ensuremath{\protect\hyperlink{N6e6f7468696e67}{\constructor{nothing}}}.
 The behaviour of decidably partial functions is different from the usual partial functions as formalised in terms of complete partial orders (see, e.g., Gibbons~\cite{Gibbons-calculating-functional-programs}):
-In \autoref{sec:BiGUL} we will need to define programs that produce some result or fail respectively when a sub-program fails or produces some result, but this is not possible in the setting of complete partial orders (since such functions violate monotonicity, a necessary condition for computability).
+In \autoref{sec:view-case} we will need to define programs that produce some result or fail respectively when a sub-program fails or produces some result, but this is not possible in the setting of complete partial orders (since such functions violate monotonicity, a necessary condition for computability).
 
 \begin{figure}[t]
 \begin{center}
@@ -420,7 +420,7 @@ In \autoref{sec:BiGUL} we will need to define programs that produce some result 
 \ColumnHook
 \end{hscode}\resethooks
 \end{center}
-\caption{Definition of \ensuremath{\protect\hyperlink{R72756e506172}{\identifier{runPar}}}.}
+\caption{Definition of the interpreter of \ensuremath{\protect\hyperlink{P506172}{\constructor{Par}}} to \ensuremath{\protect\hyperlink{M4d61796265}{\constructor{Maybe}}}}
 \label{fig:runPar}
 \end{figure}
 
@@ -572,7 +572,7 @@ These two equalities are what we aim to reify as data next.
 \ColumnHook
 \end{hscode}\resethooks
 \end{center}
-\caption{Definitions of \ensuremath{\protect\hyperlink{_5f21a65f}{\anonymous \kern.5\underscorespace{\mathrel{\mapsto}}\kern-\underscorespace\anonymous }}~and~\ensuremath{\protect\hyperlink{_5f2f21a6}{\anonymous \kern.5\underscorespace{\mathrel{\not\mapsto}}}}.}
+\caption{Definitions of successful and failed computation steps}
 \label{fig:CompSeq}
 \end{figure}
 
@@ -618,7 +618,7 @@ For example, \ensuremath{\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.
 \column{5}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{13}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{16}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{48}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{40}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[B]{}\keyword{record}\;\raisebox{\ht\strutbox}{\hypertarget{L4c656e73}{}}\constructor{Lens}\index{L4c656e73@\ensuremath{\constructor{Lens}}}\;(\identifier{S}\;\identifier{V}\;{:}\;\constructor{Set})\;{:}\;\constructor{Set_1}\;\keyword{where}{}\<[E]%
 \\
@@ -635,13 +635,13 @@ For example, \ensuremath{\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\raisebox{\ht\strutbox}{\hypertarget{P507574476574}{}}\identifier{PutGet}\index{P507574476574@\ensuremath{\identifier{PutGet}}}\;{}\<[16]%
-\>[16]{}{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{s}\;\identifier{s'}\;{:}\;\identifier{S}\mskip1.5mu\}\;\{\mskip1.5mu \identifier{v}\;{:}\;\identifier{V}\mskip1.5mu\}\;\identifier{→}}\;{}\<[48]%
-\>[48]{}(\protect\hyperlink{P707574}{\identifier{put}}\;\identifier{s}\;\identifier{v}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{s'})\;\identifier{→}\;(\protect\hyperlink{G676574}{\identifier{get}}\;\identifier{s'}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{v}){}\<[E]%
+\>[16]{}{:}\;\{\mskip1.5mu \identifier{s}\;\identifier{s'}\;{:}\;\identifier{S}\mskip1.5mu\}\;\{\mskip1.5mu \identifier{v}\;{:}\;\identifier{V}\mskip1.5mu\}\;\identifier{→}\;{}\<[40]%
+\>[40]{}(\protect\hyperlink{P707574}{\identifier{put}}\;\identifier{s}\;\identifier{v}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{s'})\;\identifier{→}\;(\protect\hyperlink{G676574}{\identifier{get}}\;\identifier{s'}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{v}){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\raisebox{\ht\strutbox}{\hypertarget{G476574507574}{}}\identifier{GetPut}\index{G476574507574@\ensuremath{\identifier{GetPut}}}\;{}\<[16]%
-\>[16]{}{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{s}\;{:}\;\identifier{S}\mskip1.5mu\}\;\{\mskip1.5mu \identifier{v}\;{:}\;\identifier{V}\mskip1.5mu\}\;\identifier{→}}\;{}\<[48]%
-\>[48]{}(\protect\hyperlink{G676574}{\identifier{get}}\;\identifier{s}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{v})\;\identifier{→}\;(\protect\hyperlink{P707574}{\identifier{put}}\;\identifier{s}\;\identifier{v}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{s}){}\<[E]%
+\>[16]{}{:}\;\{\mskip1.5mu \identifier{s}\;{:}\;\identifier{S}\mskip1.5mu\}\;\{\mskip1.5mu \identifier{v}\;{:}\;\identifier{V}\mskip1.5mu\}\;\identifier{→}\;{}\<[40]%
+\>[40]{}(\protect\hyperlink{G676574}{\identifier{get}}\;\identifier{s}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{v})\;\identifier{→}\;(\protect\hyperlink{P707574}{\identifier{put}}\;\identifier{s}\;\identifier{v}\;\protect\hyperlink{_5f21a65f}{\mathrel{\mapsto}}\;\identifier{s}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 \end{definition}
@@ -714,7 +714,7 @@ A related notion is ``partial'' isomorphisms as defined by
 \>[16]{}\kern.15em{=}\kern.15em\;\protect\hyperlink{I49736f}{\constructor{Iso}}\kern.6\underscorespace\text.\protect\hyperlink{T746f2d66726f6d2d696e7665727365}{\identifier{to}\text-\kern-.75\underscorespace\identifier{from}\text-\kern-.75\underscorespace\identifier{inverse}}\;\identifier{iso}\mskip1.5mu\}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-This conversion gives us a first way to produce lenses.
+This conversion gives us a first way to manufacture lenses.
 For example, the identity isomorphism between the same type --- whose \ensuremath{\protect\hyperlink{T746f}{\identifier{to}}} and \ensuremath{\protect\hyperlink{F66726f6d}{\identifier{from}}} are both \ensuremath{\protect\hyperlink{R72657475726e}{\constructor{return}}} --- gives rise to the ``replacing'' lens, and the empty isomorphism between any two types --- whose \ensuremath{\protect\hyperlink{T746f}{\identifier{to}}} and \ensuremath{\protect\hyperlink{F66726f6d}{\identifier{from}}} are both \ensuremath{\lambda \;\anonymous \;\identifier{→}\;\protect\hyperlink{F6661696c}{\constructor{fail}}} --- gives rise to the ``failure'' lens.
 Both lenses will appear in \autoref{sec:basic-lenses}.
 
@@ -838,7 +838,7 @@ In general, an update proceeds by decomposing the source into several parts to b
 When both the source and the view are lists, there is a powerful aligning operation for synchronising the two lists~(\autoref{sec:list-alignment}).
 And we can do case analyses on either the source~(\autoref{sec:source-case}) or the view~(\autoref{sec:view-case}) for describing more flexible update strategies.
 
-In the rest of this section we will present the lens semantics of each of the bidirectional operations mentioned above, and then summarise the whole language in a datatype \ensuremath{\protect\hyperlink{B426947554c}{\constructor{BiGUL}}} and its interpreter to \ensuremath{\protect\hyperlink{L4c656e73}{\constructor{Lens}}} in \autoref{sec:deep-embedding}.
+In the rest of this section we will present the lens semantics of each of the bidirectional operations mentioned above, and then summarise the whole language in a datatype \ensuremath{\constructor{BiGUL}} and its interpreter to \ensuremath{\protect\hyperlink{L4c656e73}{\constructor{Lens}}} in \autoref{sec:deep-embedding}.
 
 \subsection{Replacing, failure, and skipping}
 \label{sec:basic-lenses}
@@ -876,14 +876,275 @@ It is the first lens that we define from scratch.
 \ColumnHook
 \end{hscode}\resethooks
 Note that the view type is specified as~\ensuremath{\protect\hyperlink{_22a4}{\identifier{⊤}}}, whose inhabitant can only be~\ensuremath{\constructor{tt}}: had the view type been a more complex type, there would have been no way for \ensuremath{\protect\hyperlink{G676574}{\identifier{get}}} to decide what to return.
-In general, \ensuremath{\protect\hyperlink{P707574}{\identifier{put}}} must embed all view information into the updated source so \ensuremath{\protect\hyperlink{G676574}{\identifier{get}}} can completely recover the view from the updated source, establishing \ensuremath{\protect\hyperlink{P507574476574}{\identifier{PutGet}}}.
+In general, \ensuremath{\protect\hyperlink{P707574}{\identifier{put}}} must embed all view information into the updated source so \ensuremath{\protect\hyperlink{G676574}{\identifier{get}}} can recover the entire view from the updated source, establishing \ensuremath{\protect\hyperlink{P507574476574}{\identifier{PutGet}}}.
 \ensuremath{\protect\hyperlink{_22a4}{\identifier{⊤}}}~is a type with no information, and hence \ensuremath{\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.6\underscorespace\text.\protect\hyperlink{P707574}{\identifier{put}}\;\mathit{skip}\text-\kern-.75\underscorespace\identifier{lens}} can safely ignore its view argument of type~\ensuremath{\protect\hyperlink{_22a4}{\identifier{⊤}}}.
 
 \subsection{Case analysis on source}
 \label{sec:source-case}
 
+\begin{figure}[t]
+\begin{center}
+\setlength{\mathindent}{0em}
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{7}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{8}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{15}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{16}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{17}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{19}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{25}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{26}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{27}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{30}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{34}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{37}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{41}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{45}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathit{caseS}\text-\kern-.75\underscorespace\identifier{lens}\;{:}\;\{\mskip1.5mu \identifier{S}\;\identifier{V}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\identifier{→}\;\constructor{List}\;(\protect\hyperlink{C43617365534272616e6368}{\constructor{CaseSBranch}}\;\identifier{S}\;\identifier{V})\;\identifier{→}\;\protect\hyperlink{L4c656e73}{\constructor{Lens}}\;\identifier{S}\;\identifier{V}{}\<[E]%
+\\
+\>[B]{}\mathit{caseS}\text-\kern-.75\underscorespace\identifier{lens}\;\{\mskip1.5mu \identifier{S}\mskip1.5mu\}\;\{\mskip1.5mu \identifier{V}\mskip1.5mu\}\;\identifier{bs}\;\kern.15em{=}\kern.15em\;\keyword{record}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\{\mskip1.5mu {}\<[8]%
+\>[8]{}\protect\hyperlink{P707574}{\identifier{put}}\;\kern.15em{=}\kern.15em\;{}\<[15]%
+\>[15]{}\mathit{put}\text-\kern-.75\underscorespace\mathit{with}\text-\kern-.75\underscorespace\identifier{adaptation}\;\identifier{bs}\;\identifier{s}\;\identifier{v}\;{}\<[E]%
+\\
+\>[15]{}\hsindent{2}{}\<[17]%
+\>[17]{}(\lambda\;\identifier{s'}\;\identifier{→}\;\mathit{put}\text-\kern-.75\underscorespace\mathit{with}\text-\kern-.75\underscorespace\identifier{adaptation}\;\identifier{bs}\;\identifier{s'}\;\identifier{v}\;(\lambda \;\anonymous \;\identifier{→}\;\protect\hyperlink{F6661696c}{\constructor{fail}})){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\kern1.55\underscorespace;\;{}\<[8]%
+\>[8]{}\protect\hyperlink{G676574}{\identifier{get}}\;\kern.15em{=}\kern.15em\;{}\<[15]%
+\>[15]{}\mathit{get}\;\kern1.55\underscorespace;\;\colorbox[gray]{.9}{\rlap{\ldots}\phantom{\hskip 1.2em}\vphantom{\vrule height 1.1ex}}\mskip1.5mu\}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\keyword{where}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\identifier{branch}\;{:}\;{}\<[16]%
+\>[16]{}\{\mskip1.5mu \identifier{X}\;{:}\;\constructor{Set_1}\mskip1.5mu\}\;\identifier{→}\;(\protect\hyperlink{L4c656e73}{\constructor{Lens}}\;\identifier{S}\;\identifier{V}\;\identifier{→}\;\identifier{X})\;\identifier{→}\;((\identifier{S}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{S})\;\identifier{→}\;\identifier{X})\;\identifier{→}\;{}\<[E]%
+\\
+\>[16]{}\protect\hyperlink{C43617365534272616e636854797065}{\constructor{CaseSBranchType}}\;\identifier{→}\;\identifier{X}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\identifier{branch}\;\identifier{f}\;\identifier{g}\;(\protect\hyperlink{N6e6f726d616c}{\constructor{normal}}\;{}\<[27]%
+\>[27]{}\identifier{l}{}\<[30]%
+\>[30]{})\;\kern.15em{=}\kern.15em\;\identifier{f}\;{}\<[37]%
+\>[37]{}\identifier{l}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\identifier{branch}\;\identifier{f}\;\identifier{g}\;(\protect\hyperlink{A6164617074697665}{\constructor{adaptive}}\;{}\<[27]%
+\>[27]{}\identifier{u}{}\<[30]%
+\>[30]{})\;\kern.15em{=}\kern.15em\;\identifier{g}\;{}\<[37]%
+\>[37]{}\identifier{u}{}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\mathit{put}\text-\kern-.75\underscorespace\mathit{with}\text-\kern-.75\underscorespace\identifier{adaptation}\;{:}\;\constructor{List}\;\protect\hyperlink{C43617365534272616e6368}{\constructor{CaseSBranch}}\;\identifier{→}\;\identifier{S}\;\identifier{→}\;\identifier{V}\;\identifier{→}\;(\identifier{S}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{S})\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{S}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\mathit{put}\text-\kern-.75\underscorespace\mathit{with}\text-\kern-.75\underscorespace\identifier{adaptation}\;\identifier{[]}\;{}\<[41]%
+\>[41]{}\identifier{s}\;\identifier{v}\;\identifier{f}\;\kern.15em{=}\kern.15em\;\protect\hyperlink{F6661696c}{\constructor{fail}}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\mathit{put}\text-\kern-.75\underscorespace\mathit{with}\text-\kern-.75\underscorespace\identifier{adaptation}\;((\identifier{p}\;\identifier{,}\;\identifier{b})\;\identifier{∷}\;\identifier{bs})\;{}\<[41]%
+\>[41]{}\identifier{s}\;\identifier{v}\;\identifier{f}\;\kern.15em{=}\kern.15em\;{}\<[E]%
+\\
+\>[5]{}\hsindent{2}{}\<[7]%
+\>[7]{}\identifier{p}\;\identifier{s}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\lambda\;\identifier{matched}\;\identifier{→}\;{}\<[E]%
+\\
+\>[5]{}\hsindent{2}{}\<[7]%
+\>[7]{}\constructor{if}\;\identifier{matched}\;{}\<[19]%
+\>[19]{}\protect\hyperlink{A6173736572745f7468656e5f}{\constructor{then}}\;{}\<[25]%
+\>[25]{}\identifier{branch}\;{}\<[34]%
+\>[34]{}(\lambda\;\identifier{lens}\;\identifier{→}\;{}\<[45]%
+\>[45]{}\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.6\underscorespace\text.\protect\hyperlink{P707574}{\identifier{put}}\;\identifier{lens}\;\identifier{s}\;\identifier{v}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\lambda\;\identifier{s'}\;\identifier{→}\;{}\<[E]%
+\\
+\>[45]{}\identifier{p}\;\identifier{s'}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\lambda\;\identifier{matched'}\;\identifier{→}\;{}\<[E]%
+\\
+\>[45]{}\protect\hyperlink{A6173736572745f7468656e5f}{\constructor{assert}}\;\identifier{matched'}\;\protect\hyperlink{A6173736572745f7468656e5f}{\constructor{then}}\;\protect\hyperlink{R72657475726e}{\constructor{return}}\;\identifier{s'})\;{}\<[E]%
+\\
+\>[34]{}(\lambda\;\identifier{u}\;\identifier{→}\;\identifier{u}\;\identifier{s}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\identifier{f})\;\identifier{b}\;{}\<[E]%
+\\
+\>[19]{}\constructor{else}\;{}\<[25]%
+\>[25]{}\mathit{put}\text-\kern-.75\underscorespace\mathit{with}\text-\kern-.75\underscorespace\identifier{adaptation}\;\identifier{bs}\;\identifier{s}\;\identifier{v}\;\identifier{f}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\lambda\;\identifier{s'}\;\identifier{→}\;{}\<[E]%
+\\
+\>[25]{}\identifier{p}\;\identifier{s'}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\lambda\;\identifier{matched'}\;\identifier{→}\;\protect\hyperlink{A6173736572745f7468656e5f}{\constructor{assert}}\;\neg \;\identifier{matched'}\;\protect\hyperlink{A6173736572745f7468656e5f}{\constructor{then}}\;\protect\hyperlink{R72657475726e}{\constructor{return}}\;\identifier{s'}{}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\mathit{get}\;{:}\;\constructor{List}\;\protect\hyperlink{C43617365534272616e6368}{\constructor{CaseSBranch}}\;\identifier{→}\;\identifier{S}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{V}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\mathit{get}\;\identifier{[]}\;{}\<[26]%
+\>[26]{}\identifier{s}\;\kern.15em{=}\kern.15em\;\protect\hyperlink{F6661696c}{\constructor{fail}}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\mathit{get}\;((\identifier{p}\;\identifier{,}\;\identifier{b})\;\identifier{∷}\;\identifier{bs})\;{}\<[26]%
+\>[26]{}\identifier{s}\;\kern.15em{=}\kern.15em\;{}\<[E]%
+\\
+\>[5]{}\hsindent{2}{}\<[7]%
+\>[7]{}\identifier{p}\;\identifier{s}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\lambda\;\identifier{matched}\;\identifier{→}\;{}\<[E]%
+\\
+\>[5]{}\hsindent{2}{}\<[7]%
+\>[7]{}\constructor{if}\;\identifier{matched}\;{}\<[19]%
+\>[19]{}\protect\hyperlink{A6173736572745f7468656e5f}{\constructor{then}}\;{}\<[25]%
+\>[25]{}\identifier{branch}\;(\lambda\;\identifier{lens}\;\identifier{→}\;\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.6\underscorespace\text.\protect\hyperlink{G676574}{\identifier{get}}\;\identifier{lens}\;\identifier{s})\;(\lambda \;\anonymous \;\identifier{→}\;\protect\hyperlink{F6661696c}{\constructor{fail}})\;\identifier{b}\;{}\<[E]%
+\\
+\>[19]{}\constructor{else}\;{}\<[25]%
+\>[25]{}\mathit{get}\;\identifier{bs}\;\identifier{s}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\end{center}
+\caption{Definition of source case analysis}
+\label{fig:source-case}
+\end{figure}
+
+The next lens, \ensuremath{\mathit{caseS}\text-\kern-.75\underscorespace\identifier{lens}}, is for doing case analysis on the source.
+The basic idea of the putback semantics of \ensuremath{\mathit{caseS}\text-\kern-.75\underscorespace\identifier{lens}} is to choose from a list of branches the first one that matches the source, and then execute the putback semantics of the lens associated with the chosen branch.
+It is, however, difficult to find a \ensuremath{\protect\hyperlink{G676574}{\identifier{get}}} to pair with this \ensuremath{\protect\hyperlink{P707574}{\identifier{put}}}: the obvious \ensuremath{\protect\hyperlink{G676574}{\identifier{get}}} which selects the first branch that matches its source argument does not work, because it may well happen that the updated source produced by \ensuremath{\protect\hyperlink{P707574}{\identifier{put}}} matches a different branch from the original source, so in general we would have to guarantee \ensuremath{\protect\hyperlink{P507574476574}{\identifier{PutGet}}} for \ensuremath{\protect\hyperlink{P707574}{\identifier{put}}} and \ensuremath{\protect\hyperlink{G676574}{\identifier{get}}} coming respectively from any two branches, which is unmanageable.
+A more manageable solution is to insert a dynamic check at the end of \ensuremath{\protect\hyperlink{P707574}{\identifier{put}}} to ensure that the updated source must match the same branch as the original source, but in practice this solution is too restrictive to be useful.
+We bump right into an obstacle for our very first combinator!
+
+Our solution is to invent a special kind of branches called \emph{adaptive} branches, in addition to \emph{normal} branches.
+The two kinds of branches are defined by the following datatype:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{16}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{32}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\keyword{data}\;\raisebox{\ht\strutbox}{\hypertarget{C43617365534272616e636854797065}{}}\constructor{CaseSBranchType}\index{C43617365534272616e636854797065@\ensuremath{\constructor{CaseSBranchType}}}\;(\identifier{S}\;\identifier{V}\;{:}\;\constructor{Set})\;{:}\;\constructor{Set_1}\;\keyword{where}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\raisebox{\ht\strutbox}{\hypertarget{N6e6f726d616c}{}}\constructor{normal}\index{N6e6f726d616c@\ensuremath{\constructor{normal}}}\;{}\<[16]%
+\>[16]{}{:}\;\protect\hyperlink{L4c656e73}{\constructor{Lens}}\;\identifier{S}\;\identifier{V}\;{}\<[32]%
+\>[32]{}\identifier{→}\;\protect\hyperlink{C43617365534272616e636854797065}{\constructor{CaseSBranchType}}\;\identifier{S}\;\identifier{V}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\raisebox{\ht\strutbox}{\hypertarget{A6164617074697665}{}}\constructor{adaptive}\index{A6164617074697665@\ensuremath{\constructor{adaptive}}}\;{}\<[16]%
+\>[16]{}{:}\;(\identifier{S}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{S})\;{}\<[32]%
+\>[32]{}\identifier{→}\;\protect\hyperlink{C43617365534272616e636854797065}{\constructor{CaseSBranchType}}\;\identifier{S}\;\identifier{V}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+A \ensuremath{\protect\hyperlink{N6e6f726d616c}{\constructor{normal}}} branch contains a lens, while an \ensuremath{\protect\hyperlink{A6164617074697665}{\constructor{adaptive}}} branch contains a source transformation.
+With each branch we also need to associate a decidable predicate on the source type specifying when a source matches the branch, so the complete definition of the type of branches is
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\raisebox{\ht\strutbox}{\hypertarget{C43617365534272616e6368}{}}\constructor{CaseSBranch}\index{C43617365534272616e6368@\ensuremath{\constructor{CaseSBranch}}}\;{:}\;\constructor{Set}\;\identifier{→}\;\constructor{Set}\;\identifier{→}\;\constructor{Set_1}{}\<[E]%
+\\
+\>[B]{}\protect\hyperlink{C43617365534272616e6368}{\constructor{CaseSBranch}}\;\identifier{S}\;\identifier{V}\;\kern.15em{=}\kern.15em\;(\identifier{S}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\constructor{Bool})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;\protect\hyperlink{C43617365534272616e636854797065}{\constructor{CaseSBranchType}}\;\identifier{S}\;\identifier{V}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+The type of \ensuremath{\mathit{caseS}\text-\kern-.75\underscorespace\identifier{lens}} is then
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathit{caseS}\text-\kern-.75\underscorespace\identifier{lens}\;{:}\;\{\mskip1.5mu \identifier{S}\;\identifier{V}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\identifier{→}\;\constructor{List}\;(\protect\hyperlink{C43617365534272616e6368}{\constructor{CaseSBranch}}\;\identifier{S}\;\identifier{V})\;\identifier{→}\;\protect\hyperlink{L4c656e73}{\constructor{Lens}}\;\identifier{S}\;\identifier{V}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+and its definition is shown in \autoref{fig:source-case}.
+We might think of a source case analysis as still consisting mainly of normal branches, but now for \ensuremath{\protect\hyperlink{P707574}{\identifier{put}}} we allow the source to match an adaptive branch, which transforms the source such that it matches a normal branch.
+More explicitly, the case analysis may be run twice when executing \ensuremath{\protect\hyperlink{P707574}{\identifier{put}}}: if a normal branch is chosen the first time, then the case analysis succeeds, and we execute the \ensuremath{\protect\hyperlink{P707574}{\identifier{put}}} associated with the branch; otherwise, we adapt the source and rerun the case analysis, and must match a normal branch this time.
+The corresponding \ensuremath{\protect\hyperlink{G676574}{\identifier{get}}} similarly goes through the same list of branches, but fails immediately if an adaptive branch is matched.
+
+\todo[inline]{CPS}
+
 \subsection{Case analysis on view}
 \label{sec:view-case}
+
+\begin{figure}[t]
+\begin{center}
+\setlength{\mathindent}{0em}
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{35}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{36}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{47}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{48}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{50}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{51}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{58}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathit{caseV}\text-\kern-.75\underscorespace\identifier{lens}\;{:}\;\{\mskip1.5mu \identifier{S}\;\identifier{V}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\identifier{→}\;\constructor{List}\;\protect\hyperlink{C43617365564272616e6368}{\constructor{CaseVBranch}}\;\identifier{→}\;\protect\hyperlink{L4c656e73}{\constructor{Lens}}\;\identifier{S}\;\identifier{V}{}\<[E]%
+\\
+\>[B]{}\mathit{caseV}\text-\kern-.75\underscorespace\identifier{lens}\;\{\mskip1.5mu \identifier{S}\mskip1.5mu\}\;\{\mskip1.5mu \identifier{V}\mskip1.5mu\}\;\identifier{bs}\;\kern.15em{=}\kern.15em\;\keyword{record}\;\{\mskip1.5mu \protect\hyperlink{P707574}{\identifier{put}}\;\kern.15em{=}\kern.15em\;\mathit{put}\;\kern1.55\underscorespace;\;\protect\hyperlink{G676574}{\identifier{get}}\;\kern.15em{=}\kern.15em\;\mathit{get}\;\kern1.55\underscorespace;\;\colorbox[gray]{.9}{\rlap{\ldots}\phantom{\hskip 1.2em}\vphantom{\vrule height 1.1ex}}\mskip1.5mu\}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\keyword{where}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\mathit{put}\;{:}\;\constructor{List}\;\protect\hyperlink{C43617365564272616e6368}{\constructor{CaseVBranch}}\;\identifier{→}\;\identifier{S}\;\identifier{→}\;\identifier{V}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{S}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\mathit{put}\;\identifier{[]}\;{}\<[35]%
+\>[35]{}\identifier{s}\;\identifier{v}\;\kern.15em{=}\kern.15em\;\protect\hyperlink{F6661696c}{\constructor{fail}}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\mathit{put}\;((\anonymous \;\identifier{,}\;\identifier{lens}\;\identifier{,}\;\identifier{iso})\;\identifier{∷}\;\identifier{bs})\;{}\<[35]%
+\>[35]{}\identifier{s}\;\identifier{v}\;\kern.15em{=}\kern.15em\;\protect\hyperlink{C6361746368}{\constructor{catch}}\;{}\<[48]%
+\>[48]{}(\protect\hyperlink{I49736f}{\constructor{Iso}}\kern.6\underscorespace\text.\protect\hyperlink{F66726f6d}{\identifier{from}}\;\identifier{iso}\;\identifier{v})\;(\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.6\underscorespace\text.\protect\hyperlink{P707574}{\identifier{put}}\;\identifier{lens}\;\identifier{s})\;{}\<[E]%
+\\
+\>[48]{}({}\<[51]%
+\>[51]{}\mathit{put}\;\identifier{bs}\;\identifier{s}\;\identifier{v}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\lambda\;\identifier{s'}\;\identifier{→}{}\<[E]%
+\\
+\>[51]{}\protect\hyperlink{C6361746368}{\constructor{catch}}\;{}\<[58]%
+\>[58]{}(\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.6\underscorespace\text.\protect\hyperlink{G676574}{\identifier{get}}\;\identifier{lens}\;\identifier{s'}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\protect\hyperlink{I49736f}{\constructor{Iso}}\kern.6\underscorespace\text.\protect\hyperlink{T746f}{\identifier{to}}\;\identifier{iso})\;{}\<[E]%
+\\
+\>[58]{}(\lambda \;\anonymous \;\identifier{→}\;\protect\hyperlink{F6661696c}{\constructor{fail}})\;(\protect\hyperlink{R72657475726e}{\constructor{return}}\;\identifier{s'})){}\<[E]%
+\\[\blanklineskip]%
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\mathit{get}\;{:}\;\constructor{List}\;\protect\hyperlink{C43617365564272616e6368}{\constructor{CaseVBranch}}\;\identifier{→}\;\identifier{S}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{V}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\mathit{get}\;\identifier{[]}\;{}\<[36]%
+\>[36]{}\identifier{s}\;\kern.15em{=}\kern.15em\;\protect\hyperlink{F6661696c}{\constructor{fail}}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\mathit{get}\;((\anonymous \;\identifier{,}\;\identifier{lens}\;\identifier{,}\;\identifier{iso})\;\identifier{∷}\;\identifier{bs})\;{}\<[36]%
+\>[36]{}\identifier{s}\;\kern.15em{=}\kern.15em\;\protect\hyperlink{C6361746368}{\constructor{catch}}\;{}\<[47]%
+\>[47]{}(\protect\hyperlink{L4c656e73}{\constructor{Lens}}\kern.6\underscorespace\text.\protect\hyperlink{G676574}{\identifier{get}}\;\identifier{lens}\;\identifier{s}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\protect\hyperlink{I49736f}{\constructor{Iso}}\kern.6\underscorespace\text.\protect\hyperlink{T746f}{\identifier{to}}\;\identifier{iso})\;\protect\hyperlink{R72657475726e}{\constructor{return}}\;{}\<[E]%
+\\
+\>[47]{}({}\<[50]%
+\>[50]{}\mathit{get}\;\identifier{bs}\;\identifier{s}\;\protect\hyperlink{_5f3e3e3d5f}{\bind }\;\lambda\;\identifier{v}\;\identifier{→}{}\<[E]%
+\\
+\>[50]{}\protect\hyperlink{C6361746368}{\constructor{catch}}\;(\protect\hyperlink{I49736f}{\constructor{Iso}}\kern.6\underscorespace\text.\protect\hyperlink{F66726f6d}{\identifier{from}}\;\identifier{iso}\;\identifier{v})\;(\lambda \;\anonymous \;\identifier{→}\;\protect\hyperlink{F6661696c}{\constructor{fail}})\;(\protect\hyperlink{R72657475726e}{\constructor{return}}\;\identifier{v})){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\end{center}
+\caption{Definition of view case analysis}
+\label{fig:view-case}
+\end{figure}
+
+For case analysis on the view, there is still a list of branches, with each of which a lens is associated --- there are no adaptive branches.
+We must be more careful when it comes to the view, though:
+As we mentioned in \autoref{sec:basic-lenses}, view information must be carefully managed and completely embedded into the source.
+When a branch matches the view, the amount of view information that remains to be embedded can actually be reduced.
+For example, if there is a branch that matches an integer view which equals zero, then for this branch we may even perform no update on the source as long as we can guarantee that the subsequent \ensuremath{\protect\hyperlink{G676574}{\identifier{get}}} will choose this branch, in which case \ensuremath{\protect\hyperlink{G676574}{\identifier{get}}} can simply return zero --- the information that the view is zero is embedded implicitly in the control flow rather than explicitly in the updated source.
+Thus, in the definition of \ensuremath{\protect\hyperlink{C43617365564272616e6368}{\constructor{CaseVBranch}}} below, we use a partial isomorphism on the view type which converts it to a less informative type, instead of just a decidable predicate as in \ensuremath{\protect\hyperlink{C43617365534272616e6368}{\constructor{CaseSBranch}}}:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\raisebox{\ht\strutbox}{\hypertarget{C43617365564272616e6368}{}}\constructor{CaseVBranch}\index{C43617365564272616e6368@\ensuremath{\constructor{CaseVBranch}}}\;{:}\;\constructor{Set}\;\identifier{→}\;\constructor{Set}\;\identifier{→}\;\constructor{Set_1}{}\<[E]%
+\\
+\>[B]{}\protect\hyperlink{C43617365564272616e6368}{\constructor{CaseVBranch}}\;\identifier{S}\;\identifier{V}\;\kern.15em{=}\kern.15em\;(\identifier{V'}\;{:}\;\constructor{Set})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;\protect\hyperlink{L4c656e73}{\constructor{Lens}}\;\identifier{S}\;\identifier{V'}\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;\protect\hyperlink{I49736f}{\constructor{Iso}}\;\identifier{V'}\;\identifier{V}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+The type of \ensuremath{\mathit{caseV}\text-\kern-.75\underscorespace\identifier{lens}} is then
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathit{caseV}\text-\kern-.75\underscorespace\identifier{lens}\;{:}\;\{\mskip1.5mu \identifier{S}\;\identifier{V}\;{:}\;\constructor{Set}\mskip1.5mu\}\;\identifier{→}\;\constructor{List}\;\protect\hyperlink{C43617365564272616e6368}{\constructor{CaseVBranch}}\;\identifier{→}\;\protect\hyperlink{L4c656e73}{\constructor{Lens}}\;\identifier{S}\;\identifier{V}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+and its definition is shown in \autoref{fig:view-case}.
+The putback semantics is to try to perform on the view the conversion specified by the isomorphism for each branch, and proceed to execute the the associated putback semantics when a branch succeeds.
+
 
 \subsection{List alignment}
 \label{sec:list-alignment}
@@ -897,160 +1158,62 @@ In general, \ensuremath{\protect\hyperlink{P707574}{\identifier{put}}} must embe
 \subsection{Deep embedding}
 \label{sec:deep-embedding}
 
-\begin{figure}
-\hrule
-\begin{center}
-\setlength{\mathindent}{0em}
-\begin{hscode}\SaveRestoreHook
-\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{14}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{24}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{25}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{26}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{27}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{37}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{40}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[B]{}\keyword{mutual}{}\<[E]%
-\\[\blanklineskip]%
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\keyword{data}\;\raisebox{\ht\strutbox}{\hypertarget{B426947554c}{}}\constructor{BiGUL}\index{B426947554c@\ensuremath{\constructor{BiGUL}}}\;{:}\;\constructor{U}\;\identifier{→}\;\constructor{U}\;\identifier{→}\;\constructor{Set_1}\;\keyword{where}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\constructor{replace}\;{}\<[14]%
-\>[14]{}{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{S}\;{:}\;\constructor{U}\mskip1.5mu\}\;\identifier{→}}\;{}\<[40]%
-\>[40]{}\protect\hyperlink{B426947554c}{\constructor{BiGUL}}\;\identifier{S}\;\identifier{S}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\constructor{fail}\;{}\<[14]%
-\>[14]{}{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{S}\;\identifier{V}\;{:}\;\constructor{U}\mskip1.5mu\}\;\identifier{→}}\;{}\<[40]%
-\>[40]{}\protect\hyperlink{B426947554c}{\constructor{BiGUL}}\;\identifier{S}\;\identifier{V}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\constructor{skip}\;{}\<[14]%
-\>[14]{}{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{S}\;{:}\;\constructor{U}\mskip1.5mu\}\;\identifier{→}}\;{}\<[40]%
-\>[40]{}\protect\hyperlink{B426947554c}{\constructor{BiGUL}}\;\identifier{S}\;\constructor{one}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\constructor{update}\;{}\<[14]%
-\>[14]{}{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{S}\;{:}\;\constructor{U}\mskip1.5mu\}\;\identifier{→}}\;{}\<[40]%
-\>[40]{}(\identifier{pat}\;{:}\;\constructor{Pattern}\;\identifier{S})\;(\identifier{bs}\;{:}\;\constructor{BiGULs}\;\identifier{pat})\;\identifier{→}\;\protect\hyperlink{B426947554c}{\constructor{BiGUL}}\;\identifier{S}\;(\identifier{ViewsU}\;\identifier{pat}\;\identifier{bs}){}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\constructor{rearr}\;{}\<[14]%
-\>[14]{}{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{S}\;\identifier{V}\;\identifier{V'}\;{:}\;\constructor{U}\mskip1.5mu\}\;\identifier{→}}\;{}\<[40]%
-\>[40]{}(\identifier{vpat}\;{:}\;\constructor{Pattern}\;\identifier{V})\;(\identifier{vpat'}\;{:}\;\constructor{Pattern}\;\identifier{V'})\;\identifier{→}\;\constructor{Expr}\;\identifier{vpat}\;\identifier{vpat'}\;\identifier{→}\;{}\<[E]%
-\\
-\>[40]{}\protect\hyperlink{B426947554c}{\constructor{BiGUL}}\;\identifier{S}\;\identifier{V'}\;\identifier{→}\;\protect\hyperlink{B426947554c}{\constructor{BiGUL}}\;\identifier{S}\;\identifier{V}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\constructor{caseS}\;{}\<[14]%
-\>[14]{}{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{S}\;\identifier{V}\;{:}\;\constructor{U}\mskip1.5mu\}\;\identifier{→}}\;{}\<[40]%
-\>[40]{}\constructor{List}\;(\constructor{CaseSBranch}\;\identifier{S}\;\identifier{V})\;\identifier{→}\;\protect\hyperlink{B426947554c}{\constructor{BiGUL}}\;\identifier{S}\;\identifier{V}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\constructor{caseV}\;{}\<[14]%
-\>[14]{}{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{S}\;\identifier{V}\;{:}\;\constructor{U}\mskip1.5mu\}\;\identifier{→}}\;{}\<[40]%
-\>[40]{}\constructor{List}\;(\constructor{CaseVBranch}\;\identifier{S}\;\identifier{V})\;\identifier{→}\;\protect\hyperlink{B426947554c}{\constructor{BiGUL}}\;\identifier{S}\;\identifier{V}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\constructor{align}\;{}\<[14]%
-\>[14]{}{:}\;{}^{\color{gray}\{\mskip1.5mu \identifier{S}\;\identifier{V}\;{:}\;\constructor{U}\mskip1.5mu\}\;\identifier{→}}\;{}\<[40]%
-\>[40]{}(\identifier{⟦}\;\identifier{S}\;\identifier{⟧}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\constructor{Bool})\;\identifier{→}\;(\identifier{⟦}\;\identifier{S}\;\identifier{⟧}\;\identifier{→}\;\identifier{⟦}\;\identifier{V}\;\identifier{⟧}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\constructor{Bool})\;\identifier{→}\;{}\<[E]%
-\\
-\>[40]{}\protect\hyperlink{B426947554c}{\constructor{BiGUL}}\;\identifier{S}\;\identifier{V}\;\identifier{→}\;(\identifier{⟦}\;\identifier{V}\;\identifier{⟧}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{⟦}\;\identifier{S}\;\identifier{⟧})\;\identifier{→}\;{}\<[E]%
-\\
-\>[40]{}(\identifier{⟦}\;\identifier{S}\;\identifier{⟧}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;(\protect\hyperlink{M4d61796265}{\constructor{Maybe}}\;\identifier{⟦}\;\identifier{S}\;\identifier{⟧}))\;\identifier{→}\;\protect\hyperlink{B426947554c}{\constructor{BiGUL}}\;(\constructor{list}\;\identifier{S})\;(\constructor{list}\;\identifier{V}){}\<[E]%
-\\[\blanklineskip]%
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\constructor{BiGULs}\;{:}\;\{\mskip1.5mu \identifier{X}\;{:}\;\constructor{U}\mskip1.5mu\}\;\identifier{→}\;\constructor{Pattern}\;\identifier{X}\;\identifier{→}\;\constructor{Set_1}{}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\constructor{BiGULs}\;\{\mskip1.5mu \identifier{X}\mskip1.5mu\}\;\constructor{var}\;{}\<[27]%
-\>[27]{}\kern.15em{=}\kern.15em\;(\identifier{Y}\;{:}\;\constructor{U})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;\protect\hyperlink{B426947554c}{\constructor{BiGUL}}\;\identifier{X}\;\identifier{Y}{}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\constructor{BiGULs}\;(\constructor{k}\;\identifier{x}{}\<[25]%
-\>[25]{})\;\kern.15em{=}\kern.15em\;\protect\hyperlink{_22a4}{\identifier{⊤}}{}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\constructor{BiGULs}\;(\constructor{left}\;\identifier{pat}{}\<[25]%
-\>[25]{})\;\kern.15em{=}\kern.15em\;\constructor{BiGULs}\;\identifier{pat}{}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\constructor{BiGULs}\;(\constructor{right}\;\identifier{pat}{}\<[25]%
-\>[25]{})\;\kern.15em{=}\kern.15em\;\constructor{BiGULs}\;\identifier{pat}{}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\constructor{BiGULs}\;(\constructor{prod}\;\identifier{lpat}\;\identifier{rpat})\;\kern.15em{=}\kern.15em\;\constructor{BiGULs}\;\identifier{lpat}\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;\constructor{BiGULs}\;\identifier{rpat}{}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\constructor{BiGULs}\;(\constructor{elem}\;\identifier{hpat}\;\identifier{tpat})\;\kern.15em{=}\kern.15em\;\constructor{BiGULs}\;\identifier{hpat}\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;\constructor{BiGULs}\;\identifier{tpat}{}\<[E]%
-\\[\blanklineskip]%
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\identifier{Views}\;{:}\;\{\mskip1.5mu \identifier{X}\;{:}\;\constructor{U}\mskip1.5mu\}\;(\identifier{pat}\;{:}\;\constructor{Pattern}\;\identifier{X})\;\identifier{→}\;\constructor{BiGULs}\;\identifier{pat}\;\identifier{→}\;\constructor{U}{}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\identifier{Views}\;\constructor{var}\;{}\<[26]%
-\>[26]{}(\identifier{Y}\;\identifier{,}\;\anonymous )\;{}\<[37]%
-\>[37]{}\kern.15em{=}\kern.15em\;\identifier{Y}{}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\identifier{Views}\;(\constructor{k}\;\identifier{x}{}\<[24]%
-\>[24]{})\;\constructor{tt}\;{}\<[37]%
-\>[37]{}\kern.15em{=}\kern.15em\;\constructor{one}{}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\identifier{Views}\;(\constructor{left}\;\identifier{pat}{}\<[24]%
-\>[24]{})\;\identifier{bs}\;{}\<[37]%
-\>[37]{}\kern.15em{=}\kern.15em\;\identifier{Views}\;\identifier{pat}\;\identifier{bs}{}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\identifier{Views}\;(\constructor{right}\;\identifier{pat}{}\<[24]%
-\>[24]{})\;\identifier{bs}\;{}\<[37]%
-\>[37]{}\kern.15em{=}\kern.15em\;\identifier{Views}\;\identifier{pat}\;\identifier{bs}{}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\identifier{Views}\;(\constructor{prod}\;\identifier{lpat}\;\identifier{rpat})\;(\identifier{bs}\;\identifier{,}\;\identifier{bs'})\;\kern.15em{=}\kern.15em\;\identifier{Views}\;\identifier{lpat}\;\identifier{bs}\;\identifier{⊗}\;\identifier{Views}\;\identifier{rpat}\;\identifier{bs'}{}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\identifier{Views}\;(\constructor{elem}\;\identifier{hpat}\;\identifier{tpat})\;(\identifier{bs}\;\identifier{,}\;\identifier{bs'})\;\kern.15em{=}\kern.15em\;\identifier{Views}\;\identifier{hpat}\;\identifier{bs}\;\identifier{⊗}\;\identifier{Views}\;\identifier{tpat}\;\identifier{bs'}{}\<[E]%
-\\[\blanklineskip]%
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\keyword{data}\;\constructor{CaseSBranchType}\;(\identifier{S}\;\identifier{V}\;{:}\;\constructor{U})\;{:}\;\constructor{Set_1}\;\keyword{where}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\constructor{normal}\;{}\<[14]%
-\>[14]{}{:}\;\protect\hyperlink{B426947554c}{\constructor{BiGUL}}\;\identifier{S}\;\identifier{V}\;\identifier{→}\;\constructor{CaseSBranchType}\;\identifier{S}\;\identifier{V}{}\<[E]%
-\\
-\>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\constructor{adaptive}\;{:}\;(\identifier{⟦}\;\identifier{S}\;\identifier{⟧}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\identifier{⟦}\;\identifier{S}\;\identifier{⟧})\;\identifier{→}\;\constructor{CaseSBranchType}\;\identifier{S}\;\identifier{V}{}\<[E]%
-\\[\blanklineskip]%
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\constructor{CaseSBranch}\;{:}\;(\identifier{S}\;\identifier{V}\;{:}\;\constructor{U})\;\identifier{→}\;\constructor{Set_1}{}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\constructor{CaseSBranch}\;\identifier{S}\;\identifier{V}\;\kern.15em{=}\kern.15em\;(\identifier{⟦}\;\identifier{S}\;\identifier{⟧}\;\identifier{→}\;\protect\hyperlink{P506172}{\constructor{Par}}\;\constructor{Bool})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;\constructor{CaseSBranchType}\;\identifier{S}\;\identifier{V}{}\<[E]%
-\\[\blanklineskip]%
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\constructor{CaseVBranch}\;{:}\;(\identifier{S}\;\identifier{V}\;{:}\;\constructor{U})\;\identifier{→}\;\constructor{Set_1}{}\<[E]%
-\\
-\>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\constructor{CaseVBranch}\;\identifier{S}\;\identifier{V}\;\kern.15em{=}\kern.15em\;(\identifier{pat}\;{:}\;\constructor{Pattern}\;\identifier{V})\;\protect\hyperlink{_5fd75f}{\identifier{×}}\;\protect\hyperlink{B426947554c}{\constructor{BiGUL}}\;\identifier{S}\;(\identifier{PatResultU}\;\identifier{pat}){}\<[E]%
-\ColumnHook
-\end{hscode}\resethooks
-\end{center}
-\label{fig:BiGUL}
-\end{figure}
+%\begin{figure}
+%\hrule
+%\begin{center}
+%\setlength{\mathindent}{0em}
+%\begin{code}
+%mutual
+%
+%  data ^^^BiGUL : U → U → Set₁ where
+%    replace  : (HIDE({S : U} →))       BiGUL S S
+%    failB    : (HIDE({S V : U} →))     BiGUL S V
+%    skip     : (HIDE({S : U} →))       BiGUL S one
+%    update   : (HIDE({S : U} →))       (pat : Pattern S) (bs : BiGULs pat) → BiGUL S (ViewsU pat bs)
+%    rearr    : (HIDE({S V V' : U} →))  (vpat : Pattern V) (vpat' : Pattern V') → Expr vpat vpat' →
+%                                       BiGUL S V' → BiGUL S V
+%    caseS    : (HIDE({S V : U} →))     List (CaseSBranch S V) → BiGUL S V
+%    caseV    : (HIDE({S V : U} →))     List (CaseVBranch S V) → BiGUL S V
+%    align    : (HIDE({S V : U} →))     (⟦ S ⟧ → Par Bool) → (⟦ S ⟧ → ⟦ V ⟧ → Par Bool) →
+%                                       BiGUL S V → (⟦ V ⟧ → Par ⟦ S ⟧) →
+%                                       (⟦ S ⟧ → Par (Maybe ⟦ S ⟧)) → BiGUL (list S) (list V)
+%
+%  BiGULs : {X : U} → Pattern X → Set₁
+%  BiGULs {X} var          = (Y : U) × BiGUL X Y
+%  BiGULs (k x           ) = ⊤
+%  BiGULs (left pat      ) = BiGULs pat
+%  BiGULs (right pat     ) = BiGULs pat
+%  BiGULs (prod lpat rpat) = BiGULs lpat × BiGULs rpat
+%  BiGULs (elem hpat tpat) = BiGULs hpat × BiGULs tpat
+%
+%  Views : {X : U} (pat : Pattern X) → BiGULs pat → U
+%  Views var              (Y , _)    = Y
+%  Views (k x           ) tt         = one
+%  Views (left pat      ) bs         = Views pat bs
+%  Views (right pat     ) bs         = Views pat bs
+%  Views (prod lpat rpat) (bs , bs') = Views lpat bs ⊗ Views rpat bs'
+%  Views (elem hpat tpat) (bs , bs') = Views hpat bs ⊗ Views tpat bs'
+%
+%  data CaseSBranchType (S V : U) : Set₁ where
+%    normal   : BiGUL S V → CaseSBranchType S V
+%    adaptive : (⟦ S ⟧ → Par ⟦ S ⟧) → CaseSBranchType S V
+%
+%  CaseSBranch : (S V : U) → Set₁
+%  CaseSBranch S V = (⟦ S ⟧ → Par Bool) × CaseSBranchType S V
+%
+%  CaseVBranch : (S V : U) → Set₁
+%  CaseVBranch S V = (pat : Pattern V) × BiGUL S (PatResultU pat)
+%\end{code}
+%\end{center}
+%\label{fig:BiGUL}
+%\end{figure}
 
 \section{Examples}
 \label{sec:examples}
 
 \todo[inline]{bookstore for align, update, and rearrangement}
 
-\todo[inline]{\textsc{BiYacc} for source and view cases}
+\todo[inline]{\textsc{BiYacc} for source and view cases (probably not)}
 
 \todo[inline]{source/view if, map in terms of align}
 

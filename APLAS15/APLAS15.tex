@@ -41,6 +41,8 @@
 %format Bool = "\constructor{Bool}"
 %format true = "\constructor{true}"
 %format false = "\constructor{false}"
+%format if = "\constructor{if}"
+%format else = "\constructor{else}"
 %format Par = "\constructor{Par}"
 %format return = "\constructor{return}"
 %format _>>=_ = _ "{" >>= "}\kern-\underscorespace" _
@@ -57,6 +59,8 @@
 %format Lens.get = Lens . get
 %format Lens.PutGet = Lens . PutGet
 %format Lens.GetPut = Lens . GetPut
+%format put' = "\mathit{put}"
+%format get' = "\mathit{get}"
 %format ↔ = "\scalebox{.75}[1]{$\leftrightarrow$}"
 %format _↔_ = _ "{" ↔ "}\kern-\underscorespace" _
 %link ↔ _↔_
@@ -105,6 +109,9 @@
 %format replace-lens = "\mathit{replace}" - lens
 %format fail-lens = "\mathit{fail}" - lens
 %format skip-lens = "\mathit{skip}" - lens
+%format caseS-lens = "\mathit{caseS}" - lens
+%format put-with-adaptation = put' - "\mathit{with}" - adaptation
+%format caseV-lens = "\mathit{caseV}" - lens
 
 \newlength{\underscorespace}
 \setlength{\underscorespace}{.8pt}
@@ -167,7 +174,7 @@ data ^^^Maybe (A : Set) : Set where
 \end{code}
 The result of a piece of successful computation is wrapped in the |just| constructor, while failed computation is represented by |nothing|.
 The behaviour of decidably partial functions is different from the usual partial functions as formalised in terms of complete partial orders (see, e.g., Gibbons~\cite{Gibbons-calculating-functional-programs}):
-In \autoref{sec:BiGUL} we will need to define programs that produce some result or fail respectively when a sub-program fails or produces some result, but this is not possible in the setting of complete partial orders (since such functions violate monotonicity, a necessary condition for computability).
+In \autoref{sec:view-case} we will need to define programs that produce some result or fail respectively when a sub-program fails or produces some result, but this is not possible in the setting of complete partial orders (since such functions violate monotonicity, a necessary condition for computability).
 
 \begin{figure}[t]
 \begin{center}
@@ -186,7 +193,7 @@ runPar (assert true   then mx)  = runPar mx
 runPar (assert false  then mx)  = nothing
 \end{code}
 \end{center}
-\caption{Definition of |runPar|.}
+\caption{Definition of the interpreter of |Par| to |Maybe|}
 \label{fig:runPar}
 \end{figure}
 
@@ -248,7 +255,7 @@ mutual
   assert b then mx   /↦  =  (b ≡ false) ⊎ ((b ≡ true) × (mx /↦))
 \end{code}
 \end{center}
-\caption{Definitions of |_↦_|~and~|_/↦|.}
+\caption{Definitions of successful and failed computation steps}
 \label{fig:CompSeq}
 \end{figure}
 
@@ -293,8 +300,8 @@ record ^^^Lens (S V : Set) : Set₁ where
   field
     ^^^put  : S → V → Par S
     ^^^get  : S → Par V
-    ^^^PutGet  : (HIDE({s s' : S} {v : V} →))  (put s v ↦ s') → (get s' ↦ v)
-    ^^^GetPut  : (HIDE({s : S} {v : V} →))     (get s ↦ v) → (put s v ↦ s)
+    ^^^PutGet  : {s s' : S} {v : V} →  (put s v ↦ s') → (get s' ↦ v)
+    ^^^GetPut  : {s : S} {v : V} →     (get s ↦ v) → (put s v ↦ s)
 \end{code}
 \end{definition}
 Informally:
@@ -321,7 +328,7 @@ iso-lens iso = record
   SEP  PutGet  = Iso.from-to-inverse iso
   SEP  GetPut  = Iso.to-from-inverse iso }
 \end{code}
-This conversion gives us a first way to produce lenses.
+This conversion gives us a first way to manufacture lenses.
 For example, the identity isomorphism between the same type --- whose |to| and |from| are both |return| --- gives rise to the ``replacing'' lens, and the empty isomorphism between any two types --- whose |to| and |from| are both |\ _ -> fail| --- gives rise to the ``failure'' lens.
 Both lenses will appear in \autoref{sec:basic-lenses}.
 
@@ -418,14 +425,125 @@ skip-lens : {S : Set} -> Lens S ⊤
 skip-lens = record { put = \ s _ -> return s SEP get = \ _ -> return tt SEP ABBRV }
 \end{code}
 Note that the view type is specified as~|⊤|, whose inhabitant can only be~|tt|: had the view type been a more complex type, there would have been no way for |get| to decide what to return.
-In general, |put| must embed all view information into the updated source so |get| can completely recover the view from the updated source, establishing |PutGet|.
+In general, |put| must embed all view information into the updated source so |get| can recover the entire view from the updated source, establishing |PutGet|.
 |⊤|~is a type with no information, and hence |Lens.put skip-lens| can safely ignore its view argument of type~|⊤|.
 
 \subsection{Case analysis on source}
 \label{sec:source-case}
 
+\begin{figure}[t]
+\begin{center}
+\setlength{\mathindent}{0em}
+\begin{code}
+caseS-lens : {S V : Set} -> List (CaseSBranch S V) -> Lens S V
+caseS-lens {S} {V} bs = record
+  {    put =  put-with-adaptation bs s v
+                (λ s' → put-with-adaptation bs s' v (\ _ -> fail))
+  SEP  get =  get' SEP ABBRV }
+  where
+    branch :   {X : Set1} → (Lens S V → X) → ((S → Par S) → X) →
+               CaseSBranchType → X
+    branch f g (normal    l  ) = f  l
+    branch f g (adaptive  u  ) = g  u
+
+    put-with-adaptation : List CaseSBranch → S → V → (S → Par S) → Par S
+    put-with-adaptation []              s v f = fail
+    put-with-adaptation ((p , b) ∷ bs)  s v f =
+      p s >>= λ matched →
+      if matched  then  branch   (λ lens →  Lens.put lens s v >>= λ s' →
+                                            p s' >>= λ matched' →
+                                            assert matched' then return s')
+                                 (λ u → u s >>= f) b
+                  else  put-with-adaptation bs s v f >>= λ s' →
+                        p s' >>= λ matched' → assert not matched' then return s'
+
+    get' : List CaseSBranch → S → Par V
+    get' []              s = fail
+    get' ((p , b) ∷ bs)  s =
+      p s >>= λ matched →
+      if matched  then  branch (λ lens → Lens.get lens s) (\ _ -> fail) b
+                  else  get' bs s
+\end{code}
+\end{center}
+\caption{Definition of source case analysis}
+\label{fig:source-case}
+\end{figure}
+
+The next lens, |caseS-lens|, is for doing case analysis on the source.
+The basic idea of the putback semantics of |caseS-lens| is to choose from a list of branches the first one that matches the source, and then execute the putback semantics of the lens associated with the chosen branch.
+It is, however, difficult to find a |get| to pair with this |put|: the obvious |get| which selects the first branch that matches its source argument does not work, because it may well happen that the updated source produced by |put| matches a different branch from the original source, so in general we would have to guarantee |PutGet| for |put| and |get| coming respectively from any two branches, which is unmanageable.
+A more manageable solution is to insert a dynamic check at the end of |put| to ensure that the updated source must match the same branch as the original source, but in practice this solution is too restrictive to be useful.
+We bump right into an obstacle for our very first combinator!
+
+Our solution is to invent a special kind of branches called \emph{adaptive} branches, in addition to \emph{normal} branches.
+The two kinds of branches are defined by the following datatype:
+\begin{code}
+data ^^^CaseSBranchType (S V : Set) : Set1 where
+  ^^^normal    : Lens S V      -> CaseSBranchType S V
+  ^^^adaptive  : (S -> Par S)  -> CaseSBranchType S V
+\end{code}
+A |normal| branch contains a lens, while an |adaptive| branch contains a source transformation.
+With each branch we also need to associate a decidable predicate on the source type specifying when a source matches the branch, so the complete definition of the type of branches is
+\begin{code}
+^^^CaseSBranch : Set -> Set -> Set1
+CaseSBranch S V = (S -> Par Bool) × CaseSBranchType S V
+\end{code}
+The type of |caseS-lens| is then
+\begin{code}
+caseS-lens : {S V : Set} -> List (CaseSBranch S V) -> Lens S V
+\end{code}
+and its definition is shown in \autoref{fig:source-case}.
+We might think of a source case analysis as still consisting mainly of normal branches, but now for |put| we allow the source to match an adaptive branch, which transforms the source such that it matches a normal branch.
+More explicitly, the case analysis may be run twice when executing |put|: if a normal branch is chosen the first time, then the case analysis succeeds, and we execute the |put| associated with the branch; otherwise, we adapt the source and rerun the case analysis, and must match a normal branch this time.
+The corresponding |get| similarly goes through the same list of branches, but fails immediately if an adaptive branch is matched.
+
+\todo[inline]{CPS}
+
 \subsection{Case analysis on view}
 \label{sec:view-case}
+
+\begin{figure}[t]
+\begin{center}
+\setlength{\mathindent}{0em}
+\begin{code}
+caseV-lens : {S V : Set} -> List CaseVBranch -> Lens S V
+caseV-lens {S} {V} bs = record { put = put' SEP get = get' SEP ABBRV }
+  where
+    put' : List CaseVBranch → S → V → Par S
+    put' []                       s v = fail
+    put' ((_ , lens , iso) ∷ bs)  s v = catch  (Iso.from iso v) (Lens.put lens s)
+                                               (  put' bs s v >>= λ s' →
+                                                  catch  (Lens.get lens s' >>= Iso.to iso)
+                                                         (\ _ -> fail) (return s'))
+
+    get' : List CaseVBranch → S → Par V
+    get' []                        s = fail
+    get' ((_ , lens , iso) ∷ bs)   s = catch  (Lens.get lens s >>= Iso.to iso) return
+                                              (  get' bs s >>= λ v →
+                                                 catch (Iso.from iso v) (\ _ -> fail) (return v))
+\end{code}
+\end{center}
+\caption{Definition of view case analysis}
+\label{fig:view-case}
+\end{figure}
+
+For case analysis on the view, there is still a list of branches, with each of which a lens is associated --- there are no adaptive branches.
+We must be more careful when it comes to the view, though:
+As we mentioned in \autoref{sec:basic-lenses}, view information must be carefully managed and completely embedded into the source.
+When a branch matches the view, the amount of view information that remains to be embedded can actually be reduced.
+For example, if there is a branch that matches an integer view which equals zero, then for this branch we may even perform no update on the source as long as we can guarantee that the subsequent |get| will choose this branch, in which case |get| can simply return zero --- the information that the view is zero is embedded implicitly in the control flow rather than explicitly in the updated source.
+Thus, in the definition of |CaseVBranch| below, we use a partial isomorphism on the view type which converts it to a less informative type, instead of just a decidable predicate as in |CaseSBranch|:
+\begin{code}
+^^^CaseVBranch : Set -> Set -> Set₁
+CaseVBranch S V = (V' : Set) × Lens S V' × Iso V' V
+\end{code}
+The type of |caseV-lens| is then
+\begin{code}
+caseV-lens : {S V : Set} -> List CaseVBranch -> Lens S V
+\end{code}
+and its definition is shown in \autoref{fig:view-case}.
+The putback semantics is to try to perform on the view the conversion specified by the isomorphism for each branch, and proceed to execute the the associated putback semantics when a branch succeeds.
+
 
 \subsection{List alignment}
 \label{sec:list-alignment}
@@ -439,62 +557,62 @@ In general, |put| must embed all view information into the updated source so |ge
 \subsection{Deep embedding}
 \label{sec:deep-embedding}
 
-\begin{figure}
-\hrule
-\begin{center}
-\setlength{\mathindent}{0em}
-\begin{code}
-mutual
-
-  data ^^^BiGUL : U → U → Set₁ where
-    replace  : (HIDE({S : U} →))       BiGUL S S
-    failB    : (HIDE({S V : U} →))     BiGUL S V
-    skip     : (HIDE({S : U} →))       BiGUL S one
-    update   : (HIDE({S : U} →))       (pat : Pattern S) (bs : BiGULs pat) → BiGUL S (ViewsU pat bs)
-    rearr    : (HIDE({S V V' : U} →))  (vpat : Pattern V) (vpat' : Pattern V') → Expr vpat vpat' →
-                                       BiGUL S V' → BiGUL S V
-    caseS    : (HIDE({S V : U} →))     List (CaseSBranch S V) → BiGUL S V
-    caseV    : (HIDE({S V : U} →))     List (CaseVBranch S V) → BiGUL S V
-    align    : (HIDE({S V : U} →))     (⟦ S ⟧ → Par Bool) → (⟦ S ⟧ → ⟦ V ⟧ → Par Bool) →
-                                       BiGUL S V → (⟦ V ⟧ → Par ⟦ S ⟧) →
-                                       (⟦ S ⟧ → Par (Maybe ⟦ S ⟧)) → BiGUL (list S) (list V)
-
-  BiGULs : {X : U} → Pattern X → Set₁
-  BiGULs {X} var          = (Y : U) × BiGUL X Y
-  BiGULs (k x           ) = ⊤
-  BiGULs (left pat      ) = BiGULs pat
-  BiGULs (right pat     ) = BiGULs pat
-  BiGULs (prod lpat rpat) = BiGULs lpat × BiGULs rpat
-  BiGULs (elem hpat tpat) = BiGULs hpat × BiGULs tpat
-
-  Views : {X : U} (pat : Pattern X) → BiGULs pat → U
-  Views var              (Y , _)    = Y
-  Views (k x           ) tt         = one
-  Views (left pat      ) bs         = Views pat bs
-  Views (right pat     ) bs         = Views pat bs
-  Views (prod lpat rpat) (bs , bs') = Views lpat bs ⊗ Views rpat bs'
-  Views (elem hpat tpat) (bs , bs') = Views hpat bs ⊗ Views tpat bs'
-
-  data CaseSBranchType (S V : U) : Set₁ where
-    normal   : BiGUL S V → CaseSBranchType S V
-    adaptive : (⟦ S ⟧ → Par ⟦ S ⟧) → CaseSBranchType S V
-
-  CaseSBranch : (S V : U) → Set₁
-  CaseSBranch S V = (⟦ S ⟧ → Par Bool) × CaseSBranchType S V
-
-  CaseVBranch : (S V : U) → Set₁
-  CaseVBranch S V = (pat : Pattern V) × BiGUL S (PatResultU pat)
-\end{code}
-\end{center}
-\label{fig:BiGUL}
-\end{figure}
+%\begin{figure}
+%\hrule
+%\begin{center}
+%\setlength{\mathindent}{0em}
+%\begin{code}
+%mutual
+%
+%  data ^^^BiGUL : U → U → Set₁ where
+%    replace  : (HIDE({S : U} →))       BiGUL S S
+%    failB    : (HIDE({S V : U} →))     BiGUL S V
+%    skip     : (HIDE({S : U} →))       BiGUL S one
+%    update   : (HIDE({S : U} →))       (pat : Pattern S) (bs : BiGULs pat) → BiGUL S (ViewsU pat bs)
+%    rearr    : (HIDE({S V V' : U} →))  (vpat : Pattern V) (vpat' : Pattern V') → Expr vpat vpat' →
+%                                       BiGUL S V' → BiGUL S V
+%    caseS    : (HIDE({S V : U} →))     List (CaseSBranch S V) → BiGUL S V
+%    caseV    : (HIDE({S V : U} →))     List (CaseVBranch S V) → BiGUL S V
+%    align    : (HIDE({S V : U} →))     (⟦ S ⟧ → Par Bool) → (⟦ S ⟧ → ⟦ V ⟧ → Par Bool) →
+%                                       BiGUL S V → (⟦ V ⟧ → Par ⟦ S ⟧) →
+%                                       (⟦ S ⟧ → Par (Maybe ⟦ S ⟧)) → BiGUL (list S) (list V)
+%
+%  BiGULs : {X : U} → Pattern X → Set₁
+%  BiGULs {X} var          = (Y : U) × BiGUL X Y
+%  BiGULs (k x           ) = ⊤
+%  BiGULs (left pat      ) = BiGULs pat
+%  BiGULs (right pat     ) = BiGULs pat
+%  BiGULs (prod lpat rpat) = BiGULs lpat × BiGULs rpat
+%  BiGULs (elem hpat tpat) = BiGULs hpat × BiGULs tpat
+%
+%  Views : {X : U} (pat : Pattern X) → BiGULs pat → U
+%  Views var              (Y , _)    = Y
+%  Views (k x           ) tt         = one
+%  Views (left pat      ) bs         = Views pat bs
+%  Views (right pat     ) bs         = Views pat bs
+%  Views (prod lpat rpat) (bs , bs') = Views lpat bs ⊗ Views rpat bs'
+%  Views (elem hpat tpat) (bs , bs') = Views hpat bs ⊗ Views tpat bs'
+%
+%  data CaseSBranchType (S V : U) : Set₁ where
+%    normal   : BiGUL S V → CaseSBranchType S V
+%    adaptive : (⟦ S ⟧ → Par ⟦ S ⟧) → CaseSBranchType S V
+%
+%  CaseSBranch : (S V : U) → Set₁
+%  CaseSBranch S V = (⟦ S ⟧ → Par Bool) × CaseSBranchType S V
+%
+%  CaseVBranch : (S V : U) → Set₁
+%  CaseVBranch S V = (pat : Pattern V) × BiGUL S (PatResultU pat)
+%\end{code}
+%\end{center}
+%\label{fig:BiGUL}
+%\end{figure}
 
 \section{Examples}
 \label{sec:examples}
 
 \todo[inline]{bookstore for align, update, and rearrangement}
 
-\todo[inline]{\textsc{BiYacc} for source and view cases}
+\todo[inline]{\textsc{BiYacc} for source and view cases (probably not)}
 
 \todo[inline]{source/view if, map in terms of align}
 
