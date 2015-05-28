@@ -1,5 +1,11 @@
 \begin{thebibliography}{1}
 
+\bibitem{Cheney-FLUX}
+James Cheney.
+\newblock \textsc{Flux}: functional updates for {XML}.
+\newblock In {\em International Conference on Functional Programming}, ICFP'08,
+  pages 3--14. ACM, 2008.
+
 \bibitem{Foster-lenses}
 J.~Nathan Foster, Michael~B. Greenwald, Jonathan~T. Moore, Benjamin~C. Pierce,
   and Alan Schmitt.
