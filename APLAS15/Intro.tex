@@ -1,0 +1,183 @@
+\documentclass[fleqn]{llncs}
+
+%include agda.fmt
+
+%subst keyword a = "\keyword{" a "}"
+%subst conid a = "\identifier{" a "}"
+%subst varid a = "\identifier{" a "}"
+%format (HIDE(x)) = "{}^{\color{gray}" x "}"
+%format = = "\kern.15em{=}\kern.15em"
+%format -> = →
+%format Set = "\constructor{Set}"
+%format Set1 = "\constructor{Set_1}"
+%format Set₁ = Set1
+%format : = "{:}"
+%format λ = "\lambda"
+%format - = "\text-\kern-.75\underscorespace"
+%format . = "\kern.6\underscorespace\text."
+%format SEP = "\kern1.55\underscorespace;"
+%format ABBRV = "\colorbox[gray]{.9}{\rlap{\ldots}\phantom{\hskip 1.2em}\vphantom{\vrule height 1.1ex}}"
+%format tt = "\constructor{tt}"
+%format _≡_ = _ "\kern\underscorespace{" ≡ "}" _
+%link ≡ _≡_
+%format ↦ = "\mathrel{\mapsto}"
+%link ↦ _↦_
+%format _↦_ = _ "\kern.5\underscorespace{" ↦ "}\kern-\underscorespace" _
+%format MAPSTO = ↦
+%format /↦ = "\mathrel{\not\mapsto}"
+%link /↦ _/↦
+%format _/↦ = _ "\kern.5\underscorespace{" /↦ "}"
+%format _×_ = _ "{" × "}\kern-\underscorespace" _
+%link × _×_
+%format _,_ = _ "\kern\underscorespace" , _
+%format ⊎ = "\mathrel{\uplus}"
+%format _⊎_ = _ "\kern\underscorespace{" ⊎ "}" _
+%link ⊎ _⊎_
+%format inj₁ = "\constructor{inj_1}"
+%format inj₂ = "\constructor{inj_2}"
+%format Maybe = "\constructor{Maybe}"
+%format nothing = "\constructor{nothing}"
+%format just = "\constructor{just}"
+%format Bool = "\constructor{Bool}"
+%format true = "\constructor{true}"
+%format false = "\constructor{false}"
+%format if = "\constructor{if}"
+%format else = "\constructor{else}"
+%format Par = "\constructor{Par}"
+%format return = "\constructor{return}"
+%format _>>=_ = _ "{" >>= "}\kern-\underscorespace" _
+%format fail = "\constructor{fail}"
+%format catch = "\constructor{catch}"
+%format assert = "\constructor{assert}"
+%link assert assert_then_
+%format then = "\constructor{then}"
+%link then assert_then_
+%format assert_then_ = assert _ then "\kern-\underscorespace" _
+%link >>= _>>=_
+%format Lens = "\constructor{Lens}"
+%format Lens.put = Lens . put
+%format Lens.get = Lens . get
+%format Lens.PutGet = Lens . PutGet
+%format Lens.GetPut = Lens . GetPut
+%format put' = "\mathit{put}"
+%format get' = "\mathit{get}"
+%format ↔ = "\scalebox{.75}[1]{$\leftrightarrow$}"
+%format _↔_ = _ "{" ↔ "}\kern-\underscorespace" _
+%link ↔ _↔_
+%format Iso = "\constructor{Iso}"
+%format to-from-inverse = to - from - inverse
+%format from-to-inverse = from - to - inverse
+%format Iso.to = Iso . to
+%format Iso.from = Iso . from
+%format Iso.to-from-inverse = Iso . to-from-inverse
+%format Iso.from-to-inverse = Iso . from-to-inverse
+%format iso-lens = iso - lens
+%format get-l-a↦b = get - l - a "{\mapsto}" b
+%format put-r-b↦b' = put - r - b "{\mapsto}" b'
+%format put-l-a-b'↦a' = put - l - a - b' "{\mapsto}" a'
+%format get-r-b↦c = get - r - b "{\mapsto}" c
+%format List = "\constructor{List}"
+%format U = "\constructor{U}"
+%format list = "\constructor{list}"
+%format μ = "\mu"
+%format Pattern = "\constructor{Pattern}"
+%format var = "\constructor{var}"
+%format k = "\constructor{k}"
+%format one = "\constructor{one}"
+%format child = "\constructor{child}"
+%format left = "\constructor{left}"
+%format right = "\constructor{right}"
+%format prod = "\constructor{prod}"
+%format elem = "\constructor{elem}"
+%format Expr = "\constructor{Expr}"
+%format BiGUL = "\constructor{BiGUL}"
+%format failB = "\constructor{fail}"
+%format skip = "\constructor{skip}"
+%format replace = "\constructor{replace}"
+%format update = "\constructor{update}"
+%format rearr = "\constructor{rearr}"
+%format dep = "\constructor{dep}"
+%format caseS = "\constructor{caseS}"
+%format caseV = "\constructor{caseV}"
+%format align = "\constructor{align}"
+%format BiGULs = "\constructor{BiGULs}"
+%format CaseSBranch = "\constructor{CaseSBranch}"
+%format CaseSBranchType = "\constructor{CaseSBranchType}"
+%format normal = "\constructor{normal}"
+%format adaptive = "\constructor{adaptive}"
+%format CaseVBranch = "\constructor{CaseVBranch}"
+%format replace-lens = "\mathit{replace}" - lens
+%format fail-lens = "\mathit{fail}" - lens
+%format skip-lens = "\mathit{skip}" - lens
+%format caseS-lens = "\mathit{caseS}" - lens
+%format put-with-adaptation = put' - "\mathit{with}" - adaptation
+%format caseV-lens = "\mathit{caseV}" - lens
+%format guarded-return = guarded - "\mathit{return}"
+%format DecEq = "\constructor{DecEq}"
+
+\newlength{\underscorespace}
+\setlength{\underscorespace}{.8pt}
+\newlength{\binderspace}
+\setlength{\binderspace}{.8pt}
+\newlength{\binderskip}
+\setlength{\binderskip}{.8pt}
+
+\newcommand{\keyword}[1]{\mathbf{#1}}
+\newcommand{\identifier}[1]{\mathit{#1}}
+\newcommand{\constructor}[1]{\mathsf{#1}}
+
+\usepackage[hidelinks]{hyperref}
+\renewcommand{\chapterautorefname}{Chapter}
+\renewcommand{\sectionautorefname}{Section}
+\renewcommand{\subsectionautorefname}{Section}
+\renewcommand{\figureautorefname}{Figure}
+
+\usepackage[color=yellow,textsize=footnotesize]{todonotes}
+
+\usepackage{amsmath}
+
+\newcommand{\reason}[1]{\quad\{\,\text{#1}\,\}}
+
+\newcommand{\BiGUL}{\textsc{BiGUL}}
+\newcommand{\Agda}{\textsc{Agda}}
+\newcommand{\PutGet}{\textsc{PutGet}}
+\newcommand{\GetPut}{\textsc{GetPut}}
+
+\begin{document}
+
+\title{A Minimalist Datatype-Generic Putback-Based Bidirectional Programming Language}
+\author{Hsiang-Shang Ko\kern.05em\inst{2} \and Tao Zan\kern.05em\inst{1} \and Zhenjiang Hu\kern.05em\inst{1,\,2}}
+\institute{%
+SOKENDAI (The Graduate University for Advanced Studies), Japan\\
+{\tt \{taozan,hu\}@@nii.ac.jp}
+\and
+National Institute of Informatics, Japan\\
+{\tt hsiang-shang@@nii.ac.jp}}
+\maketitle
+
+\section{Introduction}
+\label{sec:introduction}
+
+\todo[inline]{Theory construction in terms of \Agda\ programming}
+
+\section{Discussion}
+\label{sec:discussion}
+
+\todo[inline]{recursion (the lack thereof)}
+
+\todo[inline]{extensions: for example, iteration, view dependency}
+
+\todo[inline]{Haskell implementation}
+
+\todo[inline]{Towards a dependently typed version}
+
+\todo[inline]{stems from work on \textsc{BiFluX}; comparison with putlenses}
+
+\todo[inline]{Theory construction in terms of \Agda\ programming\\
+Regarding formalisation: ``[W]e are interested in extending what can be calculated precisely because we are not interested in the calculations themselves. Developing techniques that allow more of a derivation to be calculated allows attention to be focussed on the creative parts, which cannot be calculated.''~\cite{Gibbons-BMF}\\
+\cite{UFP-HoTT}}
+
+%\bibliographystyle{plain}
+%\bibliography{/Users/joshko/Documents/bib}
+
+\end{document}
