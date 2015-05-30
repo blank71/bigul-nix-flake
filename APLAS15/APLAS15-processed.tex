@@ -795,7 +795,7 @@ And we can do case analyses on either the source~(\autoref{sec:source-case}) or 
 \>[3]{}\raisebox{\ht\strutbox}{\hypertarget{U757064617465}{}}\constructor{update}\index{U757064617465@\ensuremath{\constructor{update}}}\;{}\<[15]%
 \>[15]{}{:}\;{}\<[18]%
 \>[18]{}{}^{\color{gray}\{\mskip1.5mu \identifier{S}\;{:}\;\protect\hyperlink{U55}{\constructor{U}}\mskip1.5mu\}\;\identifier{→}}\;{}\<[39]%
-\>[39]{}(\identifier{pat}\;{:}\;\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}\;\identifier{S})\;(\identifier{bs}\;{:}\;\constructor{BiGULs}\;\identifier{pat})\;\identifier{→}\;\protect\hyperlink{B426947554c}{\constructor{BiGUL}}\;\identifier{S}\;(\identifier{Views'}\;\identifier{pat}\;\identifier{bs}){}\<[E]%
+\>[39]{}(\identifier{pat}\;{:}\;\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}\;\identifier{S})\;(\identifier{bs}\;{:}\;\constructor{BiGULs}\;\identifier{pat})\;\identifier{→}\;\protect\hyperlink{B426947554c}{\constructor{BiGUL}}\;\identifier{S}\;(\constructor{Views}^\prime\;\identifier{pat}\;\identifier{bs}){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
 \>[3]{}\raisebox{\ht\strutbox}{\hypertarget{R7265617272}{}}\constructor{rearr}\index{R7265617272@\ensuremath{\constructor{rearr}}}\;{}\<[15]%
@@ -1277,77 +1277,77 @@ The types of such containers can be defined by induction on \ensuremath{\protect
 \column{33}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{56}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[B]{}\identifier{VarPositions}\;{:}\;{}\<[17]%
+\>[B]{}\constructor{VarPositions}\;{:}\;{}\<[17]%
 \>[17]{}{}_{\color{gray}\{\mskip1.5mu \identifier{lv}\;{:}\;\constructor{Level}\mskip1.5mu\}}\;\{\mskip1.5mu \identifier{D}\;{:}\;\protect\hyperlink{U55}{\constructor{U}}\mskip1.5mu\}\;\identifier{→}\;\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}\;\identifier{D}\;\identifier{→}\;(\protect\hyperlink{U55}{\constructor{U}}\;\identifier{→}\;\constructor{Set}\;{}_{\color{gray}\identifier{lv}})\;\identifier{→}\;\constructor{Set}\;{}_{\color{gray}\identifier{lv}}{}\<[E]%
 \\
-\>[B]{}\identifier{VarPositions}\;\{\mskip1.5mu \identifier{D}\mskip1.5mu\}\;\protect\hyperlink{V766172}{\constructor{var}}\;{}\<[28]%
+\>[B]{}\constructor{VarPositions}\;\{\mskip1.5mu \identifier{D}\mskip1.5mu\}\;\protect\hyperlink{V766172}{\constructor{var}}\;{}\<[28]%
 \>[28]{}\kern.15em{=}\kern.15em\;\identifier{f}\;\identifier{D}{}\<[E]%
 \\
-\>[B]{}\identifier{VarPositions}\;(\protect\hyperlink{C636f6e7374}{\constructor{const}}\;\anonymous )\;{}\<[28]%
+\>[B]{}\constructor{VarPositions}\;(\protect\hyperlink{C636f6e7374}{\constructor{const}}\;\anonymous )\;{}\<[28]%
 \>[28]{}\kern.15em{=}\kern.15em\;\protect\hyperlink{_22a4}{\identifier{⊤}}{}\<[E]%
 \\
-\>[B]{}\identifier{VarPositions}\;(\protect\hyperlink{L6c656674}{\constructor{left}}\;{}\<[22]%
+\>[B]{}\constructor{VarPositions}\;(\protect\hyperlink{L6c656674}{\constructor{left}}\;{}\<[22]%
 \>[22]{}\identifier{pat})\;{}\<[28]%
-\>[28]{}\kern.15em{=}\kern.15em\;\identifier{VarPositions}\;\identifier{pat}{}\<[E]%
+\>[28]{}\kern.15em{=}\kern.15em\;\constructor{VarPositions}\;\identifier{pat}{}\<[E]%
 \\
-\>[B]{}\identifier{VarPositions}\;(\protect\hyperlink{R7269676874}{\constructor{right}}\;{}\<[22]%
+\>[B]{}\constructor{VarPositions}\;(\protect\hyperlink{R7269676874}{\constructor{right}}\;{}\<[22]%
 \>[22]{}\identifier{pat})\;{}\<[28]%
-\>[28]{}\kern.15em{=}\kern.15em\;\identifier{VarPositions}\;\identifier{pat}{}\<[E]%
+\>[28]{}\kern.15em{=}\kern.15em\;\constructor{VarPositions}\;\identifier{pat}{}\<[E]%
 \\
-\>[B]{}\identifier{VarPositions}\;(\protect\hyperlink{P70726f64}{\constructor{prod}}\;{}\<[21]%
+\>[B]{}\constructor{VarPositions}\;(\protect\hyperlink{P70726f64}{\constructor{prod}}\;{}\<[21]%
 \>[21]{}\identifier{lpat}\;{}\<[27]%
 \>[27]{}\identifier{rpat}{}\<[33]%
-\>[33]{})\;\kern.15em{=}\kern.15em\;\identifier{VarPositions}\;\identifier{lpat}\;{}\<[56]%
-\>[56]{}\protect\hyperlink{_5fd75f}{{\times}}\;\identifier{VarPositions}\;\identifier{rpat}{}\<[E]%
+\>[33]{})\;\kern.15em{=}\kern.15em\;\constructor{VarPositions}\;\identifier{lpat}\;{}\<[56]%
+\>[56]{}\protect\hyperlink{_5fd75f}{{\times}}\;\constructor{VarPositions}\;\identifier{rpat}{}\<[E]%
 \\
-\>[B]{}\identifier{VarPositions}\;(\protect\hyperlink{C636f6e73}{\constructor{cons}}\;{}\<[21]%
+\>[B]{}\constructor{VarPositions}\;(\protect\hyperlink{C636f6e73}{\constructor{cons}}\;{}\<[21]%
 \>[21]{}\identifier{hpat}\;{}\<[27]%
 \>[27]{}\identifier{tpat}{}\<[33]%
-\>[33]{})\;\kern.15em{=}\kern.15em\;\identifier{VarPositions}\;\identifier{hpat}\;{}\<[56]%
-\>[56]{}\protect\hyperlink{_5fd75f}{{\times}}\;\identifier{VarPositions}\;\identifier{tpat}{}\<[E]%
+\>[33]{})\;\kern.15em{=}\kern.15em\;\constructor{VarPositions}\;\identifier{hpat}\;{}\<[56]%
+\>[56]{}\protect\hyperlink{_5fd75f}{{\times}}\;\constructor{VarPositions}\;\identifier{tpat}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-(In fact, all entities below that depend on \ensuremath{\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}} are defined by induction on \ensuremath{\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}}.)
+(In fact, all entities below that depend on \ensuremath{\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}} are defined by a similar induction.)
 For example, the result of a successful pattern matching can be filled into such a container, by putting the resulting components at their respective variable positions.
-We thus define the types of pattern matching results as an instance of \ensuremath{\identifier{VarPositions}}:
+We thus define the types of pattern matching results as an instance of \ensuremath{\constructor{VarPositions}}:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[B]{}\identifier{PatResult}\;{:}\;\{\mskip1.5mu \identifier{D}\;{:}\;\protect\hyperlink{U55}{\constructor{U}}\mskip1.5mu\}\;\identifier{→}\;\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}\;\identifier{D}\;\identifier{→}\;\protect\hyperlink{U55}{\constructor{U}}{}\<[E]%
+\>[B]{}\constructor{PatResult}\;{:}\;\{\mskip1.5mu \identifier{D}\;{:}\;\protect\hyperlink{U55}{\constructor{U}}\mskip1.5mu\}\;\identifier{→}\;\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}\;\identifier{D}\;\identifier{→}\;\protect\hyperlink{U55}{\constructor{U}}{}\<[E]%
 \\
-\>[B]{}\identifier{PatResult}\;\identifier{pat}\;\kern.15em{=}\kern.15em\;\identifier{VarPositions}\;\identifier{pat}\;\protect\hyperlink{_27e65f27e7}{\identifier{⟦\char95 ⟧}}{}\<[E]%
+\>[B]{}\constructor{PatResult}\;\identifier{pat}\;\kern.15em{=}\kern.15em\;\constructor{VarPositions}\;\identifier{pat}\;\protect\hyperlink{_27e65f27e7}{\identifier{⟦\char95 ⟧}}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 Pattern matching is then simply a partial isomorphism:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[B]{}\identifier{pat}\text-\kern-.75\underscorespace\identifier{iso}\;{:}\;\{\mskip1.5mu \identifier{D}\;{:}\;\protect\hyperlink{U55}{\constructor{U}}\mskip1.5mu\}\;\identifier{→}\;\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}\;\identifier{D}\;\identifier{→}\;\protect\hyperlink{I49736f}{\constructor{Iso}}\;\protect\hyperlink{_27e65f27e7}{\identifier{⟦}}\;\identifier{D}\;\protect\hyperlink{_27e65f27e7}{\identifier{⟧}}\;(\identifier{PatResult}\;\identifier{pat}){}\<[E]%
+\>[B]{}\identifier{pat}\text-\kern-.75\underscorespace\identifier{iso}\;{:}\;\{\mskip1.5mu \identifier{D}\;{:}\;\protect\hyperlink{U55}{\constructor{U}}\mskip1.5mu\}\;\identifier{→}\;\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}\;\identifier{D}\;\identifier{→}\;\protect\hyperlink{I49736f}{\constructor{Iso}}\;\protect\hyperlink{_27e65f27e7}{\identifier{⟦}}\;\identifier{D}\;\protect\hyperlink{_27e65f27e7}{\identifier{⟧}}\;(\constructor{PatResult}\;\identifier{pat}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-The \ensuremath{\protect\hyperlink{T746f}{\identifier{to}}} component of the isomorphism performs pattern matching (which can fail because matching with \ensuremath{\protect\hyperlink{L6c656674}{\constructor{left}}} and \ensuremath{\protect\hyperlink{R7269676874}{\constructor{right}}} patterns may not succeed), and the \ensuremath{\protect\hyperlink{F66726f6d}{\identifier{from}}} component reverses pattern matching by evaluating a pattern as if it is an expression (which always succeeds).
+The \ensuremath{\protect\hyperlink{T746f}{\identifier{to}}} component of the isomorphism performs pattern matching (which can fail because matching with \ensuremath{\protect\hyperlink{L6c656674}{\constructor{left}}} and \ensuremath{\protect\hyperlink{R7269676874}{\constructor{right}}} patterns may not succeed), and the \ensuremath{\protect\hyperlink{F66726f6d}{\identifier{from}}} component reverses pattern matching by evaluating a pattern as if it is an expression (which always succeeds), using the input of type \ensuremath{\constructor{PatResult}\;\identifier{pat}} as an environment for values at variable positions.
 
-Similarly, by specialising \ensuremath{\identifier{VarPositions}} we can place lenses (and their view types) at the variable positions of a pattern:
+Similarly, by specialising \ensuremath{\constructor{VarPositions}} we can place lenses (and their view types) at the variable positions of a pattern:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[B]{}\identifier{Lenses}\;{:}\;\{\mskip1.5mu \identifier{D}\;{:}\;\protect\hyperlink{U55}{\constructor{U}}\mskip1.5mu\}\;\identifier{→}\;\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}\;\identifier{D}\;\identifier{→}\;\constructor{Set_1}{}\<[E]%
+\>[B]{}\constructor{Lenses}\;{:}\;\{\mskip1.5mu \identifier{D}\;{:}\;\protect\hyperlink{U55}{\constructor{U}}\mskip1.5mu\}\;\identifier{→}\;\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}\;\identifier{D}\;\identifier{→}\;\constructor{Set_1}{}\<[E]%
 \\
-\>[B]{}\identifier{Lenses}\;\identifier{pat}\;\kern.15em{=}\kern.15em\;\identifier{VarPositions}\;\identifier{pat}\;(\lambda \;\identifier{D}\;\identifier{→}\;(\identifier{E}\;{:}\;\protect\hyperlink{U55}{\constructor{U}})\;\protect\hyperlink{_5fd75f}{{\times}}\;\protect\hyperlink{L4c656e73}{\constructor{Lens}}\;\protect\hyperlink{_27e65f27e7}{\identifier{⟦}}\;\identifier{D}\;\protect\hyperlink{_27e65f27e7}{\identifier{⟧}}\;\protect\hyperlink{_27e65f27e7}{\identifier{⟦}}\;\identifier{E}\;\protect\hyperlink{_27e65f27e7}{\identifier{⟧}}){}\<[E]%
+\>[B]{}\constructor{Lenses}\;\identifier{pat}\;\kern.15em{=}\kern.15em\;\constructor{VarPositions}\;\identifier{pat}\;(\lambda \;\identifier{D}\;\identifier{→}\;(\identifier{E}\;{:}\;\protect\hyperlink{U55}{\constructor{U}})\;\protect\hyperlink{_5fd75f}{{\times}}\;\protect\hyperlink{L4c656e73}{\constructor{Lens}}\;\protect\hyperlink{_27e65f27e7}{\identifier{⟦}}\;\identifier{D}\;\protect\hyperlink{_27e65f27e7}{\identifier{⟧}}\;\protect\hyperlink{_27e65f27e7}{\identifier{⟦}}\;\identifier{E}\;\protect\hyperlink{_27e65f27e7}{\identifier{⟧}}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-Given a pattern \ensuremath{\identifier{pat}} and a collection of lenses \ensuremath{\identifier{ls}\;{:}\;\identifier{Lenses}\;\identifier{pat}} at its variable positions, we can define a lens between \ensuremath{\identifier{PatResult}\;\identifier{pat}} and a type \ensuremath{\identifier{Views}\;\identifier{pat}\;\identifier{ls}} that combines all the view types used by the lenses:
+Given a pattern \ensuremath{\identifier{pat}} and a collection of lenses \ensuremath{\identifier{ls}\;{:}\;\constructor{Lenses}\;\identifier{pat}} at its variable positions, we can define a lens between \ensuremath{\constructor{PatResult}\;\identifier{pat}} and a type \ensuremath{\constructor{Views}\;\identifier{pat}\;\identifier{ls}} that combines all the view types used by the lenses:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{16}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[B]{}\mathit{update}\text-\kern-.75\underscorespace\identifier{lens}\;{:}\;{}\<[16]%
-\>[16]{}\{\mskip1.5mu \identifier{D}\;{:}\;\protect\hyperlink{U55}{\constructor{U}}\mskip1.5mu\}\;(\identifier{pat}\;{:}\;\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}\;\identifier{D})\;(\identifier{ls}\;{:}\;\identifier{Lenses}\;\identifier{pat})\;\identifier{→}\;{}\<[E]%
+\>[16]{}\{\mskip1.5mu \identifier{D}\;{:}\;\protect\hyperlink{U55}{\constructor{U}}\mskip1.5mu\}\;(\identifier{pat}\;{:}\;\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}\;\identifier{D})\;(\identifier{ls}\;{:}\;\constructor{Lenses}\;\identifier{pat})\;\identifier{→}\;{}\<[E]%
 \\
-\>[16]{}\protect\hyperlink{L4c656e73}{\constructor{Lens}}\;(\identifier{PatResult}\;\identifier{pat})\;(\identifier{Views}\;\identifier{pat}\;\identifier{ls}){}\<[E]%
+\>[16]{}\protect\hyperlink{L4c656e73}{\constructor{Lens}}\;(\constructor{PatResult}\;\identifier{pat})\;(\constructor{Views}\;\identifier{pat}\;\identifier{ls}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-where the definition of \ensuremath{\identifier{Views}} is as straightforward as
+where the definition of \ensuremath{\constructor{Views}} is as straightforward as
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{14}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -1360,39 +1360,39 @@ where the definition of \ensuremath{\identifier{Views}} is as straightforward as
 \column{57}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{71}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[B]{}\identifier{Views}\;{:}\;\{\mskip1.5mu \identifier{D}\;{:}\;\protect\hyperlink{U55}{\constructor{U}}\mskip1.5mu\}\;(\identifier{pat}\;{:}\;\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}\;\identifier{D})\;\identifier{→}\;\identifier{Lenses}\;\identifier{pat}\;\identifier{→}\;\constructor{Set}{}\<[E]%
+\>[B]{}\constructor{Views}\;{:}\;\{\mskip1.5mu \identifier{D}\;{:}\;\protect\hyperlink{U55}{\constructor{U}}\mskip1.5mu\}\;(\identifier{pat}\;{:}\;\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}\;\identifier{D})\;\identifier{→}\;\constructor{Lenses}\;\identifier{pat}\;\identifier{→}\;\constructor{Set}{}\<[E]%
 \\
-\>[B]{}\identifier{Views}\;\{\mskip1.5mu \identifier{D}\mskip1.5mu\}\;\protect\hyperlink{V766172}{\constructor{var}}\;{}\<[21]%
+\>[B]{}\constructor{Views}\;\{\mskip1.5mu \identifier{D}\mskip1.5mu\}\;\protect\hyperlink{V766172}{\constructor{var}}\;{}\<[21]%
 \>[21]{}(\identifier{E}\;\identifier{,}\;\anonymous )\;\kern.15em{=}\kern.15em\;\protect\hyperlink{_27e65f27e7}{\identifier{⟦}}\;\identifier{E}\;\protect\hyperlink{_27e65f27e7}{\identifier{⟧}}{}\<[E]%
 \\
-\>[B]{}\identifier{Views}\;(\protect\hyperlink{C636f6e7374}{\constructor{const}}\;\anonymous )\;{}\<[21]%
+\>[B]{}\constructor{Views}\;(\protect\hyperlink{C636f6e7374}{\constructor{const}}\;\anonymous )\;{}\<[21]%
 \>[21]{}\identifier{ls}\;{}\<[25]%
 \>[25]{}\kern.15em{=}\kern.15em\;\protect\hyperlink{_22a4}{\identifier{⊤}}{}\<[E]%
 \\
-\>[B]{}\identifier{Views}\;(\protect\hyperlink{L6c656674}{\constructor{left}}\;{}\<[15]%
+\>[B]{}\constructor{Views}\;(\protect\hyperlink{L6c656674}{\constructor{left}}\;{}\<[15]%
 \>[15]{}\identifier{pat})\;{}\<[21]%
 \>[21]{}\identifier{ls}\;{}\<[25]%
-\>[25]{}\kern.15em{=}\kern.15em\;\identifier{Views}\;\identifier{pat}\;\identifier{ls}{}\<[E]%
+\>[25]{}\kern.15em{=}\kern.15em\;\constructor{Views}\;\identifier{pat}\;\identifier{ls}{}\<[E]%
 \\
-\>[B]{}\identifier{Views}\;(\protect\hyperlink{R7269676874}{\constructor{right}}\;{}\<[15]%
+\>[B]{}\constructor{Views}\;(\protect\hyperlink{R7269676874}{\constructor{right}}\;{}\<[15]%
 \>[15]{}\identifier{pat})\;{}\<[21]%
 \>[21]{}\identifier{ls}\;{}\<[25]%
-\>[25]{}\kern.15em{=}\kern.15em\;\identifier{Views}\;\identifier{pat}\;\identifier{ls}{}\<[E]%
+\>[25]{}\kern.15em{=}\kern.15em\;\constructor{Views}\;\identifier{pat}\;\identifier{ls}{}\<[E]%
 \\
-\>[B]{}\identifier{Views}\;(\protect\hyperlink{P70726f64}{\constructor{prod}}\;{}\<[14]%
+\>[B]{}\constructor{Views}\;(\protect\hyperlink{P70726f64}{\constructor{prod}}\;{}\<[14]%
 \>[14]{}\identifier{lpat}\;{}\<[20]%
 \>[20]{}\identifier{rpat}{}\<[26]%
-\>[26]{})\;(\identifier{ls}\;\identifier{,}\;\identifier{ls'})\;\kern.15em{=}\kern.15em\;\identifier{Views}\;\identifier{lpat}\;{}\<[53]%
+\>[26]{})\;(\identifier{ls}\;\identifier{,}\;\identifier{ls'})\;\kern.15em{=}\kern.15em\;\constructor{Views}\;\identifier{lpat}\;{}\<[53]%
 \>[53]{}\identifier{ls}\;{}\<[57]%
-\>[57]{}\protect\hyperlink{_5fd75f}{{\times}}\;\identifier{Views}\;\identifier{rpat}\;{}\<[71]%
+\>[57]{}\protect\hyperlink{_5fd75f}{{\times}}\;\constructor{Views}\;\identifier{rpat}\;{}\<[71]%
 \>[71]{}\identifier{ls'}{}\<[E]%
 \\
-\>[B]{}\identifier{Views}\;(\protect\hyperlink{C636f6e73}{\constructor{cons}}\;{}\<[14]%
+\>[B]{}\constructor{Views}\;(\protect\hyperlink{C636f6e73}{\constructor{cons}}\;{}\<[14]%
 \>[14]{}\identifier{hpat}\;{}\<[20]%
 \>[20]{}\identifier{tpat}{}\<[26]%
-\>[26]{})\;(\identifier{ls}\;\identifier{,}\;\identifier{ls'})\;\kern.15em{=}\kern.15em\;\identifier{Views}\;\identifier{hpat}\;{}\<[53]%
+\>[26]{})\;(\identifier{ls}\;\identifier{,}\;\identifier{ls'})\;\kern.15em{=}\kern.15em\;\constructor{Views}\;\identifier{hpat}\;{}\<[53]%
 \>[53]{}\identifier{ls}\;{}\<[57]%
-\>[57]{}\protect\hyperlink{_5fd75f}{{\times}}\;\identifier{Views}\;\identifier{tpat}\;{}\<[71]%
+\>[57]{}\protect\hyperlink{_5fd75f}{{\times}}\;\constructor{Views}\;\identifier{tpat}\;{}\<[71]%
 \>[71]{}\identifier{ls'}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
@@ -1402,9 +1402,85 @@ Its \ensuremath{\protect\hyperlink{P707574}{\identifier{put}}} decomposes the so
 \subsection{View rearrangement}
 \label{sec:view-rearrangement}
 
-The final operation \ensuremath{\protect\hyperlink{R7265617272}{\constructor{rearr}}} is for rearranging the view to a specific shape suitable for subsequent updates.
-For example, the \ensuremath{\protect\hyperlink{U757064617465}{\constructor{update}}} operation demands that the view must have already been arranged into a shape that matches the source pattern, which is usually achieved by an outer \ensuremath{\protect\hyperlink{R7265617272}{\constructor{rearr}}}.
-In essence, \ensuremath{\protect\hyperlink{R7265617272}{\constructor{rearr}}} performs an injective computation, and its \ensuremath{\protect\hyperlink{G676574}{\identifier{get}}} semantics (partially) inverts that computation.
+The last operation \ensuremath{\protect\hyperlink{R7265617272}{\constructor{rearr}}} is for rearranging the view to a specific shape suitable for subsequent updates.
+For example, the \ensuremath{\protect\hyperlink{U757064617465}{\constructor{update}}} operation in \autoref{sec:source-update} demands that the view must be in a shape that matches the source pattern, and this is usually achieved by an outer \ensuremath{\protect\hyperlink{R7265617272}{\constructor{rearr}}}.
+In essence, \ensuremath{\protect\hyperlink{R7265617272}{\constructor{rearr}}} performs a piece of invertible computation (which loses no information), while its \ensuremath{\protect\hyperlink{G676574}{\identifier{get}}} semantics performs the inverse of the computation.
+The invertible computation used is usually not complicated (hence the name ``rearrangement''), so instead of letting the programmer write general invertible functions (perhaps along with their inverses), we ask instead for syntactic descriptions of simple invertible computation, which are more restrictive but allow automatic inversion.
+
+The kind of invertible computation we wish to express is a decomposition of an old view followed by an assembling of a new view using all components of the old view.
+When it comes to decomposition, pattern matching should come to mind again; assembling can also be handled by pattern matching, as we have formulated pattern matching as an isomorphism in \autoref{sec:source-update}.
+We thus require two patterns \ensuremath{\identifier{pat}\;{:}\;\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}\;\identifier{D}} and \ensuremath{\identifier{pat'}\;{:}\;\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}\;\identifier{E}}, the former for decomposing the old view of type \ensuremath{\protect\hyperlink{_27e65f27e7}{\identifier{⟦}}\;\identifier{D}\;\protect\hyperlink{_27e65f27e7}{\identifier{⟧}}} and the latter for assembling the new view of type \ensuremath{\protect\hyperlink{_27e65f27e7}{\identifier{⟦}}\;\identifier{E}\;\protect\hyperlink{_27e65f27e7}{\identifier{⟧}}}.
+For the latter pattern \ensuremath{\identifier{pat'}} we also need to specify which component of the old view will be used as the value at each variable position.
+This last piece of information is represented by specialising \ensuremath{\constructor{VarPositions}} again:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\constructor{Paths}\;{:}\;\{\mskip1.5mu \identifier{D}\;\identifier{E}\;{:}\;\protect\hyperlink{U55}{\constructor{U}}\mskip1.5mu\}\;\identifier{→}\;\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}\;\identifier{D}\;\identifier{→}\;\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}\;\identifier{E}\;\identifier{→}\;\constructor{Set_1}{}\<[E]%
+\\
+\>[B]{}\constructor{Paths}\;\identifier{pat}\;\identifier{pat'}\;\kern.15em{=}\kern.15em\;\constructor{VarPositions}\;\identifier{pat'}\;(\constructor{Path}\;\identifier{pat}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+where \ensuremath{\constructor{Path}\;\identifier{pat}\;\identifier{T}} is a path that leads to a component of type \ensuremath{\protect\hyperlink{_27e65f27e7}{\identifier{⟦}}\;\identifier{T}\;\protect\hyperlink{_27e65f27e7}{\identifier{⟧}}} at a variable position of a \ensuremath{\constructor{PatResult}\;\identifier{pat}}:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{13}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{14}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{19}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{25}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{28}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{43}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{58}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\constructor{Path}\;{:}\;\{\mskip1.5mu \identifier{D}\;{:}\;\protect\hyperlink{U55}{\constructor{U}}\mskip1.5mu\}\;\identifier{→}\;\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}\;\identifier{D}\;\identifier{→}\;\protect\hyperlink{U55}{\constructor{U}}\;\identifier{→}\;\constructor{Set_1}{}\<[E]%
+\\
+\>[B]{}\constructor{Path}\;\{\mskip1.5mu \identifier{D}\mskip1.5mu\}\;\protect\hyperlink{V766172}{\constructor{var}}\;{}\<[28]%
+\>[28]{}\identifier{T}\;\kern.15em{=}\kern.15em\;\identifier{D}\;\protect\hyperlink{_5f22615f}{\identifier{≡}}\;\identifier{T}{}\<[E]%
+\\
+\>[B]{}\constructor{Path}\;(\protect\hyperlink{K6b}{\constructor{k}}\;\anonymous )\;{}\<[28]%
+\>[28]{}\identifier{T}\;\kern.15em{=}\kern.15em\;\protect\hyperlink{_22a5}{\identifier{⊥}}{}\<[E]%
+\\
+\>[B]{}\constructor{Path}\;(\protect\hyperlink{L6c656674}{\constructor{left}}\;{}\<[14]%
+\>[14]{}\identifier{pat})\;{}\<[28]%
+\>[28]{}\identifier{T}\;\kern.15em{=}\kern.15em\;\constructor{Path}\;\identifier{pat}\;\identifier{T}{}\<[E]%
+\\
+\>[B]{}\constructor{Path}\;(\protect\hyperlink{R7269676874}{\constructor{right}}\;{}\<[14]%
+\>[14]{}\identifier{pat})\;{}\<[28]%
+\>[28]{}\identifier{T}\;\kern.15em{=}\kern.15em\;\constructor{Path}\;\identifier{pat}\;\identifier{T}{}\<[E]%
+\\
+\>[B]{}\constructor{Path}\;(\protect\hyperlink{P70726f64}{\constructor{prod}}\;{}\<[13]%
+\>[13]{}\identifier{lpat}\;{}\<[19]%
+\>[19]{}\identifier{rpat}{}\<[25]%
+\>[25]{})\;{}\<[28]%
+\>[28]{}\identifier{T}\;\kern.15em{=}\kern.15em\;\constructor{Path}\;\identifier{lpat}\;{}\<[43]%
+\>[43]{}\identifier{T}\;\protect\hyperlink{_5f228e5f}{\kern\underscorespace{\uplus}}\;\constructor{Path}\;\identifier{rpat}\;{}\<[58]%
+\>[58]{}\identifier{T}{}\<[E]%
+\\
+\>[B]{}\constructor{Path}\;(\protect\hyperlink{C636f6e73}{\constructor{cons}}\;{}\<[13]%
+\>[13]{}\identifier{hpat}\;{}\<[19]%
+\>[19]{}\identifier{tpat}{}\<[25]%
+\>[25]{})\;{}\<[28]%
+\>[28]{}\identifier{T}\;\kern.15em{=}\kern.15em\;\constructor{Path}\;\identifier{hpat}\;{}\<[43]%
+\>[43]{}\identifier{T}\;\protect\hyperlink{_5f228e5f}{\kern\underscorespace{\uplus}}\;\constructor{Path}\;\identifier{tpat}\;{}\<[58]%
+\>[58]{}\identifier{T}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+If the \ensuremath{\identifier{paths}\;{:}\;\constructor{Paths}\;\identifier{pat}\;\identifier{pat'}} supplied uses up all of the old view, i.e., all possible paths for \ensuremath{\identifier{pat}} are contained in \ensuremath{\identifier{paths}}, then \ensuremath{\identifier{pat}}, \ensuremath{\identifier{pat'}}, and \ensuremath{\identifier{paths}} together specify a piece of computation that can be automatically inverted --- since all components of the old view are present somewhere in the new view, we can always reassemble the old view from the new view (unless there is inconsistency --- a component of the old view might be copied into more than one positions of the new view, and the values at these positions of the new view must be the same when doing the reassembling).
+In short, we can construct an isomorphism:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\identifier{view}\text-\kern-.75\underscorespace\identifier{rearrangement}\text-\kern-.75\underscorespace\identifier{iso}\;{:}\;{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\{\mskip1.5mu \identifier{D}\;{:}\;\protect\hyperlink{U55}{\constructor{U}}\mskip1.5mu\}\;(\identifier{pat}\;{:}\;\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}\;\identifier{D})\;\{\mskip1.5mu \identifier{E}\;{:}\;\protect\hyperlink{U55}{\constructor{U}}\mskip1.5mu\}\;(\identifier{pat'}\;{:}\;\protect\hyperlink{P5061747465726e}{\constructor{Pattern}}\;\identifier{E})\;\identifier{→}\;{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}(\identifier{paths}\;{:}\;\constructor{Paths}\;\identifier{pat}\;\identifier{pat'})\;\identifier{→}\;\constructor{Invertible}\;\identifier{pat}\;\identifier{pat'}\;\identifier{paths}\;\identifier{→}\;\protect\hyperlink{I49736f}{\constructor{Iso}}\;\protect\hyperlink{_27e65f27e7}{\identifier{⟦}}\;\identifier{E}\;\protect\hyperlink{_27e65f27e7}{\identifier{⟧}}\;\protect\hyperlink{_27e65f27e7}{\identifier{⟦}}\;\identifier{D}\;\protect\hyperlink{_27e65f27e7}{\identifier{⟧}}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+where \ensuremath{\constructor{Invertible}\;\identifier{pat}\;\identifier{pat'}\;\identifier{paths}} is defined to state that \ensuremath{\identifier{paths}} uses up all of the old view.
+The lens derived from this isomorphism is the semantics we assign to \ensuremath{\protect\hyperlink{R7265617272}{\constructor{rearr}}}.
 
 \section{Examples}
 \label{sec:examples}

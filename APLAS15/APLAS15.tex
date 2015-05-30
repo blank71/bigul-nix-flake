@@ -126,12 +126,22 @@
 %format == = "\shorteq\kern.5pt\shorteq"
 %format 0 = "\mathrm0"
 %format source-condition = source - condition
+%format Lenses = "\constructor{Lenses}"
+%format Views = "\constructor{Views}"
+%format Lenses' = Lenses "^\prime"
+%format Views' = Views "^\prime"
 %format update-lens = "\mathit{update}" - lens
 %format U-dec = "\mathit{U}" - dec
 %link ⟦ ⟦_⟧
 %link ⟧ ⟦_⟧
 %format Level = "\constructor{Level}"
+%format VarPositions = "\constructor{VarPositions}"
+%format PatResult = "\constructor{PatResult}"
 %format pat-iso = pat - iso
+%format Path = "\constructor{Path}"
+%format eval-path = eval - path
+%format view-rearrangement-iso = view - rearrangement - iso
+%format Invertible = "\constructor{Invertible}"
 
 \newcommand{\shorteq}{%
   \resizebox{.4em}{1ex}{=}%
@@ -613,7 +623,7 @@ VarPositions (right  pat)  = VarPositions pat
 VarPositions (prod  lpat  rpat  ) = VarPositions lpat  × VarPositions rpat
 VarPositions (cons  hpat  tpat  ) = VarPositions hpat  × VarPositions tpat
 \end{code}
-(In fact, all entities below that depend on |Pattern| are defined by induction on |Pattern|.)
+(In fact, all entities below that depend on |Pattern| are defined by a similar induction.)
 For example, the result of a successful pattern matching can be filled into such a container, by putting the resulting components at their respective variable positions.
 We thus define the types of pattern matching results as an instance of |VarPositions|:
 \begin{code}
@@ -624,7 +634,7 @@ Pattern matching is then simply a partial isomorphism:
 \begin{code}
 pat-iso : {D : U} -> Pattern D -> Iso ⟦ D ⟧ (PatResult pat)
 \end{code}
-The |to| component of the isomorphism performs pattern matching (which can fail because matching with |left| and |right| patterns may not succeed), and the |from| component reverses pattern matching by evaluating a pattern as if it is an expression (which always succeeds).
+The |to| component of the isomorphism performs pattern matching (which can fail because matching with |left| and |right| patterns may not succeed), and the |from| component reverses pattern matching by evaluating a pattern as if it is an expression (which always succeeds), using the input of type |PatResult pat| as an environment for values at variable positions.
 
 Similarly, by specialising |VarPositions| we can place lenses (and their view types) at the variable positions of a pattern:
 \begin{code}
@@ -652,9 +662,39 @@ Its |put| decomposes the source, updates its components with the lenses at the c
 \subsection{View rearrangement}
 \label{sec:view-rearrangement}
 
-The final operation |rearr| is for rearranging the view to a specific shape suitable for subsequent updates.
-For example, the |update| operation demands that the view must have already been arranged into a shape that matches the source pattern, which is usually achieved by an outer |rearr|.
-In essence, |rearr| performs an injective computation, and its |get| semantics (partially) inverts that computation.
+The last operation |rearr| is for rearranging the view to a specific shape suitable for subsequent updates.
+For example, the |update| operation in \autoref{sec:source-update} demands that the view must be in a shape that matches the source pattern, and this is usually achieved by an outer |rearr|.
+In essence, |rearr| performs a piece of invertible computation (which loses no information), while its |get| semantics performs the inverse of the computation.
+The invertible computation used is usually not complicated (hence the name ``rearrangement''), so instead of letting the programmer write general invertible functions (perhaps along with their inverses), we ask instead for syntactic descriptions of simple invertible computation, which are more restrictive but allow automatic inversion.
+
+The kind of invertible computation we wish to express is a decomposition of an old view followed by an assembling of a new view using all components of the old view.
+When it comes to decomposition, pattern matching should come to mind again; assembling can also be handled by pattern matching, as we have formulated pattern matching as an isomorphism in \autoref{sec:source-update}.
+We thus require two patterns |pat : Pattern D| and |pat' : Pattern E|, the former for decomposing the old view of type |⟦ D ⟧| and the latter for assembling the new view of type |⟦ E ⟧|.
+For the latter pattern |pat'| we also need to specify which component of the old view will be used as the value at each variable position.
+This last piece of information is represented by specialising |VarPositions| again:
+\begin{code}
+Paths : {D E : U} -> Pattern D -> Pattern E -> Set1
+Paths pat pat' = VarPositions pat' (Path pat)
+\end{code}
+where |Path pat T| is a path that leads to a component of type |⟦ T ⟧| at a variable position of a |PatResult pat|:
+\begin{code}
+Path : {D : U} → Pattern D → U → Set₁
+Path {D} var               T = D ≡ T
+Path (k _)                 T = ⊥
+Path (left   pat)          T = Path pat T
+Path (right  pat)          T = Path pat T
+Path (prod  lpat  rpat  )  T = Path lpat  T ⊎ Path rpat  T
+Path (cons  hpat  tpat  )  T = Path hpat  T ⊎ Path tpat  T
+\end{code}
+If the |paths : Paths pat pat'| supplied uses up all of the old view, i.e., all possible paths for |pat| are contained in |paths|, then |pat|, |pat'|, and |paths| together specify a piece of computation that can be automatically inverted --- since all components of the old view are present somewhere in the new view, we can always reassemble the old view from the new view (unless there is inconsistency --- a component of the old view might be copied into more than one positions of the new view, and the values at these positions of the new view must be the same when doing the reassembling).
+In short, we can construct an isomorphism:
+\begin{code}
+view-rearrangement-iso :
+  {D : U} (pat : Pattern D) {E : U} (pat' : Pattern E) →
+  (paths : Paths pat pat') → Invertible pat pat' paths → Iso ⟦ E ⟧ ⟦ D ⟧
+\end{code}
+where |Invertible pat pat' paths| is defined to state that |paths| uses up all of the old view.
+The lens derived from this isomorphism is the semantics we assign to |rearr|.
 
 \section{Examples}
 \label{sec:examples}
