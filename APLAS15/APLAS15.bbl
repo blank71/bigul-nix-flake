@@ -1,10 +1,15 @@
-\begin{thebibliography}{1}
+\begin{thebibliography}{10}
 
 \bibitem{Cheney-FLUX}
 James Cheney.
 \newblock \textsc{Flux}: functional updates for {XML}.
 \newblock In {\em International Conference on Functional Programming}, ICFP'08,
   pages 3--14. ACM, 2008.
+
+\bibitem{Fischer-essence-of-BX}
+Sebastian Fischer, Zhenjiang Hu, and Hugo Pacheco.
+\newblock The essence of bidirectional programming.
+\newblock {\em SCIENCE CHINA Information Sciences}, 58(5):1--21, 2015.
 
 \bibitem{Foster-lenses}
 J.~Nathan Foster, Michael~B. Greenwald, Jonathan~T. Moore, Benjamin~C. Pierce,
@@ -27,6 +32,13 @@ Jeremy Gibbons.
   Program Construction}, number 2297 in Lecture Notes in Computer Science,
   chapter~5, pages 149--201. Springer-Verlag, 2002.
 
+\bibitem{Hu-putback-validity}
+Zhenjiang Hu, Hugo Pacheco, and Sebastian Fischer.
+\newblock Validity checking of putback transformations in bidirectional
+  programming.
+\newblock In {\em International Symposium on Formal Methods}, volume 8442 of
+  {\em Lecture Notes in Computer Science}, pages 1--15. Springer-Verlag, 2014.
+
 \bibitem{Moggi-monads}
 Eugenio Moggi.
 \newblock Notions of computation and monads.
@@ -37,6 +49,12 @@ Hugo Pacheco, Zhenjiang Hu, and Sebastian Fischer.
 \newblock Monadic combinators for ``putback'' style bidirectional programming.
 \newblock In {\em Partial Evaluation and Program Manipulation}, PEPM'14, pages
   39--50. ACM, 2014.
+
+\bibitem{Pacheco-BiFluX}
+Hugo Pacheco, Tao Zan, and Zhenjiang Hu.
+\newblock {BiFluX}: A bidirectional functional update language for {XML}.
+\newblock In {\em Principles and Practice of Declarative Programming}, PPDP'14,
+  pages 147--158. ACM, 2014.
 
 \bibitem{UFP-HoTT}
 {The Univalent Foundations Program}.
