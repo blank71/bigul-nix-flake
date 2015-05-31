@@ -2,7 +2,7 @@ LaTeX = pdflatex
 # lhs2TeX = /Users/hu/Library/Haskell/bin/lhs2TeX
 lhs2TeX = lhs2TeX
 
-APLAS15: APLAS15-processed.tex
+APLAS15: APLAS15-processed.tex introduction.tex
 #	$(LaTeX) -jobname APLAS15 APLAS15-processed.tex
 	$(LaTeX) APLAS15-processed.tex
 	bibtex APLAS15-processed
