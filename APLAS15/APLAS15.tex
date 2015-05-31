@@ -191,6 +191,10 @@ National Institute of Informatics, Japan\\
 {\tt hsiang-shang@@nii.ac.jp}}
 \maketitle
 
+\begin{abstract}
+
+\end{abstract}
+
 \input{introduction}
 %
 %\section{Introduction}
@@ -409,13 +413,14 @@ data ^^^BiGUL : U → U → Set₁ where
 \label{fig:BiGUL}
 \end{figure}
 
-The types of the |BiGUL| constructors are indexed by the source and view types expected by the operations represented by the constructors (details in \autoref{sec:source-update}), and in the end we can write a well-typed interpreter
+The types of the |BiGUL| constructors are indexed by the source and view types expected by the operations represented by the constructors, and in the end we can write a well-typed interpreter
 \begin{code}
 interp : (HIDE({S V : U} ->)) BiGUL S V -> Lens ⟦ S ⟧ ⟦ V ⟧
 \end{code}
+(Definitions of |U|~and~|⟦_⟧| are in \autoref{sec:source-update}.)
 Due to space restrictions, we will not present the full definitions of |interp| nor the auxiliary types used in \autoref{fig:BiGUL}, which are actually straightforward deep embedding of |BiGUL|'s lens semantics.
-Instead, we will only provide a sketch of the lens semantics for each of the bidirectional operations.
-For each operation we will start from a natural semantics (for |put|) and then add necessary checks so a corresponding |get| can exist, arriving at the lens semantics for the operation.
+Instead, we will only provide a sketch of the lens semantics of the bidirectional operations.
+For each operation we will start from a natural semantics (for |put|) and then add necessary checks so a corresponding |get| can exist, arriving at the lens semantics for the operation (whose well-behavedness proofs are omitted from the presentation).
 
 \subsection{Replacing, failure, and skipping}
 \label{sec:basic-lenses}
@@ -434,7 +439,7 @@ Also mentioned in \autoref{sec:BX} is that we can derive the lens semantics for 
 fail-lens = iso-lens (record {to = fail SEP from = fail SEP ABBRV })
 \end{code}
 Its |get| semantics also fails for any input.
-On the other hand, the semantics of the |skip| operation is to discard the view and return the original source, and its lens semantics is not an instance of |iso-lens|:
+On the other hand, the semantics of the |skip| operation is discarding the view and returning the original source, and its lens semantics is not an instance of |iso-lens|:
 \begin{code}
 ^^^skip-lens : {S : Set} -> Lens S ⊤
 skip-lens = record { put = \ s _ -> return s SEP get = \ _ -> return tt SEP ABBRV }
@@ -556,7 +561,7 @@ Thus, in the definition of |CaseVBranch| below, we use a partial isomorphism on 
 ^^^CaseVBranch : Set -> Set -> Set₁
 CaseVBranch S V = (V' : Set) × Lens S V' × Iso V' V
 \end{code}
-For the comparison-with-zero example above, we would set~|V'| to be~|⊤|, indicating that there is no more information to be embedded into the view after a successful matching, and set the |to| and |from| components of the isomorphism to |\ _ -> return 0| and |\ n -> assert n == 0 then return tt|.
+For the comparison-with-zero example above, we would set~|V'| to be~|⊤|, indicating that there is no more information to be embedded into the source after a successful matching, and set the |to| and |from| components of the isomorphism to |\ _ -> return 0| and |\ n -> assert n == 0 then return tt|.
 A branch is considered matched with a view when the |from| conversion of the associated isomorphism succeeds on the view.
 
 The lens semantics we assign to |caseV| has type
@@ -569,18 +574,34 @@ For |get|, however, there is no obvious way to decide which branch to go, as we 
 It seems that we can only try to execute each of the branches until we reach one that computes a view successfully, which is the approach taken by Pacheco~et~al~\cite{Pacheco-putlenses}.
 This makes guaranteeing |PutGet| difficult, as we cannot easily guarantee that executing |put| followed by |get| would go through the same branch.
 Our compromised solution is to make |put| do an expensive check after a branch is matched and executed, requiring that the |get| for each of the previous branches must either fail or produce the same view as the input one (i.e., verifying |PutGet| directly).
-That is, the ranges of the branches have to be ``more or less'' disjoint in order for |put| to compute successfully.
+That is, the ranges of (the |put| semantics of) the branches have to be ``almost'' disjoint in order for |put| to compute successfully.
 The |^^^DecEq V| argument of |caseV-lens|, which expands to |(v v' : V) -> (v ≡ v') ⊎ ¬ (v ≡ v')| and says that |V|~is equipped with a decidable equality, is needed for this check.
 
 \subsection{List alignment}
 \label{sec:list-alignment}
+
+For the semantics of |align|, we use a particular parametrised strategy for updating a list of sources of type~|S| with a list of views of type~|V|, which tries to align/match the sources with the views, synchronise the matched pairs of sources and views by an inner |BiGUL| operation, and process the unmatched sources and views in some programmer-specified ways.
+The design choices made below are somewhat arbitrary, but it should be easy to further parametrise the strategy or offer other different strategies.
+
+First, from the source list we can select a sub-list that we intend to align with the views by specifying a decidable predicate 
+|source-condition : S -> Par Bool|.
+The sub-list of sources satisfying the |source-condition| are then aligned with the list of views by finding pairs of source and view satisfying a given binary predicate |match : S -> V -> Par Bool|.
+The matching order is fixed in our strategy: for each view we find the first matching source that has not been matched with a previous view.
+On each matching pair of source and view we execute an inner |BiGUL| operation |b : BiGUL S V| to update the source with the view.
+For unmatched views, we should create corresponding sources in the source list (so a subsequent |get| can produce these views).
+This is done by first applying a specified function |create : V → Par S| to the view to create a temporary source, and then updating this source with the view by executing~|b|.
+Finally, for unmatched sources, we can choose to simply delete them or transform them such that they do not satisfy the |source-condition|.
+This is specified by a function |conceal : S → Par (Maybe S)|: an unmatched source is deleted if applying |conceal| to it produces |nothing|, or transformed if |conceal| produces a new source wrapped in |just|.
+These transformed sources can be placed anywhere in the source list; currently we simply place all of them at the front of the list.
+
+A few checks about |b|~and |conceal| need to be inserted to ensure that these programmer-specified actions guarantee well-behavedness: the source and view synchronised by the |BiGUL| operation~|b| should again satisfy |match|, and also the source should still satisfy |source-condition|; a source produced by |conceal| must not satisfy the |source-condition|.
 
 \subsection{Source update}
 \label{sec:source-update}
 
 A fundamental operation is performing updates to parts of the source.
 We follow the approach taken by \textsc{Flux}~\cite{Cheney-FLUX}, which requires that updates must be independent --- that is, the same part of a source cannot be updated more than once --- to avoid the problem of sequencing updates.
-It turns out that a pattern matching notation suits this task perfectly: pattern matching is arguably the most intuitive way to deconstruct a source, and we can specify apparently independent updates by writing them at the variable positions in a pattern.
+It turns out that a pattern matching notation suits this task perfectly: pattern matching is arguably the most intuitive way to decompose a source, and we can specify apparently independent updates by writing them at the variable positions in a pattern.
 The idea itself is straightforward; what follows, despite its slight complexity (especially if the reader is not familiar with dependently typed programming), is merely our strongly typed implementation of the idea in \Agda.
 
 Since \Agda\ is fully dependently typed, we can naturally define patterns in a type-directed way such that nonsensical patterns are syntactically ruled out.
@@ -608,11 +629,11 @@ data ^^^U : Set₁ where
 \end{code}
 \end{minipage} \]
 The types that we can encode within~|U| are those expressible in terms of any types with a decidable equality, |⊤|, |_⊎_|\kern1pt, |_×_|\kern1pt, and |List|; applying |⟦_⟧| to an inhabitant of the universe decodes it to the type it represents.
-All encoded types are equipped with a decidable equality, as we can define a function of type
+The |DecEq| requirement of the |k|~constructor enables us to define a function of type
 \begin{code}
 U-dec : (D : U) -> DecEq ⟦ D ⟧
 \end{code}
-by induction on~|D|.
+That is, all types encoded in~|U| are equipped with a decidable equality.
 
 We can now define a family of types |Pattern : U -> Set| such that, for any |D : U|, the type |Pattern D| contains exactly those patterns sensible for |⟦ D ⟧|:
 \begin{code}
@@ -624,7 +645,7 @@ data ^^^Pattern : U → Set where
   ^^^prod   : (HIDE({D E : U} →))  Pattern D → Pattern E → Pattern (D ⊗ E)
   ^^^cons   : (HIDE({D : U} →))    Pattern D → Pattern (list D) → Pattern (list D)
 \end{code}
-On all types we can use |var| patterns, which match anything, and |const| patterns, which match inhabitants equal to the specified constant (this is possible because of |U-dec|); on sum types we can use |left| or |right| patterns matching |inj₁| and |inj₂| constructors; on product types we can use |prod| patterns to decompose a pair to its two components; on list types we can use |cons| patterns to decompose a non-empty list to its head and tail.
+On all types we can use |var| patterns, which match anything, and |const| patterns, which match values equal to the specified constant (this is possible because of |U-dec|); on sum types we can use |left| or |right| patterns matching |inj₁| and |inj₂| constructors; on product types we can use |prod| patterns to decompose a pair to its two components; on list types we can use |cons| patterns to decompose a non-empty list to its head and tail.
 
 Next we will give patterns a different interpretation as ``containers'', and store values --- whose types depend on the types of the variable patterns --- at their variable positions.
 The types of such containers can be defined by induction on |Pattern|:
@@ -690,7 +711,7 @@ This last piece of information is represented by specialising |VarPositions| aga
 Paths : {D E : U} -> Pattern D -> Pattern E -> Set1
 Paths pat pat' = VarPositions pat' (Path pat)
 \end{code}
-where |Path pat T| is the type of all paths that lead to a component of type |⟦ T ⟧| at a variable position of a |PatResult pat|:
+where |Path pat T| is the type of all paths that lead from the root of a |PatResult pat| to a component of type |⟦ T ⟧| at a variable position:
 \begin{code}
 Path : {D : U} → Pattern D → U → Set₁
 Path {D} var               T = D ≡ T
@@ -704,7 +725,7 @@ If the |paths : Paths pat pat'| supplied uses up all of the old view, i.e., all 
 In short, we can construct an isomorphism:
 \begin{code}
 view-rearrangement-iso :
-  {D : U} (pat : Pattern D) {E : U} (pat' : Pattern E) →
+  {D E : U} (pat : Pattern D) (pat' : Pattern E) →
   (paths : Paths pat pat') → Invertible pat pat' paths → Iso ⟦ E ⟧ ⟦ D ⟧
 \end{code}
 where |Invertible pat pat' paths| is defined to state that |paths| uses up all of the old view.
@@ -724,6 +745,8 @@ The lens semantics we assign to |rearr| is the lens derived from this isomorphis
 \todo[inline]{source/view if, map in terms of align}
 
 \input{discussion}
+
+\todo[inline]{Summary of the \Agda\ formalisation; highlight the difficulties}
 
 \bibliographystyle{plain}
 \bibliography{ref}
