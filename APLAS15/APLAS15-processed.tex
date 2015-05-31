@@ -323,6 +323,7 @@
 
 \newcommand{\reason}[1]{\quad\{\,\text{#1}\,\}}
 
+\newcommand{\BiGUL}{\textsc{BiGUL}}
 \newcommand{\Agda}{\textsc{Agda}}
 \newcommand{\PutGet}{\textsc{PutGet}}
 \newcommand{\GetPut}{\textsc{GetPut}}
@@ -342,8 +343,10 @@ National Institute of Informatics, Japan\\
 {\tt hsiang-shang@nii.ac.jp}}
 \maketitle
 
-\section{Introduction}
-\label{sec:introduction}
+\input{introduction}
+%
+%\section{Introduction}
+%\label{sec:introduction}
 
 \todo[inline]{Theory construction in terms of \Agda\ programming}
 
@@ -1376,27 +1379,10 @@ The lens semantics we assign to \ensuremath{\protect\hyperlink{R7265617272}{\con
 
 \todo[inline]{source/view if, map in terms of align}
 
-\section{Discussion}
-\label{sec:discussion}
-
-\todo[inline]{recursion (the lack thereof)}
-
-\todo[inline]{extensions: for example, iteration, view dependency}
-
-\todo[inline]{design/programming phase: design phase needs to consider \ensuremath{\protect\hyperlink{P707574}{\identifier{put}}} and \ensuremath{\protect\hyperlink{G676574}{\identifier{get}}} together, but programming phase is about \ensuremath{\protect\hyperlink{P707574}{\identifier{put}}} only}
-
-\todo[inline]{Haskell implementation}
-
-\todo[inline]{Conditions for \ensuremath{\protect\hyperlink{P707574}{\identifier{put}}} to succeed; deferred as we will have a dependently typed version (a completely formal approach to total lenses)}
-
-\todo[inline]{stems from work on \textsc{BiFluX}; comparison with putlenses}
-
-\todo[inline]{Theory construction in terms of \Agda\ programming\\
-Regarding formalisation: ``[W]e are interested in extending what can be calculated precisely because we are not interested in the calculations themselves. Developing techniques that allow more of a derivation to be calculated allows attention to be focussed on the creative parts, which cannot be calculated.''~\cite{Gibbons-BMF}\\
-\cite{UFP-HoTT}}
+\input{discussion}
 
 \bibliographystyle{plain}
-\bibliography{/Users/joshko/Documents/bib}
+\bibliography{ref}
 
 \newpage
 
