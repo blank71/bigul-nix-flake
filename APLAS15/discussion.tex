@@ -20,10 +20,17 @@ the result would be a list of elements for the same key value.
 Another case is view dependency that means two view elements are denpendent.
 For example the catalog of a book dependends on the strcuture and contents of the book.
 If the title of contents changes, the catalog shall be changed.
-A new feature  view dependency can be added into \BiGUL\ to support it.
+This can be captured by expressing the depdenency between the catalog and the titles in the content.
+Only one of them (e.g. titles in the content) needs to be used to update the corresponding source element.
+From the $get$ perspective, catalog will be recovered through the view dependency.
 
 
 \todo[inline]{Haskell implementation}
+% how to write ?
+% 1. rearrangement container
+% 2. caseS and caseV dynamical checking 
+% 3. align filter condition checking for updates.
+
 
 \todo[inline]{Towards a dependently typed version}
 
