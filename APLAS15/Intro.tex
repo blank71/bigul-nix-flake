@@ -245,6 +245,24 @@ Our contribution can be summarised as follows:
 
 \todo[inline]{extensions: for example, iteration, view dependency}
 
+\BiGUL\ is powerful to express a lot of useful BX programs,
+and there are extensions can be made to make it support many other useful features.
+%
+Currently alignment only handles the case that
+elements with the same matching key in both source and view are unique % TODO: matching key ?
+which indicates the update operations after alignment focus on single source/view element.
+While there are situations that more than one elements have the same matching key value,
+the result would be a list of elements for the same key value.
+\BiGUL\ can be extended with iteration operation on list to hanle this case.
+%
+% source dependency rearrangement already done.
+% view dependency need new feature to hanle it.
+Another case is view dependency that means two view elements are denpendent.
+For example the catalog of a book dependends on the strcuture and contents of the book.
+If the title of contents changes, the catalog shall be changed.
+A new feature called view dependency can be added into \BiGUL\ to support it.
+
+
 \todo[inline]{Haskell implementation}
 
 \todo[inline]{Towards a dependently typed version}
