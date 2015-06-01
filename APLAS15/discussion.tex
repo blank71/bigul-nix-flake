@@ -1,40 +1,49 @@
 \section{Discussion}
 \label{sec:discussion}
 
-\todo[inline]{recursion (the lack thereof)}
 
-\todo[inline]{extensions: for example, iteration, view dependency}
+%\todo[inline]{stems from work on \textsc{BiFluX}; comparison with putlenses}
+During the design and implementation of \textsc{BiFluX},
+it turned out that the putback-based design mixed with regular expression types for XML 
+makes the well-behavedness hard to prove
+and it also hinders the core idea of putback-based BX.
+Based on these observations, \BiGUL\ is proposed and implemented originated from the core of \textsc{BiFluX}
+which is datatype-generic and fully verified to guarantee the well-behavedness.
+Even though Putlenses~\cite{PaHF14} is the first putback-based combinator language, it is lack of formal verification.
+\BiGUL\ is the first fully certified putback-based BX language.
+%
 
+
+%\todo[inline]{extensions: for example, iteration, view dependency}
 \BiGUL\ is powerful to express a lot of useful BX programs,
 and there are extensions can be made to make it support many other useful features.
 %
 Currently alignment only handles the case that
 elements with the same matching key in both source and view are unique % TODO: matching key ?
 which indicates the update operations after alignment focus on single source/view element.
-While there are situations that more than one elements have the same matching key value,
+BiFlux~\cite{PaZH14} also only supports this case,
+while there are situations that more than one elements have the same matching key value,
 the result would be a list of elements for the same key value.
 \BiGUL\ can be extended with iteration operation on list to hanle this case.
 %
 % source dependency rearrangement already done.
 % view dependency need new feature to hanle it.
-Another case is view dependency that means two view elements are denpendent.
+Another one is view dependency that means two view elements are denpendent.
 For example the catalog of a book dependends on the strcuture and contents of the book.
 If the title of contents changes, the catalog shall be changed.
 This can be captured by expressing the depdenency between the catalog and the titles in the content.
 Only one of them (e.g. titles in the content) needs to be used to update the corresponding source element.
 From the $get$ perspective, catalog will be recovered through the view dependency.
 
+%\todo[inline]{Haskell implementation}
+\BiGUL\ has been fully implemented using Haskell that totally follows the formalization in \Agda\
+and tested with several nontrivial examples which are from the BiFluX~\cite{PaZH14} paper.
+\todo{implement more examples ?}
 
-\todo[inline]{Haskell implementation}
-% how to write ?
-% 1. rearrangement container
-% 2. caseS and caseV dynamical checking 
-% 3. align filter condition checking for updates.
-
+\todo[inline]{recursion (the lack thereof)}
 
 \todo[inline]{Towards a dependently typed version}
 
-\todo[inline]{stems from work on \textsc{BiFluX}; comparison with putlenses}
 
 \todo[inline]{Theory construction in terms of \Agda\ programming\\
 Regarding formalisation: ``[W]e are interested in extending what can be calculated precisely because we are not interested in the calculations themselves. Developing techniques that allow more of a derivation to be calculated allows attention to be focussed on the creative parts, which cannot be calculated.''~\cite{Gibbons-BMF}\\
