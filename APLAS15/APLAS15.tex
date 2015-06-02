@@ -210,8 +210,8 @@ National Institute of Informatics, Japan\\
 \section{Formal well-behavedness proofs in \Agda}
 \label{sec:BX}
 
-Before presenting the |BiGUL| language itself in \autoref{sec:BiGUL}, we first give an account of our \Agda\ formalisation of the underlying notion of \emph{partial} bidirectional transformations, and also demonstrate by a simple example how well-behavedness proofs are constructed in our setting.
-The key to the formalisation is the reification of computation steps of monadic programs (as a type family~|_↦_|), which makes the construction of the proofs as easy as ordinary functional programming.
+Before presenting the |BiGUL| language in \autoref{sec:BiGUL}, we first give an account of our \Agda\ formalisation of the underlying notion of partial bidirectional transformations, and also demonstrate by a simple example how well-behavedness proofs are constructed in our setting (\autoref{sec:sample-well-behavedness-proof}).
+The key to the formalisation is the reification of computation steps of monadic programs as a type family~|_↦_| (\autoref{sec:reification}), which makes the construction of the proofs as easy as ordinary functional programming.
 
 We follow the classic (well-behaved) lens approach~\cite{Foster-lenses}, but for the |PutGet| and |GetPut| laws we adopt the variant used by Pacheco~et~al~\cite{Pacheco-putlenses}:
 \begin{definition*}[lenses]
@@ -227,7 +227,7 @@ record ^^^Lens (S V : Set) : Set₁ where
 We call the |PutGet| and |GetPut| laws the \emph{well-behavedness} properties.
 \end{definition*}
 
-Precise definitions of |Par| and~|_↦_| will be presented shortly.
+Precise definitions of |Par| and~|_↦_| will be presented in \autoref{sec:reification} below.
 Here we offer an informal explanation first:
 Both |put| and |get| are partial functions that may or may not successfully produce a result.
 Execution of |put s v|, if successful, should produce an updated version of the source~|s| by properly embedding all information of the view~|v| into~|s|, while |get s| extracts the view embedded in~|s|.
@@ -236,7 +236,9 @@ On the other hand, the |GetPut| law states that, for all |s : S| and |v : V|, if
 
 Note that our definition of lenses is stronger than the one given by Foster~et~al~\cite{Foster-lenses}: our |PutGet| law says that successful computation of |put| guarantees success of the subsequent computation of |get|, whereas in Foster~et~al's definition there is no such guarantee; the |GetPut| law is similar.
 
-\subsection*{Reification of monadic programs and their computation steps}
+\subsection{Reification of monadic combinators and computation steps}
+\label{sec:reification}
+
 Our partial transformations are actually total functions which wrap their results in the standard |^^^Maybe| datatype with two constructors |^^^just : A -> Maybe A| and |^^^nothing  : Maybe A| --- the result of a successful computation is wrapped in the |just| constructor, while failed computation is represented by |nothing|.
 It is thus always possible to examine whether a computation succeeds or not in a known finite amount of time.\footnote{%
 It is important to distinguish this ``decidable partiality'' from the usual partiality as formalised in terms of complete partial orders (see, e.g., Gibbons~\cite{Gibbons-calculating-functional-programs}):
@@ -244,11 +246,11 @@ when defining the semantics of |BiGUL|, we need to write programs that produce s
 
 We can choose to write our transformations directly as |Maybe|-programs, usually structured with monadic combinators~\cite{Moggi-monads,Wadler-essence} like ``return'' and ``bind''.
 This approach does not work too satisfactorily, though, when we consider the kind of proofs we need to construct for these programs:
-When proving |PutGet| and |GetPut|, the antecedent is a proof that a program --- consisting of sub-programs bound together by the combinators --- computes successfully, and we need to analyse it to proofs that all the sub-programs compute successfully, before these proofs are reassembled to show that a related composite program also computes successfully.
+When proving |PutGet| and |GetPut|, the antecedent is a proof that a program --- consisting of sub-programs bound together by the combinators --- computes successfully, and we need to analyse it to proofs that each of the sub-programs computes successfully, before these proofs are reassembled to show that a related composite program also computes successfully.
 This task would be much easier if a proof of a successful composite computation is exactly a bunch of proofs that all its sub-computations succeed.
-To achieve this, we reify the monadic binding structure of |Maybe|-programs by deeply embedding the monadic combinators as a datatype, so later we can define types of proofs of successful computation by induction on the binding structure.
+To achieve this, we need to reify the monadic binding structure of |Maybe|-programs by deeply embedding the monadic combinators as a datatype, so later we can define types of proofs of successful computation by induction on the binding structure.
 
-The datatype |Par| is a deep embedding of the combinators that we use to write partial transformations:
+The datatype |Par| is a deep embedding of the operators that we use to write partial transformations:
 \begin{code}
 data ^^^Par : Set -> Set1 where
   ^^^return        : (HIDE({A : Set} ->))    A -> Par A
@@ -256,8 +258,8 @@ data ^^^Par : Set -> Set1 where
   ^^^fail          : (HIDE({A : Set} ->))    Par A
   ABBRV
 \end{code}
-For convenience, there are also other operators for error-handling and assertion, which are omitted from the presentation, however.
-The meaning of the constructors of |Par| is given by the following interpreter to |Maybe|:
+For convenience, there are also other operators for error-handling and assertion, which are omitted from the presentation, though.
+The meaning of the constructors of |Par| is formally given by the following interpreter to |Maybe|:
 \begin{code}
 ^^^runPar : {A : Set} -> Par A -> Maybe A
 runPar (return x) = just x
@@ -271,7 +273,7 @@ We say that |mx : Par A| computes to |x : A| exactly when |runPar mx ≡ just x|
 The equality |runPar mx ≡ just x| is already a family of types of proofs of successful computation, but these proofs are not so straightforward to analyse and construct.
 We hence move on to define an equivalent family of types, whose proofs are easier to manipulate.
 
-Thanks to \Agda's support of full dependent types, we can simply write a function computing for any |mx : Par A| and |x : A| a type |mx ↦ x| whose inhabitants explain how the sub-programs in |mx| compute successfully one by one and eventually producing~|x|:
+Thanks to \Agda's support of full dependent types, we can simply write a function computing for any |mx : Par A| and |x : A| a type |mx ↦ x| whose inhabitants explain how the sub-programs in |mx| compute successfully one by one, eventually producing~|x|:
 \begin{code}
 ^^^_↦_ : {A : Set} → Par A → A → Set₁
 (return x)  ↦ x'  =  x ≡ x'
@@ -282,6 +284,9 @@ ABBRV
 In prose: |return x| computes to~|x'| when |x|~is exactly~|x'|; |mx >>= f| computes to~|y| when there exists |x : A| such that |mx|~computes to~|x| and |f x| computes to~|y|; and it is impossible for |fail| to compute successfully (and so on).
 Here our use of the term ``computes to'' is justified, since we can prove that a term of type |mx ↦ x| can be constructed if and only if |runPar mx ≡ just x|, meaning that our reification of |runPar mx ≡ just x| as |mx ↦ x| is accurate.
 We are thus entitled to use~|_↦_| in the statements of |PutGet| and |GetPut|.
+
+\subsection{A sample well-behavedness proof}
+\label{sec:sample-well-behavedness-proof}
 
 To give the reader a taste of how well-behavedness proofs are constructed in our \Agda\ setting, let us try to define an operator~|_↔_| for lens composition:
 \begin{code}
