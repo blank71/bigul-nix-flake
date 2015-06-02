@@ -171,10 +171,14 @@
 
 \usepackage{amsmath}
 
+\spnewtheorem*{definition*}{Definition}{\bf}{}
+\spnewtheorem*{theorem*}{Theorem}{\rm\bf}{\it}
+
 \newcommand{\reason}[1]{\quad\{\,\text{#1}\,\}}
 
 \newcommand{\BiGUL}{\textsc{BiGUL}}
 \newcommand{\Agda}{\textsc{Agda}}
+\newcommand{\Haskell}{\textsc{Haskell}}
 \newcommand{\PutGet}{\textsc{PutGet}}
 \newcommand{\GetPut}{\textsc{GetPut}}
 
@@ -203,18 +207,50 @@ National Institute of Informatics, Japan\\
 %\section{Introduction}
 %\label{sec:introduction}
 
-\section{Decidable partiality}
-\label{sec:partiality}
+\section{Formal well-behavedness proofs in \Agda}
+\label{sec:BX}
 
-The bidirectional transformations discussed in this paper are ``decidably partial''.
-By ``decidable partiality'' we mean that the transformations are actually total functions which wrap their results in the standard |^^^Maybe| datatype with two constructors |^^^just : A -> Maybe A| and |^^^nothing  : Maybe A|.
-The result of a piece of successful computation is wrapped in the |just| constructor, while failed computation is represented by |nothing|.
-The behaviour of decidably partial functions is different from the usual partial functions as formalised in terms of complete partial orders (see, e.g., Gibbons~\cite{Gibbons-calculating-functional-programs}):
-when defining the semantics of |BiGUL|, we need to define programs that produce some result or fail respectively when a sub-program fails or produces some result, but this is not possible in the setting of complete partial orders (since such functions violate monotonicity, a necessary condition for computability).
+Before presenting the |BiGUL| language in \autoref{sec:BiGUL}, we first give an account of our \Agda\ formalisation of the underlying notion of partial bidirectional transformations, and also demonstrate by a simple example how well-behavedness proofs are constructed in our setting (\autoref{sec:sample-well-behavedness-proof}).
+The key to the formalisation is the reification of computation steps of monadic programs as a type family~|_↦_| (\autoref{sec:reification}), which makes the construction of the proofs as easy as ordinary functional programming.
 
-We can choose to write our decidably partial bidirectional transformations directly as |Maybe|-programs, but when proving their well-behavedness, we will need to analyse or establish how a piece of decidably partial computation succeeds, and the task would be much easier if the computation steps leading to success are reified as data.
-(An example of such proofs is given in the definition of lens composition~|_↔_| in \autoref{sec:BX}.)
-The reification starts from the following datatype |Par|, which is a deep embedding of the combinators that we will use for writing decidably partial programs:
+We follow the classic (well-behaved) lens approach~\cite{Foster-lenses}, but for the |PutGet| and |GetPut| laws we adopt the variant used by Pacheco~et~al~\cite{Pacheco-putlenses}:
+\begin{definition*}[lenses]
+A (well-behaved) \emph{lens} between a source type~|S| and a view type~|V| is defined in \Agda\ as the following record type:
+\begin{code}
+record ^^^Lens (S V : Set) : Set₁ where
+  field
+    ^^^put  : S → V → Par S
+    ^^^get  : S → Par V
+    ^^^PutGet  : {s s' : S} {v : V} →  (put s v ↦ s') → (get s' ↦ v)
+    ^^^GetPut  : {s : S} {v : V} →     (get s ↦ v) → (put s v ↦ s)
+\end{code}
+We call the |PutGet| and |GetPut| laws the \emph{well-behavedness} properties.
+\end{definition*}
+
+Precise definitions of |Par| and~|_↦_| will be presented in \autoref{sec:reification} below.
+Here we offer an informal explanation first:
+Both |put| and |get| are partial functions that may or may not successfully produce a result.
+Execution of |put s v|, if successful, should produce an updated version of the source~|s| by properly embedding all information of the view~|v| into~|s|, while |get s| extracts the view embedded in~|s|.
+The |PutGet| law states that, for all |s|,~|s' : S| and |v : V|, if |put s v| successfully computes to~|s'|, then subsequently |get s'| should successfully compute to~|v|; this ensures that |put| does its job properly --- after |put| updates a source with a view, |get| can completely recover the view from the updated source.
+On the other hand, the |GetPut| law states that, for all |s : S| and |v : V|, if |get s| successfully computes to~|v|, then subsequently |put s v| should successfully compute to~|s|; this ensures that |put| does nothing more than its designated job --- |put| performs no update on a source if the view it receives is directly extracted from the source by |get|.
+
+Note that our definition of lenses is stronger than the one given by Foster~et~al~\cite{Foster-lenses}: our |PutGet| law says that successful computation of |put| guarantees success of the subsequent computation of |get|, whereas in Foster~et~al's definition there is no such guarantee; the |GetPut| law is similar.
+
+\subsection{Reification of monadic combinators and computation steps}
+\label{sec:reification}
+
+Our partial transformations are actually total functions which wrap their results in the standard |^^^Maybe| datatype with two constructors |^^^just : A -> Maybe A| and |^^^nothing  : Maybe A| --- the result of a successful computation is wrapped in the |just| constructor, while failed computation is represented by |nothing|.
+It is thus always possible to examine whether a computation succeeds or not in a known finite amount of time.\footnote{%
+It is important to distinguish this ``decidable partiality'' from the usual partiality as formalised in terms of complete partial orders (see, e.g., Gibbons~\cite{Gibbons-calculating-functional-programs}):
+when defining the semantics of |BiGUL|, we need to write programs that produce some result or fail respectively when a sub-program fails or produces some result, but this is not possible in the setting of complete partial orders.} %(since such functions violate monotonicity, a necessary condition for computability).
+
+We can choose to write our transformations directly as |Maybe|-programs, usually structured with monadic combinators~\cite{Moggi-monads,Wadler-essence} like ``return'' and ``bind''.
+This approach does not work too satisfactorily, though, when we consider the kind of proofs we need to construct for these programs:
+When proving |PutGet| and |GetPut|, the antecedent is a proof that a program --- consisting of sub-programs bound together by the combinators --- computes successfully, and we need to analyse it to proofs that each of the sub-programs computes successfully, before these proofs are reassembled to show that a related composite program also computes successfully.
+This task would be much easier if a proof of a successful composite computation is exactly a bunch of proofs that all its sub-computations succeed.
+To achieve this, we need to reify the monadic binding structure of |Maybe|-programs by deeply embedding the monadic combinators as a datatype, so later we can define types of proofs of successful computation by induction on the binding structure.
+
+The datatype |Par| is a deep embedding of the operators that we use to write partial transformations:
 \begin{code}
 data ^^^Par : Set -> Set1 where
   ^^^return        : (HIDE({A : Set} ->))    A -> Par A
@@ -222,12 +258,8 @@ data ^^^Par : Set -> Set1 where
   ^^^fail          : (HIDE({A : Set} ->))    Par A
   ABBRV
 \end{code}
-Informally:
-A value of type |Par A| represents a piece of decidably partial computation that either successfully produces a value of type~|A| or fails.
-The first two constructors |return| and |_>>=_| represent the usual monadic operators~\cite{Moggi-monads,Wadler-essence}, and |fail| indicates failed computation.
-There are other operators for error-handling and assertion,  which we omit from the presentation.
-
-Formally, the meaning of the constructors of |Par| is given by the following interpreter:
+For convenience, there are also other operators for error-handling and assertion, which are omitted from the presentation, though.
+The meaning of the constructors of |Par| is formally given by the following interpreter to |Maybe|:
 \begin{code}
 ^^^runPar : {A : Set} -> Par A -> Maybe A
 runPar (return x) = just x
@@ -238,69 +270,23 @@ runPar fail = nothing
 ABBRV
 \end{code}
 We say that |mx : Par A| computes to |x : A| exactly when |runPar mx ≡ just x|, and that |mx|~fails to compute exactly when |runPar mx ≡ nothing|.
-The first equality is what we aim to reify as data next.
+The equality |runPar mx ≡ just x| is already a family of types of proofs of successful computation, but these proofs are not so straightforward to analyse and construct.
+We hence move on to define an equivalent family of types, whose proofs are easier to manipulate.
 
-Our reification of decidably partial computation as the datatype |Par| and \Agda's support of full dependent types allow us to compute for any |mx : Par A| and |x : A| a type |mx ↦ x| whose inhabitants explain how |mx|~computes to~|x| step by step:
+Thanks to \Agda's support of full dependent types, we can simply write a function computing for any |mx : Par A| and |x : A| a type |mx ↦ x| whose inhabitants explain how the sub-programs in |mx| compute successfully one by one, eventually producing~|x|:
 \begin{code}
 ^^^_↦_ : {A : Set} → Par A → A → Set₁
-return x  ↦ x'  =  x ≡ x'
-mx >>= f  ↦ y   =  (x : _) × (mx ↦ x) × (f x ↦ y)
-fail      ↦ x   =  ⊥
+(return x)  ↦ x'  =  x ≡ x'
+(mx >>= f)  ↦ y   =  (x : _) × (mx ↦ x) × (f x ↦ y)
+fail        ↦ x   =  ⊥
 ABBRV
 \end{code}
-That is, |return x| computes to~|x'| when |x|~is exactly~|x'|; |mx >>= f| computes to~|y| when there exists |x : A| such that |mx|~computes to~|x| and |f x| computes to~|y|; and |fail| never computes successfully (and so on).
-Here our use of the term ``computes to'' is justified, since we can prove that |mx ↦ x| and |runPar mx ≡ just x| are equivalent.
-That is, a term of type |mx ↦ x| can be constructed if and only if |runPar mx ≡ just x|, meaning that our reification of |runPar mx ≡ just x| as |mx ↦ x| is accurate.
-We are thus entitled to use |_↦_| for stating various properties involving successful decidably partial computation, in particular well-behavedness of bidirectional transformations in the next section.
+In prose: |return x| computes to~|x'| when |x|~is exactly~|x'|; |mx >>= f| computes to~|y| when there exists |x : A| such that |mx|~computes to~|x| and |f x| computes to~|y|; and it is impossible for |fail| to compute successfully (and so on).
+Here our use of the term ``computes to'' is justified, since we can prove that a term of type |mx ↦ x| can be constructed if and only if |runPar mx ≡ just x|, meaning that our reification of |runPar mx ≡ just x| as |mx ↦ x| is accurate.
+We are thus entitled to use~|_↦_| in the statements of |PutGet| and |GetPut|.
 
-\section{Bidirectional transformations formalised}
-\label{sec:BX}
-
-%a pair of functions
-%\[ |put : S -> V -> Par S| \qquad\text{and}\qquad |get : S -> Par V| \]
-%satisfying the \emph{PutGet} law:
-%\[ |put s v ↦ s'| \quad\text{implies}\quad |get s' ↦ v| \qquad\text{for all |s|,~|s' : S| and |v : V|} \]
-%and the \emph{GetPut} law:
-%\[ |get s ↦ v| \quad\text{implies}\quad |put s v ↦ s| \qquad\text{for all |s : S| and |v : V|.} \]
-
-We follow the classic (well-behaved) lens approach~\cite{Foster-lenses} to bidirectional transformations, but adopt the variant used by Pacheco~et~al~\cite{Pacheco-putlenses}:
-\begin{definition}[lenses]
-A (well-behaved) \emph{lens} between a source type |S : Set| and a view type |V : Set| is defined in \Agda\ as the following record type:
-\begin{code}
-record ^^^Lens (S V : Set) : Set₁ where
-  field
-    ^^^put  : S → V → Par S
-    ^^^get  : S → Par V
-    ^^^PutGet  : {s s' : S} {v : V} →  (put s v ↦ s') → (get s' ↦ v)
-    ^^^GetPut  : {s : S} {v : V} →     (get s ↦ v) → (put s v ↦ s)
-\end{code}
-\end{definition}
-Informally:
-Execution of |put s v| should produce an updated version of the source~|s| by properly embedding all information of the view~|v| into~|s|.
-The |PutGet| law ensures that |put| does its job properly by requiring that, after |put| updates a source with a view, |get| can completely recover the view from the updated source.
-The |GetPut| law, on the other hand, ensures that |put| does nothing more than its designated job by requiring that |put| performs no update on a source if the view it receives is directly extracted from the source by |get|.
-Note that our definition of lenses is stronger than the one given by Foster~et~al~\cite{Foster-lenses}: our |PutGet| law says that successful computation of |put| guarantees success of the subsequent computation of |get|, whereas in Foster~et~al's definition there is no such guarantee; the |GetPut| law is similar.
-
-A related notion is ``partial'' isomorphisms as defined by
-\begin{code}
-record ^^^Iso (A B : Set) : Set₁ where
-  field
-    ^^^to    : A → Par B
-    ^^^from  : B → Par A
-    ^^^to-from-inverse  : {x : A} {y : B} → (to x ↦ y) → (from y ↦ x)
-    ^^^from-to-inverse  : {x : A} {y : B} → (from y ↦ x) → (to x ↦ y)
-\end{code}
-|Lens| is a generalisation of |Iso| because we can easily convert |Iso A B| to |Lens A B|, whose |put| directly produces a new source from its view argument, ignoring its source argument:
-\begin{code}
-^^^iso-lens : {A B : Set} → Iso A B → Lens A B
-iso-lens iso = record  {    put  = λ _ b → Iso.from iso b
-                       SEP  get  = Iso.to iso
-                       SEP  PutGet  = Iso.from-to-inverse iso
-                       SEP  GetPut  = Iso.to-from-inverse iso }
-\end{code}
-This conversion gives us a first way to manufacture lenses.
-For example, the identity isomorphism between the same type --- whose |to| and |from| are both |return| --- gives rise to the ``replacing'' lens, and the empty isomorphism between any two types --- whose |to| and |from| are both |\ _ -> fail| --- gives rise to the ``failure'' lens.
-Both lenses will appear in \autoref{sec:basic-lenses}.
+\subsection{A sample well-behavedness proof}
+\label{sec:sample-well-behavedness-proof}
 
 To give the reader a taste of how well-behavedness proofs are constructed in our \Agda\ setting, let us try to define an operator~|_↔_| for lens composition:
 \begin{code}
@@ -314,7 +300,7 @@ The |put| and |get| functions for a composite lens can be pretty straightforward
 As part of the definition of |_↔_|\kern1pt, we also need to prove that |PutGet| and |GetPut| hold for the pair of |put| and |get| we provide.
 For |PutGet| we need to show that, for all |a|,~|a' : A|, and |c : C|, from a proof of |put a c MAPSTO a'| we can construct a proof of |get a' MAPSTO c|.
 That is, we need to write a function converting an inhabitant of the type |put a c MAPSTO a'| to one of the type |get a' MAPSTO c|.
-\Agda\ automatically expands the two types by the definition of~|_↦_|, the first one to
+\Agda\ automatically expands the two types by the definition of~|_↦_|\kern1pt, the first one to
 \begin{code}
 (b : B) ×  (Lens.get l a MAPSTO b) ×
            (b' : B) × (Lens.put r b c MAPSTO b') × (Lens.put l a b' MAPSTO a')
@@ -324,7 +310,7 @@ and the second one to
 (b : B) × (Lens.get l a' MAPSTO b) × (Lens.get r b MAPSTO c)
 \end{code}
 Thus all we need to do is convert a five-tuple to a three-tuple of the above types.
-This is easy: Applying |Lens.PutGet l| to the fifth component of type |Lens.put l a b' MAPSTO a'| we obtain an inhabitant of type |Lens.get l a' b'|, and applying |Lens.PutGet r| to the fourth component of type |Lens.put r b c MAPSTO b'| we obtain an inhabitant of type |Lens.get r b' c|.
+This is just ordinary functional programming: Applying |Lens.PutGet l| to the fifth component of type |Lens.put l a b' MAPSTO a'| we obtain an inhabitant of type |Lens.get l a' b'|, and applying |Lens.PutGet r| to the fourth component of type |Lens.put r b c MAPSTO b'| we obtain an inhabitant of type |Lens.get r b' c|.
 Hence the proof term for |PutGet| is simply
 \begin{code}
 λ (b , x , b' , y , z) → (b' , Lens.PutGet l z , Lens.PutGet r y)
@@ -334,22 +320,22 @@ With a similar reasoning, we can also construct a proof term for |GetPut|:
 λ (b , x , y) → (b , x , b , Lens.GetPut r y , Lens.GetPut l x)
 \end{code}
 completing the definition of~|_↔_|\kern1pt.
-For the rest of this paper we will omit or at most give only a quick sketch of the well-behavedness proofs, but a majority of these proofs --- while requiring more complicated case analyses --- are technically as simple as the above proofs for lens composition, thanks to the reification of computation steps as~|_↦_|\kern1pt.
+For the rest of this paper we will omit or at most give only a quick sketch of the well-behavedness proofs, but a majority of these proofs --- while requiring more complicated case analyses --- are technically as simple as the above proofs for lens composition.
 
 \section{BiGUL and its lens semantics}
 \label{sec:BiGUL}
 
 Various bidirectional programming languages have been built based on the idea of lenses.
-Such languages would contain a set of primitive lenses, like those we build by |iso-lens|, and a set of combinators which combine smaller lenses into larger ones, like what |_↔_|~does.
+Such languages would contain a set of primitive lenses and a set of combinators which combine smaller lenses into larger ones (like what |_↔_|~does).
 Usually these languages are designed to suggest that what they describe are |get| programs, but it has recently been argued~\cite{Fischer-essence-of-BX,Hu-putback-validity,Pacheco-putlenses,Pacheco-BiFluX} that the opposite \emph{putback-based} approach should be adopted instead.
 The argument is based on the following theorem:
-\begin{theorem}[putback is the essence]
-Define, for every |mx|,~|my : Par A|, a type |mx ^^^≈ my| to mean that |mx MAPSTO z| if and only if |my MAPSTO z| for any |z : A|.
+\begin{theorem*}[putback is the essence]
+Define, for all |mx|,~|my : Par A|, a type |mx ^^^≈ my| to mean that |mx MAPSTO z| if and only if |my MAPSTO z| for any |z : A|.
 Then for any |S|,~|V : Set| and two lenses |l|,~|r : Lens S V| such that
 \[ |Lens.put l s v ≈ Lens.put r s v| \qquad\text{for all |s : S| and |v : V|,} \]
 we have
 \[ |Lens.get l s ≈ Lens.get r s| \qquad\text{for all |s : S|.} \]
-\end{theorem}
+\end{theorem*}
 The theorem tells us that, when designing a bidirectional combinator, if we can justify the design of its |put| component, then its |get| component needs no further justification, since there is no other |get| that can be paired with the same |put|.
 This is in sharp contrast with the |get|-based approach, with which the designer needs to choose for each |get| one or a few possible |put| strategies to be paired with the |get|.
 This complicates the design as there would be multiple combinators with the same |get| semantics, distinguished only by differences in their |put| semantics --- this is rather counterintuitive as the programmer is supposed to think in terms of |get| instead of |put| when programming in |get|-based languages.
@@ -398,6 +384,27 @@ For each operation we will start from a natural semantics (for |put|) and then a
 
 \subsection{Replacing, failure, and skipping}
 \label{sec:basic-lenses}
+
+%A related notion is ``partial'' isomorphisms as defined by
+%\begin{code}
+%record ^^^Iso (A B : Set) : Set₁ where
+%  field
+%    ^^^to    : A → Par B
+%    ^^^from  : B → Par A
+%    ^^^to-from-inverse  : {x : A} {y : B} → (to x ↦ y) → (from y ↦ x)
+%    ^^^from-to-inverse  : {x : A} {y : B} → (from y ↦ x) → (to x ↦ y)
+%\end{code}
+%|Lens| is a generalisation of |Iso| because we can easily convert |Iso A B| to |Lens A B|, whose |put| directly produces a new source from its view argument, ignoring its source argument:
+%\begin{code}
+%^^^iso-lens : {A B : Set} → Iso A B → Lens A B
+%iso-lens iso = record  {    put  = λ _ b → Iso.from iso b
+%                       SEP  get  = Iso.to iso
+%                       SEP  PutGet  = Iso.from-to-inverse iso
+%                       SEP  GetPut  = Iso.to-from-inverse iso }
+%\end{code}
+%This conversion gives us a first way to manufacture lenses.
+%For example, the identity isomorphism between the same type --- whose |to| and |from| are both |return| --- gives rise to the ``replacing'' lens, and the empty isomorphism between any two types --- whose |to| and |from| are both |\ _ -> fail| --- gives rise to the ``failure'' lens.
+%Both lenses will appear in \autoref{sec:basic-lenses}.
 
 The three most basic operations are |replace|, |failB|, and |skip|.
 The |replace| operation is applicable when the source and the view are of the same type, and its semantics is discarding the original source and returning the view as the updated source.
@@ -596,9 +603,9 @@ The idea itself is straightforward; what follows, despite its slight complexity 
 Since \Agda\ is fully dependently typed, we can naturally define patterns in a type-directed way such that nonsensical patterns are syntactically ruled out.
 This task starts from the construction of a \emph{universe}~|U|, i.e., a datatype whose inhabitants are interpreted as types.
 |U| has appeared in the definition of |BiGUL| in \autoref{fig:BiGUL}, where it is used as the type of the indices representing the source and view types of the operations.
-The actual \Agda\ implementation of |BiGUL| uses a universe capable of expressing mutually inductive datatypes, but, to make the presentation easier to follow, the universe~|U| that we define below --- along with its interpreter~|⟦_⟧| --- is only a simplified version:
+The actual \Agda\ implementation of |BiGUL| uses a universe capable of expressing mutually inductive datatypes, but, to make the presentation easier to follow, the universe~|^^^U| that we define below --- along with its interpreter~|^^^⟦_⟧| --- is only a simplified version:
 \begin{code}
-data ^^^U : Set₁ where                        ^^^⟦_⟧ : U → Set
+data U : Set₁ where                           ⟦_⟧ : U → Set
   ^^^k     : (A : Set) → DecEq A → U  COLSEP  ⟦ k A _   ⟧ = A
   ^^^one   : U                                ⟦ one     ⟧ = ⊤
   ^^^_⊕_   : U → U → U                        ⟦ F ⊕ G   ⟧ = ⟦ F ⟧  ⊎  ⟦ G ⟧
@@ -702,8 +709,7 @@ view-rearrangement-iso :
 where |Invertible pat pat' paths| is defined to state that |paths| uses up all of the old view.
 The lens semantics we assign to |rearr| is the lens derived from this isomorphism (by |iso-lens|) composed with the lens semantics of the inner |BiGUL| operation.
 
-
-\section{Examples}
+\section*{Examples}
 \label{sec:examples}
 
 \todo[inline]{address book for align, update, and rearrangement}
@@ -716,7 +722,11 @@ The lens semantics we assign to |rearr| is the lens derived from this isomorphis
 
 \todo[inline]{Summary of the \Agda\ formalisation; highlight the difficulties}
 
+\todo[inline]{The checks used in |view-rearrangement-iso| are state-based, and consequently the correctness proofs become nontrivial as we need to identify and establish state invariants.
+These checks, however, can be easily implemented in a not fully dependently typed language, so it is straightforward to port the \Agda\ implementation to \Haskell\ for practical applications, as will be discussed in \autoref{sec:discussion}.}
+
 \input{relatedwork}
+
 \bibliographystyle{plain}
 \bibliography{ref}
 
