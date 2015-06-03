@@ -26,13 +26,14 @@ Many bidirectional programming languages~\cite{Lenses,Bohannon:06,HuMT08,MHNHT07
 to aid user to write bidirectional transformations,
 thus user only needs to write one program that is interpreted in two directions.
 The correctness of this BX program is guaranteed by well-behavedness~\cite{Lenses}.
-The existing BXs are $get$-based, which let user to write the BX program in the direction of $get$ to describe how to construct the abstract view form source, and system derives a suitable backward $put$ for free.
+Existing BXs are $get$-based, which let user to write the BX program in the direction of $get$ to describe how to construct the abstract view form source, and system derives a suitable backward $put$ for free.
 While in fact there are usually more than one correct $put$ for the $get$, and $get$-based BX only provides a default or limited strategies which hinder BX from real practical usage.
+
 Recently, a new approach called putback-based bidirectional transformation~\cite{FiHP15} was proposed which designs the BX from $put$ instead of $get$
-which declares that
+and it declares that
 it lets user have full control over the $put$ to specify the update policies
 and an unique and correct forward transformation $get$ is derived for free.
-Typically, a combinator library $putlenses$~\cite{PaHF14} provides a set of basic lens combinators to let user write complex bx programs in the putback-based way,
+Typically, a combinator library $putlenses$~\cite{PaHF14} provides a set of basic lens combinators to let user write complex BX programs in the putback-based way,
 \textsc{BiFlux}~\cite{PaZH14} is a bidirectional function update language for XML which is a carefully designed putback-based bx language. 
 The update program user written using \textsc{BiFluX} in fact is the $put$ function, and the system derives $get$ for free.
 
