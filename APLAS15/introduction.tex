@@ -14,79 +14,100 @@
 %   Internet of Things
 %   information explosion
 %   Maybe Remove this sentence.
-Due to the increase in technology, smart devices for different purpose are developed, thus come into an explosion in the number of devices and information.
-The duplication of information among different devices makes it hard to be kept consistent which is an important issue.
+%Due to the increase in technology, smart devices for different purpose are developed, thus come into an explosion in the number of devices and information.
+%The duplication of information among different devices makes it hard to be kept consistent which is an important issue.
 % BX for synchronization
-Bidirectional transformation (BX)~\cite{GRACE:09} consists a pair of 
-$get$ which extracts information from a source to construct an abstract view
-and $put$ which propagates updates on view back to the source
-, that provides a novel mechanism for maintaining the consistency between two related information (source and view).
+Bidirectional transformation (BX)~\cite{GRACE:09} consists a pair of transformations:
+a forward $get$ which extracts information from a source to construct an abstract view,
+and a backward $put$ which propagates updates on view back to the source.
+BX provides a novel mechanism for maintaining the consistency between two related information (source and view).
 % From language approach: bx languages.
-Many bidirectional programming languages~\cite{Lenses,Bohannon:06,HuMT08,MHNHT07,Hidaka:10,PachecoCunha:10,Barbosa:2010,Hofmann:2011,FoPP08,HoPW12} are designed
+Many bidirectional programming languages~\cite{Lenses,Bohannon:06,MHNHT07,Hidaka:10,PachecoCunha:10,Barbosa:2010,Hofmann:2011,FoPP08,HoPW12} have been designed
 to aid user to write bidirectional transformations,
-thus user only needs to write one program that is interpreted in two directions.
-The correctness of this BX program is guaranteed by well-behavedness~\cite{Lenses}.
+where one only needs to write one program that can be interpreted in two directions.
+%The correctness of this BX program is guaranteed by well-behavedness~\cite{Lenses}.
 
-Existing BXs are $get$-based, which let user to write the BX program in the direction of $get$ to describe how to construct the abstract view form source, and system derives a suitable backward $put$ for free.
-While in fact there are usually more than one correct $put$ for the $get$, and $get$-based BX only provides a default or limited strategies which hinder BX from practical usage.
+Most existing approaches to BX are $get$-based, in the sense that it asks users to write BX programs in terms of $get$ describing how to construct an abstract view form the source, and derives a specific backward $put$ for free.
+As there are usually more than one {\em incomparable} $put$ for a $get$ and the $get$-based approaches provide only one $put$, the backward behavior becomes ambiguous and unpredictable.
 %
-Recently, a new approach called putback-based bidirectional transformation~\cite{FiHP15} was proposed which designs the BX from $put$ instead of $get$
-and it declares that
-it lets user have full control over the $put$ to specify arbitrary update policies
-and an unique and correct forward transformation $get$ is derived for free.
-Typically, a combinator library $putlenses$~\cite{PaHF14} provides a set of basic lens combinators to let user write complex BX programs in the putback-based way,
-\textsc{BiFlux}~\cite{PaZH14} is a bidirectional function update language for XML which is a carefully designed putback-based bx language. 
-The update program user written using \textsc{BiFluX} in fact is the $put$ function, and the system derives $get$ for free.
+To remedy this situation, a new approach called putback-based bidirectional programming~\cite{FiHP15} was proposed recently to support writing BX in terms of $put$ instead of $get$,
+which enables full control over the $put$ to specify arbitrary update policies
+while guaranteeing uniqueness of derived forward $get$.
+The combinator library $putlenses$~\cite{PaHF14} is such a language to support this approach. It provides a set of combinators for writing complex BX programs in the putback-based way.
+In addition, \textsc{BiFlux}~\cite{PaZH14} is a bidirectional function update language for XML which is a carefully designed putback-based BX language. 
+%The update program user written using \textsc{BiFluX} in fact is the $put$ function, and the system derives $get$ for free.
 
 % 2. Explain the problem
 %    putlenses not fully checked ???
 %    biflux not clearly checked, or hard to check ?
 %    say: not fully, formally verified.
-The pioneer work of putback-based BX gives opportunities to make BX really useful in real applications
-since it lets user to have full control over the update strategy.
-While the well-behavedness is not fully formal verified for both $putlenses$ and \textsc{BiFluX} which is the most important property for {BX}.
-As the forward transformation $get$ is derived for free
+Despite the advantages of full control and predictability of bidirectional behavior
+of BX in the putback-based approach, the languages for writing $put$ (such as \textsc{BiFluX})
+are indeed much more involved than those for writing $get$, because it needs to consider both
+the source and the view and specified how to reflect the view to various changes on the source.
+This introduces a new challenge 
+to ensure that a $put$ is well-behaved, in the sense that it is in such a good form that a unique $get$  
+can be automatically derived to form a well-behaved bidirectional transformation.
+%
+% gives opportunities to make BX really useful in real applications
+%since it lets user to have full control over the update strategy.
+%While the well-behavedness is not fully formal verified for both $putlenses$ and \textsc{BiFluX} whi%ch is the most important property for {BX}.
+%As the forward transformation $get$ is derived for free
 %and user 
 %do not need to care how $get$ is derived 
 %and not have to check the derived $get$ is correct or not manually, 
-it is necessary to fully guarantee the program user written is well-behaved by the BX language.
+%it is necessary to fully guarantee the program user written is well-behaved by the BX language.
 %
 % concretely explain how it is in putlenses and biflux
 % TODO: bad writing
-For example, in \textsc{BiFluX},
-the semantics of the basic update operator $replace$ is straight-forward
-and the well-beahvedness for $replace$ is not checked formally,
-and complex one like $if$ statement, the well-behavedness is checked dynamically,
-while all of them are not formally verified.
-Since \textsc{BiFluX} is designed for XML data,
-it also needs to handle complex regular expressions 
-and XML structured data which makes the program hard to check.
+%For example, in \textsc{BiFluX},
+%the semantics of the basic update operator $replace$ is straight-forward
+%and the well-beahvedness for $replace$ is not checked formally,
+%and complex one like $if$ statement, the well-behavedness is checked dynamically,
+%while all of them are not formally verified.
+%Since \textsc{BiFluX} is designed for XML data,
+%it also needs to handle complex regular expressions 
+%and XML structured data which makes the program hard to check.
 
 % Needs
-It turned out that a small but powerful putback-based core language 
-which is fully verified to guarantee the well-behavedness is needed 
-to serve as the base for all high-level putback-based languages.
-Thus we design and implement \BiGUL, a minimalist datatype-generic putback-based language.
-The most important design is the alignment operation which is used to align view elements with source elements, together with view rearrangement.
-It also supports case analysis on either source or view for specifying different update strategies.
+In this paper, we tackle the challenge by designing 
+ a small putback-based core language, 
+which is not only  powerful enough  
+to serve as the base for friendly high-level putback-based languages,
+but also fully verified to guarantee that any $put$ in the language is well-behaved.
+Our main contributions are two folds.
+
+First, we propose \BiGUL, a minimalist datatype-generic putback-based language.
+The language \BiGUL\ is an abstraction of the putback-based language 
+\textsc{BiFluX}, consisting of a set of important language constructs, such as 
+the alignment operation for aligning view elements with source elements, flexible update operations, and %together with view rearrangement.
+%It also supports 
+the case analysis operations on both source and view. 
+But different from \textsc{BiFluX},
+it is unique in that it
+refines the case analysis operations to include the {\em adaptation} mechanism 
+that can effectively deal with failure during the analysis and make 
+it easy to verify well-behavedness.
+% for specifying different update strategies.
 % show more of BiGUL
 % show more !
-In order to prove the well-behavedness, we reificate the monadic combinators and computation steps as a datatype firstly,
-then build the bidirectional transformation and well-behavedness theory on it, finally prove our language is well-behaved.
+
+Second, we show that the well-behavedness of \BiGUL\ can be fully verified (in the sense that any $put$ defined in the language is well-behaved) using the dependently typed programming language \Agda~\cite{Nore08}. To this end, we give the derivation of $get$ from $put$, and code the well-behavedness proofs in \Agda.
+To deal with computational behavior in the static proof, we propose to reify computation steps as specific data, over which bidirectional transformation behavior can be given and well-behavedness proof can be defined.
+% finally prove our language is well-behaved.
 %
-We design \BiGUL\ to be minimal to make it easy for usage and property checking. 
-For example, there is no $if$ statement in \BiGUL\ as it can be expressed as a special case of $case$ statement.
-While the well-behavedness of \BiGUL\ is fully verified using \Agda\ language.
+%We design \BiGUL\ to be minimal to make it easy for usage and property checking. 
+%For example, there is no $if$ statement in \BiGUL\ as it can be expressed as a special case of $case$ statement.
+%While the well-behavedness of \BiGUL\ is fully verified using \Agda\ language.
 
 %   4. Show the advantages
-Our contribution can be summarised as follows:
-\begin{itemize}
+%Our contribution can be summarised as follows:
+%\begin{itemize}
 %[leftmargin=0.3in]
-  \item we propose a minimalist putback-based bidirectional language \BiGUL\ as a core language which is fully certified to guarantee the correctness, and served as a base for other putback-based bidirectional languages.
-  \item A correct forward transformation $get$ is automatically constructed through \BiGUL\ programs. User concentrates on specifying $put$, our system guarantees the derived $get$ together with the $put$ is well-behaved.
-  \item \BiGUL\ has been implemented using Haskell and the well-behavedness has been proved using \Agda\ language and all the source code are available~\footnote{http://www.prg.nii.ac.jp/projects/bigul}.
-\end{itemize}
+%  \item we propose a minimalist putback-based bidirectional language \BiGUL\ as a core language which is fully certified to guarantee the correctness, and served as a base for other putback-based bidirectional languages.
+%  \item A correct forward transformation $get$ is automatically constructed through \BiGUL\ programs. User concentrates on specifying $put$, our system guarantees the derived $get$ together with the $put$ is well-behaved.
 
-\todo[inline]{Theory construction in terms of \Agda\ programming}
+\BiGUL\ has been fully implemented using Haskell and the well-behavedness has been formally proved using \Agda. All the source code are available~\footnote{http://www.prg.nii.ac.jp/projects/bigul}.
 
+The rest of the paper is organized as follows. After explaining how to formalize and prove well-behaved BX in \Agda\ in Section \ref{sec:BX}, we define our language \BiGUL with its proof-carrying bidirectional semantics, showing its $put$ behavior, derivation of $get$, and formal proof of well-behavedness in Section \ref{sec:BiGUL}. We discuss the expressiveness and other issues in Section \ref{sec:discussion}, and conclude the paper in Section \ref{sec:con}.
 
