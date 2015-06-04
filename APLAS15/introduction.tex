@@ -27,14 +27,14 @@ to aid user to write bidirectional transformations,
 where one only needs to write one program that can be interpreted in two directions.
 %The correctness of this BX program is guaranteed by well-behavedness~\cite{Lenses}.
 
-Most existing approaches to BX are $get$-based, in the sense that it asks users to write BX programs in terms of $get$ describing how to construct an abstract view form the source, and derives a specific backward $put$ for free.
-As there are usually more than one {\em incomparable} $put$ for a $get$ and the $get$-based approaches provide only one $put$, the backward behavior becomes ambiguous and unpredictable.
+Most existing approaches to BX are $get$-based, in the sense that it asks users to write BX programs in terms of $get$ describing how to construct an abstract view form the source, and derives a backward $put$ for free.
+As there are usually more than one {\em incomparable} $put$ for a $get$, the backward behavior becomes ambiguous and unpredictable.
 %
 To remedy this situation, a new approach called putback-based bidirectional programming~\cite{FiHP15} was proposed recently to support writing BX in terms of $put$ instead of $get$,
 which enables full control over the $put$ to specify arbitrary update policies
 while guaranteeing uniqueness of derived forward $get$.
 The combinator library $putlenses$~\cite{PaHF14} is such a language to support this approach. It provides a set of combinators for writing complex BX programs in the putback-based way.
-In addition, \textsc{BiFlux}~\cite{PaZH14} is a bidirectional function update language for XML which is a carefully designed putback-based BX language. 
+In addition, \textsc{BiFlux}~\cite{PaZH14} is a bidirectional functional update language for XML which is a carefully designed putback-based BX language. 
 %The update program user written using \textsc{BiFluX} in fact is the $put$ function, and the system derives $get$ for free.
 
 % 2. Explain the problem
@@ -44,7 +44,7 @@ In addition, \textsc{BiFlux}~\cite{PaZH14} is a bidirectional function update la
 Despite the advantages of full control and predictability of bidirectional behavior
 of BX in the putback-based approach, the languages for writing $put$ (such as \textsc{BiFluX})
 are indeed much more involved than those for writing $get$, because it needs to consider both
-the source and the view and specified how to reflect the view to various changes on the source.
+the source and the view and specify how to reflect the view to various changes on the source.
 This introduces a new challenge 
 to ensure that a $put$ is well-behaved, in the sense that it is in such a good form that a unique $get$  
 can be automatically derived to form a well-behaved bidirectional transformation.
@@ -78,16 +78,16 @@ but also fully verified to guarantee that any $put$ in the language is well-beha
 Our main contributions are two folds.
 
 First, we propose \BiGUL, a minimalist datatype-generic putback-based language.
-The language \BiGUL\ is an abstraction of the putback-based language 
+The language \BiGUL\ is a revision of the core of the putback-based language 
 \textsc{BiFluX}, consisting of a set of important language constructs, such as 
 the alignment operation for aligning view elements with source elements, flexible update operations, and %together with view rearrangement.
 %It also supports 
 the case analysis operations on both source and view. 
-But different from \textsc{BiFluX},
-it is unique in that it
-refines the case analysis operations to include the {\em adaptation} mechanism 
-that can effectively deal with failure during the analysis and make 
-it easy to verify well-behavedness.
+But different from the core of \textsc{BiFluX},
+it refines the case analysis operations to include the {\em adaptation} mechanism 
+to handle more cases than before.
+% and make 
+%it easy to verify well-behavedness.
 % for specifying different update strategies.
 % show more of BiGUL
 % show more !
