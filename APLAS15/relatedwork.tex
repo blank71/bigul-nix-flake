@@ -1,6 +1,6 @@
-\section{Related Work}
-\label{sec:relwork}
-
+%\section{Related Work}
+%\label{sec:relwork}
+%
 % Goal: review current bx works, from lenses (get-based), to putlenses (put-based) and biflux.
 %  adv: fully certified.  Emphasis on this point ! TOBE REVISED.
 % Sketch of related work
@@ -15,51 +15,39 @@
 %  pdl
 %  finally, ours.
 
-Foster et al.
-propose the first bidirectional programming language lenses~\cite{Foster-lenses}
-for synchronizing tree-structured data.
-%
-They design a series of lens combinators that
-each one can be evaluated as either a forward function $get$ 
-or a backward function $put$.
-%, and proved these two functions together are well-behaved.
-Large programs are composed through compositions of basic lenses.
-The novelty of their work is by putting emphasis on types and totality
-of lens transformations, and allow reasoning about totality 
-and well-behavedness of lenses in a compositional way.
-%
-Following this idea, many lenses languages are proposed for different data format.
-%
-Bohannon et al.~\cite{Bohannon:06} propose relational lenses for manipulating relational data
-using basic combinators $select$, $drop$ and $join$ and composition of them,
-they also
-design lenses~\cite{Bohannon:2008:BRL:1328438.1328487} for string data based on operations
-on regular transducers and, and implement a type system for this lenses based on regular expressions.
-Matching lenses~\cite{Barbosa:2010} starts considering  update strategies of the ``putback"
-by generalizing the string lenses from key-based matching
-to support a set of different alignment strategies.
-Pacheco et al.~\cite{PachecoCunha:10} propose a point-free lenses
-by defining suitable backward semantics for most of the standard point-free combinators.
-Hidaka et al.~\cite{Hidaka:10} propose the first bidirectional programming language for dealing with graphs,
-which designs the backward semantics for a graph algebra UnCAL.
-Liu et al.~\cite{Liu:2007:BIX:1244381.1244386} gives a bidirectional interpretation of XQuery to make an XQuery expression can
-be executed in two directions (forward and backward).
-All the above existing approaches focus on
-writing bidirectional programs from the $get$ direction,
-provide a default backward transformation $put$
-or limit control over the derived $put$ when defining the $get$.
-
-Putlenses~\cite{Pacheco-putlenses} is the first putback-based lens language
-which provides a set of putback-based lens combinators to let user write flexible ``put".
-BiFluX~\cite{Pacheco-BiFluX} gives a new program by update paradigm
-which inherently lets programmer to write putback function and
-the system derives the forward $get$ for free.
-PDL~\cite{HuPF14} is a treeless functional language for writing total $put$ functions,
-such that existence of well-behavedness can be checked statically,
-and a corresponding total $get$ can be derived automatically.
-While none of them managed to fully prove the well-behavedness formally. % ?
-In this paper, we design a minimalist putback-based core language
-that is fully certified in \Agda\ and useful for building real putback-based languages such as BiFluX.
+%Foster et al.
+%propose the first bidirectional programming language lenses~\cite{Foster-lenses}
+%for synchronizing tree-structured data.
+%%
+%They design a series of lens combinators that
+%each one can be evaluated as either a forward function $get$ 
+%or a backward function $put$.
+%%, and proved these two functions together are well-behaved.
+%Large programs are composed through compositions of basic lenses.
+%The novelty of their work is by putting emphasis on types and totality
+%of lens transformations, and allow reasoning about totality 
+%and well-behavedness of lenses in a compositional way.
+%%
+%Following this idea, many lenses languages are proposed for different data format.
+%%
+%Bohannon et al.~\cite{Bohannon:06} propose relational lenses for manipulating relational data
+%using basic combinators $select$, $drop$ and $join$ and composition of them,
+%they also
+%design lenses~\cite{Bohannon:2008:BRL:1328438.1328487} for string data based on operations
+%on regular transducers and, and implement a type system for this lenses based on regular expressions.
+%Matching lenses~\cite{Barbosa:2010} starts considering  update strategies of the ``putback"
+%by generalizing the string lenses from key-based matching
+%to support a set of different alignment strategies.
+%Pacheco et al.~\cite{PachecoCunha:10} propose a point-free lenses
+%by defining suitable backward semantics for most of the standard point-free combinators.
+%Hidaka et al.~\cite{Hidaka:10} propose the first bidirectional programming language for dealing with graphs,
+%which designs the backward semantics for a graph algebra UnCAL.
+%Liu et al.~\cite{Liu:2007:BIX:1244381.1244386} gives a bidirectional interpretation of XQuery to make an XQuery expression can
+%be executed in two directions (forward and backward).
+%All the above existing approaches focus on
+%writing bidirectional programs from the $get$ direction,
+%provide a default backward transformation $put$
+%or limit control over the derived $put$ when defining the $get$.
 
 
 \section{Conclusion}
@@ -72,26 +60,12 @@ but also need fully guarantee the correctness of derived $get$.
 \BiGUL\ is a datatype-generic, and fully certified BX core language
 which can be served as the base for other putback-based languages,
 and it is indeed that BiFLuX can be translated into \BiGUL.
-% extension
-While there are still extensions can be made.
-Currently alignment only handles the case that
-elements with the same matching key in both source and view are unique
-%, which indicates the update operations after alignment focus on single source/view element.
-, but in fact there are situations that more than one elements have the same matching key value,
-the result would be a list of elements for both source and view.
-\BiGUL\ can be extended with iteration operation on list to handle this case.
-%
-% source dependency rearrangement already done.
-% view dependency need new feature to handle it.
-Another one is view dependency that means two view elements depend on each other.
-Embedding these two view elements separately into source may lead to inconsistency, 
-extending \BiGUL\ to support specifying the dependency between these two view elements is a good choice.
 \todo[inline]{Towards a dependently typed version}
 
-%For example the catalog of a book dependends on the strcuture and contents of the book.
-%If the title of contents changes, the catalog shall be changed.
-%This can be captured by expressing the depdenency between the catalog and the titles in the content.
-%Only one of them (e.g. titles in the content) needs to be used to update the corresponding source element.
-%From the $get$ perspective, catalog will be recovered through the view dependency.
+%Currently alignment only handles the case that
+%elements with the same matching key in both source and view are unique
+%%, which indicates the update operations after alignment focus on single source/view element.
+%, but in fact there are situations that more than one elements have the same matching key value,
+%the result would be a list of elements for both source and view.
 
 

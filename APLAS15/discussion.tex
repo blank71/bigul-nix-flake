@@ -1,22 +1,55 @@
 \section{Discussion}
 \label{sec:discussion}
 
+Putlenses~\cite{Pacheco-putlenses} is the first BX language from putback-based approach
+which provides a set of putback-based lens combinators to let user write flexible ``put".
+BiFluX~\cite{Pacheco-BiFluX} is a bidirectional update language for XML
+which inherently is a putback-based BX language,
+and it uses putlenses as the underlying engine.
+%
+PDL~\cite{HuPF14} is a small treeless functional language for writing total $put$ functions,
+such that existence of well-behavedness can be checked statically.
+While none of them managed to fully prove the well-behavedness in a formal way.
+In this paper, we design the minimalist putback-based core language
+that is fully certified in \Agda. 
+We defined a ``proof carried lens",
+thus the semantics of each one is proved to satisfy the PutGet and GetPut properties by the real \Agda\ code
+which is really runnable.
+%
 
+Our design of \BiGUL\ is based on the real putback-based language \textsc{BiFluX}.
+% \BiGUL\ is used as the core language to \textsc{BiFluX}. %TODO: shall we say now we are translating it into ?
+%
 %\todo[inline]{stems from work on \textsc{BiFluX}; comparison with putlenses}
 During the design and implementation of \textsc{BiFluX},
-it turned out that the putback-based design mixed with regular expression types for XML 
+it turned out that the putback-based design mixed with regular expression types for XML
 makes the well-behavedness hard to prove
-and it also hinders the core idea of putback-based BX.
-Based on these observations, \BiGUL\ is proposed and implemented originated from the core of \textsc{BiFluX}
-which is datatype-generic and fully verified to guarantee the well-behavedness.
-Even though Putlenses~\cite{PaHF14} is the first putback-based combinator language, it is lack of formal verification.
-\BiGUL\ is the first fully certified putback-based BX language.
+and it also hinders the core idea of putback-based approach.
+Based on these observations, \BiGUL\ is proposed and implemented.
+Due to the limited pages,
+we omit to show other two features in \BiGUL\ which is proved and implemented
+that is view dependency and iteration on source. 
+These are two necessary features when implementing the \textsc{BiFluX}.
+% extension: view dependency
+View dependency means two view elements depend on each other.
+Embedding these two view elements separately into source may lead to inconsistency,
+\BiGUL\ supports specifying the dependency between these two view elements directly
+and only one of them need to be used for updating the source.
+Another one can be recovered from the view dependency when deriving $get$.
 %
+% For example the catalog of a book dependends on the strcuture and contents of the book.
+% If the title of contents changes, the catalog shall be changed.
+% This can be captured by expressing the depdenency between the catalog and the titles in the content.
+% Only one of them (e.g. titles in the content) needs to be used to update the corresponding source element.
+% From the $get$ perspective, catalog will be recovered through the view dependency.
+Iteration on source means update a source list with the same view element, while we need to guarantee the implicit constraint that
+the elements in this list must be equal.
 
 
 %\todo[inline]{extensions: for example, iteration, view dependency}
-\BiGUL\ is powerful to express a lot of useful BX programs,
-and there are extensions can be made to make it support many other useful features.
+
+%\BiGUL\ is powerful to express a lot of useful BX programs,
+%and there are extensions can be made to make it support many other useful features.
 %
 % Currently alignment only handles the case that
 % elements with the same matching key in both source and view are unique % TODO: matching key ?
@@ -26,19 +59,11 @@ and there are extensions can be made to make it support many other useful featur
 % the result would be a list of elements for the same key value.
 % \BiGUL\ can be extended with iteration operation on list to hanle this case.
 % %
-% % source dependency rearrangement already done.
-% % view dependency need new feature to hanle it.
-% Another one is view dependency that means two view elements are denpendent.
-% For example the catalog of a book dependends on the strcuture and contents of the book.
-% If the title of contents changes, the catalog shall be changed.
-% This can be captured by expressing the depdenency between the catalog and the titles in the content.
-% Only one of them (e.g. titles in the content) needs to be used to update the corresponding source element.
-% From the $get$ perspective, catalog will be recovered through the view dependency.
 
 %\todo[inline]{Haskell implementation}
 \BiGUL\ has been fully implemented using Haskell that totally follows the formalization in \Agda\
 and tested with several nontrivial examples which are from the BiFluX~\cite{PaZH14} paper.
-\todo{implement more examples ?}
+
 
 \todo[inline]{recursion (the lack thereof)}
 
