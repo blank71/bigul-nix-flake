@@ -199,7 +199,19 @@ National Institute of Informatics, Japan\\
 \maketitle
 
 \begin{abstract}
-
+Bidirectional transformation contains a pair of
+a $get$ function that extracts information from source to build a view,
+and a $put$ function that putback the modification on updated view back to source.
+Many bidirectional programming languages have been proposed to write only one program
+in one direction (either $get$ or $put$) instead of writing both manually,
+and derive another one for free
+to aid the development of bidirectional transformation
+for synchronizing different information in different formats (trees, string, relational data, graphs etc.).
+% TODO:
+%  does lenses have drawbacks ?
+While none of them are fully certified against the standard BX theory well-behavedness.
+%
+In this paper, we carefully designed a putback-based core language which is fully certified.
 \end{abstract}
 
 \input{introduction}
