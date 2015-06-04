@@ -18,22 +18,22 @@ Even though Putlenses~\cite{PaHF14} is the first putback-based combinator langua
 \BiGUL\ is powerful to express a lot of useful BX programs,
 and there are extensions can be made to make it support many other useful features.
 %
-Currently alignment only handles the case that
-elements with the same matching key in both source and view are unique % TODO: matching key ?
-which indicates the update operations after alignment focus on single source/view element.
-BiFlux~\cite{PaZH14} also only supports this case,
-while there are situations that more than one elements have the same matching key value,
-the result would be a list of elements for the same key value.
-\BiGUL\ can be extended with iteration operation on list to hanle this case.
-%
-% source dependency rearrangement already done.
-% view dependency need new feature to hanle it.
-Another one is view dependency that means two view elements are denpendent.
-For example the catalog of a book dependends on the strcuture and contents of the book.
-If the title of contents changes, the catalog shall be changed.
-This can be captured by expressing the depdenency between the catalog and the titles in the content.
-Only one of them (e.g. titles in the content) needs to be used to update the corresponding source element.
-From the $get$ perspective, catalog will be recovered through the view dependency.
+% Currently alignment only handles the case that
+% elements with the same matching key in both source and view are unique % TODO: matching key ?
+% which indicates the update operations after alignment focus on single source/view element.
+% BiFlux~\cite{PaZH14} also only supports this case,
+% while there are situations that more than one elements have the same matching key value,
+% the result would be a list of elements for the same key value.
+% \BiGUL\ can be extended with iteration operation on list to hanle this case.
+% %
+% % source dependency rearrangement already done.
+% % view dependency need new feature to hanle it.
+% Another one is view dependency that means two view elements are denpendent.
+% For example the catalog of a book dependends on the strcuture and contents of the book.
+% If the title of contents changes, the catalog shall be changed.
+% This can be captured by expressing the depdenency between the catalog and the titles in the content.
+% Only one of them (e.g. titles in the content) needs to be used to update the corresponding source element.
+% From the $get$ perspective, catalog will be recovered through the view dependency.
 
 %\todo[inline]{Haskell implementation}
 \BiGUL\ has been fully implemented using Haskell that totally follows the formalization in \Agda\

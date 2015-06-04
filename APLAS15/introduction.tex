@@ -26,13 +26,15 @@ Many bidirectional programming languages~\cite{Lenses,Bohannon:06,HuMT08,MHNHT07
 to aid user to write bidirectional transformations,
 thus user only needs to write one program that is interpreted in two directions.
 The correctness of this BX program is guaranteed by well-behavedness~\cite{Lenses}.
-The existing BXs are $get$-based, which let user to write the BX program in the direction of $get$ to describe how to construct the abstract view form source, and system derives a suitable backward $put$ for free.
-While in fact there are usually more than one correct $put$ for the $get$, and $get$-based BX only provides a default or limited strategies which hinder BX from real practical usage.
+
+Existing BXs are $get$-based, which let user to write the BX program in the direction of $get$ to describe how to construct the abstract view form source, and system derives a suitable backward $put$ for free.
+While in fact there are usually more than one correct $put$ for the $get$, and $get$-based BX only provides a default or limited strategies which hinder BX from practical usage.
+%
 Recently, a new approach called putback-based bidirectional transformation~\cite{FiHP15} was proposed which designs the BX from $put$ instead of $get$
-which declares that
-it lets user have full control over the $put$ to specify the update policies
+and it declares that
+it lets user have full control over the $put$ to specify arbitrary update policies
 and an unique and correct forward transformation $get$ is derived for free.
-Typically, a combinator library $putlenses$~\cite{PaHF14} provides a set of basic lens combinators to let user write complex bx programs in the putback-based way,
+Typically, a combinator library $putlenses$~\cite{PaHF14} provides a set of basic lens combinators to let user write complex BX programs in the putback-based way,
 \textsc{BiFlux}~\cite{PaZH14} is a bidirectional function update language for XML which is a carefully designed putback-based bx language. 
 The update program user written using \textsc{BiFluX} in fact is the $put$ function, and the system derives $get$ for free.
 
@@ -41,23 +43,23 @@ The update program user written using \textsc{BiFluX} in fact is the $put$ funct
 %    biflux not clearly checked, or hard to check ?
 %    say: not fully, formally verified.
 The pioneer work of putback-based BX gives opportunities to make BX really useful in real applications
-as it lets user to have full control over the update strategy.
+since it lets user to have full control over the update strategy.
 While the well-behavedness is not fully formal verified for both $putlenses$ and \textsc{BiFluX} which is the most important property for {BX}.
 As the forward transformation $get$ is derived for free
-and user 
-do not need to care how $get$ is derived 
-and not have to check the derived $get$ is correct or not manually, 
+%and user 
+%do not need to care how $get$ is derived 
+%and not have to check the derived $get$ is correct or not manually, 
 it is necessary to fully guarantee the program user written is well-behaved by the BX language.
 %
 % concretely explain how it is in putlenses and biflux
 % TODO: bad writing
 For example, in \textsc{BiFluX},
-the semantics of the basic update operator $replace$ is straight-forward 
-and the well-beahvedness for $replace$ is not checked, 
-and complex ones like $if$ statement are checked dynamically for the well-behavednss 
+the semantics of the basic update operator $replace$ is straight-forward
+and the well-beahvedness for $replace$ is not checked formally,
+and complex one like $if$ statement, the well-behavedness is checked dynamically,
 while all of them are not formally verified.
 Since \textsc{BiFluX} is designed for XML data,
-it needs to handle complex regular expressions 
+it also needs to handle complex regular expressions 
 and XML structured data which makes the program hard to check.
 
 % Needs
@@ -65,7 +67,13 @@ It turned out that a small but powerful putback-based core language
 which is fully verified to guarantee the well-behavedness is needed 
 to serve as the base for all high-level putback-based languages.
 Thus we design and implement \BiGUL, a minimalist datatype-generic putback-based language.
+The most important design is the alignment operation which is used to align view elements with source elements, together with view rearrangement.
+It also supports case analysis on either source or view for specifying different update strategies.
 % show more of BiGUL
+% show more !
+In order to prove the well-behavedness, we reificate the monadic combinators and computation steps as a datatype firstly,
+then build the bidirectional transformation and well-behavedness theory on it, finally prove our language is well-behaved.
+%
 We design \BiGUL\ to be minimal to make it easy for usage and property checking. 
 For example, there is no $if$ statement in \BiGUL\ as it can be expressed as a special case of $case$ statement.
 While the well-behavedness of \BiGUL\ is fully verified using \Agda\ language.
