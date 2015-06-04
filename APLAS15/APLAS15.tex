@@ -17,11 +17,12 @@
 %format - = "\text-\kern-.75\underscorespace"
 %format . = "\kern.6\underscorespace\text."
 %format SEP = "\kern1.55\underscorespace;"
-%format ABBRV = "\colorbox[gray]{.9}{\rlap{\ldots}\phantom{\hskip 1.2em}\vphantom{\vrule height 1.1ex}}"
+%format ABBRV = "\shade{\rlap{\ldots}\phantom{\hskip 1.2em}}"
 %format COLSEP = "\qquad\quad"
 %format tt = "\constructor{tt}"
 %format _≡_ = _ "\kern\underscorespace{" ≡ "}" _
 %link ≡ _≡_
+%format refl = "\constructor{refl}"
 %format ↦ = "\mathrel{\mapsto}"
 %link ↦ _↦_
 %format _↦_ = _ "\kern.5\underscorespace{" ↦ "}\kern-\underscorespace" _
@@ -42,6 +43,7 @@
 %format nothing = "\constructor{nothing}"
 %format just = "\constructor{just}"
 %format Bool = "\constructor{Bool}"
+%format String = "\constructor{String}"
 %format true = "\constructor{true}"
 %format false = "\constructor{false}"
 %format not = "\mathit{not}"
@@ -81,6 +83,8 @@
 %format put-r-b↦b' = put - r - b "{\mapsto}" b'
 %format put-l-a-b'↦a' = put - l - a - b' "{\mapsto}" a'
 %format get-r-b↦c = get - r - b "{\mapsto}" c
+%format 2015 = "\mathrm{2015}"
+%format <= = "{\leq}"
 %format List = "\constructor{List}"
 %format U = "\constructor{U}"
 %format _⊕_ = _ "{" ⊕ "}\kern-\underscorespace" _
@@ -150,6 +154,8 @@
   \resizebox{.4em}{1ex}{=}%
 }
 
+\newcommand{\shade}[1]{\colorbox[gray]{.9}{\smash{#1}\vphantom{\vrule height 1.1ex}}}
+
 \newlength{\underscorespace}
 \setlength{\underscorespace}{.8pt}
 \newlength{\binderspace}
@@ -213,9 +219,9 @@ National Institute of Informatics, Japan\\
 Before presenting the |BiGUL| language in \autoref{sec:BiGUL}, we first give an account of our \Agda\ formalisation of the underlying notion of partial bidirectional transformations, and also demonstrate by a simple example how well-behavedness proofs are constructed in our setting (\autoref{sec:sample-well-behavedness-proof}).
 The key to the formalisation is the reification of computation steps of monadic programs as a type family~|_↦_| (\autoref{sec:reification}), which makes the construction of the proofs as easy as ordinary functional programming.
 
-We follow the classic (well-behaved) lens approach~\cite{Foster-lenses}, but for the |PutGet| and |GetPut| laws we adopt the variant used by Pacheco~et~al~\cite{Pacheco-putlenses}:
+We follow Foster~et~al's classic lens approach~\cite{Foster-lenses}, but for the |PutGet| and |GetPut| laws we adopt the variant used by Pacheco~et~al~\cite{Pacheco-putlenses}:
 \begin{definition*}[lenses]
-A (well-behaved) \emph{lens} between a source type~|S| and a view type~|V| is defined in \Agda\ as the following record type:
+A \emph{lens} between a source type~|S| and a view type~|V| is defined in \Agda\ as the following record type:
 \begin{code}
 record ^^^Lens (S V : Set) : Set₁ where
   field
@@ -224,6 +230,7 @@ record ^^^Lens (S V : Set) : Set₁ where
     ^^^PutGet  : {s s' : S} {v : V} →  (put s v ↦ s') → (get s' ↦ v)
     ^^^GetPut  : {s : S} {v : V} →     (get s ↦ v) → (put s v ↦ s)
 \end{code}
+That is, a lens is a pair of functions |put| and |get| satisfying the |PutGet| and |GetPut| laws.
 We call the |PutGet| and |GetPut| laws the \emph{well-behavedness} properties.
 \end{definition*}
 
@@ -241,7 +248,7 @@ Note that our definition of lenses is stronger than the one given by Foster~et~a
 
 Our partial transformations are actually total functions which wrap their results in the standard |^^^Maybe| datatype with two constructors |^^^just : A -> Maybe A| and |^^^nothing  : Maybe A| --- the result of a successful computation is wrapped in the |just| constructor, while failed computation is represented by |nothing|.
 It is thus always possible to examine whether a computation succeeds or not in a known finite amount of time.\footnote{%
-It is important to distinguish this ``decidable partiality'' from the usual partiality as formalised in terms of complete partial orders (see, e.g., Gibbons~\cite{Gibbons-calculating-functional-programs}):
+It is important to distinguish this notion of ``decidable partiality'' from the usual partiality as formalised in terms of complete partial orders (see, e.g., Gibbons~\cite{Gibbons-calculating-functional-programs}):
 when defining the semantics of |BiGUL|, we need to write programs that produce some result or fail respectively when a sub-program fails or produces some result, but this is not possible in the setting of complete partial orders.} %(since such functions violate monotonicity, a necessary condition for computability).
 
 We can choose to write our transformations directly as |Maybe|-programs, usually structured with monadic combinators~\cite{Moggi-monads,Wadler-essence} like ``return'' and ``bind''.
@@ -256,7 +263,6 @@ data ^^^Par : Set -> Set1 where
   ^^^return        : (HIDE({A : Set} ->))    A -> Par A
   ^^^_>>=_         : (HIDE({A B : Set} ->))  Par A -> (A -> Par B) -> Par B
   ^^^fail          : (HIDE({A : Set} ->))    Par A
-  ABBRV
 \end{code}
 For convenience, there are also other operators for error-handling and assertion, which are omitted from the presentation, though.
 The meaning of the constructors of |Par| is formally given by the following interpreter to |Maybe|:
@@ -267,21 +273,19 @@ runPar (mx >>= f)  with runPar mx
 runPar (mx >>= f)  | just x   = runPar (f x)
 runPar (mx >>= f)  | nothing  = nothing
 runPar fail = nothing
-ABBRV
 \end{code}
 We say that |mx : Par A| computes to |x : A| exactly when |runPar mx ≡ just x|, and that |mx|~fails to compute exactly when |runPar mx ≡ nothing|.
 The equality |runPar mx ≡ just x| is already a family of types of proofs of successful computation, but these proofs are not so straightforward to analyse and construct.
 We hence move on to define an equivalent family of types, whose proofs are easier to manipulate.
 
-Thanks to \Agda's support of full dependent types, we can simply write a function computing for any |mx : Par A| and |x : A| a type |mx ↦ x| whose inhabitants explain how the sub-programs in |mx| compute successfully one by one, eventually producing~|x|:
+For every |mx : Par A| and |x : A|, we define a type |mx ↦ x| whose inhabitants explain how the sub-programs in |mx| compute successfully one by one, eventually producing~|x|:
 \begin{code}
 ^^^_↦_ : {A : Set} → Par A → A → Set₁
 (return x)  ↦ x'  =  x ≡ x'
 (mx >>= f)  ↦ y   =  (x : _) × (mx ↦ x) × (f x ↦ y)
 fail        ↦ x   =  ⊥
-ABBRV
 \end{code}
-In prose: |return x| computes to~|x'| when |x|~is exactly~|x'|; |mx >>= f| computes to~|y| when there exists |x : A| such that |mx|~computes to~|x| and |f x| computes to~|y|; and it is impossible for |fail| to compute successfully (and so on).
+In prose: |return x| computes to~|x'| when |x|~is exactly~|x'|; |mx >>= f| computes to~|y| when there exists |x : A| such that |mx|~computes to~|x| and |f x| computes to~|y|; and it is impossible for |fail| to compute successfully.
 Here our use of the term ``computes to'' is justified, since we can prove that a term of type |mx ↦ x| can be constructed if and only if |runPar mx ≡ just x|, meaning that our reification of |runPar mx ≡ just x| as |mx ↦ x| is accurate.
 We are thus entitled to use~|_↦_| in the statements of |PutGet| and |GetPut|.
 
@@ -299,7 +303,7 @@ l ↔ r = record
 The |put| and |get| functions for a composite lens can be pretty straightforwardly constructed from the |put| and |get| functions of the component lenses.
 As part of the definition of |_↔_|\kern1pt, we also need to prove that |PutGet| and |GetPut| hold for the pair of |put| and |get| we provide.
 For |PutGet| we need to show that, for all |a|,~|a' : A|, and |c : C|, from a proof of |put a c MAPSTO a'| we can construct a proof of |get a' MAPSTO c|.
-That is, we need to write a function converting an inhabitant of the type |put a c MAPSTO a'| to one of the type |get a' MAPSTO c|.
+That is, we need to write a function that converts an inhabitant of the type |put a c MAPSTO a'| to one of the type |get a' MAPSTO c|.
 \Agda\ automatically expands the two types by the definition of~|_↦_|\kern1pt, the first one to
 \begin{code}
 (b : B) ×  (Lens.get l a MAPSTO b) ×
@@ -320,6 +324,7 @@ With a similar reasoning, we can also construct a proof term for |GetPut|:
 λ (b , x , y) → (b , x , b , Lens.GetPut r y , Lens.GetPut l x)
 \end{code}
 completing the definition of~|_↔_|\kern1pt.
+
 For the rest of this paper we will omit or at most give only a quick sketch of the well-behavedness proofs, but a majority of these proofs --- while requiring more complicated case analyses --- are technically as simple as the above proofs for lens composition.
 
 \section{BiGUL and its lens semantics}
@@ -373,6 +378,15 @@ data ^^^BiGUL : U → U → Set₁ where
 \label{fig:BiGUL}
 \end{figure}
 
+\autoref{fig:BiGUL} gives a preview of a |BiGUL| program.
+The source is a list of book data of type |String × String × ℕ × ℕ| storing a book's title, author, publication year, and price, and we intend to update the price of those books published in 2015.
+We thus prepare a list of pairs of book title and price of type |String × ℕ| as the view.
+The |BiGUL| program then describes how to update the source with the view:
+we focus on only those books in the source list whose publication year is 2015, and align the sub-list with the view list by title;
+for every matched pair of source and view books, we update the title and price of the source with those of the view;
+for every unmatched view book, we create a source book with default author information and publication year 2015, and its title and price will later be updated by the action for matched pairs;
+finally, for every unmatched source book, we simply choose to delete it.
+
 The types of the |BiGUL| constructors are indexed by the source and view types expected by the operations represented by the constructors, and in the end we can write a well-typed interpreter
 \begin{code}
 interp : (HIDE({S V : U} ->)) BiGUL S V -> Lens ⟦ S ⟧ ⟦ V ⟧
@@ -382,39 +396,57 @@ Due to space restrictions, we will not present the full definitions of |interp| 
 Instead, we will only provide a sketch of the lens semantics of the bidirectional operations.
 For each operation we will start from a natural semantics (for |put|) and then add necessary checks so a corresponding |get| can exist, arriving at the lens semantics for the operation (whose well-behavedness proofs are omitted from the presentation).
 
+\begin{figure}[t]
+\begin{center}
+\beforefigure
+\begin{code}
+align  (λ (_ , _ , year , _) → year == 2015)
+       (λ (stitle , _ , _ , _) (vtitle , _) → stitle == vtitle)
+       (rearr  (prod var var)  (prod  var (prod (  const tt) (prod (  const tt)  var)))
+                               (      inj₁ refl ,  tt ,               tt ,       inj₂ refl)
+               -- the two lines above are a deeply embedded representation of
+               -- the function |λ (title , price) -> (title , tt , tt , price)|
+               (update  (prod       var (prod        var (prod     var           var)))
+                        ((String ,  replace) , (⊤ ,  skip) , (⊤ ,  skip) , (ℕ ,  replace))))
+       (λ _ -> return ("" , "(to be updated)" , 2015 , 0))
+       (λ _ -> return nothing)
+\end{code}
+\end{center}
+\afterfigure
+\caption{Updating the prices of the books published in 2015}
+\label{fig:bookstore}
+\end{figure}
+
 \subsection{Replacing, failure, and skipping}
 \label{sec:basic-lenses}
 
-%A related notion is ``partial'' isomorphisms as defined by
-%\begin{code}
-%record ^^^Iso (A B : Set) : Set₁ where
-%  field
-%    ^^^to    : A → Par B
-%    ^^^from  : B → Par A
-%    ^^^to-from-inverse  : {x : A} {y : B} → (to x ↦ y) → (from y ↦ x)
-%    ^^^from-to-inverse  : {x : A} {y : B} → (from y ↦ x) → (to x ↦ y)
-%\end{code}
-%|Lens| is a generalisation of |Iso| because we can easily convert |Iso A B| to |Lens A B|, whose |put| directly produces a new source from its view argument, ignoring its source argument:
-%\begin{code}
-%^^^iso-lens : {A B : Set} → Iso A B → Lens A B
-%iso-lens iso = record  {    put  = λ _ b → Iso.from iso b
-%                       SEP  get  = Iso.to iso
-%                       SEP  PutGet  = Iso.from-to-inverse iso
-%                       SEP  GetPut  = Iso.to-from-inverse iso }
-%\end{code}
-%This conversion gives us a first way to manufacture lenses.
-%For example, the identity isomorphism between the same type --- whose |to| and |from| are both |return| --- gives rise to the ``replacing'' lens, and the empty isomorphism between any two types --- whose |to| and |from| are both |\ _ -> fail| --- gives rise to the ``failure'' lens.
-%Both lenses will appear in \autoref{sec:basic-lenses}.
-
 The three most basic operations are |replace|, |failB|, and |skip|.
 The |replace| operation is applicable when the source and the view are of the same type, and its semantics is discarding the original source and returning the view as the updated source.
-As mentioned in \autoref{sec:BX}, we can in fact derive its lens semantics from the identity isomorphism by |iso-lens|:
+Its lens semantics can in fact be derived from an \emph{isomorphism}:
+We define isomorphisms in the partial setting by
+\begin{code}
+record ^^^Iso (A B : Set) : Set₁ where
+  field
+    ^^^to    : A → Par B
+    ^^^from  : B → Par A
+    ^^^to-from-inverse  : {x : A} {y : B} → (to x ↦ y) → (from y ↦ x)
+    ^^^from-to-inverse  : {x : A} {y : B} → (from y ↦ x) → (to x ↦ y)
+\end{code}
+of which |Lens| is a generalisation, because we can easily write a function:
+\begin{code}
+^^^iso-lens : {A B : Set} → Iso A B → Lens A B
+iso-lens iso = record  {    put  = λ _ b → Iso.from iso b
+                       SEP  get  = Iso.to iso
+                       SEP  PutGet  = Iso.from-to-inverse iso
+                       SEP  GetPut  = Iso.to-from-inverse iso }
+\end{code}
+The lens semantics of |replace| can then be derived from the identity isomorphism:
 \begin{code}
 ^^^replace-lens : {S : Set} -> Lens S S
 replace-lens = iso-lens (record {to = return SEP from = return SEP ABBRV })
 \end{code}
 The |get| semantics for |replace| is therefore just the identity function.
-Also mentioned in \autoref{sec:BX} is that we can derive the lens semantics for |failB| --- which fails to compute for any input --- from the empty isomorphism in the same way:
+We can also derive the lens semantics for |failB| --- which fails to compute for any input --- from the empty isomorphism in the same way:
 \begin{code}
 ^^^fail-lens : {S V : Set} -> Lens S V
 fail-lens = iso-lens (record {to = fail SEP from = fail SEP ABBRV })
@@ -429,139 +461,10 @@ Note that the view type is specified as~|⊤|, whose inhabitant can only be~|tt|
 In general, |put| must embed all view information into the updated source so |get| can recover the entire view from the updated source, establishing |PutGet|.
 |⊤|~is a type with no information, and hence |Lens.put skip-lens| can safely ignore its view argument of type~|⊤|.
 
-\subsection{Case analysis on source}
-\label{sec:source-case}
-
-%\begin{figure}[t]
-%\begin{center}
-%\beforefigure
-%\begin{code}
-%caseS-lens : (S V : Set) -> List (CaseSBranch S V) -> Lens S V
-%caseS-lens S V bs = record
-%  {    put =  put-with-adaptation bs s v
-%                (λ s' → put-with-adaptation bs s' v (\ _ -> fail))
-%  SEP  get =  get' SEP ABBRV }
-%  where
-%    branch :   {X : Set1} → (Lens S V → X) → ((S → Par S) → X) →
-%               CaseSBranchType → X
-%    branch f g (normal    l  ) = f  l
-%    branch f g (adaptive  u  ) = g  u
-%
-%    put-with-adaptation : List CaseSBranch → S → V → (S → Par S) → Par S
-%    put-with-adaptation []              s v f = fail
-%    put-with-adaptation ((p , b) ∷ bs)  s v f =
-%      p s >>= λ matched →
-%      if matched  then  branch   (λ lens →  Lens.put lens s v >>= λ s' →
-%                                            p s' >>= λ matched' →
-%                                            assert matched' then return s')
-%                                 (λ u → u s >>= f) b
-%                  else  put-with-adaptation bs s v f >>= λ s' →
-%                        p s' >>= λ matched' → assert not matched' then return s'
-%
-%    get' : List CaseSBranch → S → Par V
-%    get' []              s = fail
-%    get' ((p , b) ∷ bs)  s =
-%      p s >>= λ matched →
-%      if matched  then  branch (λ lens → Lens.get lens s) (\ _ -> fail) b
-%                  else  get' bs s
-%\end{code}
-%\end{center}
-%\afterfigure
-%\caption{Definition of source case analysis}
-%\label{fig:source-case}
-%\end{figure}
-
-The next construct |caseS| is for doing case analysis on the source.
-The basic idea of |caseS|'s semantics is to choose from a list of branches the first one that matches the source, and then execute the |BiGUL| statement of that branch.
-It is, however, difficult to find a |get| to pair with this |put| semantics: the obvious |get| which selects the first branch that matches its source argument does not work, because it may well happen that the updated source produced by |put| matches a different branch from the original source, and hence in general we would have to guarantee |PutGet| for |put| and |get| coming respectively from any two branches, which is unmanageable.
-A more manageable solution is to insert a dynamic check at the end of |put| to ensure that the updated source must match the same branch as the original source, which is the solution adopted by Foster~et~al's concrete conditional lenses~\cite[Section~6.1]{Foster-lenses}.
-This solution, however, is too restrictive to be useful in practice.
-
-Our solution is to enhance |caseS| by adding a special kind of branches called \emph{adaptive} branches, in addition to \emph{normal} branches.
-The lens semantics of the two kinds of branches are defined by the following datatype:
-\begin{code}
-data ^^^CaseSBranchType (S V : Set) : Set1 where
-  ^^^normal    : Lens S V      -> CaseSBranchType S V
-  ^^^adaptive  : (S -> Par S)  -> CaseSBranchType S V
-\end{code}
-The lens semantics of a |normal| branch is just a lens, while for an |adaptive| branch it is a source transformation.
-With each branch we also need to associate a decidable predicate on the source type specifying when a source matches the branch, so the complete definition of the type of branches is
-\begin{code}
-^^^CaseSBranch : Set -> Set -> Set1
-CaseSBranch S V = (S -> Par Bool) × CaseSBranchType S V
-\end{code}
-The type of |caseS|'s lens semantics |caseS-lens| is then
-\begin{code}
-caseS-lens : (S V : Set) -> List (CaseSBranch S V) -> Lens S V
-\end{code}
-We might think of a source case analysis as still consisting mainly of normal branches, but we can now specify additional cases such that when a source matches none of the normal branches, the source can still be accepted, which is then transformed --- or adapted --- to one that matches a normal branch.
-More explicitly, the case analysis may be run twice: if a normal branch is chosen the first time, then the case analysis succeeds and we execute the branch; otherwise, we adapt the source and rerun the case analysis, and must match a normal branch this time.
-After a normal branch is executed, we must ensure that the updated source satisfies the predicate of the branch and also none of the predicates of the previous branches, so a subsequent execution of |get| on the updated source --- which chooses a branch in the same way as |put| --- would go through the same branch as |put|, establishing |PutGet|.
-
-\subsection{Case analysis on view}
-\label{sec:view-case}
-
-%\begin{figure}[t]
-%\begin{center}
-%\beforefigure
-%\begin{code}
-%caseV-lens : (S V : Set) -> DecEq V -> List CaseVBranch S V -> Lens S V
-%caseV-lens S V dec bs = record { put = put' SEP get = get' SEP ABBRV }
-%  where
-%    guarded-return : S → V → V → Par S
-%    guarded-return s' v v' with dec v v'
-%    guarded-return s' v v' | inj₁  eq   = return s'
-%    guarded-return s' v v' | inj₂  neq  = fail
-%
-%    put' : List CaseVBranch S V → S → V → Par S
-%    put' []                       s v = fail
-%    put' ((_ , lens , iso) ∷ bs)  s v = catch  (Iso.from iso v) (Lens.put lens s)
-%                                               (  put' bs s v >>= λ s' →
-%                                                  catch  (Lens.get lens s' >>= Iso.to iso)
-%                                                         (guarded-return s' v) (return s'))
-%
-%    get' : List CaseVBranch S V → S → Par V
-%    get' []                         s = fail
-%    get' ((_ , lens , iso) ∷ bs)    s = catch   (Lens.get lens s >>= Iso.to iso) return
-%                                                (  get' bs s >>= λ v →
-%                                                   catch (Iso.from iso v) (\ _ -> fail) (return v))
-%\end{code}
-%\end{center}
-%\afterfigure
-%\caption{Definition of view case analysis}
-%\label{fig:view-case}
-%\end{figure}
-
-For |caseV|, basically we still try to match the view with a list of branches, and execute the first branch matched.
-We must be more careful when it comes to the view, though:
-As mentioned in \autoref{sec:basic-lenses}, view information must be carefully managed and completely embedded into the source.
-When the view matches a branch, the amount of view information that remains to be embedded into the source can actually be reduced.
-For example, if there is a branch that matches an integer view which equals zero, then for this branch we may even perform no update on the source as long as we can guarantee that the subsequent |get| will choose this branch, in which case |get| can simply return zero --- the information that the view is zero is embedded implicitly in the control flow rather than explicitly in the updated source.
-Thus, in the definition of |CaseVBranch| below, we use a partial isomorphism on the view type which converts it to a possibly less informative type, instead of just a decidable predicate as in |CaseSBranch|:
-\begin{code}
-^^^CaseVBranch : Set -> Set -> Set₁
-CaseVBranch S V = (V' : Set) × Lens S V' × Iso V' V
-\end{code}
-For the comparison-with-zero example above, we would set~|V'| to be~|⊤|, indicating that there is no more information to be embedded into the source after a successful matching, and set the |to| and |from| components of the isomorphism to |\ _ -> return 0| and |\ n -> if n == 0 then' return tt else fail|.
-A branch is considered matched with a view when the |from| conversion of the associated isomorphism succeeds on the view.
-
-The lens semantics we assign to |caseV| has type
-\begin{code}
-caseV-lens : (S V : Set) -> DecEq V -> List CaseVBranch -> Lens S V
-\end{code}
-(The |DecEq V| argument will be explained shortly.)
-The main behaviour of its |put| is, as described in the beginning, to try to match the view with each branch and execute the first successful branch.
-For |get|, however, there is no obvious way to decide which branch to go --- unlike |put|, we are not given a view to match with the branches.
-Here we try to execute each of the branches until we reach one that computes a view successfully, which is the approach taken by Pacheco~et~al~\cite{Pacheco-putlenses}.
-This makes guaranteeing |PutGet| difficult, as we cannot easily guarantee that executing |put| followed by |get| would go through the same branch.
-Our compromised solution is to make |put| do an expensive check after a branch is matched and executed, requiring that the |get| for each of the previous branches must either fail or produce the same view as the input one (i.e., verifying |PutGet| directly).
-That is, the ranges of (the |put| semantics of) the branches have to be ``almost'' disjoint in order for |put| to compute successfully.
-The |^^^DecEq V| argument of |caseV-lens|, which expands to |(v v' : V) -> (v ≡ v') ⊎ ¬ (v ≡ v')| and says that |V|~is equipped with a decidable equality, is needed for this check.
-
 \subsection{List alignment}
 \label{sec:list-alignment}
 
-For the semantics of |align|, we use a particular parametrised strategy for updating a list of sources of type~|S| with a list of views of type~|V|, which tries to align/match the sources with the views, synchronise the matched pairs of sources and views by an inner |BiGUL| operation, and process the unmatched sources and views in some programmer-specified ways.
+For the semantics of |align|, which is the key operation used in \autoref{fig:bookstore}, we employ a particular parametrised strategy for updating a list of sources of type~|S| with a list of views of type~|V|, which tries to align/match the sources with the views, synchronise the matched pairs of sources and views by an inner lens, and process the unmatched sources and views in some programmer-specified ways.
 A few of the design choices made below are somewhat arbitrary, but it should be easy to further parametrise the strategy or offer other different strategies.
 
 The lens semantics of |align| has type
@@ -589,7 +492,7 @@ To guarantee well-behavedness, a few checks about |l|~and |conceal| need to be i
 After a pair of source and view are synchronised by~|l|, the updated pair should again satisfy |match|, and also the updated source should still satisfy |source-condition|.
 And a source produced by |conceal| must not satisfy |source-condition|.
 
-The well-behavedness proofs in |align-lens| are harder, but it is mostly due to the inherent difficulty of the proofs --- regarding the formalisation per se, there is little overhead, due to the nice structure of the definition of well-behavedness (in terms of~|_↦_|).
+The well-behavedness proofs in |align-lens| are more difficult, but it is mostly due to the inherent difficulty of the proofs --- there is little overhead regarding the formalisation per~se, due to the nice structure of the definition of well-behavedness (in terms of~|_↦_|).
 The exact details of the aligning algorithm are pretty delicate (especially the last part for merging the sources that satisfy |source-condition| with those that do not), and these details being formally verified makes us absolutely confident that the algorithm is correct.
 
 \subsection{Source update}
@@ -598,6 +501,7 @@ The exact details of the aligning algorithm are pretty delicate (especially the 
 A fundamental operation is performing updates to parts of the source.
 We follow the approach taken by \textsc{Flux}~\cite{Cheney-FLUX}, which requires that updates must be independent --- that is, the same part of a source cannot be updated more than once --- to avoid the problem of sequencing updates.
 It turns out that a pattern matching notation suits this task perfectly: pattern matching is arguably the most intuitive way to decompose a source, and we can specify apparently independent updates by writing them at the variable positions in a pattern.
+For example, in \autoref{fig:bookstore} we use |update| to match a source book of type |String × String × ℕ × ℕ| with a 4-tuple pattern and update each of the four components with |replace|, |skip|, |skip|, and |replace|.
 The idea itself is straightforward; what follows, despite its slight complexity (especially if the reader is not familiar with dependently typed programming), is merely our datatype-generic and strongly typed implementation of the idea in \Agda.
 
 Since \Agda\ is fully dependently typed, we can naturally define patterns in a type-directed way such that nonsensical patterns are syntactically ruled out.
@@ -682,7 +586,7 @@ Its |put| decomposes the source, updates its components with the lenses at the c
 \label{sec:view-rearrangement}
 
 The last operation |rearr| is for rearranging the view to a specific shape suitable for subsequent updates.
-For example, the |update| operation in \autoref{sec:source-update} demands that the view must be in a shape that matches the source pattern (as computed by |Views|), and this is usually achieved by an outer |rearr|.
+For example, the |update| operation in \autoref{sec:source-update} demands that the view must be in a shape that matches the source pattern (as computed by |Views|), and this is usually achieved by an outer |rearr|, as is the case in \autoref{fig:bookstore}.
 In essence, |rearr| performs a piece of invertible computation (which loses no information), while its |get| semantics performs the inverse of the computation.
 The invertible computation used is usually not complicated (hence the name ``rearrangement''), so instead of letting the programmer write general invertible functions (perhaps along with their inverses), we ask instead for syntactic descriptions of simple invertible computation, which are more restrictive but allow automatic inversion.
 
@@ -709,14 +613,137 @@ view-rearrangement-iso :
 where |Invertible pat pat' paths| is defined to state that |paths| uses up all of the old view.
 The lens semantics we assign to |rearr| is the lens derived from this isomorphism (by |iso-lens|) composed with the lens semantics of the inner |BiGUL| operation.
 
-\section*{Examples}
-\label{sec:examples}
 
-\todo[inline]{address book for align, update, and rearrangement}
+\subsection{Case analysis on source}
+\label{sec:source-case}
 
-\todo[inline]{\textsc{BiYacc} for source and view cases (probably not)}
+%\begin{figure}[t]
+%\begin{center}
+%\beforefigure
+%\begin{code}
+%caseS-lens : (S V : Set) -> List (CaseSBranch S V) -> Lens S V
+%caseS-lens S V bs = record
+%  {    put =  put-with-adaptation bs s v
+%                (λ s' → put-with-adaptation bs s' v (\ _ -> fail))
+%  SEP  get =  get' SEP ABBRV }
+%  where
+%    branch :   {X : Set1} → (Lens S V → X) → ((S → Par S) → X) →
+%               CaseSBranchType → X
+%    branch f g (normal    l  ) = f  l
+%    branch f g (adaptive  u  ) = g  u
+%
+%    put-with-adaptation : List CaseSBranch → S → V → (S → Par S) → Par S
+%    put-with-adaptation []              s v f = fail
+%    put-with-adaptation ((p , b) ∷ bs)  s v f =
+%      p s >>= λ matched →
+%      if matched  then  branch   (λ lens →  Lens.put lens s v >>= λ s' →
+%                                            p s' >>= λ matched' →
+%                                            assert matched' then return s')
+%                                 (λ u → u s >>= f) b
+%                  else  put-with-adaptation bs s v f >>= λ s' →
+%                        p s' >>= λ matched' → assert not matched' then return s'
+%
+%    get' : List CaseSBranch → S → Par V
+%    get' []              s = fail
+%    get' ((p , b) ∷ bs)  s =
+%      p s >>= λ matched →
+%      if matched  then  branch (λ lens → Lens.get lens s) (\ _ -> fail) b
+%                  else  get' bs s
+%\end{code}
+%\end{center}
+%\afterfigure
+%\caption{Definition of source case analysis}
+%\label{fig:source-case}
+%\end{figure}
 
-\todo[inline]{source/view if, map in terms of align}
+The next construct |caseS| is for doing case analysis on the source.
+The basic idea of |caseS|'s semantics is to choose from a list of branches the first one that matches the source, and then execute the |BiGUL| statement of that branch.
+It is, however, difficult to find a |get| to pair with this |put| semantics: the obvious |get| which selects the first branch that matches its source argument does not work, because it may well happen that the updated source produced by |put| matches a different branch from the original source, and hence in general we would have to guarantee |PutGet| for |put| and |get| coming respectively from any two branches, which is unmanageable.
+A more manageable solution is to insert a dynamic check at the end of |put| to ensure that the updated source must match the same branch as the original source, which is the solution adopted by Foster~et~al's concrete conditional lenses~\cite[Section~6.1]{Foster-lenses}.
+This solution, however, is too restrictive to be useful in practice.
+
+\todo[inline]{\cite{Zhu-BiYacc}}
+
+Our solution is to enhance |caseS| by adding a special kind of branches called \emph{adaptive} branches, in addition to \emph{normal} branches.
+The lens semantics of the two kinds of branches are defined by the following datatype:
+\begin{code}
+data ^^^CaseSBranchType (S V : Set) : Set1 where
+  ^^^normal    : Lens S V      -> CaseSBranchType S V
+  ^^^adaptive  : (S -> Par S)  -> CaseSBranchType S V
+\end{code}
+The lens semantics of a |normal| branch is just a lens, while for an |adaptive| branch it is a source transformation.
+With each branch we also need to associate a decidable predicate on the source type specifying when a source matches the branch, so the complete definition of the type of branches is
+\begin{code}
+^^^CaseSBranch : Set -> Set -> Set1
+CaseSBranch S V = (S -> Par Bool) × CaseSBranchType S V
+\end{code}
+The type of |caseS|'s lens semantics |caseS-lens| is then
+\begin{code}
+caseS-lens : (S V : Set) -> List (CaseSBranch S V) -> Lens S V
+\end{code}
+We might think of a source case analysis as still consisting mainly of normal branches, but we can now specify additional cases such that when a source matches none of the normal branches, the source can still be accepted, which is then transformed --- or adapted --- to one that matches a normal branch.
+More explicitly, the case analysis may be run twice: if a normal branch is chosen the first time, then the case analysis succeeds and we execute the branch; otherwise, we adapt the source and rerun the case analysis, and must match a normal branch this time.
+After a normal branch is executed, we must ensure that the updated source satisfies the predicate of the branch and also none of the predicates of the previous branches, so a subsequent execution of |get| on the updated source --- which chooses a branch in the same way as |put| --- would go through the same branch as |put|, establishing |PutGet|.
+
+\subsection{Case analysis on view}
+\label{sec:view-case}
+
+%\begin{figure}[t]
+%\begin{center}
+%\beforefigure
+%\begin{code}
+%caseV-lens : (S V : Set) -> DecEq V -> List CaseVBranch S V -> Lens S V
+%caseV-lens S V dec bs = record { put = put' SEP get = get' SEP ABBRV }
+%  where
+%    guarded-return : S → V → V → Par S
+%    guarded-return s' v v' with dec v v'
+%    guarded-return s' v v' | inj₁  eq   = return s'
+%    guarded-return s' v v' | inj₂  neq  = fail
+%
+%    put' : List CaseVBranch S V → S → V → Par S
+%    put' []                       s v = fail
+%    put' ((_ , lens , iso) ∷ bs)  s v = catch  (Iso.from iso v) (Lens.put lens s)
+%                                               (  put' bs s v >>= λ s' →
+%                                                  catch  (Lens.get lens s' >>= Iso.to iso)
+%                                                         (guarded-return s' v) (return s'))
+%
+%    get' : List CaseVBranch S V → S → Par V
+%    get' []                         s = fail
+%    get' ((_ , lens , iso) ∷ bs)    s = catch   (Lens.get lens s >>= Iso.to iso) return
+%                                                (  get' bs s >>= λ v →
+%                                                   catch (Iso.from iso v) (\ _ -> fail) (return v))
+%\end{code}
+%\end{center}
+%\afterfigure
+%\caption{Definition of view case analysis}
+%\label{fig:view-case}
+%\end{figure}
+
+For |caseV|, basically we still try to match the view with a list of branches, and execute the first branch matched.
+We must be more careful when it comes to the view, though:
+As mentioned in \autoref{sec:basic-lenses}, view information must be carefully managed and completely embedded into the source.
+When the view matches a branch, the amount of view information that remains to be embedded into the source can actually be reduced.
+For example, if there is a branch that matches an integer view which equals zero, then for this branch we may even perform no update on the source as long as we can guarantee that the subsequent |get| will choose this branch, in which case |get| can simply return zero --- the information that the view is zero is embedded implicitly in the control flow rather than explicitly in the updated source.
+Thus, in the definition of |CaseVBranch| below, we use a partial isomorphism on the view type\footnote{In |BiGUL| we require a view pattern instead of an isomorphism for each branch, and the pattern is converted to an isomorphism by |pat-iso|.} which converts it to a possibly less informative type, instead of just a decidable predicate as in |CaseSBranch|:
+\begin{code}
+^^^CaseVBranch : Set -> Set -> Set₁
+CaseVBranch S V = (V' : Set) × Iso V V' × Lens S V'
+\end{code}
+For the comparison-with-zero example above, we would set~|V'| to be~|⊤|, indicating that there is no more information to be embedded into the source after a successful matching, and set the |to| and |from| components of the isomorphism to |\ _ -> return 0| and |\ n -> if n == 0 then' return tt else fail|.
+A branch is considered matched with a view when the |from| conversion of the associated isomorphism succeeds on the view.
+
+The lens semantics we assign to |caseV| has type
+\begin{code}
+caseV-lens : (S V : Set) -> DecEq V -> List CaseVBranch -> Lens S V
+\end{code}
+(The |DecEq V| argument will be explained shortly.)
+The main behaviour of its |put| is, as described in the beginning, to try to match the view with each branch and execute the first successful branch.
+For |get|, however, there is no obvious way to decide which branch to go --- unlike |put|, we are not given a view to match with the branches.
+Here we try to execute each of the branches until we reach one that computes a view successfully, which is the approach taken by Pacheco~et~al~\cite{Pacheco-putlenses}.
+This makes guaranteeing |PutGet| difficult, as we cannot easily guarantee that executing |put| followed by |get| would go through the same branch.
+Our compromised solution is to make |put| do an expensive check after a branch is matched and executed, requiring that the |get| for each of the previous branches must either fail or produce the same view as the input one (i.e., verifying |PutGet| directly).
+That is, the ranges of (the |put| semantics of) the branches have to be ``almost'' disjoint in order for |put| to compute successfully.
+The |^^^DecEq V| argument of |caseV-lens|, which expands to |(v v' : V) -> (v ≡ v') ⊎ ¬ (v ≡ v')| and says that |V|~is equipped with a decidable equality, is needed for this check.
 
 \input{discussion}
 

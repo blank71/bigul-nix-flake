@@ -16,7 +16,9 @@ open import Data.Nat
 open import Data.Fin
 open import Data.List
 open import Data.String
+open import Relation.Nullary
 open import Relation.Binary.PropositionalEquality
+
 
 SBookU : {n : ℕ} → U n
 SBookU = k String Data.String._≟_ ⊗ (k String Data.String._≟_ ⊗ (k ℕ Data.Nat._≟_ ⊗ k ℕ Data.Nat._≟_))
@@ -32,14 +34,19 @@ emptyTEnv ()
 
 bookstore : BiGUL emptyF (list SBookU) (list VBookU)
 bookstore =
-  align (const (return true))
+  align source-condition
         match?
         (rearr (prod var var) (prod var (prod (k tt) (prod (k tt) var))) (inj₁ refl , tt , tt , inj₂ refl)
                (update (prod var (prod var (prod var var)))
                        ((, replace) , ((, skip) , ((, skip) , (, replace))))))
-        (const (return ("" , "" , 0 , 0)))
+        (const (return ("" , "(to be updated)" , 2015 , 0)))
         (const (return nothing))
   where
+    source-condition : ⟦ SBookU ⟧ emptyTEnv → Par Bool
+    source-condition (_ , _ , year , _) with year Data.Nat.≟ 2015
+    source-condition (_ , _ , year , _) | yes _ = return true
+    source-condition (_ , _ , year , _) | no  _ = return false
+
     match? : ⟦ SBookU ⟧ emptyTEnv → ⟦ VBookU ⟧ emptyTEnv → Par Bool
     match? (stitle , author , year , sprice) (vtitle , vprice) = return (stitle == vtitle)
 
@@ -47,13 +54,13 @@ bookstore-CompleteExpr : BiGULCompleteExpr emptyF bookstore
 bookstore-CompleteExpr = (return refl >>= return refl) , tt , tt , tt , tt
 
 sbooks : ⟦ list SBookU ⟧ emptyTEnv
-sbooks = ("Harry Potter" , "JK Rowling" , 1997 , 950) ∷ ("The Lord of the Rings" , "JRR Tolkien" , 1954 , 450) ∷ []
+sbooks = ("Harry Potter" , "JK Rowling" , 2015 , 950) ∷ ("The Lord of the Rings" , "JRR Tolkien" , 1954 , 450) ∷ []
 
 vbooks' : ⟦ list VBookU ⟧ emptyTEnv
-vbooks' = ("Harry Potter" , 850) ∷ ("The Hitchhiker's Guide to the Galaxy" , 650) ∷ []
+vbooks' = ("Harry Potter" , 1850) ∷ ("The Hitchhiker's Guide to the Galaxy" , 550) ∷ []
 
 vbooks : ⟦ list VBookU ⟧ emptyTEnv
-vbooks = ("Harry Potter" , 950) ∷ ("The Lord of the Rings" , 450) ∷ []
+vbooks = ("Harry Potter" , 1950) ∷ []
 
 test-get : Maybe (⟦ list VBookU ⟧ emptyTEnv)
 test-get = runPar (Lens.get (interp emptyF bookstore bookstore-CompleteExpr) sbooks)
