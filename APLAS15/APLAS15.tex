@@ -207,20 +207,34 @@ National Institute of Informatics, Japan\\
 \maketitle
 
 \begin{abstract}
+
+Putback-based bidirectional programming allows us to write one putback 
+transformation and derives the unique corresponding forward transformation for free.
+Although putback transformation has full control of bidirectional behavior, 
+it often describes more update logic than forward transformation in 
+get-based bidirectional programming. This calls for design of 
+robust programming languages to support development of well-behaved 
+putback transformation. In this paper, we design and implement
+a core language for putback-based bidirectional programming, 
+which is not only expressive enough  
+to serve as the base for friendly high-level putback-based languages,
+but also formally verified to guarantee that any putback transformation 
+in the language is well-behaved.
+
 % limit: 150 words
-Bidirectional transformation contains a pair of
-a $get$ function that extracts information from source to build a view,
-and a $put$ function that putback the modification on updated view back to source.
-Many bidirectional programming languages have been proposed to write only one program
-in one direction (either $get$ or $put$) instead of writing both manually,
-and derive another one for free
-to aid the development of bidirectional transformation
-for synchronizing different information in different formats (trees, string, relational data, graphs etc.).
+%Bidirectional transformation contains a pair of
+%a $get$ function that extracts information from source to build a view,
+%and a $put$ function that putback the modification on updated view back to source.
+%Many bidirectional programming languages have been proposed to write only one program
+%in one direction (either $get$ or $put$) instead of writing both manually,
+%and derive another one for free
+%to aid the development of bidirectional transformation
+%for synchronizing different information in different formats (trees, string, relational data, graphs etc.).
 % TODO:
 %  does lenses have drawbacks ?
-While none of them are fully certified against the standard BX theory well-behavedness.
+%While none of them are fully certified against the standard BX theory well-behavedness.
 %
-In this paper, we carefully designed a putback-based core language which is fully certified.
+%In this paper, we carefully designed a putback-based core language which is fully certified.
 \end{abstract}
 
 \section{Introduction}
@@ -872,7 +886,8 @@ The |^^^DecEq V| argument of |caseV-lens|, which expands to |(v v' : V) -> (v â‰
 \todo[inline]{The checks used in |view-rearrangement-iso| are state-based, and consequently the correctness proofs become nontrivial as we need to identify and establish state invariants.
 These checks, however, can be easily implemented in a not fully dependently typed language, so it is straightforward to port the \Agda\ implementation to \Haskell\ for practical applications, as will be discussed in \autoref{sec:discussion}.}
 
-\input{relatedwork}
+%\input{relatedwork}
+\input{conclusion}
 
 \bibliographystyle{plain}
 \bibliography{ref}

@@ -1,0 +1,33 @@
+\section{Conclusion}
+\label{sec:con}
+% reification ?
+While putback-based bidirectional programming opens a new research area,
+it offers a challenge to ensure well-behavedness of complex putback transformations.
+In this paper, we design and implement a fully-certified core language \BiGUL\
+that can support development of robust putback transformations.
+Though not being so friendly for programmers, it is expressive enough to serve as the core 
+for other general putback-based BX languages such as \textsc{BiFluX}. 
+Different from the core language for
+put-based bidirectional programming, it has two 
+distinguishing operations, the align operation and the extended case analysis 
+operation with adaption capability. We have successfully given a proof-carrying semantics
+of \BiGUL using the dependently typed programming language \Agda,
+showing that a $get$ can be derived automatically from $put$, and that the pair of $get$ and $put$ 
+does form a well-behaved bidirectional transformation. 
+
+% programming.
+%which aims to make BX to be deployed for really practical usages.
+%Thus not only allow specifying flexibility over the updates like existing putback-based languages,
+%but also need fully guarantee the correctness of derived $get$.
+%\BiGUL\ is a datatype-generic, and fully certified BX core language
+%which can be served as the base for other putback-based languages,
+%and it is indeed that BiFLuX can be translated into \BiGUL.
+%\todo[inline]{Towards a dependently typed version}
+
+%Currently alignment only handles the case that
+%elements with the same matching key in both source and view are unique
+%%, which indicates the update operations after alignment focus on single source/view element.
+%, but in fact there are situations that more than one elements have the same matching key value,
+%the result would be a list of elements for both source and view.
+
+
