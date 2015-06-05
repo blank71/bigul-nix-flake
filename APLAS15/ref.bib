@@ -22,7 +22,6 @@ In this paper, we address all three limitations. Specifically, we present an imp
 	Doi = {10.1145/1411203.1411209},
 	Pages = {3-14},
 	Publisher = {ACM},
-	Series = {ICFP'08},
 	Title = {\textsc{Flux}: functional updates for {XML}},
 	Year = {2008},
 	Bdsk-File-1 = {YnBsaXN0MDDUAQIDBAUGJCVYJHZlcnNpb25YJG9iamVjdHNZJGFyY2hpdmVyVCR0b3ASAAGGoKgHCBMUFRYaIVUkbnVsbNMJCgsMDxJXTlMua2V5c1pOUy5vYmplY3RzViRjbGFzc6INDoACgAOiEBGABIAFgAdccmVsYXRpdmVQYXRoWWFsaWFzRGF0YV8QUi4uLy4uLy4uL0RvY3VtZW50cy9CaWJSZXBvc2l0b3J5L0NoZW5leSAyMDA4IC0gRkxVWCBmdW5jdGlvbmFsIHVwZGF0ZXMgZm9yIFhNTC5wZGbSFwsYGVdOUy5kYXRhTxECBgAAAAACBgACAAAET1MgWAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0TXuQkgrAAAADoBCH0NoZW5leSAyMDA4IC0gRkxVWCBmdSNFODQ3My5wZGYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOhHPQdoNDAAAAAAAAAAAAAwADAAAJIAAAAAAAAAAAAAAAAAAAAA1CaWJSZXBvc2l0b3J5AAAQAAgAANE1b7IAAAARAAgAANB2BLMAAAABABAADoBCAAxjjgAMYowAAACwAAIATU9TIFg6VXNlcnM6AGpvc2hrbzoARG9jdW1lbnRzOgBCaWJSZXBvc2l0b3J5OgBDaGVuZXkgMjAwOCAtIEZMVVggZnUjRTg0NzMucGRmAAAOAGQAMQBDAGgAZQBuAGUAeQAgADIAMAAwADgAIAAtACAARgBMAFUAWAAgAGYAdQBuAGMAdABpAG8AbgBhAGwAIAB1AHAAZABhAHQAZQBzACAAZgBvAHIAIABYAE0ATAAuAHAAZABmAA8ACgAEAE8AUwAgAFgAEgBWVXNlcnMvam9zaGtvL0RvY3VtZW50cy9CaWJSZXBvc2l0b3J5L0NoZW5leSAyMDA4IC0gRkxVWCBmdW5jdGlvbmFsIHVwZGF0ZXMgZm9yIFhNTC5wZGYAEwABLwAAFQACAA3//wAAgAbSGxwdHlokY2xhc3NuYW1lWCRjbGFzc2VzXU5TTXV0YWJsZURhdGGjHR8gVk5TRGF0YVhOU09iamVjdNIbHCIjXE5TRGljdGlvbmFyeaIiIF8QD05TS2V5ZWRBcmNoaXZlctEmJ1Ryb290gAEACAARABoAIwAtADIANwBAAEYATQBVAGAAZwBqAGwAbgBxAHMAdQB3AIQAjgDjAOgA8AL6AvwDAQMMAxUDIwMnAy4DNwM8A0kDTANeA2EDZgAAAAAAAAIBAAAAAAAAACgAAAAAAAAAAAAAAAAAAANo},
@@ -44,7 +43,7 @@ In this paper, we address all three limitations. Specifically, we present an imp
 @article{Foster-lenses,
 	Abstract = {We propose a novel approach to the view-update problem for tree-structured data: a domain-specific programming language in which all expressions denote bidirectional transformations on trees. In one direction, these transformations---dubbed lenses---map a concrete tree into a simplified abstract view; in the other, they map a modified abstract view, together with the original concrete tree, to a correspondingly modified concrete tree. Our design emphasizes both robustness and ease of use, guaranteeing strong well-behavedness and totality properties for well-typed lenses.
 We begin by identifying a natural space of well-behaved bidirectional transformations over arbitrary structures, studying definedness and continuity in this setting. We then instantiate this semantic framework in the form of a collection of lens combinators that can be assembled to describe bidirectional transformations on trees. These combinators include familiar constructs from functional programming (composition, mapping, projection, conditionals, recursion) together with some novel primitives for manipulating trees (splitting, pruning, merging, etc.). We illustrate the expressiveness of these combinators by developing a number of bidirectional list-processing transformations as derived forms. An extended example shows how our combinators can be used to define a lens that translates between a native HTML representation of browser bookmarks and a generic abstract bookmark format.},
-	Author = {Foster, J. Nathan and Greenwald, Michael B. and Moore, Jonathan T. and Pierce, Benjamin C. and Schmitt, Alan},
+	Author = {Foster, J. N. and Greenwald, M. B. and Moore, J. T. and Pierce, B. C. and Schmitt, A.},
 	Date-Added = {2015-05-31 07:58:04 +0000},
 	Date-Modified = {2015-05-31 07:58:04 +0000},
 	Doi = {10.1145/1232420.1232424},
@@ -59,7 +58,7 @@ We begin by identifying a natural space of well-behaved bidirectional transforma
 @inproceedings{Gibbons-BMF,
 	Abstract = {The Bird-Meertens Formalism, or 'Squiggol', is a calculus for the construction of programs from their specifications by a process of equational reasoning. Developments are directed by considerations of data, as opposed to program, structure.
 This paper presents a brief introduction to the philosophy and notation of the calculus, in the guise of the (well-known) derivation of a linear-time solution to the 'maximum segment sum' problem.},
-	Author = {Gibbons, Jeremy},
+	Author = {Gibbons, J.},
 	Booktitle = {New Zealand Formal Program Development Colloquium},
 	Date-Added = {2015-05-31 07:58:04 +0000},
 	Date-Modified = {2015-05-31 07:58:04 +0000},
@@ -71,7 +70,7 @@ This paper presents a brief introduction to the philosophy and notation of the c
 
 @incollection{Gibbons-calculating-functional-programs,
 	Abstract = {Functional programs are merely equations; they may be manipulated by straightforward equational reasoning. In particular, one can use this style of reasoning to calculate programs, in the same way that one calculates numeric values in arithmetic. Many useful theorems for such reasoning derive from an algebraic view of programs, built around datatypes and their operations. Traditional algebraic methods concentrate on initial algebras, constructors, and values; dual co-algebraic methods concentrate on final co-algebras, destructors, and processes. Both methods are elegant and powerful; they deserve to be combined.},
-	Author = {Gibbons, Jeremy},
+	Author = {Gibbons, J.},
 	Booktitle = {Algebraic and Coalgebraic Methods in the Mathematics of Program Construction},
 	Chapter = {5},
 	Date-Added = {2015-05-31 07:58:04 +0000},
@@ -80,27 +79,25 @@ This paper presents a brief introduction to the philosophy and notation of the c
 	Number = {2297},
 	Pages = {149-201},
 	Publisher = {Springer-Verlag},
-	Series = {Lecture Notes in Computer Science},
 	Title = {Calculating Functional Programs},
 	Year = {2002},
 	Bdsk-File-1 = {YnBsaXN0MDDUAQIDBAUGJCVYJHZlcnNpb25YJG9iamVjdHNZJGFyY2hpdmVyVCR0b3ASAAGGoKgHCBMUFRYaIVUkbnVsbNMJCgsMDxJXTlMua2V5c1pOUy5vYmplY3RzViRjbGFzc6INDoACgAOiEBGABIAFgAdccmVsYXRpdmVQYXRoWWFsaWFzRGF0YV8QUy4uLy4uLy4uL0RvY3VtZW50cy9CaWJSZXBvc2l0b3J5L0dpYmJvbnMgMjAwMiAtIENhbGN1bGF0aW5nIEZ1bmN0aW9uYWwgUHJvZ3JhbXMucGRm0hcLGBlXTlMuZGF0YU8RAgoAAAAAAgoAAgAABE9TIFgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANE17kJIKwAAAA6AQh9HaWJib25zIDIwMDIgLSBDYWxjdWwjRTg0QjQucGRmAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADoS00JY9rQAAAAAAAAAAAAMAAwAACSAAAAAAAAAAAAAAAAAAAAANQmliUmVwb3NpdG9yeQAAEAAIAADRNW+yAAAAEQAIAADQlb8dAAAAAQAQAA6AQgAMY44ADGKMAAAAsAACAE1PUyBYOlVzZXJzOgBqb3Noa286AERvY3VtZW50czoAQmliUmVwb3NpdG9yeToAR2liYm9ucyAyMDAyIC0gQ2FsY3VsI0U4NEI0LnBkZgAADgBmADIARwBpAGIAYgBvAG4AcwAgADIAMAAwADIAIAAtACAAQwBhAGwAYwB1AGwAYQB0AGkAbgBnACAARgB1AG4AYwB0AGkAbwBuAGEAbAAgAFAAcgBvAGcAcgBhAG0AcwAuAHAAZABmAA8ACgAEAE8AUwAgAFgAEgBXVXNlcnMvam9zaGtvL0RvY3VtZW50cy9CaWJSZXBvc2l0b3J5L0dpYmJvbnMgMjAwMiAtIENhbGN1bGF0aW5nIEZ1bmN0aW9uYWwgUHJvZ3JhbXMucGRmAAATAAEvAAAVAAIADf//AACABtIbHB0eWiRjbGFzc25hbWVYJGNsYXNzZXNdTlNNdXRhYmxlRGF0YaMdHyBWTlNEYXRhWE5TT2JqZWN00hscIiNcTlNEaWN0aW9uYXJ5oiIgXxAPTlNLZXllZEFyY2hpdmVy0SYnVHJvb3SAAQAIABEAGgAjAC0AMgA3AEAARgBNAFUAYABnAGoAbABuAHEAcwB1AHcAhACOAOQA6QDxAv8DAQMGAxEDGgMoAywDMwM8A0EDTgNRA2MDZgNrAAAAAAAAAgEAAAAAAAAAKAAAAAAAAAAAAAAAAAAAA20=}}
 
 @inproceedings{Hu-putback-validity,
-	Author = {Hu, Zhenjiang and Pacheco, Hugo and Fischer, Sebastian},
+	Author = {Hu, Z. and Pacheco, H. and Fischer, S.},
 	Booktitle = {International Symposium on Formal Methods},
 	Date-Added = {2015-05-31 07:58:04 +0000},
 	Date-Modified = {2015-05-31 07:58:04 +0000},
 	Doi = {10.1007/978-3-319-06410-9_1},
 	Pages = {1-15},
 	Publisher = {Springer-Verlag},
-	Series = {Lecture Notes in Computer Science},
 	Title = {Validity Checking of Putback Transformations in Bidirectional Programming},
 	Volume = {8442},
 	Year = {2014},
 	Bdsk-File-1 = {YnBsaXN0MDDUAQIDBAUGJCVYJHZlcnNpb25YJG9iamVjdHNZJGFyY2hpdmVyVCR0b3ASAAGGoKgHCBMUFRYaIVUkbnVsbNMJCgsMDxJXTlMua2V5c1pOUy5vYmplY3RzViRjbGFzc6INDoACgAOiEBGABIAFgAdccmVsYXRpdmVQYXRoWWFsaWFzRGF0YV8Qfi4uLy4uLy4uL0RvY3VtZW50cy9CaWJSZXBvc2l0b3J5L0h1IGV0IGFsIDIwMTQgLSBWYWxpZGl0eSBDaGVja2luZyBvZiBQdXRiYWNrIFRyYW5zZm9ybWF0aW9ucyBpbiBCaWRpcmVjdGlvbmFsIFByb2dyYW1taW5nLnBkZtIXCxgZV05TLmRhdGFPEQKKAAAAAAKKAAIAAARPUyBYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADRNe5CSCsAAAAOgEIfSHUgZXQgYWwgMjAxNCAtIFZhbGlkI0U4NEU1LnBkZgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6E5dBZ0PMAAAAAAAAAAAADAAMAAAkgAAAAAAAAAAAAAAAAAAAADUJpYlJlcG9zaXRvcnkAABAACAAA0TVvsgAAABEACAAA0FlSYwAAAAEAEAAOgEIADGOOAAxijAAAALAAAgBNT1MgWDpVc2VyczoAam9zaGtvOgBEb2N1bWVudHM6AEJpYlJlcG9zaXRvcnk6AEh1IGV0IGFsIDIwMTQgLSBWYWxpZCNFODRFNS5wZGYAAA4AvABdAEgAdQAgAGUAdAAgAGEAbAAgADIAMAAxADQAIAAtACAAVgBhAGwAaQBkAGkAdAB5ACAAQwBoAGUAYwBrAGkAbgBnACAAbwBmACAAUAB1AHQAYgBhAGMAawAgAFQAcgBhAG4AcwBmAG8AcgBtAGEAdABpAG8AbgBzACAAaQBuACAAQgBpAGQAaQByAGUAYwB0AGkAbwBuAGEAbAAgAFAAcgBvAGcAcgBhAG0AbQBpAG4AZwAuAHAAZABmAA8ACgAEAE8AUwAgAFgAEgCCVXNlcnMvam9zaGtvL0RvY3VtZW50cy9CaWJSZXBvc2l0b3J5L0h1IGV0IGFsIDIwMTQgLSBWYWxpZGl0eSBDaGVja2luZyBvZiBQdXRiYWNrIFRyYW5zZm9ybWF0aW9ucyBpbiBCaWRpcmVjdGlvbmFsIFByb2dyYW1taW5nLnBkZgATAAEvAAAVAAIADf//AACABtIbHB0eWiRjbGFzc25hbWVYJGNsYXNzZXNdTlNNdXRhYmxlRGF0YaMdHyBWTlNEYXRhWE5TT2JqZWN00hscIiNcTlNEaWN0aW9uYXJ5oiIgXxAPTlNLZXllZEFyY2hpdmVy0SYnVHJvb3SAAQAIABEAGgAjAC0AMgA3AEAARgBNAFUAYABnAGoAbABuAHEAcwB1AHcAhACOAQ8BFAEcA6oDrAOxA7wDxQPTA9cD3gPnA+wD+QP8BA4EEQQWAAAAAAAAAgEAAAAAAAAAKAAAAAAAAAAAAAAAAAAABBg=}}
 
 @article{Moggi-monads,
-	Author = {Moggi, Eugenio},
+	Author = {Moggi, E.},
 	Date-Added = {2015-05-31 07:58:04 +0000},
 	Date-Modified = {2015-05-31 07:58:04 +0000},
 	Doi = {10.1016/0890-5401(91)90052-4},
@@ -116,14 +113,13 @@ This paper presents a brief introduction to the philosophy and notation of the c
 	Abstract = {Different XML formats are widely used for data exchange and processing, being often necessary to mutually convert between them. Standard XML transformation languages, like XSLT or XQuery, are unsatisfactory for this purpose since they require writing a separate transformation for each direction. Existing bidirectional transformation languages mean to cover this gap, by allowing programmers to write a single program that denotes both transformations. However, they often 1) induce a more cumbersome programming style than their traditionally unidirectional relatives, to establish the link between source and target formats, and 2) offer limited configurability, by making implicit assumptions about how modifications to both formats should be translated that may not be easy to predict.
 
 This paper proposes a bidirectional XML update language called BIFLUX (BIdirectional FunctionaL Updates for XML), inspired by the FLUX XML update language. Our language adopts a novel bidirectional programming by update paradigm, where a program succinctly and precisely describes how to update a source document with a target document, in an intuitive way, such that there is a unique ``inverse'' source query for each update program. BIFLUX extends FLUX with bidirectional actions that describe the connection between source and target formats. We introduce a core BIFLUX language, with a clear and well-behaved bidirectional semantics and a decidable static type system based on regular expression types.},
-	Author = {Pacheco, Hugo and Zan, Tao and Hu, Zhenjiang},
+	Author = {Pacheco, H. and Zan, T. and Hu, Z.},
 	Booktitle = {Principles and Practice of Declarative Programming},
 	Date-Added = {2015-05-31 07:58:04 +0000},
 	Date-Modified = {2015-05-31 07:58:04 +0000},
 	Doi = {10.1145/2643135.2643141},
 	Pages = {147-158},
 	Publisher = {ACM},
-	Series = {PPDP'14},
 	Title = {{BiFluX}: A Bidirectional Functional Update Language for {XML}},
 	Year = {2014},
 	Bdsk-File-1 = {YnBsaXN0MDDUAQIDBAUGJCVYJHZlcnNpb25YJG9iamVjdHNZJGFyY2hpdmVyVCR0b3ASAAGGoKgHCBMUFRYaIVUkbnVsbNMJCgsMDxJXTlMua2V5c1pOUy5vYmplY3RzViRjbGFzc6INDoACgAOiEBGABIAFgAdccmVsYXRpdmVQYXRoWWFsaWFzRGF0YV8Qcy4uLy4uLy4uL0RvY3VtZW50cy9CaWJSZXBvc2l0b3J5L1BhY2hlY28gZXQgYWwgMjAxNCAtIEJpRmx1WCBBIEJpZGlyZWN0aW9uYWwgRnVuY3Rpb25hbCBVcGRhdGUgTGFuZ3VhZ2UgZm9yIFhNTC5wZGbSFwsYGVdOUy5kYXRhTxECagAAAAACagACAAAET1MgWAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0TXuQkgrAAAADoBCH1BhY2hlY28gZXQgYWwgMjAxNCAtICNFODU1My5wZGYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOhVPQUa4TAAAAAAAAAAAAAwADAAAJIAAAAAAAAAAAAAAAAAAAAA1CaWJSZXBvc2l0b3J5AAAQAAgAANE1b7IAAAARAAgAANBRL4MAAAABABAADoBCAAxjjgAMYowAAACwAAIATU9TIFg6VXNlcnM6AGpvc2hrbzoARG9jdW1lbnRzOgBCaWJSZXBvc2l0b3J5OgBQYWNoZWNvIGV0IGFsIDIwMTQgLSAjRTg1NTMucGRmAAAOAKYAUgBQAGEAYwBoAGUAYwBvACAAZQB0ACAAYQBsACAAMgAwADEANAAgAC0AIABCAGkARgBsAHUAWAAgAEEAIABCAGkAZABpAHIAZQBjAHQAaQBvAG4AYQBsACAARgB1AG4AYwB0AGkAbwBuAGEAbAAgAFUAcABkAGEAdABlACAATABhAG4AZwB1AGEAZwBlACAAZgBvAHIAIABYAE0ATAAuAHAAZABmAA8ACgAEAE8AUwAgAFgAEgB3VXNlcnMvam9zaGtvL0RvY3VtZW50cy9CaWJSZXBvc2l0b3J5L1BhY2hlY28gZXQgYWwgMjAxNCAtIEJpRmx1WCBBIEJpZGlyZWN0aW9uYWwgRnVuY3Rpb25hbCBVcGRhdGUgTGFuZ3VhZ2UgZm9yIFhNTC5wZGYAABMAAS8AABUAAgAN//8AAIAG0hscHR5aJGNsYXNzbmFtZVgkY2xhc3Nlc11OU011dGFibGVEYXRhox0fIFZOU0RhdGFYTlNPYmplY3TSGxwiI1xOU0RpY3Rpb25hcnmiIiBfEA9OU0tleWVkQXJjaGl2ZXLRJidUcm9vdIABAAgAEQAaACMALQAyADcAQABGAE0AVQBgAGcAagBsAG4AcQBzAHUAdwCEAI4BBAEJAREDfwOBA4YDkQOaA6gDrAOzA7wDwQPOA9ED4wPmA+sAAAAAAAACAQAAAAAAAAAoAAAAAAAAAAAAAAAAAAAD7Q==}}
@@ -135,14 +131,13 @@ In this paper, we argue that controlling such ambiguity is essential for bidirec
 
 We demonstrate the practical power of the new approach through a series of examples, ranging from simple ones that illustrate traditional lenses to complex ones for which our putback-based approach is central to specifying nontrivial update strategies.
 },
-	Author = {Pacheco, Hugo and Hu, Zhenjiang and Fischer, Sebastian},
+	Author = {Pacheco, H. and Hu, Z. and Fischer, S.},
 	Booktitle = {Partial Evaluation and Program Manipulation},
 	Date-Added = {2015-05-31 07:58:04 +0000},
 	Date-Modified = {2015-05-31 07:58:04 +0000},
 	Doi = {10.1145/2543728.2543737},
 	Pages = {39-50},
 	Publisher = {ACM},
-	Series = {PEPM'14},
 	Title = {Monadic combinators for ``Putback'' style bidirectional programming},
 	Year = {2014},
 	Bdsk-File-1 = {YnBsaXN0MDDUAQIDBAUGJCVYJHZlcnNpb25YJG9iamVjdHNZJGFyY2hpdmVyVCR0b3ASAAGGoKgHCBMUFRYaIVUkbnVsbNMJCgsMDxJXTlMua2V5c1pOUy5vYmplY3RzViRjbGFzc6INDoACgAOiEBGABIAFgAdccmVsYXRpdmVQYXRoWWFsaWFzRGF0YV8QfS4uLy4uLy4uL0RvY3VtZW50cy9CaWJSZXBvc2l0b3J5L1BhY2hlY28gZXQgYWwgMjAxNCAtIE1vbmFkaWMgY29tYmluYXRvcnMgZm9yIGBgUHV0YmFjaycnIHN0eWxlIGJpZGlyZWN0aW9uYWwgcHJvZ3JhbW1pbmcucGRm0hcLGBlXTlMuZGF0YU8RAogAAAAAAogAAgAABE9TIFgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANE17kJIKwAAAA6AQh9QYWNoZWNvIGV0IGFsIDIwMTQgLSAjRTg1NTQucGRmAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADoVU0FRHIgAAAAAAAAAAAAMAAwAACSAAAAAAAAAAAAAAAAAAAAANQmliUmVwb3NpdG9yeQAAEAAIAADRNW+yAAAAEQAIAADQU8iSAAAAAQAQAA6AQgAMY44ADGKMAAAAsAACAE1PUyBYOlVzZXJzOgBqb3Noa286AERvY3VtZW50czoAQmliUmVwb3NpdG9yeToAUGFjaGVjbyBldCBhbCAyMDE0IC0gI0U4NTU0LnBkZgAADgC6AFwAUABhAGMAaABlAGMAbwAgAGUAdAAgAGEAbAAgADIAMAAxADQAIAAtACAATQBvAG4AYQBkAGkAYwAgAGMAbwBtAGIAaQBuAGEAdABvAHIAcwAgAGYAbwByACAAYABgAFAAdQB0AGIAYQBjAGsAJwAnACAAcwB0AHkAbABlACAAYgBpAGQAaQByAGUAYwB0AGkAbwBuAGEAbAAgAHAAcgBvAGcAcgBhAG0AbQBpAG4AZwAuAHAAZABmAA8ACgAEAE8AUwAgAFgAEgCBVXNlcnMvam9zaGtvL0RvY3VtZW50cy9CaWJSZXBvc2l0b3J5L1BhY2hlY28gZXQgYWwgMjAxNCAtIE1vbmFkaWMgY29tYmluYXRvcnMgZm9yIGBgUHV0YmFjaycnIHN0eWxlIGJpZGlyZWN0aW9uYWwgcHJvZ3JhbW1pbmcucGRmAAATAAEvAAAVAAIADf//AACABtIbHB0eWiRjbGFzc25hbWVYJGNsYXNzZXNdTlNNdXRhYmxlRGF0YaMdHyBWTlNEYXRhWE5TT2JqZWN00hscIiNcTlNEaWN0aW9uYXJ5oiIgXxAPTlNLZXllZEFyY2hpdmVy0SYnVHJvb3SAAQAIABEAGgAjAC0AMgA3AEAARgBNAFUAYABnAGoAbABuAHEAcwB1AHcAhACOAQ4BEwEbA6cDqQOuA7kDwgPQA9QD2wPkA+kD9gP5BAsEDgQTAAAAAAAAAgEAAAAAAAAAKAAAAAAAAAAAAAAAAAAABBU=}}
@@ -158,20 +153,19 @@ We demonstrate the practical power of the new approach through a series of examp
 	Bdsk-File-1 = {YnBsaXN0MDDUAQIDBAUGJCVYJHZlcnNpb25YJG9iamVjdHNZJGFyY2hpdmVyVCR0b3ASAAGGoKgHCBMUFRYaIVUkbnVsbNMJCgsMDxJXTlMua2V5c1pOUy5vYmplY3RzViRjbGFzc6INDoACgAOiEBGABIAFgAdccmVsYXRpdmVQYXRoWWFsaWFzRGF0YV8Qhy4uLy4uLy4uL0RvY3VtZW50cy9CaWJSZXBvc2l0b3J5L1RoZSBVbml2YWxlbnQgRm91bmRhdGlvbnMgUHJvZ3JhbSAyMDEzIC0gSG9tb3RvcHkgVHlwZSBUaGVvcnkgVW5pdmFsZW50IEZvdW5kYXRpb25zIG9mIE1hdGhlbWF0aWNzLnBkZtIXCxgZV05TLmRhdGFPEQKmAAAAAAKmAAIAAARPUyBYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADRNe5CSCsAAAAOgEIfVGhlIFVuaXZhbGVudCBGb3VuZGF0I0U4NUEyLnBkZgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA6FotCBXfUAAAAAAAAAAAADAAMAAAkgAAAAAAAAAAAAAAAAAAAADUJpYlJlcG9zaXRvcnkAABAACAAA0TVvsgAAABEACAAA0IDfZQAAAAEAEAAOgEIADGOOAAxijAAAALAAAgBNT1MgWDpVc2VyczoAam9zaGtvOgBEb2N1bWVudHM6AEJpYlJlcG9zaXRvcnk6AFRoZSBVbml2YWxlbnQgRm91bmRhdCNFODVBMi5wZGYAAA4AzgBmAFQAaABlACAAVQBuAGkAdgBhAGwAZQBuAHQAIABGAG8AdQBuAGQAYQB0AGkAbwBuAHMAIABQAHIAbwBnAHIAYQBtACAAMgAwADEAMwAgAC0AIABIAG8AbQBvAHQAbwBwAHkAIABUAHkAcABlACAAVABoAGUAbwByAHkAIABVAG4AaQB2AGEAbABlAG4AdAAgAEYAbwB1AG4AZABhAHQAaQBvAG4AcwAgAG8AZgAgAE0AYQB0AGgAZQBtAGEAdABpAGMAcwAuAHAAZABmAA8ACgAEAE8AUwAgAFgAEgCLVXNlcnMvam9zaGtvL0RvY3VtZW50cy9CaWJSZXBvc2l0b3J5L1RoZSBVbml2YWxlbnQgRm91bmRhdGlvbnMgUHJvZ3JhbSAyMDEzIC0gSG9tb3RvcHkgVHlwZSBUaGVvcnkgVW5pdmFsZW50IEZvdW5kYXRpb25zIG9mIE1hdGhlbWF0aWNzLnBkZgAAEwABLwAAFQACAA3//wAAgAbSGxwdHlokY2xhc3NuYW1lWCRjbGFzc2VzXU5TTXV0YWJsZURhdGGjHR8gVk5TRGF0YVhOU09iamVjdNIbHCIjXE5TRGljdGlvbmFyeaIiIF8QD05TS2V5ZWRBcmNoaXZlctEmJ1Ryb290gAEACAARABoAIwAtADIANwBAAEYATQBVAGAAZwBqAGwAbgBxAHMAdQB3AIQAjgEYAR0BJQPPA9ED1gPhA+oD+AP8BAMEDAQRBB4EIQQzBDYEOwAAAAAAAAIBAAAAAAAAACgAAAAAAAAAAAAAAAAAAAQ9}}
 
 @inproceedings{Wadler-essence,
-	Author = {Wadler, Philip},
+	Author = {Wadler, P.},
 	Booktitle = {Principles of Programming Languages},
 	Date-Added = {2015-05-31 07:58:04 +0000},
 	Date-Modified = {2015-05-31 07:58:04 +0000},
 	Doi = {10.1145/143165.143169},
 	Pages = {1-14},
 	Publisher = {ACM},
-	Series = {POPL'92},
 	Title = {The Essence of Functional Programming},
 	Year = {1992},
 	Bdsk-File-1 = {YnBsaXN0MDDUAQIDBAUGJCVYJHZlcnNpb25YJG9iamVjdHNZJGFyY2hpdmVyVCR0b3ASAAGGoKgHCBMUFRYaIVUkbnVsbNMJCgsMDxJXTlMua2V5c1pOUy5vYmplY3RzViRjbGFzc6INDoACgAOiEBGABIAFgAdccmVsYXRpdmVQYXRoWWFsaWFzRGF0YV8QWC4uLy4uLy4uL0RvY3VtZW50cy9CaWJSZXBvc2l0b3J5L1dhZGxlciAxOTkyIC0gVGhlIEVzc2VuY2Ugb2YgRnVuY3Rpb25hbCBQcm9ncmFtbWluZy5wZGbSFwsYGVdOUy5kYXRhTxECGAAAAAACGAACAAAET1MgWAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0TXuQkgrAAAADoBCH1dhZGxlciAxOTkyIC0gVGhlIEVzcyNFODVCQS5wZGYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOhbrOsEFxAAAAAAAAAAAAAwADAAAJIAAAAAAAAAAAAAAAAAAAAA1CaWJSZXBvc2l0b3J5AAAQAAgAANE1b7IAAAARAAgAAM6vwuEAAAABABAADoBCAAxjjgAMYowAAACwAAIATU9TIFg6VXNlcnM6AGpvc2hrbzoARG9jdW1lbnRzOgBCaWJSZXBvc2l0b3J5OgBXYWRsZXIgMTk5MiAtIFRoZSBFc3MjRTg1QkEucGRmAAAOAHAANwBXAGEAZABsAGUAcgAgADEAOQA5ADIAIAAtACAAVABoAGUAIABFAHMAcwBlAG4AYwBlACAAbwBmACAARgB1AG4AYwB0AGkAbwBuAGEAbAAgAFAAcgBvAGcAcgBhAG0AbQBpAG4AZwAuAHAAZABmAA8ACgAEAE8AUwAgAFgAEgBcVXNlcnMvam9zaGtvL0RvY3VtZW50cy9CaWJSZXBvc2l0b3J5L1dhZGxlciAxOTkyIC0gVGhlIEVzc2VuY2Ugb2YgRnVuY3Rpb25hbCBQcm9ncmFtbWluZy5wZGYAEwABLwAAFQACAA3//wAAgAbSGxwdHlokY2xhc3NuYW1lWCRjbGFzc2VzXU5TTXV0YWJsZURhdGGjHR8gVk5TRGF0YVhOU09iamVjdNIbHCIjXE5TRGljdGlvbmFyeaIiIF8QD05TS2V5ZWRBcmNoaXZlctEmJ1Ryb290gAEACAARABoAIwAtADIANwBAAEYATQBVAGAAZwBqAGwAbgBxAHMAdQB3AIQAjgDpAO4A9gMSAxQDGQMkAy0DOwM/A0YDTwNUA2EDZAN2A3kDfgAAAAAAAAIBAAAAAAAAACgAAAAAAAAAAAAAAAAAAAOA}}
 
 @inproceedings{Barbosa:2010,
-	Author = {Barbosa, Davi M. J. and Cretin, Julien and Foster, J Nathan and Greenberg, Michael and Pierce, Benjamin C.},
+	Author = {Barbosa, Davi M. J. and Cretin, J. and Foster, J. N. and Greenberg, M. and Pierce, B. C.},
 	Booktitle = {International Conference on Functional Programming},
 	Date-Added = {2015-05-07 06:52:55 +0000},
 	Date-Modified = {2015-05-15 08:55:30 +0000},
@@ -183,7 +177,7 @@ We demonstrate the practical power of the new approach through a series of examp
 	Bdsk-Url-1 = {http://dx.doi.org/10.1145/1863543.1863572}}
 
 @article{Bancilhon:81,
-	Author = {Bancilhon, Fran{\c c}ois and Spyratos, Nicolas},
+	Author = {Bancilhon, F. and Spyratos, N.},
 	Date-Added = {2015-05-07 06:52:13 +0000},
 	Date-Modified = {2015-05-07 06:52:21 +0000},
 	Doi = {10.1145/319628.319634},
@@ -196,7 +190,7 @@ We demonstrate the practical power of the new approach through a series of examp
 	Bdsk-Url-1 = {http://dx.doi.org/10.1145/319628.319634}}
 
 @inproceedings{FoPP08,
-	Author = {Foster, J. Nathan and Pilkiewicz, Alexandre and Pierce, Benjamin C.},
+	Author = {Foster, J. N.  and Pilkiewicz, A. and Pierce, B. C.},
 	Booktitle = {International Conference on Functional Programming},
 	Date-Modified = {2015-05-15 08:56:05 +0000},
 	Pages = {383--396},
@@ -204,26 +198,16 @@ We demonstrate the practical power of the new approach through a series of examp
 	Title = {Quotient Lenses},
 	Year = {2008}}
 
-@inproceedings{PaHF14,
-	Author = {Pacheco, Hugo and Hu, Zhenjiang and Fischer, Sebastian},
-	Booktitle = {Partial Evaluation and Program Manipulation},
-	Date-Modified = {2015-05-15 08:57:09 +0000},
-	Doi = {10.1145/2543728.2543737},
-	Pages = {39--50},
-	Publisher = {ACM},
-	Title = {Monadic Combinators for ``Putback'' Style Bidirectional Programming},
-	Year = {2014},
-	Bdsk-Url-1 = {http://dx.doi.org/10.1145/2543728.2543737}}
 
 @phdthesis{Foster:09,
-	Author = {Foster, J. Nathan},
+	Author = {Foster, J. N. },
 	Date-Modified = {2015-05-07 06:59:11 +0000},
 	School = {University of Pennsylvania},
 	Title = {Bidirectional Programming Languages},
 	Year = {2009}}
 
 @article{Larson:1991,
-	Author = {J. A. Larson and A. P. Sheth},
+	Author = {Larson, J. A.  and Sheth, A. P. },
 	Date-Modified = {2015-05-07 07:14:47 +0000},
 	Journal = {Information Systems},
 	Number = {2},
@@ -268,39 +252,53 @@ We demonstrate the practical power of the new approach through a series of examp
 	Pages = {371--384},
 	Publisher = {ACM},
 	Title = {Symmetric lenses},
-	Year = {2011}}
+	Year = {2011},
+  numpages = {14},
+  url = {http://doi.acm.org/10.1145/1925844.1926428},
+  doi = {10.1145/1925844.1926428},
+  acmid = {1926428},
+  address = {New York, NY, USA},
+  Keywords = {algebra, category theory, lens, view-update},
+}
 
 @inproceedings{HoPW12,
-	Author = {M. Hofmann and Benjamin C. Pierce and D. Wagner},
+	Author = {Hofmann, M.  and Pierce, B. C.  and Wagner, D. },
 	Booktitle = {Principles of Programming Languages},
 	Date-Modified = {2015-05-15 08:56:17 +0000},
 	Pages = {495-508},
 	Publisher = {ACM},
 	Title = {Edit lenses},
-	Year = {2012}}
+	Year = {2012},
+  isbn = {978-1-4503-1083-3},
+  location = {Philadelphia, PA, USA},
+  numpages = {14},
+  url = {http://doi.acm.org/10.1145/2103656.2103715},
+  doi = {10.1145/2103656.2103715},
+  acmid = {2103715},
+  address = {New York, NY, USA},
+  keywords = {algebra, bidirectional programming, edit, lens, symmetric},
+}
 
 @inproceedings{PachecoCunha:10,
-	Author = {Pacheco, Hugo and Cunha, Alcino},
+	Author = {Pacheco, H. and Cunha, A.},
 	Booktitle = {Mathematics of Program Construction},
 	Date-Modified = {2015-05-07 07:16:16 +0000},
 	Pages = {331-352},
 	Publisher = {Springer-Verlag},
-	Series = {Lecture Notes in Computer Science},
 	Title = {Generic Point-free Lenses},
 	Volume = {6120},
 	Year = {2010}}
 
 @inproceedings{PachecoCunhaHu:12,
-	Author = {Pacheco, Hugo and Cunha, Alcino and Hu, Zhenjiang},
+	Author = {Pacheco, H. and Cunha, A. and Hu, Z.},
 	Booktitle = {International Workshop on Bidirectional Transformations},
 	Date-Modified = {2015-05-07 07:15:52 +0000},
-	Series = {Electronic Communications of the EASST},
 	Title = {Delta Lenses over Inductive Types},
 	Volume = {49},
 	Year = {2012}}
 
 @article{HSST11,
-	Author = {Z. Hu and A. Sch{\"u}rr and P. Stevens and J. F. Terwilliger},
+	Author = {Hu, Z.  and Sch{\"u}rr, A.  and Stevens, P.  and Terwilliger, J. F. },
 	Journal = {SIGMOD Record},
 	Number = {1},
 	Pages = {35-39},
@@ -309,7 +307,7 @@ We demonstrate the practical power of the new approach through a series of examp
 	Year = {2011}}
 
 @article{GoPZ88,
-	Author = {Georg Gottlob and Paolo Paolini and Roberto Zicari},
+	Author = {Gottlob, G.  and Paolini, P.  and Zicari, R. },
 	Date-Modified = {2015-05-07 07:01:36 +0000},
 	Journal = {ACM Transactions on Database Systems},
 	Number = {4},
@@ -319,7 +317,7 @@ We demonstrate the practical power of the new approach through a series of examp
 	Year = {1988}}
 
 @article{HuMT08,
-	Author = {Zhenjiang Hu and Shin-Cheng Mu and Masato Takeichi},
+	Author = {Hu, Z. and Mu, S. and Takeichi, M. },
 	Journal = {Higher-Order and Symbolic Computation},
 	Number = {1-2},
 	Pages = {89--118},
@@ -335,10 +333,19 @@ We demonstrate the practical power of the new approach through a series of examp
 	Pages = {205--216},
 	Publisher = {ACM},
 	Title = {Bidirectionalizing graph transformations},
-	Year = {2010}}
+	Year = {2010},
+  isbn = {978-1-60558-794-3},
+  location = {Baltimore, Maryland, USA},
+  numpages = {12},
+  url = {http://doi.acm.org/10.1145/1863543.1863573},
+  doi = {10.1145/1863543.1863573},
+  acmid = {1863573},
+  address = {New York, NY, USA},
+  keywords = {bidirectional transformation, graph query and transformation, structural recursion, view updating},
+}
 
 @inproceedings{XLHZ07,
-	Author = {Y. Xiong and D. Liu and Z. Hu and H. Zhao and M. Takeichi and H. Mei},
+	Author = {Xiong, Y.  and Liu, D.  and Hu, Z.  and Zhao, H.  and Takeichi, M. and Mei, H. },
 	Booktitle = {Automated Software Engineering},
 	Date-Modified = {2015-05-15 08:57:34 +0000},
 	Pages = {164--173},
@@ -347,7 +354,7 @@ We demonstrate the practical power of the new approach through a series of examp
 	Year = {2007}}
 
 @inproceedings{MHNHT07,
-	Author = {Kazutaka Matsuda and Zhenjiang Hu and Keisuke Nakano and Makoto Hamana and Masato Takeichi},
+	Author = {Matsuda, K. and Hu, Z. and Nakano, K. and Hamana, M. and Takeichi, M.},
 	Booktitle = {International Conference on Functional Programming},
 	Date-Modified = {2015-05-15 08:56:55 +0000},
 	Pages = {47--58},
@@ -356,7 +363,7 @@ We demonstrate the practical power of the new approach through a series of examp
 	Year = {2007}}
 
 @inproceedings{Bohannon:06,
-	Author = {A. Bohannon and B. C. Pierce and J. A. Vaughan},
+	Author = {Bohannon, A.  and Pierce, B. C.  and Vaughan, J. A. },
 	Booktitle = {Principles of Database Systems},
 	Date-Modified = {2015-05-15 08:55:36 +0000},
 	Pages = {338--347},
@@ -365,7 +372,7 @@ We demonstrate the practical power of the new approach through a series of examp
 	Year = {2006}}
 
 @article{BuCV08,
-	Author = {P. Buneman and J. Cheney and S. Vansummeren},
+	Author = { Buneman, P. and Cheney, J.  and Vansummeren, S. },
 	Journal = {ACM Transactions on Database Systems},
 	Number = {4},
 	Title = {On the expressiveness of implicit provenance in query and update languages},
@@ -373,21 +380,19 @@ We demonstrate the practical power of the new approach through a series of examp
 	Year = {2008}}
 
 @inproceedings{GRACE:09,
-	Author = {Czarnecki, K. and Foster, J. Nathan and Hu, Z. and L\"ammel, R. and Sch\"urr, A. and Terwilliger, J.},
+	Author = {Czarnecki, K. and Foster, J. N. and Hu, Z. and L\"ammel, R. and Sch\"urr, A. and Terwilliger, J.},
 	Booktitle = {International Conference on Model Transformation},
 	Date-Modified = {2015-05-07 06:55:45 +0000},
 	Pages = {260-283},
 	Publisher = {Springer-Verlag},
-	Series = {Lecture Notes in Computer Science},
 	Title = {Bidirectional Transformations: A Cross-Discipline Perspective},
 	Volume = {5563},
 	Year = {2009}}
 
 @inproceedings{Bohannon:2008:BRL:1328438.1328487,
- author = {Bohannon, Aaron and Foster, J. Nathan and Pierce, Benjamin C. and Pilkiewicz, Alexandre and Schmitt, Alan},
+ author = {Bohannon, A. and Foster, J. N. and Pierce, B. C. and Pilkiewicz, A. and Schmitt, A.},
  title = {Boomerang: Resourceful Lenses for String Data},
  booktitle = {Proceedings of the 35th Annual ACM SIGPLAN-SIGACT Symposium on Principles of Programming Languages},
- series = {POPL '08},
  year = {2008},
  isbn = {978-1-59593-689-9},
  location = {San Francisco, California, USA},
@@ -403,10 +408,9 @@ We demonstrate the practical power of the new approach through a series of examp
 
 
 @inproceedings{Liu:2007:BIX:1244381.1244386,
- author = {Liu, Dongxi and Hu, Zhenjiang and Takeichi, Masato},
+ author = {Liu, D. and Hu, Z. and Takeichi, M.},
  title = {Bidirectional Interpretation of XQuery},
  booktitle = {Proceedings of the 2007 ACM SIGPLAN Symposium on Partial Evaluation and Semantics-based Program Manipulation},
- series = {PEPM '07},
  year = {2007},
  isbn = {978-1-59593-620-2},
  location = {Nice, France},
@@ -421,10 +425,9 @@ We demonstrate the practical power of the new approach through a series of examp
 } 
 
 @inproceedings{Nore08,
- author = {Norell, Ulf},
+ author = {Norell, U.},
  title = {Dependently Typed Programming in Agda},
  booktitle = {Proceedings of the 6th International Conference on Advanced Functional Programming},
- series = {AFP'08},
  year = {2009},
  isbn = {3-642-04651-7, 978-3-642-04651-3},
  location = {Heijen, The Netherlands},
