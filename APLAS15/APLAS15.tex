@@ -184,6 +184,8 @@
 \newcommand{\reason}[1]{\quad\{\,\text{#1}\,\}}
 
 \newcommand{\BiGUL}{\textsc{BiGUL}}
+\newcommand{\Putlenses}{\textsc{Putlenses}}
+\newcommand{\BiFluX}{\textsc{BiFluX}}
 \newcommand{\Agda}{\textsc{Agda}}
 \newcommand{\Haskell}{\textsc{Haskell}}
 \newcommand{\BiYacc}{\textsc{BiYacc}}
@@ -221,10 +223,116 @@ While none of them are fully certified against the standard BX theory well-behav
 In this paper, we carefully designed a putback-based core language which is fully certified.
 \end{abstract}
 
-\input{introduction}
+\section{Introduction}
+\label{sec:introduction}
+% Sketch:
+%   1. Brief introduce BX, and then Start from Put-based BX
+%   2. Talk the problem of Putlenses, BiFluX
+%   3. Give our solution
+%   4. Show the advantages
+
+% Revise: emphasis on Formally verified,
+%         also state Minimal but useful enough since it is a core for BiFluX.
+
+% 1.
+%   data replica
+%   Internet of Things
+%   information explosion
+%   Maybe Remove this sentence.
+%Due to the increase in technology, smart devices for different purpose are developed, thus come into an explosion in the number of devices and information.
+%The duplication of information among different devices makes it hard to be kept consistent which is an important issue.
+% BX for synchronization
+\emph{Bidirectional transformations}~(BXs)~\cite{GRACE:09} provide a novel mechanism for maintaining consistency between two pieces of related information, one referred to as the source and the other the view.
+A bidirectional transformation consists of a pair of transformations ---
+a forward |get| which extracts information from a source to construct an abstract view,
+and a backward |put| which embeds information of a view back into a source, producing an updated source --- and this pair of transformations should be \emph{well-behaved}, i.e., they should satisfy two round-tripping laws (|PutGet| and |GetPut|; see \autoref{sec:BX}).
+ % (source and view).
+% From language approach: bx languages.
+Since it takes a lot of effort to write both transformations and also guarantee their well-behavedness,
+many bidirectional programming languages~\cite{Foster-lenses,Bohannon:06,MHNHT07,Hidaka:10,PachecoCunha:10,Barbosa:2010,Hofmann:2011,FoPP08,HoPW12} have been designed
+to aid the user in writing bidirectional transformations,
+with which the user only needs to write one program that can be interpreted either as |get| or |put|, and the two interpretations are guaranteed to be well-behaved.
+%The correctness of this BX program is guaranteed by well-behavedness~\cite{Lenses}.
+
+Most existing approaches to BXs are \emph{|get|-based}, in the sense that the system asks the user to write BX programs describing a |get|, % describing how to construct a view form a source
+and derives a backward |put| for free.
+The major problem with the |get|-based approach is that there are usually more than one \emph{incomparable} |put|s for a |get|~\cite{BuCV08}, and thus the backward behaviour of a |get|-based program becomes ambiguous and unpredictable.
 %
-%\section{Introduction}
-%\label{sec:introduction}
+To remedy this situation, a dual \emph{putback-based} approach was proposed recently to support writing BXs in terms of |put| instead of |get|~\cite{Fischer-essence-of-BX}.
+The behaviour of |put| can thus be fully specified, and, unlike the |get|-based approach, the derived |get| is guaranteed to be unique and thus unambiguous.
+The combinator library \Putlenses~\cite{Pacheco-putlenses} is such a language that follows this approach, providing a set of putback-based combinators for writing complex BX programs.
+Based on \Putlenses\ and the functional XML update language \textsc{Flux}~\cite{Cheney-FLUX}, a bidirectional XML update language~\BiFluX~\cite{Pacheco-BiFluX} is also designed and implemented to demonstrate the practicality of the putback-based approach.
+%The update program user written using \textsc{BiFluX} in fact is the $put$ function, and the system derives $get$ for free.
+
+% 2. Explain the problem
+%    putlenses not fully checked ???
+%    biflux not clearly checked, or hard to check ?
+%    say: not fully, formally verified.
+Despite the advantages of full control and unambiguity of putback-based BX, languages for writing |put| (such as \BiFluX)
+are admittedly more delicate than those for writing |get|, not only because |put| --- being an update --- is inherently more complex than |get|, but also because not all updates give rise to well-behaved BXs.
+This introduces a new challenge of ensuring the well-behavedness of a |put|, in the sense that a unique |get| can indeed be derived from the |put| to form a well-behaved BX.
+\Putlenses\ and \BiFluX\ meet this challenge by inserting dynamic (runtime) checks around programmer-specified actions used in |put|, and the programmer is supposed to supply only actions that can pass these dynamic checks.
+While both languages are carefully designed, the intricate nature of these dynamic checks can still make people cast doubt on their correctness.
+
+%
+% gives opportunities to make BX really useful in real applications
+%since it lets user to have full control over the update strategy.
+%While the well-behavedness is not fully formal verified for both $putlenses$ and \textsc{BiFluX} whi%ch is the most important property for {BX}.
+%As the forward transformation $get$ is derived for free
+%and user 
+%do not need to care how $get$ is derived 
+%and not have to check the derived $get$ is correct or not manually, 
+%it is necessary to fully guarantee the program user written is well-behaved by the BX language.
+%
+% concretely explain how it is in putlenses and biflux
+% TODO: bad writing
+%For example, in \textsc{BiFluX},
+%the semantics of the basic update operator $replace$ is straight-forward
+%and the well-beahvedness for $replace$ is not checked formally,
+%and complex one like $if$ statement, the well-behavedness is checked dynamically,
+%while all of them are not formally verified.
+%Since \textsc{BiFluX} is designed for XML data,
+%it also needs to handle complex regular expressions 
+%and XML structured data which makes the program hard to check.
+
+% Needs
+
+In this paper, we take one further step along the direction of \Putlenses\ and \BiFluX\ by focusing on a small yet sufficiently powerful putback-based core language called |BiGUL|,
+which is intended to serve as a clean and safe foundation for higher-level putback-based languages, in particular \BiFluX,
+and is completely formally verified to guarantee that any |put| specified in the language is well-behaved.
+Our main contributions are two folds:
+\begin{itemize}
+\item First, |BiGUL| is a clean revision of the core of \BiFluX.
+It consists of a set of essential and orthogonal language constructs, such as 
+alignment of source and view lists, pattern matching--based independent source updates and invertible view computation, and case analyses on either source or view.
+In particular, source case analysis is revised to include the {\em adaptation} mechanism, so we can specify case analyses that can accept sources of more varied forms which previously cannot be dealt with.
+% and make 
+%it easy to verify well-behavedness.
+% for specifying different update strategies.
+% show more of BiGUL
+% show more !
+
+\item Second, the well-behavedness of |BiGUL| has been completely formally verified using the dependently typed programming language \Agda~\cite{Nore08}, so now we can fully confidently guarantee that all the inserted dynamic checks can indeed help to establish well-behavedness.
+(Full source code is available at \url{http://www.prg.nii.ac.jp/projects/bigul}.)
+Notably, we reify computation steps of monadic programs as easily manipulable data, so well-behavedness proofs --- which have to cover all possible execution traces by analysing program structure --- can be carried out just like doing ordinary functional programming.
+\end{itemize}
+% finally prove our language is well-behaved.
+%
+%We design \BiGUL\ to be minimal to make it easy for usage and property checking. 
+%For example, there is no $if$ statement in \BiGUL\ as it can be expressed as a special case of $case$ statement.
+%While the well-behavedness of \BiGUL\ is fully verified using \Agda\ language.
+
+%   4. Show the advantages
+%Our contribution can be summarised as follows:
+%\begin{itemize}
+%[leftmargin=0.3in]
+%  \item we propose a minimalist putback-based bidirectional language \BiGUL\ as a core language which is fully certified to guarantee the correctness, and served as a base for other putback-based bidirectional languages.
+%  \item A correct forward transformation $get$ is automatically constructed through \BiGUL\ programs. User concentrates on specifying $put$, our system guarantees the derived $get$ together with the $put$ is well-behaved.
+
+The rest of the paper is organised as follows:
+After explaining how to formalise and prove well-behaved BXs in \Agda\ in Section \ref{sec:BX}, we present our language |BiGUL| and its proof-carrying bidirectional semantics in Section \ref{sec:BiGUL}.
+We discuss the expressiveness and other issues in Section \ref{sec:discussion}\todo{to be revised after the discussion section is finished}, and conclude the paper in Section \ref{sec:con}.
+
 
 \section{Formalisation of well-behaved BX in \Agda}
 \label{sec:BX}
@@ -254,7 +362,7 @@ Execution of |put s v|, if successful, should produce an updated version of the 
 The |PutGet| law states that, for all |s|,~|s' : S| and |v : V|, if |put s v| successfully computes to~|s'|, then subsequently |get s'| should successfully compute to~|v|; this ensures that |put| does its job properly --- after |put| updates a source with a view, |get| can completely recover the view from the updated source.
 On the other hand, the |GetPut| law states that, for all |s : S| and |v : V|, if |get s| successfully computes to~|v|, then subsequently |put s v| should successfully compute to~|s|; this ensures that |put| does nothing more than its designated job --- |put| performs no update on a source if the view it receives is directly extracted from the source by |get|.
 
-Note that our definition of lenses is stronger than the one given by Foster~et~al~\cite{Foster-lenses}: our |PutGet| law says that successful computation of |put| guarantees success of the subsequent computation of |get|, whereas in Foster~et~al's definition there is no such guarantee; the |GetPut| law is similar.
+Note that our definition of lenses is stronger than the one given by Foster~et~al~\cite{Foster-lenses}: our |PutGet| law says that successful computation of |put| guarantees success of the subsequent computation of |get|, as in Foster~et~al's definition there is no such guarantee; the |GetPut| law is similar.
 
 \subsection{Reification of monadic combinators and computation steps}
 \label{sec:reification}
