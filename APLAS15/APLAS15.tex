@@ -260,10 +260,10 @@ Note that our definition of lenses is stronger than the one given by Foster~et~a
 \label{sec:reification}
 
 Our partial transformations are actually total functions which wrap their results in the standard |^^^Maybe| datatype with two constructors |^^^just : A -> Maybe A| and |^^^nothing  : Maybe A| --- the result of a successful computation is wrapped in the |just| constructor, while failed computation is represented by |nothing|.
-It is thus always possible to examine whether a computation succeeds or not in a known finite amount of time --- this ability is crucial for writing our transformations.
-%\footnote{%
-%It is important to distinguish this notion of ``decidable partiality'' from the usual partiality as formalised in terms of complete partial orders (see, e.g., Gibbons~\cite{Gibbons-calculating-functional-programs}):
-%when defining the semantics of |BiGUL|, we need to write programs that produce some result or fail respectively when a sub-program fails or produces some result, but this is not possible in the setting of complete partial orders.} %(since such functions violate monotonicity, a necessary condition for computability).
+It is thus always possible to know whether a computation succeeds or not in a finite amount of time.
+This notion of ``decidable partiality'' should be distinguished from the usual partiality as formalised in terms of complete partial orders (see, e.g., Gibbons~\cite{Gibbons-calculating-functional-programs}):
+when defining the semantics of |BiGUL|, we need to write programs that produce some result or fail respectively when a sub-program fails or produces some result, but this is not possible in the setting of complete partial orders.
+%(since such functions violate monotonicity, a necessary condition for computability).
 
 We can choose to write our transformations directly as |Maybe|-programs, usually structured with monadic combinators~\cite{Moggi-monads,Wadler-essence} like ``return'' and ``bind''.
 This approach does not work too satisfactorily, though, when we consider the kind of proofs we need to construct for these programs:
@@ -289,7 +289,7 @@ runPar (mx >>= f)  | nothing  = nothing
 runPar fail = nothing
 \end{code}
 We say that |mx : Par A| computes to |x : A| exactly when |runPar mx ≡ just x|, and that |mx|~fails to compute exactly when |runPar mx ≡ nothing|.
-The equality |runPar mx ≡ just x| is already a family of types of proofs of successful computation, but these proofs are not so straightforward to analyse and construct.
+The equality |runPar mx ≡ just x| is already a family of types of proofs of successful computation, but these equality proofs are not so straightforward to analyse and construct.
 We hence move on to define an equivalent family of types, whose proofs are easier to manipulate.
 
 For every |mx : Par A| and |x : A|, we define a type |mx ↦ x| whose inhabitants explain how the sub-programs in |mx| compute successfully one by one, eventually producing~|x|:
@@ -299,7 +299,7 @@ For every |mx : Par A| and |x : A|, we define a type |mx ↦ x| whose inhabitant
 (mx >>= f)  ↦ y   =  (x : _) × (mx ↦ x) × (f x ↦ y)
 fail        ↦ x   =  ⊥
 \end{code}
-In prose: |return x| computes to~|x'| when |x|~is exactly~|x'|; |mx >>= f| computes to~|y| when there exists |x : A| such that |mx|~computes to~|x| and |f x| computes to~|y|; and it is impossible for |fail| to compute successfully.
+In prose: |return x| computes to~|x'| when |x|~is exactly~|x'|; |mx >>= f| computes to~|y| when there exists a value~|x| such that |mx|~computes to~|x| and |f x| computes to~|y|; and it is impossible for |fail| to compute successfully.
 Here our use of the term ``computes to'' is justified, since we can prove that a term of type |mx ↦ x| can be constructed if and only if |runPar mx ≡ just x|, meaning that our reification of |runPar mx ≡ just x| as |mx ↦ x| is accurate.
 We are thus entitled to use~|_↦_| in the statements of |PutGet| and |GetPut|.
 
@@ -314,7 +314,7 @@ l ↔ r = record
   SEP  get  = λ a → Lens.get l a >>= Lens.get r
   SEP  PutGet = ? SEP GetPut = ? }
 \end{code}
-The |put| and |get| functions for a composite lens can be pretty straightforwardly constructed from the |put| and |get| functions of the component lenses.
+The |put| and |get| functions for the composite lens |l ↔ r| can be pretty straightforwardly constructed from the |put| and |get| functions of the component lenses |l|~and~|r|.
 As part of the definition of |_↔_|\kern1pt, we also need to prove that |PutGet| and |GetPut| hold for the pair of |put| and |get| we provide.
 For |PutGet| we need to show that, for all |a|,~|a' : A|, and |c : C|, from a proof of |put a c MAPSTO a'| we can construct a proof of |get a' MAPSTO c|.
 That is, we need to write a function that converts an inhabitant of the type |put a c MAPSTO a'| to one of the type |get a' MAPSTO c|.
@@ -406,7 +406,7 @@ The types of the |BiGUL| constructors are indexed by the source and view types e
 interp : (HIDE({S V : U} ->)) BiGUL S V -> Lens ⟦ S ⟧ ⟦ V ⟧
 \end{code}
 (Definitions of |U|~and~|⟦_⟧| are in \autoref{sec:source-update}.)
-Since well-behavedness is built into the definition of |Lens|, being able to construct |interp| means that we have not only translated |BiGUL| to |put| and |get| functions, but also proved formally that |PutGet| and |GetPut| are satisfied in the way explained in \autoref{sec:sample-well-behavedness-proof}.
+Since well-behavedness is built into the definition of |Lens|, being able to construct |interp| means that we have not only translated |BiGUL| to |put| and |get| functions, but also proved formally that |PutGet| and |GetPut| are satisfied, in the way explained in \autoref{sec:sample-well-behavedness-proof}.
 Due to space restrictions, we will not present the full definitions of |interp| nor the auxiliary types used in \autoref{fig:BiGUL}, which are actually straightforward translation to and deep embedding of |BiGUL|'s lens semantics.
 Instead, we will only provide a sketch of the lens semantics of the bidirectional operations.
 For each operation we will start from a natural semantics (for |put|) and then add necessary checks so a corresponding |get| can exist, arriving at the lens semantics for the operation (whose well-behavedness proofs are omitted from the presentation).
@@ -438,7 +438,7 @@ For each operation we will start from a natural semantics (for |put|) and then a
 The three most basic operations are |replace|, |failB|, and |skip|.
 The |replace| operation is applicable when the source and the view are of the same type, and its semantics is discarding the original source and returning the view as the updated source.
 Its lens semantics can in fact be derived from an \emph{isomorphism}:
-We define isomorphisms in the partial setting by
+We define isomorphisms in our partial setting by
 \begin{code}
 record ^^^Iso (A B : Set) : Set₁ where
   field
@@ -479,7 +479,7 @@ In general, |put| must embed all view information into the updated source so |ge
 \label{sec:list-alignment}
 
 For the semantics of |align|, which is the key operation used in \autoref{fig:bookstore}, we employ a particular parametrised strategy for updating a list of sources of type~|S| with a list of views of type~|V|, which tries to align/match the sources with the views, synchronise the matched pairs of sources and views by an inner lens, and process the unmatched sources and views in some programmer-specified ways.
-A few of the design choices made below are somewhat arbitrary, but it should be easy to further parametrise the strategy or offer other different strategies.
+A few of the design choices made below are somewhat arbitrary and inflexible, but it should be easy to further parametrise the strategy or offer other different strategies.
 
 The lens semantics of |align| has type
 \begin{code}
@@ -515,7 +515,7 @@ The exact details of the aligning algorithm are pretty delicate (especially the 
 A fundamental operation is performing updates to parts of the source.
 We follow the approach taken by \textsc{Flux}~\cite{Cheney-FLUX}, which requires that updates must be independent --- that is, the same part of a source cannot be updated more than once --- to avoid the problem of sequencing updates.
 It turns out that a pattern matching notation suits this task perfectly: pattern matching is arguably the most intuitive way to decompose a source, and we can specify apparently independent updates by writing them at the variable positions in a pattern.
-For example, in \autoref{fig:bookstore} we use |update| to match a source book of type |String × String × ℕ × ℕ| with a four-variable pattern and update each of the four components respectively by |replace|, |skip|, |skip|, and |replace|.
+For example, in \autoref{fig:bookstore} we use |update| to match a source book of type |String × String × ℕ × ℕ| with a four-variable pattern and update its four components respectively by |replace|, |skip|, |skip|, and |replace|.
 The idea itself is straightforward; what follows, despite its slight complexity (especially if the reader is not familiar with dependently typed programming), is merely our datatype-generic and strongly typed implementation of the idea in \Agda.
 
 Since \Agda\ is fully dependently typed, we can naturally define patterns in a type-directed way such that nonsensical patterns are syntactically ruled out.
@@ -601,7 +601,7 @@ For example, the |update| operation in \autoref{sec:source-update} demands that 
 In essence, |rearr| performs a piece of invertible computation (which loses no information), while its |get| semantics performs the inverse of the computation.
 The invertible computation used is usually not complicated (hence the name ``rearrangement''), so instead of letting the programmer write general invertible functions (perhaps along with their inverses), we ask instead for syntactic descriptions of simple invertible computation, which are more restrictive but allow automatic inversion.
 
-The kind of invertible computation we wish to express is a decomposition of an old view followed by an assembling of a new view using all components of the old view (e.g., |\ (title , tt , tt , price) -> (title , price)| at lines 3--4 in \autoref{fig:bookstore}).
+The kind of invertible computation we wish to express is a decomposition of an old view followed by an assembling of a new view using all components of the old view (e.g., |\ (title , price) -> (title , tt , tt , price)| at lines 3--4 in \autoref{fig:bookstore}).
 When it comes to decomposition, pattern matching should come to mind again; assembling can also be handled by pattern matching, as we have formulated pattern matching as an isomorphism (|pat-iso|) in \autoref{sec:source-update}.
 We thus require two patterns |pat : Pattern D| and |pat' : Pattern E|, the former for decomposing the old view of type |⟦ D ⟧| and the latter for assembling the new view of type |⟦ E ⟧|.
 For the latter pattern |pat'| we also need to specify which component of the old view will be used as the value at each variable position.
