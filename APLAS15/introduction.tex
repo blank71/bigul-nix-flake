@@ -22,7 +22,7 @@ a forward $get$ which extracts information from a source to construct an abstrac
 and a backward $put$ which propagates updates on view back to the source.
 BX provides a novel mechanism for maintaining the consistency between two related information (source and view).
 % From language approach: bx languages.
-Many bidirectional programming languages~\cite{Lenses,Bohannon:06,MHNHT07,Hidaka:10,PachecoCunha:10,Barbosa:2010,Hofmann:2011,FoPP08,HoPW12} have been designed
+Many bidirectional programming languages~\cite{Foster-lenses,Bohannon:06,MHNHT07,Hidaka:10,PachecoCunha:10,Barbosa:2010,Hofmann:2011,FoPP08,HoPW12} have been designed
 to aid user to write bidirectional transformations,
 where one only needs to write one program that can be interpreted in two directions.
 %The correctness of this BX program is guaranteed by well-behavedness~\cite{Lenses}.
@@ -30,11 +30,11 @@ where one only needs to write one program that can be interpreted in two directi
 Most existing approaches to BX are $get$-based, in the sense that it asks users to write BX programs in terms of $get$ describing how to construct an abstract view form the source, and derives a backward $put$ for free.
 As there are usually more than one {\em incomparable} $put$ for a $get$, the backward behavior becomes ambiguous and unpredictable.
 %
-To remedy this situation, a new approach called putback-based bidirectional programming~\cite{FiHP15} was proposed recently to support writing BX in terms of $put$ instead of $get$,
+To remedy this situation, a new approach called putback-based bidirectional programming~\cite{Fischer-essence-of-BX} was proposed recently to support writing BX in terms of $put$ instead of $get$,
 which enables full control over the $put$ to specify arbitrary update policies
 while guaranteeing uniqueness of derived forward $get$.
-The combinator library $putlenses$~\cite{PaHF14} is such a language to support this approach. It provides a set of combinators for writing complex BX programs in the putback-based way.
-In addition, \textsc{BiFlux}~\cite{PaZH14} is a bidirectional functional update language for XML which is a carefully designed putback-based BX language. 
+The combinator library $putlenses$~\cite{Pacheco-putlenses} is such a language to support this approach. It provides a set of combinators for writing complex BX programs in the putback-based way.
+In addition, \textsc{BiFlux}~\cite{Pacheco-BiFluX} is a bidirectional functional update language for XML which is a carefully designed putback-based BX language. 
 %The update program user written using \textsc{BiFluX} in fact is the $put$ function, and the system derives $get$ for free.
 
 % 2. Explain the problem

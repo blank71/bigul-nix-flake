@@ -15,7 +15,7 @@
 Our initial proposal had several limitations. First, it lacked support for recursive types or update procedures. Second, although a high-level source language can easily be translated to the core language, it is difficult to propagate meaningful type errors from the core language back to the source. Third, certain updates are well-formed yet contain path errors, or ``dead'' subexpressions which never do any useful work. It would be useful to detect path errors, since they often represent errors or optimization opportunities.
 
 In this paper, we address all three limitations. Specifically, we present an improved, sound type system that handles recursion. We also formalize a source update language and give a translation to the core language that preserves and reflects typability. We also develop a path-error analysis (a form of dead-code analysis) for updates.},
-	Author = {Cheney, James},
+	Author = {Cheney, J.},
 	Booktitle = {International Conference on Functional Programming},
 	Date-Added = {2015-05-31 07:58:04 +0000},
 	Date-Modified = {2015-05-31 07:58:04 +0000},
@@ -29,7 +29,7 @@ In this paper, we address all three limitations. Specifically, we present an imp
 	Bdsk-File-2 = {YnBsaXN0MDDUAQIDBAUGJCVYJHZlcnNpb25YJG9iamVjdHNZJGFyY2hpdmVyVCR0b3ASAAGGoKgHCBMUFRYaIVUkbnVsbNMJCgsMDxJXTlMua2V5c1pOUy5vYmplY3RzViRjbGFzc6INDoACgAOiEBGABIAFgAdccmVsYXRpdmVQYXRoWWFsaWFzRGF0YV8QUy4uLy4uLy4uL0RvY3VtZW50cy9CaWJSZXBvc2l0b3J5L0NoZW5leSAyMDA4YSAtIEZMVVggZnVuY3Rpb25hbCB1cGRhdGVzIGZvciBYTUwucGRm0hcLGBlXTlMuZGF0YU8RAgoAAAAAAgoAAgAABE9TIFgAAAAAAAAAAAAAAAAAAAAAAAAAAAAAANE17kJIKwAAAA6AQh9DaGVuZXkgMjAwOGEgLSBGTFVYIGYjRTg0NzQucGRmAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAADoR00I95NgAAAAAAAAAAAAMAAwAACSAAAAAAAAAAAAAAAAAAAAANQmliUmVwb3NpdG9yeQAAEAAIAADRNW+yAAAAEQAIAADQjvqmAAAAAQAQAA6AQgAMY44ADGKMAAAAsAACAE1PUyBYOlVzZXJzOgBqb3Noa286AERvY3VtZW50czoAQmliUmVwb3NpdG9yeToAQ2hlbmV5IDIwMDhhIC0gRkxVWCBmI0U4NDc0LnBkZgAADgBmADIAQwBoAGUAbgBlAHkAIAAyADAAMAA4AGEAIAAtACAARgBMAFUAWAAgAGYAdQBuAGMAdABpAG8AbgBhAGwAIAB1AHAAZABhAHQAZQBzACAAZgBvAHIAIABYAE0ATAAuAHAAZABmAA8ACgAEAE8AUwAgAFgAEgBXVXNlcnMvam9zaGtvL0RvY3VtZW50cy9CaWJSZXBvc2l0b3J5L0NoZW5leSAyMDA4YSAtIEZMVVggZnVuY3Rpb25hbCB1cGRhdGVzIGZvciBYTUwucGRmAAATAAEvAAAVAAIADf//AACABtIbHB0eWiRjbGFzc25hbWVYJGNsYXNzZXNdTlNNdXRhYmxlRGF0YaMdHyBWTlNEYXRhWE5TT2JqZWN00hscIiNcTlNEaWN0aW9uYXJ5oiIgXxAPTlNLZXllZEFyY2hpdmVy0SYnVHJvb3SAAQAIABEAGgAjAC0AMgA3AEAARgBNAFUAYABnAGoAbABuAHEAcwB1AHcAhACOAOQA6QDxAv8DAQMGAxEDGgMoAywDMwM8A0EDTgNRA2MDZgNrAAAAAAAAAgEAAAAAAAAAKAAAAAAAAAAAAAAAAAAAA20=}}
 
 @article{Fischer-essence-of-BX,
-	Author = {Fischer, Sebastian and Hu, Zhenjiang and Pacheco, Hugo},
+	Author = {Fischer, S. and Hu, Z. and Pacheco, H.},
 	Date-Added = {2015-05-31 07:58:04 +0000},
 	Date-Modified = {2015-05-31 07:58:04 +0000},
 	Doi = {10.1007/s11432-015-5316-8},
@@ -171,7 +171,7 @@ We demonstrate the practical power of the new approach through a series of examp
 	Bdsk-File-1 = {YnBsaXN0MDDUAQIDBAUGJCVYJHZlcnNpb25YJG9iamVjdHNZJGFyY2hpdmVyVCR0b3ASAAGGoKgHCBMUFRYaIVUkbnVsbNMJCgsMDxJXTlMua2V5c1pOUy5vYmplY3RzViRjbGFzc6INDoACgAOiEBGABIAFgAdccmVsYXRpdmVQYXRoWWFsaWFzRGF0YV8QWC4uLy4uLy4uL0RvY3VtZW50cy9CaWJSZXBvc2l0b3J5L1dhZGxlciAxOTkyIC0gVGhlIEVzc2VuY2Ugb2YgRnVuY3Rpb25hbCBQcm9ncmFtbWluZy5wZGbSFwsYGVdOUy5kYXRhTxECGAAAAAACGAACAAAET1MgWAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA0TXuQkgrAAAADoBCH1dhZGxlciAxOTkyIC0gVGhlIEVzcyNFODVCQS5wZGYAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAOhbrOsEFxAAAAAAAAAAAAAwADAAAJIAAAAAAAAAAAAAAAAAAAAA1CaWJSZXBvc2l0b3J5AAAQAAgAANE1b7IAAAARAAgAAM6vwuEAAAABABAADoBCAAxjjgAMYowAAACwAAIATU9TIFg6VXNlcnM6AGpvc2hrbzoARG9jdW1lbnRzOgBCaWJSZXBvc2l0b3J5OgBXYWRsZXIgMTk5MiAtIFRoZSBFc3MjRTg1QkEucGRmAAAOAHAANwBXAGEAZABsAGUAcgAgADEAOQA5ADIAIAAtACAAVABoAGUAIABFAHMAcwBlAG4AYwBlACAAbwBmACAARgB1AG4AYwB0AGkAbwBuAGEAbAAgAFAAcgBvAGcAcgBhAG0AbQBpAG4AZwAuAHAAZABmAA8ACgAEAE8AUwAgAFgAEgBcVXNlcnMvam9zaGtvL0RvY3VtZW50cy9CaWJSZXBvc2l0b3J5L1dhZGxlciAxOTkyIC0gVGhlIEVzc2VuY2Ugb2YgRnVuY3Rpb25hbCBQcm9ncmFtbWluZy5wZGYAEwABLwAAFQACAA3//wAAgAbSGxwdHlokY2xhc3NuYW1lWCRjbGFzc2VzXU5TTXV0YWJsZURhdGGjHR8gVk5TRGF0YVhOU09iamVjdNIbHCIjXE5TRGljdGlvbmFyeaIiIF8QD05TS2V5ZWRBcmNoaXZlctEmJ1Ryb290gAEACAARABoAIwAtADIANwBAAEYATQBVAGAAZwBqAGwAbgBxAHMAdQB3AIQAjgDpAO4A9gMSAxQDGQMkAy0DOwM/A0YDTwNUA2EDZAN2A3kDfgAAAAAAAAIBAAAAAAAAACgAAAAAAAAAAAAAAAAAAAOA}}
 
 @inproceedings{Barbosa:2010,
-	Author = {Barbosa, Davi M. J. and Cretin, Julien and Foster, Nate and Greenberg, Michael and Pierce, Benjamin C.},
+	Author = {Barbosa, Davi M. J. and Cretin, Julien and Foster, J Nathan and Greenberg, Michael and Pierce, Benjamin C.},
 	Booktitle = {International Conference on Functional Programming},
 	Date-Added = {2015-05-07 06:52:55 +0000},
 	Date-Modified = {2015-05-15 08:55:30 +0000},
@@ -215,50 +215,12 @@ We demonstrate the practical power of the new approach through a series of examp
 	Year = {2014},
 	Bdsk-Url-1 = {http://dx.doi.org/10.1145/2543728.2543737}}
 
-@article{FiHP15,
-	Author = {Sebastian Fischer and Zhenjiang Hu and Hugo Pacheco},
-	Date-Modified = {2015-05-07 06:59:02 +0000},
-	Journal = {{SCIENCE CHINA} Information Sciences},
-	Number = {5},
-	Pages = {1--21},
-	Title = {The essence of bidirectional programming},
-	Volume = {58},
-	Year = {2015}}
-
-@inproceedings{HuPF14,
-	Author = {Zhenjiang Hu and Hugo Pacheco and Sebastian Fischer},
-	Booktitle = {International Symposium on Formal Methods},
-	Date-Modified = {2015-05-07 07:05:08 +0000},
-	Pages = {1--15},
-	Publisher = {Springer-Verlag},
-	Title = {Validity Checking of Putback Transformations in Bidirectional Programming},
-	Year = {2014}}
-
-@article{Lenses,
-	Author = {J. Nathan Foster and M. B. Greenwald and J. T. Moore and B. C. Pierce and A. Schmitt},
-	Date-Modified = {2015-05-07 06:59:24 +0000},
-	Journal = {ACM Transactions on Programming Languages and Systems},
-	Number = {3},
-	Pages = {17},
-	Title = {Combinators for bidirectional tree transformations: {A} linguistic approach to the view-update problem},
-	Volume = {29},
-	Year = {2007}}
-
 @phdthesis{Foster:09,
-	Author = {Foster, J.},
+	Author = {Foster, J. Nathan},
 	Date-Modified = {2015-05-07 06:59:11 +0000},
 	School = {University of Pennsylvania},
 	Title = {Bidirectional Programming Languages},
 	Year = {2009}}
-
-@inproceedings{PaZH14,
-	Author = {Hugo Pacheco and Tao Zan and Zhenjiang Hu},
-	Booktitle = {Principles and Practice of Declarative Programming},
-	Date-Modified = {2015-05-15 08:57:06 +0000},
-	Pages = {147-158},
-	Publisher = {ACM},
-	Title = {{BiFluX}: A Bidirectional Functional Update Language for {XML}},
-	Year = {2014}}
 
 @article{Larson:1991,
 	Author = {J. A. Larson and A. P. Sheth},
@@ -318,7 +280,7 @@ We demonstrate the practical power of the new approach through a series of examp
 	Year = {2012}}
 
 @inproceedings{PachecoCunha:10,
-	Author = {H. Pacheco and A. Cunha},
+	Author = {Pacheco, Hugo and Cunha, Alcino},
 	Booktitle = {Mathematics of Program Construction},
 	Date-Modified = {2015-05-07 07:16:16 +0000},
 	Pages = {331-352},
@@ -329,7 +291,7 @@ We demonstrate the practical power of the new approach through a series of examp
 	Year = {2010}}
 
 @inproceedings{PachecoCunhaHu:12,
-	Author = {Pacheco, H. and Cunha, A. and Hu, Z.},
+	Author = {Pacheco, Hugo and Cunha, Alcino and Hu, Zhenjiang},
 	Booktitle = {International Workshop on Bidirectional Transformations},
 	Date-Modified = {2015-05-07 07:15:52 +0000},
 	Series = {Electronic Communications of the EASST},
@@ -411,7 +373,7 @@ We demonstrate the practical power of the new approach through a series of examp
 	Year = {2008}}
 
 @inproceedings{GRACE:09,
-	Author = {Czarnecki, K. and Foster, J. N. and Hu, Z. and L\"ammel, R. and Sch\"urr, A. and Terwilliger, J.},
+	Author = {Czarnecki, K. and Foster, J. Nathan and Hu, Z. and L\"ammel, R. and Sch\"urr, A. and Terwilliger, J.},
 	Booktitle = {International Conference on Model Transformation},
 	Date-Modified = {2015-05-07 06:55:45 +0000},
 	Pages = {260-283},
