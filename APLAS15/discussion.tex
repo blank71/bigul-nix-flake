@@ -7,17 +7,17 @@ BiFluX~\cite{Pacheco-BiFluX} is a bidirectional update language for XML
 which inherently is a putback-based BX language,
 and it uses putlenses as the underlying engine.
 %
-PDL~\cite{HuPF14} is a small treeless functional language for writing total $put$ functions,
+PDL~\cite{Hu-putback-validity} is a small treeless functional language for writing total $put$ functions,
 such that existence of well-behavedness can be checked statically.
-While none of them managed to fully prove the well-behavedness in a formal way.
-In this paper, we design the minimalist putback-based core language
-that is fully certified in \Agda. 
+While none of them managed to prove the well-behavedness in a formal way.
+In this paper, we propose this minimalist putback-based core language
+that is fully certified in \Agda.
 We defined a ``proof carried lens",
-thus the semantics of each one is proved to satisfy the PutGet and GetPut properties by the real \Agda\ code
-which is really runnable.
+thus the semantics of each one is proved to satisfy the PutGet and GetPut properties by using real \Agda\ code
+which is really runnable. % bad
 %
 
-Our design of \BiGUL\ is based on the real putback-based language \textsc{BiFluX}.
+Our design of \BiGUL\ is based on the putback-based language \textsc{BiFluX}.
 % \BiGUL\ is used as the core language to \textsc{BiFluX}. %TODO: shall we say now we are translating it into ?
 %
 %\todo[inline]{stems from work on \textsc{BiFluX}; comparison with putlenses}
@@ -27,23 +27,23 @@ makes the well-behavedness hard to prove
 and it also hinders the core idea of putback-based approach.
 Based on these observations, \BiGUL\ is proposed and implemented.
 Due to the limited pages,
-we omit to show other two features in \BiGUL\ which is proved and implemented
-that is view dependency and iteration on source. 
-These are two necessary features when implementing the \textsc{BiFluX}.
+we omit to show other two features of \BiGUL\ which are proved and implemented
+that are view dependency and iteration on source.
+These two are necessary for implementing the \textsc{BiFluX}.
 % extension: view dependency
 View dependency means two view elements depend on each other.
 Embedding these two view elements separately into source may lead to inconsistency,
 \BiGUL\ supports specifying the dependency between these two view elements directly
-and only one of them need to be used for updating the source.
-Another one can be recovered from the view dependency when deriving $get$.
+and only one of them needs to be used for updating the source.
+Another one can be recovered using view dependency when deriving $get$.
 %
 % For example the catalog of a book dependends on the strcuture and contents of the book.
 % If the title of contents changes, the catalog shall be changed.
 % This can be captured by expressing the depdenency between the catalog and the titles in the content.
 % Only one of them (e.g. titles in the content) needs to be used to update the corresponding source element.
 % From the $get$ perspective, catalog will be recovered through the view dependency.
-Iteration on source means update a source list with the same view element, while we need to guarantee the implicit constraint that
-the elements in this list must be equal.
+Iteration on source means updating a source list with the same view element, while we need to guarantee the implicit constraint that
+the elements in this list must be equal. This is kine of source dependency but it is to handle using iteration on source operation. %TODO
 
 
 %\todo[inline]{extensions: for example, iteration, view dependency}
@@ -57,12 +57,12 @@ the elements in this list must be equal.
 % BiFlux~\cite{PaZH14} also only supports this case,
 % while there are situations that more than one elements have the same matching key value,
 % the result would be a list of elements for the same key value.
-% \BiGUL\ can be extended with iteration operation on list to hanle this case.
+% \BiGUL\ can be extended with iteration operation on list to handle this case.
 % %
 
 %\todo[inline]{Haskell implementation}
 \BiGUL\ has been fully implemented using Haskell that totally follows the formalization in \Agda\
-and tested with several nontrivial examples which are from the BiFluX~\cite{PaZH14} paper.
+and it is powerful to encode the examples in the BiFluX~\cite{Pacheco-BiFluX} paper.
 
 
 \todo[inline]{recursion (the lack thereof)}
