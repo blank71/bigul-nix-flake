@@ -1,8 +1,7 @@
 \begin{thebibliography}{10}
 
 \bibitem{Barbosa:2010}
-Davi M.~J. Barbosa, Julien Cretin, Nate Foster, Michael Greenberg, and
-  Benjamin~C. Pierce.
+Davi M.~J. Barbosa, J.~Cretin, J.~N. Foster, M.~Greenberg, and B.~C. Pierce.
 \newblock Matching lenses: alignment and view update.
 \newblock In {\em International Conference on Functional Programming}, pages
   193--204. ACM, 2010.
@@ -12,59 +11,51 @@ A.~Bohannon, B.~C. Pierce, and J.~A. Vaughan.
 \newblock Relational lenses: a language for updatable views.
 \newblock In {\em Principles of Database Systems}, pages 338--347. ACM, 2006.
 
+\bibitem{BuCV08}
+P.~Buneman, J.~Cheney, and S.~Vansummeren.
+\newblock On the expressiveness of implicit provenance in query and update
+  languages.
+\newblock {\em ACM Transactions on Database Systems}, 33(4), 2008.
+
 \bibitem{Cheney-FLUX}
-James Cheney.
+J.~Cheney.
 \newblock \textsc{Flux}: functional updates for {XML}.
-\newblock In {\em International Conference on Functional Programming}, ICFP'08,
-  pages 3--14. ACM, 2008.
+\newblock In {\em International Conference on Functional Programming}, pages
+  3--14. ACM, 2008.
 
 \bibitem{GRACE:09}
 K.~Czarnecki, J.~N. Foster, Z.~Hu, R.~L\"ammel, A.~Sch\"urr, and
   J.~Terwilliger.
 \newblock Bidirectional transformations: A cross-discipline perspective.
 \newblock In {\em International Conference on Model Transformation}, volume
-  5563 of {\em Lecture Notes in Computer Science}, pages 260--283.
-  Springer-Verlag, 2009.
-
-\bibitem{FiHP15}
-Sebastian Fischer, Zhenjiang Hu, and Hugo Pacheco.
-\newblock The essence of bidirectional programming.
-\newblock {\em {SCIENCE CHINA} Information Sciences}, 58(5):1--21, 2015.
+  5563, pages 260--283. Springer-Verlag, 2009.
 
 \bibitem{Fischer-essence-of-BX}
-Sebastian Fischer, Zhenjiang Hu, and Hugo Pacheco.
+S.~Fischer, Z.~Hu, and H.~Pacheco.
 \newblock The essence of bidirectional programming.
 \newblock {\em SCIENCE CHINA Information Sciences}, 58(5):1--21, 2015.
 
-\bibitem{Lenses}
-J.~Nathan Foster, M.~B. Greenwald, J.~T. Moore, B.~C. Pierce, and A.~Schmitt.
-\newblock Combinators for bidirectional tree transformations: {A} linguistic
-  approach to the view-update problem.
-\newblock {\em ACM Transactions on Programming Languages and Systems},
-  29(3):17, 2007.
-
 \bibitem{Foster-lenses}
-J.~Nathan Foster, Michael~B. Greenwald, Jonathan~T. Moore, Benjamin~C. Pierce,
-  and Alan Schmitt.
+J.~N. Foster, M.~B. Greenwald, J.~T. Moore, B.~C. Pierce, and A.~Schmitt.
 \newblock Combinators for bidirectional tree transformations: A linguistic
   approach to the view-update problem.
 \newblock {\em ACM Transactions on Programming Languages and Systems},
   29(3):17, 2007.
 
 \bibitem{FoPP08}
-J.~Nathan Foster, Alexandre Pilkiewicz, and Benjamin~C. Pierce.
+J.~N. Foster, A.~Pilkiewicz, and B.~C. Pierce.
 \newblock Quotient lenses.
 \newblock In {\em International Conference on Functional Programming}, pages
   383--396. ACM, 2008.
 
 \bibitem{Gibbons-BMF}
-Jeremy Gibbons.
+J.~Gibbons.
 \newblock An introduction to the {Bird}-{Meertens} formalism.
 \newblock In {\em New Zealand Formal Program Development Colloquium}, pages
   1--12, 1994.
 
 \bibitem{Gibbons-calculating-functional-programs}
-Jeremy Gibbons.
+J.~Gibbons.
 \newblock Calculating functional programs.
 \newblock In {\em Algebraic and Coalgebraic Methods in the Mathematics of
   Program Construction}, number 2297 in Lecture Notes in Computer Science,
@@ -74,75 +65,68 @@ Jeremy Gibbons.
 S.~Hidaka, Z.~Hu, K.~Inaba, H.~Kato, K.~Matsuda, and K.~Nakano.
 \newblock Bidirectionalizing graph transformations.
 \newblock In {\em International Conference on Functional Programming}, pages
-  205--216. ACM, 2010.
+  205--216, New York, NY, USA, 2010. ACM.
 
 \bibitem{Hofmann:2011}
 M.~Hofmann, B.~C. Pierce, and D.~Wagner.
 \newblock Symmetric lenses.
-\newblock In {\em Principles of Programming Languages}, pages 371--384. ACM,
-  2011.
+\newblock In {\em Principles of Programming Languages}, pages 371--384, New
+  York, NY, USA, 2011. ACM.
 
 \bibitem{HoPW12}
-M.~Hofmann, Benjamin~C. Pierce, and D.~Wagner.
+M.~Hofmann, B.~C. Pierce, and D.~Wagner.
 \newblock Edit lenses.
-\newblock In {\em Principles of Programming Languages}, pages 495--508. ACM,
-  2012.
-
-\bibitem{HuMT08}
-Zhenjiang Hu, Shin-Cheng Mu, and Masato Takeichi.
-\newblock A programmable editor for developing structured documents based on
-  bidirectional transformations.
-\newblock {\em Higher-Order and Symbolic Computation}, 21(1-2):89--118, 2008.
+\newblock In {\em Principles of Programming Languages}, pages 495--508, New
+  York, NY, USA, 2012. ACM.
 
 \bibitem{Hu-putback-validity}
-Zhenjiang Hu, Hugo Pacheco, and Sebastian Fischer.
+Z.~Hu, H.~Pacheco, and S.~Fischer.
 \newblock Validity checking of putback transformations in bidirectional
   programming.
-\newblock In {\em International Symposium on Formal Methods}, volume 8442 of
-  {\em Lecture Notes in Computer Science}, pages 1--15. Springer-Verlag, 2014.
+\newblock In {\em International Symposium on Formal Methods}, volume 8442,
+  pages 1--15. Springer-Verlag, 2014.
 
 \bibitem{MHNHT07}
-Kazutaka Matsuda, Zhenjiang Hu, Keisuke Nakano, Makoto Hamana, and Masato
-  Takeichi.
+K.~Matsuda, Z.~Hu, K.~Nakano, M.~Hamana, and M.~Takeichi.
 \newblock Bidirectionalization transformation based on automatic derivation of
   view complement functions.
 \newblock In {\em International Conference on Functional Programming}, pages
   47--58. ACM, 2007.
 
 \bibitem{Moggi-monads}
-Eugenio Moggi.
+E.~Moggi.
 \newblock Notions of computation and monads.
 \newblock {\em Information and Computation}, 93(1):55--92, 1991.
+
+\bibitem{Norell-thesis}
+U.~Norell.
+\newblock {\em Towards a Practical Programming Language based on Dependent Type
+  Theory}.
+\newblock PhD thesis, Chalmers University of Technology, 2007.
+
+\bibitem{Nore08}
+U.~Norell.
+\newblock Dependently typed programming in agda.
+\newblock In {\em Proceedings of the 6th International Conference on Advanced
+  Functional Programming}, pages 230--266. Springer-Verlag, 2009.
 
 \bibitem{PachecoCunha:10}
 H.~Pacheco and A.~Cunha.
 \newblock Generic point-free lenses.
-\newblock In {\em Mathematics of Program Construction}, volume 6120 of {\em
-  Lecture Notes in Computer Science}, pages 331--352. Springer-Verlag, 2010.
+\newblock In {\em Mathematics of Program Construction}, volume 6120, pages
+  331--352. Springer-Verlag, 2010.
 
-\bibitem{PaHF14}
-Hugo Pacheco, Zhenjiang Hu, and Sebastian Fischer.
+\bibitem{Pacheco-putlenses}
+H.~Pacheco, Z.~Hu, and S.~Fischer.
 \newblock Monadic combinators for ``putback'' style bidirectional programming.
 \newblock In {\em Partial Evaluation and Program Manipulation}, pages 39--50.
   ACM, 2014.
 
-\bibitem{Pacheco-putlenses}
-Hugo Pacheco, Zhenjiang Hu, and Sebastian Fischer.
-\newblock Monadic combinators for ``putback'' style bidirectional programming.
-\newblock In {\em Partial Evaluation and Program Manipulation}, PEPM'14, pages
-  39--50. ACM, 2014.
-
-\bibitem{PaZH14}
-Hugo Pacheco, Tao Zan, and Zhenjiang Hu.
+\bibitem{Pacheco-BiFluX}
+H.~Pacheco, T.~Zan, and Z.~Hu.
 \newblock {BiFluX}: A bidirectional functional update language for {XML}.
 \newblock In {\em Principles and Practice of Declarative Programming}, pages
   147--158. ACM, 2014.
-
-\bibitem{Pacheco-BiFluX}
-Hugo Pacheco, Tao Zan, and Zhenjiang Hu.
-\newblock {BiFluX}: A bidirectional functional update language for {XML}.
-\newblock In {\em Principles and Practice of Declarative Programming}, PPDP'14,
-  pages 147--158. ACM, 2014.
 
 \bibitem{UFP-HoTT}
 {The Univalent Foundations Program}.
@@ -150,9 +134,13 @@ Hugo Pacheco, Tao Zan, and Zhenjiang Hu.
 \newblock Institute for Advanced Study, Princeton, 2013.
 
 \bibitem{Wadler-essence}
-Philip Wadler.
+P.~Wadler.
 \newblock The essence of functional programming.
-\newblock In {\em Principles of Programming Languages}, POPL'92, pages 1--14.
-  ACM, 1992.
+\newblock In {\em Principles of Programming Languages}, pages 1--14. ACM, 1992.
+
+\bibitem{Zhu-BiYacc}
+Z.~Zhu, H-S. Ko, P.~Martins, J.~Saraiva, and Z.~Hu.
+\newblock {BiYacc}: Unifying parsing and extended pretty-printing.
+\newblock Submitted for publication, 2015.
 
 \end{thebibliography}
