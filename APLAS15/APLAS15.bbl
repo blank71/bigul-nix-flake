@@ -1,5 +1,11 @@
 \begin{thebibliography}{10}
 
+\bibitem{Altenkirch-GP-within-DTP}
+T.~Altenkirch and C.~McBride.
+\newblock Generic programming within dependently typed programming.
+\newblock In {\em IFIP TC2/WG2.1 Working Conference on Generic Programming},
+  pages 1--20. Kluwer, B.V., 2003.
+
 \bibitem{Barbosa:2010}
 Davi M.~J. Barbosa, J.~Cretin, J.~N. Foster, M.~Greenberg, and B.~C. Pierce.
 \newblock Matching lenses: alignment and view update.
@@ -30,6 +36,12 @@ K.~Czarnecki, J.~N. Foster, Z.~Hu, R.~L\"ammel, A.~Sch\"urr, and
 \newblock In {\em International Conference on Model Transformation}, volume
   5563, pages 260--283. Springer-Verlag, 2009.
 
+\bibitem{Danielsson-fast-and-loose-reasoning}
+N.~A. Danielsson, J.~Gibbons, J.~Hughes, and P.~Jansson.
+\newblock Fast and loose reasoning is morally correct.
+\newblock In {\em Principles of Programming Languages}, pages 206--217. ACM,
+  2006.
+
 \bibitem{Fischer-essence-of-BX}
 S.~Fischer, Z.~Hu, and H.~Pacheco.
 \newblock The essence of bidirectional programming.
@@ -48,18 +60,19 @@ J.~N. Foster, A.~Pilkiewicz, and B.~C. Pierce.
 \newblock In {\em International Conference on Functional Programming}, pages
   383--396. ACM, 2008.
 
-\bibitem{Gibbons-BMF}
-J.~Gibbons.
-\newblock An introduction to the {Bird}-{Meertens} formalism.
-\newblock In {\em New Zealand Formal Program Development Colloquium}, pages
-  1--12, 1994.
-
 \bibitem{Gibbons-calculating-functional-programs}
 J.~Gibbons.
 \newblock Calculating functional programs.
 \newblock In {\em Algebraic and Coalgebraic Methods in the Mathematics of
   Program Construction}, number 2297 in Lecture Notes in Computer Science,
   chapter~5, pages 149--201. Springer-Verlag, 2002.
+
+\bibitem{Gibbons-DGP}
+J.~Gibbons.
+\newblock Datatype-generic programming.
+\newblock In {\em Spring School on Datatype-Generic Programming}, volume 4719
+  of {\em Lecture Notes in Computer Science}, pages 1--71. Springer-Verlag,
+  2007.
 
 \bibitem{Hidaka:10}
 S.~Hidaka, Z.~Hu, K.~Inaba, H.~Kato, K.~Matsuda, and K.~Nakano.
@@ -79,12 +92,11 @@ M.~Hofmann, B.~C. Pierce, and D.~Wagner.
 \newblock In {\em Principles of Programming Languages}, pages 495--508, New
   York, NY, USA, 2012. ACM.
 
-\bibitem{Hu-putback-validity}
-Z.~Hu, H.~Pacheco, and S.~Fischer.
-\newblock Validity checking of putback transformations in bidirectional
+\bibitem{Lindley-Hasochism}
+S.~Lindley and C.~McBride.
+\newblock Hasochism: the pleasure and pain of dependently typed haskell
   programming.
-\newblock In {\em International Symposium on Formal Methods}, volume 8442,
-  pages 1--15. Springer-Verlag, 2014.
+\newblock In {\em Haskell Symposium}, pages 81--92. ACM, 2013.
 
 \bibitem{MHNHT07}
 K.~Matsuda, Z.~Hu, K.~Nakano, M.~Hamana, and M.~Takeichi.
@@ -106,9 +118,9 @@ U.~Norell.
 
 \bibitem{Nore08}
 U.~Norell.
-\newblock Dependently typed programming in agda.
-\newblock In {\em Proceedings of the 6th International Conference on Advanced
-  Functional Programming}, pages 230--266. Springer-Verlag, 2009.
+\newblock Dependently typed programming in {Agda}.
+\newblock In {\em Advanced Functional Programming}, volume 5832 of {\em Lecture
+  Notes in Computer Science}, pages 230--266. Springer-Verlag, 2009.
 
 \bibitem{PachecoCunha:10}
 H.~Pacheco and A.~Cunha.
@@ -128,11 +140,6 @@ H.~Pacheco, T.~Zan, and Z.~Hu.
 \newblock In {\em Principles and Practice of Declarative Programming}, pages
   147--158. ACM, 2014.
 
-\bibitem{UFP-HoTT}
-{The Univalent Foundations Program}.
-\newblock {\em Homotopy Type Theory: Univalent Foundations of Mathematics}.
-\newblock Institute for Advanced Study, Princeton, 2013.
-
 \bibitem{Wadler-essence}
 P.~Wadler.
 \newblock The essence of functional programming.
@@ -141,6 +148,7 @@ P.~Wadler.
 \bibitem{Zhu-BiYacc}
 Z.~Zhu, H-S. Ko, P.~Martins, J.~Saraiva, and Z.~Hu.
 \newblock {BiYacc}: Unifying parsing and extended pretty-printing.
-\newblock Submitted for publication, 2015.
+\newblock Manuscript available at
+  \url{http://www.prg.nii.ac.jp/project/biyacc/biyacc_ase2015.pdf}, 2015.
 
 \end{thebibliography}
