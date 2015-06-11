@@ -7,7 +7,7 @@ T.~Altenkirch and C.~McBride.
   pages 1--20. Kluwer, B.V., 2003.
 
 \bibitem{Barbosa:2010}
-Davi M.~J. Barbosa, J.~Cretin, J.~N. Foster, M.~Greenberg, and B.~C. Pierce.
+D.~M.~J. Barbosa, J.~Cretin, J.~N. Foster, M.~Greenberg, and B.~C. Pierce.
 \newblock Matching lenses: alignment and view update.
 \newblock In {\em International Conference on Functional Programming}, pages
   193--204. ACM, 2010.
@@ -32,9 +32,10 @@ J.~Cheney.
 \bibitem{GRACE:09}
 K.~Czarnecki, J.~N. Foster, Z.~Hu, R.~L\"ammel, A.~Sch\"urr, and
   J.~Terwilliger.
-\newblock Bidirectional transformations: A cross-discipline perspective.
+\newblock Bidirectional transformations: a cross-discipline perspective.
 \newblock In {\em International Conference on Model Transformation}, volume
-  5563, pages 260--283. Springer-Verlag, 2009.
+  5563 of {\em Lecture Notes in Computer Science}, pages 260--283.
+  Springer-Verlag, 2009.
 
 \bibitem{Danielsson-fast-and-loose-reasoning}
 N.~A. Danielsson, J.~Gibbons, J.~Hughes, and P.~Jansson.
@@ -64,8 +65,8 @@ J.~N. Foster, A.~Pilkiewicz, and B.~C. Pierce.
 J.~Gibbons.
 \newblock Calculating functional programs.
 \newblock In {\em Algebraic and Coalgebraic Methods in the Mathematics of
-  Program Construction}, number 2297 in Lecture Notes in Computer Science,
-  chapter~5, pages 149--201. Springer-Verlag, 2002.
+  Program Construction}, volume 2297 of {\em Lecture Notes in Computer
+  Science}, chapter~5, pages 149--201. Springer-Verlag, 2002.
 
 \bibitem{Gibbons-DGP}
 J.~Gibbons.
@@ -78,23 +79,23 @@ J.~Gibbons.
 S.~Hidaka, Z.~Hu, K.~Inaba, H.~Kato, K.~Matsuda, and K.~Nakano.
 \newblock Bidirectionalizing graph transformations.
 \newblock In {\em International Conference on Functional Programming}, pages
-  205--216, New York, NY, USA, 2010. ACM.
+  205--216. ACM, 2010.
 
 \bibitem{Hofmann:2011}
 M.~Hofmann, B.~C. Pierce, and D.~Wagner.
 \newblock Symmetric lenses.
-\newblock In {\em Principles of Programming Languages}, pages 371--384, New
-  York, NY, USA, 2011. ACM.
+\newblock In {\em Principles of Programming Languages}, pages 371--384. ACM,
+  2011.
 
 \bibitem{HoPW12}
 M.~Hofmann, B.~C. Pierce, and D.~Wagner.
 \newblock Edit lenses.
-\newblock In {\em Principles of Programming Languages}, pages 495--508, New
-  York, NY, USA, 2012. ACM.
+\newblock In {\em Principles of Programming Languages}, pages 495--508. ACM,
+  2012.
 
 \bibitem{Lindley-Hasochism}
 S.~Lindley and C.~McBride.
-\newblock Hasochism: the pleasure and pain of dependently typed haskell
+\newblock Hasochism: the pleasure and pain of dependently typed {Haskell}
   programming.
 \newblock In {\em Haskell Symposium}, pages 81--92. ACM, 2013.
 
@@ -122,11 +123,17 @@ U.~Norell.
 \newblock In {\em Advanced Functional Programming}, volume 5832 of {\em Lecture
   Notes in Computer Science}, pages 230--266. Springer-Verlag, 2009.
 
+\bibitem{Norell-interactive-programming}
+U.~Norell.
+\newblock Interactive programming with dependent types.
+\newblock In {\em International Conference on Functional Programming}, pages
+  1--2. ACM, 2013.
+
 \bibitem{PachecoCunha:10}
 H.~Pacheco and A.~Cunha.
 \newblock Generic point-free lenses.
-\newblock In {\em Mathematics of Program Construction}, volume 6120, pages
-  331--352. Springer-Verlag, 2010.
+\newblock In {\em Mathematics of Program Construction}, volume 6120 of {\em
+  Lecture Notes in Computer Science}, pages 331--352. Springer-Verlag, 2010.
 
 \bibitem{Pacheco-putlenses}
 H.~Pacheco, Z.~Hu, and S.~Fischer.
