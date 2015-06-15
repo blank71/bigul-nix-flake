@@ -61,13 +61,6 @@ J.~N. Foster, A.~Pilkiewicz, and B.~C. Pierce.
 \newblock In {\em International Conference on Functional Programming}, pages
   383--396. ACM, 2008.
 
-\bibitem{Gibbons-calculating-functional-programs}
-J.~Gibbons.
-\newblock Calculating functional programs.
-\newblock In {\em Algebraic and Coalgebraic Methods in the Mathematics of
-  Program Construction}, volume 2297 of {\em Lecture Notes in Computer
-  Science}, chapter~5, pages 149--201. Springer-Verlag, 2002.
-
 \bibitem{Gibbons-DGP}
 J.~Gibbons.
 \newblock Datatype-generic programming.
