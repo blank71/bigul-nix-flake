@@ -16,12 +16,12 @@ import Data.Map as Map
 import BiFlux.Trans.Patterns (inferAstType)
 
 
-stmt2bigul :: (MonadError Doc m, MonadError' ErrorInfo m') => Stmt -> Type s -> Type v -> TypeEnv -> m (BiGUL m' s v)
--- example 1. update $book in $s/book by ... for view ... where $book/year > 2012
--- example 2. update $book in $s/book by ... for view p[$v1, $v2] in $v where  $v1 := $v2
--- In summarise, whereConds is either a conjunction of where conditons on source or view dependency bindings.
--- whereConds shall be passed into, and decide how to do the translation later.
-stmt2bigul (StmtUpd upd whereConds) ts tv typeEnv = update2bigul upd whereConds ts tv typeEnv
+stmt2bigul :: (MonadError Doc m, MonadError' ErrorInfo m') => Stmt -> Type s -> Type v -> DynRPat -> DirectionEnv -> TypeEnv -> m (BiGUL m' s v)
+---- example 1. update $book in $s/book by ... for view ... where $book/year > 2012
+---- example 2. update $book in $s/book by ... for view p[$v1, $v2] in $v where  $v1 := $v2
+---- In summarise, whereConds is either a conjunction of where conditons on source or view dependency bindings.
+---- whereConds shall be passed into, and decide how to do the translation later.
+stmt2bigul (StmtUpd upd whereConds) ts tv dynRPat dirEnv typeEnv = update2bigul upd whereConds ts tv dynRPat dirEnv typeEnv
 
 
 update2bigul :: (MonadError Doc m, MonadError' ErrorInfo m') => Upd -> [WhereCond] -> Type s -> Type v -> DynRPat -> DirectionEnv -> TypeEnv -> m (BiGUL m' s v)
@@ -35,12 +35,10 @@ update2bigul :: (MonadError Doc m, MonadError' ErrorInfo m') => Upd -> [WhereCon
 --    Step 3. XQExpr -> Rearr
 --    Step 4. Replace
 -- Comment: Step 2 and Step 3 shall be combined together.
-update2bigul (SingleReplace Nothing cpath xqexpr ) whereConds ts tv dynRPat dirEnv typeEnv = do
-  CUPat ts' fupat <- cpath2UPat ts tv typeEnv
-  EBiGUL tv' fbigul <- xqexpr2BiGUL xqexpr tv dynRPat dirEnv typeEnv
+update2bigul (SingleReplace Nothing cpath xqexpr ) whereConds ts tv dynRPat dirEnv typeEnv = undefined
+--   CUPat ts' fupat <- cpath2UPat ts tv typeEnv
 
-
-update2bigul (SingleReplace (Just pat) cpath xqexpr ) whereConds ts tv dynRPat dirEnv typeEnv = undefined
+--update2bigul (SingleReplace (Just pat) cpath xqexpr ) whereConds ts tv dynRPat dirEnv typeEnv = undefined
 
 
 -- exist a s', and a UPat m' s' v, we could compute UPat m' s v.
@@ -170,10 +168,10 @@ data EBiGUL m m' s v where
 -- How to construct RPat ?
 -- suppose given from existing from Pattern procedure
 -- Seems need another env to build the mapping between $v and Direction, so these two are constructed from Pattern.
-xqexpr2BiGUL :: (MonadError Doc m, MonadError' ErrorInfo m') => XQExpr -> Type v -> RPat v env con -> DirectionEnv -> TypeEnv -> m (EBiGUL m m' s v)
-xqexpr2BiGUL xqexpr tv rpat directionEnv typeEnv = do
-  DynE tv' expr <- xqexpr2expr xqexpr tv rpat directionEnv typeEnv
-  return $ EBiGUL tv' (\bigul' -> return (Rearr rpat expr bigul'))
+-- xqexpr2BiGUL :: (MonadError Doc m, MonadError' ErrorInfo m') => XQExpr -> Type v -> RPat v env con -> DirectionEnv -> TypeEnv -> m (EBiGUL m m' s v)
+-- xqexpr2BiGUL xqexpr tv rpat directionEnv typeEnv = do
+--   DynE tv' expr <- xqexpr2expr xqexpr tv rpat directionEnv typeEnv
+--   return $ EBiGUL tv' (\bigul' -> return (Rearr rpat expr bigul'))
 
 
 xqexpr2expr :: (MonadError Doc m) => XQExpr -> Type v -> RPat v env con -> DirectionEnv -> TypeEnv -> m (DynExpr env)

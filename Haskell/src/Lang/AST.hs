@@ -72,7 +72,6 @@ data BiGUL :: (* -> *) -> * -> * -> * where
 
 newtype Var a = Var a
 
-
 -- RPat (view type) (environment type) (container type)
 data RPat :: * -> * -> * -> * where
   RVar   :: Eq a => RPat a (Var a) (Maybe a)
@@ -95,8 +94,6 @@ deconstructR (ROut rpat)         v          = deconstructR rpat (out v)
 deconstructR (RElem rpath rpatt) []         = throwError $ ErrorInfo "view element cannot be empty"
 deconstructR (RElem rpath rpatt) (v: vs)    = liftM2 (,) (deconstructR rpath v) (deconstructR rpatt vs)
 
-
-
 constructR   :: MonadError' ErrorInfo m => RPat v env con -> con -> m v
 constructR RVar                Nothing      = throwError $ ErrorInfo "RVar canot be empty"
 constructR RVar                (Just v)     = return v
@@ -115,6 +112,7 @@ emptyContainer (RLeft pat        )            = emptyContainer pat
 emptyContainer (RRight pat       )            = emptyContainer pat
 emptyContainer (ROut   pat       )            = emptyContainer pat
 emptyContainer (RElem rpath rpatt)            = (emptyContainer rpath, emptyContainer rpatt)
+
 
 -- You need explicitly specify the type arguments at the type level when using the Direction type.
 -- From type, you could know the type of the data you want.
@@ -177,7 +175,76 @@ updateRPat (ROut  rpat       ) dir           v' con          = updateRPat rpat  
 updateRPat (RElem rpath rpatt) (DLeft dir)   v' (conl, conr) = liftM (, conr) (updateRPat rpath dir v' conl)
 updateRPat (RElem rpath rpatt) (DRight dir)  v' (conl, conr) = liftM (conl ,) (updateRPat rpatt dir v' conr)
 
+-- static check of the full embedding
+checkFullEmbed :: MonadError' ErrorInfo m => BiGUL m s v -> m Bool
+checkFullEmbed Fail = return True
+checkFullEmbed Skip = return True
+checkFullEmbed Replace = return True
+checkFullEmbed (Update upat) = checkUPat upat
+checkFullEmbed (Rearr rpat expr bigul) = checkRearr expr rpat >>= \b -> if b then checkFullEmbed bigul else return False
+checkFullEmbed (Dep f bigul) = checkFullEmbed bigul
+checkFullEmbed (CaseS sbranches) = liftM and $ mapM checkSBranch sbranches
+checkFullEmbed (CaseV vbranches) = liftM and $ mapM checkVBranch vbranches
+checkFullEmbed (Align filter matchCond bigul create seal) = checkFullEmbed bigul
 
+checkSBranch :: MonadError' ErrorInfo m => (s -> m Bool, CaseSBranch m s v)  -> m Bool
+checkSBranch (cond, (Normal bigul)) = checkFullEmbed bigul
+checkSBranch (cond, _)              = return True
+
+checkVBranch :: MonadError' ErrorInfo m => CaseVBranch m s v  -> m Bool
+checkVBranch (CaseVBranch pat bigul) = checkFullEmbed bigul
+
+checkUPat :: MonadError' ErrorInfo m => UPat m s v -> m Bool
+checkUPat (UVar bigul) = checkFullEmbed bigul
+checkUPat (UConst c)   = return True
+checkUPat (UProd upatl upatr) = checkUPat upatl >>= \b -> if b then checkUPat upatr else return False
+checkUPat (ULeft upatl)       = checkUPat upatl
+checkUPat (URight upatr)      = checkUPat upatr
+checkUPat (UOut upat)         = checkUPat upat
+checkUPat (UElem upath upatt) = checkUPat upath >>= \b -> if b then checkUPat upatt else return False
+
+
+checkRearr :: MonadError' ErrorInfo m => Expr env v' -> RPat v env con -> m Bool
+checkRearr expr rpat =  updateCon expr rpat (emptyContainer rpat) >>= checkCon rpat
+
+checkCon :: MonadError' ErrorInfo m => RPat v env con -> con -> m Bool
+checkCon RVar                 (Just _)     = return True
+checkCon RVar                 Nothing      = return False
+checkCon (RConst c)           _            = return True
+checkCon (RProd rpatl rpatr)  (conl, conr) = checkCon rpatl conl >>= \b -> if b then checkCon rpatr conr else return b
+checkCon (RLeft rpatl      )  con          = checkCon rpatl con
+checkCon (RRight rpatr     )  con          = checkCon rpatr con
+checkCon (ROut  rpat       )  con          = checkCon rpat  con
+checkCon (RElem rpath rpatt)  (conl, conr) = checkCon rpath conl >>= \b -> if b then checkCon rpatt conr else return b
+
+updateCon :: MonadError' ErrorInfo m => Expr env v' -> RPat v env con -> con -> m con
+updateCon (EDir dir) rpat con = updateDir rpat dir con
+updateCon (EConst c) rpat con = return con
+updateCon (EIn expr) rpat con = updateCon expr rpat con
+updateCon (EProd exprl exprr) rpat con = updateCon exprl rpat con >>= updateCon exprr rpat
+updateCon (ELeft expr)        rpat con = updateCon expr  rpat con
+updateCon (ERight expr)       rpat con = updateCon expr  rpat con
+updateCon (EElem exprh exprt) rpat con = updateCon exprh rpat con >>= updateCon exprt rpat
+
+updateDir :: MonadError' ErrorInfo m => RPat v env con -> Direction env v' -> con -> m con
+updateDir RVar                DVar         Nothing      = return $ Just undefined
+updateDir RVar                DVar         (Just _)     = return $ Just undefined
+updateDir (RConst c)          _            con          = return con
+updateDir (RProd rpatl rpatr) (DLeft dir)  (conl, conr) = liftM (, conr) (updateDir rpatl dir conl)
+updateDir (RProd rpatl rpatr) (DRight dir) (conl, conr) = liftM (conl, ) (updateDir rpatr dir conr)
+updateDir (RLeft rpatl      ) dir          con          = updateDir rpatl dir con
+updateDir (RRight rpatr     ) dir          con          = updateDir rpatr dir con
+updateDir (ROut   rpat      ) dir          con          = updateDir rpat  dir con
+updateDir (RElem rpath rpatt) (DLeft dir)  (conl, conr) = liftM (, conr) (updateDir rpath dir conl)
+updateDir (RElem rpath rpatt) (DRight dir) (conl, conr) = liftM (conl, ) (updateDir rpatt dir conr)
+
+-- iteration over source list
+iter :: (MonadError' ErrorInfo m, Eq v)  => BiGUL m s v -> BiGUL m [s] v
+iter bigul = CaseS [
+--  (return . null, Normal Fail),
+  (return . (== 1) . length, Normal (Rearr RVar (EProd (EDir DVar) (EConst ())) (Update (UElem (UVar bigul) (UVar Skip))))),
+  (return . not . null, Normal(Rearr RVar (EProd (EDir DVar) (EDir DVar)) (Update (UElem (UVar bigul) (UVar (iter bigul))))))
+  ]
 
 
 {-
