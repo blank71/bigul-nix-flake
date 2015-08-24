@@ -15,3 +15,5 @@ subtype:
 
 tran:
 	ghci -isrc Test/TestTranslation.hs
+
+
