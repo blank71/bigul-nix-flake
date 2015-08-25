@@ -165,7 +165,7 @@ apiCallsParser = (optional header >>) $
             vers <- many (xmlElement "apiversion" optPcdata)
             return (name, vers))
     f <- xmlElement "file" optPcdata
-    l <- liftM read $ xmlElement "line" optPcdata
+    l <- liftM (\s -> if not (null s) && and (map isDigit s) then read s else 0) $ xmlElement "line" optPcdata
     ptd <- xmlElement "protected" optPcdata
     del <- liftM (\s -> case s of { "true" -> True; "false" -> False }) $ xmlElement "deleted" optPcdata
     return (ps, (f, (l, (ptd, del))))
@@ -206,12 +206,12 @@ main = menu
 menu :: IO ()
 menu = do
   argv <- getArgs
-  opts <- parseOptions startOpt options argv  
+  opts <- parseOptions startOpt options argv
   -- print $ show opts
   if optDirection opts
     then do
       srcFilePath <- run "input XML source file missing" $ optInputSourceFile opts
-      case optOutputFile opts of 
+      case optOutputFile opts of
         Nothing -> do
           getCalls srcFilePath "newView.xml" (optApiVersion opts)
         Just optFilePath -> do
@@ -219,21 +219,21 @@ menu = do
     else do
       srcFilePath  <- run "input XML source file missing" $ optInputSourceFile opts
       viewFilePath <- run "input XML view file missing" $ optInputTargetFile opts
-      case optOutputFile opts of 
-        Nothing -> 
+      case optOutputFile opts of
+        Nothing ->
           putCalls srcFilePath viewFilePath "newSource.xml" (optApiVersion opts)
         Just optFilePath ->
           putCalls srcFilePath viewFilePath optFilePath  (optApiVersion opts)
 
-      
+
 
 
 getCalls :: String -> String -> ApiVersion  -> IO ()
 getCalls sourceFileName targetFileName apiVersion = do
   srcXML <- readFile sourceFileName
-  either putStrLn 
-     ((>>= writeFile targetFileName) . lintXML . pVXML) $ 
-           either (Left . show) Right (parseApiCalls srcXML) 
+  either putStrLn
+     ((>>= writeFile targetFileName) . lintXML . pVXML) $
+           either (Left . show) Right (parseApiCalls srcXML)
            >>= either (Left . show) Right . get (t apiVersion)
 
 
@@ -242,10 +242,10 @@ putCalls sourceFileName targetFileName newSourceFileName apiVersion = do
   srcXML <- readFile sourceFileName
   targetXML <- readFile targetFileName
   either putStrLn
-     ((>>= writeFile newSourceFileName) . lintXML . pXML) $     
-     errTrans (parseApiCalls srcXML) >>= 
-      \apicalls -> errTrans (parseCalls targetXML) >>= 
-      \calls -> errTrans (put (t apiVersion) apicalls calls) 
+     ((>>= writeFile newSourceFileName) . lintXML . pXML) $
+     errTrans (parseApiCalls srcXML) >>=
+      \apicalls -> errTrans (parseCalls targetXML) >>=
+      \calls -> errTrans (put (t apiVersion) apicalls calls)
 
 errTrans :: Show a => Either a b -> Either String b
 errTrans = either (Left . show) Right
@@ -284,7 +284,7 @@ options =
         (ReqArg (\arg opt -> return opt { optOutputFile = Just arg }) "FILE")
         "Output XML File (default: stdout)"
    , Option "a"  ["apiVersion"]
-        (ReqArg (\arg opt -> return opt { optApiVersion =  arg }) "FILE")   
+        (ReqArg (\arg opt -> return opt { optApiVersion =  arg }) "FILE")
         "Input ApiVersion"
    , Option "f" ["forward"]
         (NoArg (\opt -> return opt { optDirection = True }))
