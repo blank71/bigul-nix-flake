@@ -10,6 +10,11 @@ import Text.ParserCombinators.Parsec hiding ((<+>), Line)
 import Text.ParserCombinators.Parsec.Pos hiding (Line)
 import System.IO
 import System.Process
+import System.Environment
+import System.Console.GetOpt
+import System.Exit
+import Data.Maybe
+
 
 type ApiCalls     = [SCall]
 type SCall        = (SPermissions, (File, (Line, (Protected, Deleted))))
@@ -89,7 +94,7 @@ v' = [("./smali/b.java",(24,["android.permission.INTERNET"])),
 --type VPermission  = Name
 
 pXML :: ApiCalls -> String
-pXML = element "apicalls" . concat . map (\(ps, (f, (l, (ptd, del)))) -> element "permissions" (concat (map (\(n, vers) -> element "permission" (element "name" n ++ concat (map (element "apiversion") vers))) ps)) ++ element "file" f ++ element "line" (show l) ++ element "protected" ptd ++ element "deleted" (map toLower (show del)))
+pXML = element "apicalls" . concat . map (\(ps, (f, (l, (ptd, del)))) -> element "call" (element "permissions" (concat (map (\(n, vers) -> element "permission" (element "name" n ++ concat (map (element "apiversion") vers))) ps)) ++ element "file" f ++ element "line" (show l) ++ element "protected" ptd ++ element "deleted" (map toLower (show del))))
 
 element :: String -> String -> String
 element e = (("<" ++ e ++ ">") ++) . (++ ("</" ++ e ++ ">"))
@@ -153,7 +158,7 @@ xmlElement name p = beginElement name >> p >|> endElement name
 
 apiCallsParser :: GenParser XMLToken () ApiCalls
 apiCallsParser = (optional header >>) $
-  xmlElement "apicalls" $ many $ do
+  xmlElement "apicalls" $ many $  xmlElement "call" $ do
     ps <- xmlElement "permissions" $
           many (xmlElement "permission" $ do
             name <- xmlElement "name" optPcdata
@@ -187,3 +192,135 @@ parseApiCalls = tokeniseAndParse xmlTokeniser apiCallsParser expandEmptyElements
 
 parseCalls :: String -> Either ParseError Calls
 parseCalls = tokeniseAndParse xmlTokeniser callsParser expandEmptyElements
+
+
+
+
+
+
+
+
+-- command line tool
+main = menu
+
+menu :: IO ()
+menu = do
+  argv <- getArgs
+  opts <- parseOptions startOpt options argv  
+  -- print $ show opts
+  if optDirection opts
+    then do
+      srcFilePath <- run "input XML source file missing" $ optInputSourceFile opts
+      case optOutputFile opts of 
+        Nothing -> do
+          getCalls srcFilePath "newView.xml" (optApiVersion opts)
+        Just optFilePath -> do
+          getCalls srcFilePath optFilePath  (optApiVersion opts)
+    else do
+      srcFilePath  <- run "input XML source file missing" $ optInputSourceFile opts
+      viewFilePath <- run "input XML view file missing" $ optInputTargetFile opts
+      case optOutputFile opts of 
+        Nothing -> 
+          putCalls srcFilePath viewFilePath "newSource.xml" (optApiVersion opts)
+        Just optFilePath ->
+          putCalls srcFilePath viewFilePath optFilePath  (optApiVersion opts)
+
+      
+
+
+getCalls :: String -> String -> ApiVersion  -> IO ()
+getCalls sourceFileName targetFileName apiVersion = do
+  srcXML <- readFile sourceFileName
+  either putStrLn 
+     ((>>= writeFile targetFileName) . lintXML . pVXML) $ 
+           either (Left . show) Right (parseApiCalls srcXML) 
+           >>= either (Left . show) Right . get (t apiVersion)
+
+
+putCalls :: String -> String -> String -> ApiVersion -> IO ()
+putCalls sourceFileName targetFileName newSourceFileName apiVersion = do
+  srcXML <- readFile sourceFileName
+  targetXML <- readFile targetFileName
+  either putStrLn
+     ((>>= writeFile newSourceFileName) . lintXML . pXML) $     
+     errTrans (parseApiCalls srcXML) >>= 
+      \apicalls -> errTrans (parseCalls targetXML) >>= 
+      \calls -> errTrans (put (t apiVersion) apicalls calls) 
+
+errTrans :: Show a => Either a b -> Either String b
+errTrans = either (Left . show) Right
+
+
+data Options = Options
+  {
+    optInputSourceFile   :: Maybe FilePath
+  , optInputTargetFile   :: Maybe FilePath
+  , optOutputFile        :: Maybe FilePath
+  , optDirection         :: Bool
+  , optApiVersion        :: String
+  } deriving Show
+
+startOpt :: Options
+startOpt = Options
+  { optInputSourceFile = Nothing
+  , optInputTargetFile = Nothing
+  , optOutputFile      = Nothing
+  , optDirection       = False
+  , optApiVersion      = ""
+  }
+
+options :: Opts Options
+options =
+   [ Option "h" ["help"]
+        (NoArg (\opt -> exitHelp options))
+        "Show usage info"
+   , Option "s" ["source"]
+        (ReqArg (\arg opt -> return opt { optInputSourceFile = Just arg }) "FILE")
+        "Input XML Source File"
+   , Option "v" ["view"]
+        (ReqArg (\arg opt -> return opt { optInputTargetFile = Just arg }) "FILE")
+        "Input XML View File"
+   , Option "o" ["output"]
+        (ReqArg (\arg opt -> return opt { optOutputFile = Just arg }) "FILE")
+        "Output XML File (default: stdout)"
+   , Option "a"  ["apiVersion"]
+        (ReqArg (\arg opt -> return opt { optApiVersion =  arg }) "FILE")   
+        "Input ApiVersion"
+   , Option "f" ["forward"]
+        (NoArg (\opt -> return opt { optDirection = True }))
+        "Run the bidirectional transformation in the forward direction (requires an source file)"
+   , Option "b" ["backward"]
+        (NoArg (\opt -> return opt { optDirection = False }))
+        "Run the bidirectional transformation in the backward direction (requires a source file and a modified target file)"
+   ]
+
+
+
+
+type Opts a = [OptDescr (a -> IO a)]
+
+parseOptions :: a -> Opts a -> [String] -> IO a
+parseOptions start opts argv = case getOpt RequireOrder opts argv of
+  (optsActions,rest,[]) -> foldl (>>=) (return start) optsActions
+  (_,_,errs) -> do
+    prg <- getProgName
+    ioError (userError (concat errs ++ usageInfo ("Usage: "++prg++" [OPTION...] files...") opts))
+
+run :: String -> Maybe a -> IO a
+run err = maybe (error err) return
+
+-- | Function that prints the help usage and returns with a success code (used
+--   when the help program option is specified.
+exitHelp :: Opts a -> IO a
+exitHelp opts = do
+    showHelp opts
+    exitWith ExitSuccess
+
+-- | Function that prints the program usage to the sdtderr using the standard
+--   'usageInfo' function.
+showHelp :: Opts a -> IO ()
+showHelp opts = do
+    prg <- getProgName
+    hPutStrLn stderr (usageInfo ("Usage: "++prg++" [OPTION...]") opts)
+    hFlush stderr
+
