@@ -15,7 +15,6 @@ import System.Console.GetOpt
 import System.Exit
 import Data.Maybe
 
-
 type ApiCalls     = [SCall]
 type SCall        = (SPermissions, (File, (Line, (Protected, Deleted))))
 type File         = String
@@ -151,7 +150,7 @@ pcdata :: GenParser XMLToken () String
 pcdata = token show (const (initialPos "")) (\t -> case t of { PCData s -> Just s; _ -> Nothing })
 
 optPcdata :: GenParser XMLToken () String
-optPcdata = liftM (maybe "" id) (optionMaybe pcdata)
+optPcdata = liftM (maybe "" (filter (not . isSpace))) (optionMaybe pcdata)
 
 xmlElement :: String -> GenParser XMLToken () a -> GenParser XMLToken () a
 xmlElement name p = beginElement name >> p >|> endElement name
@@ -210,6 +209,8 @@ menu = do
   -- print $ show opts
   if optDirection opts
     then do
+      putStrLn "===> Forward transformation:"
+      putStrLn "    read source xml"
       srcFilePath <- run "input XML source file missing" $ optInputSourceFile opts
       case optOutputFile opts of
         Nothing -> do
@@ -217,13 +218,17 @@ menu = do
         Just optFilePath -> do
           getCalls srcFilePath optFilePath  (optApiVersion opts)
     else do
+      putStrLn "==> backward transformation:"
+      putStrLn "    read source xml"
       srcFilePath  <- run "input XML source file missing" $ optInputSourceFile opts
+      putStrLn "    read view xml"
       viewFilePath <- run "input XML view file missing" $ optInputTargetFile opts
       case optOutputFile opts of
         Nothing ->
           putCalls srcFilePath viewFilePath "newSource.xml" (optApiVersion opts)
         Just optFilePath ->
           putCalls srcFilePath viewFilePath optFilePath  (optApiVersion opts)
+  putStrLn "==> Transformation successfully done !"
 
 
 
