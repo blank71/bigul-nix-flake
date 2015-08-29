@@ -83,7 +83,7 @@ mutual
   U-dec (list G ) (x ∷ xs) (y ∷ ys)  | yes eq | no neq' = no (neq' ∘ cong-tail)
   U-dec (list G ) (x ∷ xs) (y ∷ ys)  | no neq | _       = no (neq  ∘ cong-head)
 
-data Pattern {n : ℕ} (F : Functor n) : U n → Set where
+data Pattern {n : ℕ} (F : Functor n) : U n → Set₁ where
   var   : {G : U n} → Pattern F G
   k     : {G : U n} (x : ⟦ G ⟧ (μ F)) → Pattern F G
   child : {i : Fin n} (pat : Pattern F (F i)) → Pattern F (var i)

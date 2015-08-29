@@ -255,7 +255,7 @@ fromContainer-consistent-complete (elem hpat tpat) (r , r') (c , c') (p , p') (c
 eval-uneval-path :
   {G : U n} (vpat : Pattern F G) {H : U n} (path : VarPath vpat H)
   (r : PatResult vpat) (c : Container vpat) → Consistent vpat r c →
-  Σ[ c' ∈ Container vpat ] (uneval-path vpat path (eval-path vpat path r) c ↦ c') × Consistent vpat r c'
+  Σ[ c' ∈ Container vpat ] ((uneval-path vpat path (eval-path vpat path r) c ↦ c') × Consistent vpat r c')
 eval-uneval-path {G} var          refl        r        (just x) p with U-dec G r x
 eval-uneval-path {G} var          refl        r        (just x) p | yes _ = just x , return refl , p
 eval-uneval-path {G} var          refl        r        (just x) p | no r≢x with r≢x p
@@ -281,7 +281,7 @@ eval-uneval-path (elem hpat tpat) (inj₂ path) (r , r') (c , c') (p , p') =
 eval-uneval :
   {G : U n} (vpat : Pattern F G) {H : U n} (spat : Pattern F H) (expr : Expr vpat spat)
   (r : PatResult vpat) (c : Container vpat) → Consistent vpat r c →
-  Σ[ c' ∈ Container vpat ] (uneval vpat spat expr (eval vpat spat expr r) c ↦ c') × Consistent vpat r c'
+  Σ[ c' ∈ Container vpat ] ((uneval vpat spat expr (eval vpat spat expr r) c ↦ c') × Consistent vpat r c')
 eval-uneval vpat var              path r c p = eval-uneval-path vpat path r c p
 eval-uneval vpat (k x)            expr r c p = c , return refl , p
 eval-uneval vpat (child pat)      expr r c p = eval-uneval vpat pat expr r c p

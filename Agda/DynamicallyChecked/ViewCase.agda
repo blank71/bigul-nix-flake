@@ -20,7 +20,7 @@ open import Data.List
 
 
 Branch : Set₁
-Branch = Σ[ V' ∈ Set ] (S ⇆ V') × (V' ≅ V)
+Branch = Σ[ V' ∈ Set ] ((S ⇆ V') × (V' ≅ V))
 
 get-selected : {V' : Set} → S ⇆ V' → V' ≅ V → S → Par V
 get-selected lens iso s = Lens.get lens s >>= Iso.to iso
