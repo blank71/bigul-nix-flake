@@ -39,56 +39,57 @@ emptyF ()
 emptyTEnv : Fin 0 → Set
 emptyTEnv ()
 
-inBritain : String × ℕ × (String ⊎ String) → Par Bool
-inBritain (_ , _ , inj₁ _) = return true
-inBritain (_ , _ , inj₂ _) = return false
+inBritain : ℕ × (String ⊎ String) → Par Bool
+inBritain (_ , inj₁ _) = return true
+inBritain (_ , inj₂ _) = return false
 
-inAmerica : String × ℕ × (String ⊎ String) → Par Bool
-inAmerica (_ , _ , inj₁ _) = return false
-inAmerica (_ , _ , inj₂ _) = return true
+inAmerica : ℕ × (String ⊎ String) → Par Bool
+inAmerica (_ , inj₁ _) = return false
+inAmerica (_ , inj₂ _) = return true
 
 globalCorporation : BiGUL emptyF (list EmployeeU) (list LocationU)
 globalCorporation =
   align (const (return true))
         ((String × ℕ × (String ⊎ String) → String × (String ⊎ String) → Par Bool) ∋
            (λ { (sname , _) (vname , _) → return ⌊ sname Data.String.≟ vname ⌋ }))
-        (caseV ((prod var (left  var) ,
-                   caseS ((inBritain ,
-                             normal (rearr (prod var var) (prod var (prod (k tt) var)) (inj₁ refl , tt , inj₂ refl)
-                                           (update (prod var (prod var (left var)))
-                                                   ((, replace) , (, skip) , (, replace))))) ∷
-                          (inAmerica ,
-                             adaptive (λ { (name , salary , _) → return (name , ⌈ salary /2⌉ , inj₁ "") })) ∷ [])) ∷
-                (prod var (right var) ,
-                   caseS ((inBritain ,
-                             adaptive ((String × ℕ × (String ⊎ String) → Par (String × ℕ × (String ⊎ String))) ∋
-                                      (λ { (name , salary , _) → return (name , 2 * salary , inj₂ "") }))) ∷
-                          (inAmerica ,
-                             normal (rearr (prod var var) (prod var (prod (k tt) var)) (inj₁ refl , tt , inj₂ refl)
-                                           (update (prod var (prod var (right var)))
-                                                   ((, replace) , (, skip) , (, replace))))) ∷ [])) ∷ []))
+        (rearr (prod var var) (prod var (prod (k tt) var)) (inj₁ refl , tt , inj₂ refl)
+           (update (prod var var)
+              ((, replace) ,
+               (, caseV ((prod var (left  var) ,
+                            caseS ((inBritain ,
+                                      normal (update (prod var (left  var)) ((, skip) , (, replace)))) ∷
+                                   (inAmerica ,
+                                      adaptive (λ s → return (⌈ proj₁ s /2⌉ , inj₁ ""))) ∷ [])) ∷
+                         (prod var (right var) ,
+                            caseS ((inBritain ,
+                                      adaptive (λ s → return (2 * proj₁ s , inj₂ ""))) ∷
+                                   (inAmerica ,
+                                      normal (update (prod var (right var)) ((, skip) , (, replace)))) ∷ [])) ∷ [])))))
         ((String × (String ⊎ String) → Par (String × ℕ × (String ⊎ String))) ∋
            (λ { (name , location) → return (name , 0 , location) }))
         (const (return nothing))
 
 globalCorporation-CompleteExpr : BiGULCompleteExpr emptyF globalCorporation
-globalCorporation-CompleteExpr = (((return refl >>= return refl) , tt , tt , tt) , tt) ,
-                                   (((return refl >>= return refl) , tt , tt , tt) , tt) , tt
+globalCorporation-CompleteExpr = (return refl >>= return refl) ,
+                                   tt , ((tt , tt) , tt) , ((tt , tt) , tt) , tt
 
 employees : ⟦ list EmployeeU ⟧ emptyTEnv
 employees = ("Jeremy Gibbons" , 82495 , inj₁ "Oxford University" ) ∷
             ("Meng Wang"      , 13590 , inj₁ "Oxford University" ) ∷
-            ("Nate Foster"    , 97000 , inj₂ "Cornell University") ∷ []
+            ("Nate Foster"    , 97000 , inj₂ "Cornell University") ∷
+            ("Hugo Pacheco"   , 35000 , inj₂ "Cornell University") ∷ []
 
 locations : ⟦ list LocationU ⟧ emptyTEnv
 locations = ("Jeremy Gibbons" , inj₁ "Oxford University" ) ∷
             ("Meng Wang"      , inj₁ "Oxford University" ) ∷
-            ("Nate Foster"    , inj₂ "Cornell University") ∷ []
+            ("Nate Foster"    , inj₂ "Cornell University") ∷
+            ("Hugo Pacheco"   , inj₂ "Cornell University") ∷ []
 
 locations' : ⟦ list LocationU ⟧ emptyTEnv
 locations' = ("Jeremy Gibbons" , inj₁ "Oxford University" ) ∷
-             ("Meng Wang"      , inj₂ "Harvard University") ∷
-             ("Nate Foster"    , inj₁ "Oxford University" ) ∷ []
+             ("Nate Foster"    , inj₁ "Oxford University" ) ∷
+             ("Josh Ko"        , inj₁ "Oxford University" ) ∷
+             ("Meng Wang"      , inj₂ "Harvard University") ∷ []
 
 test-get : Maybe (⟦ list LocationU ⟧ emptyTEnv)
 test-get = runPar (Lens.get (interp emptyF globalCorporation globalCorporation-CompleteExpr) employees)
