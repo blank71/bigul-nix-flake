@@ -5,8 +5,8 @@ import Lang.AST
 import Lang.Interpreter
 import Control.Monad
 import GHC.Generics
-import qualified Netscape
-import qualified Xbel
+--import qualified Netscape
+--import qualified Xbel
 
 ---- 0 . iter operation test
 iterBigul :: MonadError' ErrorInfo m => BiGUL m [Int] Int
@@ -165,5 +165,82 @@ checkBook = liftM (show) (checkFullEmbed bookstore)
 
 
 -- checkRearr :: MonadError' ErrorInfo m => Expr env v' -> RPat v env con -> m Bool
+
+
+-- Example 2: involve Adaptive
+type Name = String
+type Salary = Float
+type Location = String
+type Employee = (Name, (Salary, Either Location Location))
+type EmployeeSource = [Employee]
+
+
+type EmployeeSimplified = (Name, Either Location Location)
+type EmployeeView = [EmployeeSimplified]
+
+u :: MonadError' e m => BiGUL m EmployeeSource EmployeeView
+u = Align (\_ -> return True)
+          (\(sName, _) (vName, _) -> return (sName == vName))
+          (Rearr (RVar `RProd` RVar) 
+                 (EDir (DLeft DVar) `EProd` (EConst () `EProd` (EDir (DRight DVar)))) 
+                 (Update (UVar Replace `UProd`
+                          UVar (
+                            CaseV [
+                              CaseVBranch (PVar `PProd` (PLeft PVar)) (
+                                  CaseS [
+                                    (return . isBritain . snd, Normal (Update (UVar Skip `UProd` ULeft (UVar Replace)))),
+                                    (return . isAmerican . snd, Adaptive (\(salary, _) -> return (salary*3/5, Left "")))
+                                  ]
+                                ),
+                              CaseVBranch (PVar `PProd` (PRight PVar)) (
+                                  CaseS [
+                                    ((return . isAmerican . snd), Normal (Update (UVar Skip `UProd` URight (UVar Replace)))),
+                                    ((return . isBritain . snd), Adaptive (\(salary, _) -> return (salary*5/3, Right "")))
+                                  ]
+                                )
+                            ]
+                          ) 
+                         )
+                 )
+          )
+          (\(vName, location) -> return (vName, (0, location)))
+          (\_ -> return Nothing)
+
+
+isBritain :: Either Location Location -> Bool
+isBritain (Left _) = True
+isBritain _        = False 
+
+isAmerican :: Either Location Location -> Bool
+isAmerican (Right _) = True
+isAmerican _ = False
+
+
+
+employeeS :: EmployeeSource
+employeeS = [("Jermy Gibbons", (82495, Left "Oxford University")),
+             ("Meng Wang", (13590, Left "Oxford University")),
+             ("Nate Foster", (97000, Right "Cornell University")),
+             ("Hugo Pacheco", (35000, Right "Cornell University"))
+            ]
+
+getEmployee = catchBind (get u employeeS) (\v -> Right (show v)) (\e -> Left e)
+
+-- re-ordering
+-- update location
+-- deletion
+-- insertion
+employeeView' :: EmployeeView
+employeeView' = [
+             ("Jermy Gibbons", Left "Oxford University"),
+             ("Nate Foster", Left "Oxford University"),
+             ("Josh Ko", Left "Oxford University"),
+             ("Meng Wang", Right "Havard University")
+             ]
+
+putEmployee :: Either ErrorInfo String
+putEmployee =liftM (show) (put u employeeS employeeView')
+
+
 
 

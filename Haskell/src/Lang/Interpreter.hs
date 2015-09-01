@@ -35,7 +35,26 @@ putUPat (UElem upath upatt) (s:xs) (v, vs) = liftM2 (:) (putUPat upath s v) (put
 
 
 putCaseS :: MonadError' ErrorInfo m => [(s -> m Bool, CaseSBranch m s v)] -> s -> v -> m s
-putCaseS branches s v = putCaseSHelp branches s v branches False
+putCaseS branches s v = putCaseSAccu branches s v branches False []
+
+
+putCaseSAccu :: MonadError' ErrorInfo m => [(s -> m Bool, CaseSBranch m s v)] -> s -> v -> [(s -> m Bool, CaseSBranch m s v)] -> Bool -> [s -> m Bool] -> m s
+putCaseSAccu [] s v _ _ _ = throwError $ ErrorInfo "No matching pattern for caseS"
+putCaseSAccu branches@(x@(p, branch): xs) s v allBranches flag accuPs = p s >>=
+  \b -> if b
+    then case branch of 
+      Normal bigul -> put bigul s v >>= \s' -> p s' >>= \b' -> if b' then return s' else checkAccuBranches accuPs s' v
+      Adaptive f   -> if flag then throwError $ ErrorInfo "meet adaptive branch again"
+                              else f s >>= \s' -> putCaseSAccu allBranches s' v allBranches True []
+    else putCaseSAccu xs s v allBranches flag (accuPs ++ [p])
+
+-- AccuBranches only contains normal branches.
+checkAccuBranches :: MonadError' ErrorInfo m => [s -> m Bool] -> s -> v  -> m s
+checkAccuBranches [] s v = return s
+checkAccuBranches (p: xs) s v = p s >>=
+  \b -> if b
+    then throwError $ ErrorInfo "Updated source matched with previous branch"
+    else checkAccuBranches xs s v
 
 putCaseSHelp :: MonadError' ErrorInfo m => [(s -> m Bool, CaseSBranch m s v)] -> s -> v -> [(s -> m Bool, CaseSBranch m s v)] -> Bool -> m s
 putCaseSHelp [] s v _ _ = throwError $ ErrorInfo "caseS empty with no matching pat"
