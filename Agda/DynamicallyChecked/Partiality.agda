@@ -33,6 +33,19 @@ runPar (catch mx f my   ) | just x  = runPar (f x)
 runPar (catch mx f my   ) | nothing = runPar my
 runPar (assert b then mx) = if b then runPar mx else nothing
 
+stepPar : {A : Set} → Par A → Par A
+stepPar (return x        ) = return x
+stepPar (mx >>= f        ) with stepPar mx
+stepPar (mx >>= f        ) | return x = f x
+stepPar (mx >>= f        ) | fail     = fail
+stepPar (mx >>= f        ) | mx'      = mx' >>= f
+stepPar fail               = fail
+stepPar (catch mx f my   ) with stepPar mx
+stepPar (catch mx f my   ) | return x = f x
+stepPar (catch mx f my   ) | fail     = my
+stepPar (catch mx f my   ) | mx'      = catch mx' f my
+stepPar (assert b then mx) = if b then mx else fail
+
 embed : {A : Set} → Maybe A → Par A
 embed = maybe return fail
 
