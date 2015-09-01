@@ -23,87 +23,64 @@ elimBranchType : {l : Level} {A : Set l} → ((S ⇆ V) → A) → ((S → Par S
 elimBranchType f g (normal   l) = f l
 elimBranchType f g (adaptive u) = g u
 
-put-with-adaptation : List Branch → S → V → (S → Par S) → Par S
-put-with-adaptation []              s v f = fail
-put-with-adaptation ((p , bt) ∷ bs) s v f =
-  p s >>= λ b → if b then elimBranchType (λ lens → Lens.put lens s v >>= λ s' → p s' >>= λ b' → assert b' then return s')
-                                         (λ u → u s >>= f) bt
-                     else put-with-adaptation bs s v f >>= λ s' → p s' >>= λ b' → assert not b' then return s'
+check-diversion : List Branch → S → Par ⊤
+check-diversion [] s = return tt
+check-diversion ((p , _) ∷ bs) s = p s >>= λ b → assert not b then check-diversion bs s
+
+put-with-adaptation : List Branch → List Branch → S → V → (S → Par S) → Par S
+put-with-adaptation []              bs' s v f = fail
+put-with-adaptation ((p , bt) ∷ bs) bs' s v f =
+  p s >>= λ b →
+  if b then elimBranchType
+              (λ lens → Lens.put lens s v >>= λ s' → p s' >>= λ b' → assert b' then check-diversion bs' s' >> return s')
+              (λ u → u s >>= f) bt
+       else put-with-adaptation bs ((p , bt) ∷ bs') s v f
 
 put : List Branch → S → V → Par S
-put bs s v = put-with-adaptation bs s v (λ s' → put-with-adaptation bs s' v (const fail))
+put bs s v = put-with-adaptation bs [] s v (λ s' → put-with-adaptation bs [] s' v (const fail))
 
 get : List Branch → S → Par V
 get []              s = fail
 get ((p , bt) ∷ bs) s = p s >>= λ b → if b then elimBranchType (λ lens → Lens.get lens s) (const fail) bt
                                            else get bs s
 
-UnmatchedBranches : List Branch → S → Set₁
-UnmatchedBranches []             s = ⊤
-UnmatchedBranches ((p , b) ∷ bs) s = (p s ↦ false) × UnmatchedBranches bs s
-
-get-revcat : (bs : List Branch) {s : S} {v : V} (bs' : List Branch) → UnmatchedBranches bs' s →
+get-revcat : (bs : List Branch) {s : S} {v : V} (bs' : List Branch) → check-diversion bs' s ↦ tt →
              get bs s ↦ v → get (revcat bs' bs) s ↦ v
-get-revcat bs []                     ub  get↦ = get↦
-get-revcat bs (b ∷ bs') (p-s↦false , ub) get↦ = get-revcat (b ∷ bs) bs' ub (p-s↦false >>= get↦)
-
-PutGet-with-adaptation' :
-  (bs : List Branch) {s : S} {v : V} {s' : S} → put-with-adaptation bs s v (const fail) ↦ s' → get bs s' ↦ v
-PutGet-with-adaptation' []                       ()
-PutGet-with-adaptation' ((p , normal lens) ∷ bs)
-  (_>>=_ {x = false} p-s↦false (put↦s' >>= (_>>=_ {x = false} p-s'↦false (assert _ then return refl)))) =
-  p-s'↦false >>= PutGet-with-adaptation' bs put↦s'
-PutGet-with-adaptation' ((p , normal lens) ∷ bs)
-  (_>>=_ {x = false} p-s↦false (put↦s' >>= (_>>=_ {x = true} p-s'↦true (assert () then _))))
-PutGet-with-adaptation' ((p , normal lens) ∷ bs)
-  (_>>=_ {x = true } p-s↦true (lens-put-s-v↦s' >>= p-s'↦true >>= assert refl then return refl)) =
-  p-s'↦true >>= Lens.PutGet lens lens-put-s-v↦s'
-PutGet-with-adaptation' ((p , adaptive u ) ∷ bs)
-  (_>>=_ {x = false} p-s↦ (put↦ >>= (_>>=_ {x = false} p-s'↦ (assert _ then return refl)))) =
-  p-s'↦ >>= PutGet-with-adaptation' bs put↦
-PutGet-with-adaptation' ((p , adaptive u ) ∷ bs)
-  (_>>=_ {x = false} p-s↦ (put↦ >>= (_>>=_ {x = true} p-s'↦ (assert () then _))))
-PutGet-with-adaptation' ((p , adaptive u ) ∷ bs) (_>>=_ {x = true} p-s↦ (_ >>= ()))
+get-revcat bs []               _    get↦ = get↦
+get-revcat bs ((p , bt) ∷ bs') (_>>=_ {x = true } p-s↦true  (assert () then _              )) get↦
+get-revcat bs ((p , bt) ∷ bs') (_>>=_ {x = false} p-s↦false (assert _ then check-diversion↦)) get↦ =
+  get-revcat ((p , bt) ∷ bs) bs' check-diversion↦ (p-s↦false >>= get↦)
 
 PutGet-with-adaptation :
-  (bs : List Branch) {s : S} {v : V} {s' : S} (bs' : List Branch) → UnmatchedBranches bs' s' →
-  put-with-adaptation bs s v (λ s'' → put-with-adaptation (revcat bs' bs) s'' v (const fail)) ↦ s' →
-  get (revcat bs' bs) s' ↦ v
-PutGet-with-adaptation []                       bs' ub ()
-PutGet-with-adaptation ((p , normal lens) ∷ bs) bs' ub
-  (_>>=_ {x = false} p-s↦ (put↦ >>= (_>>=_ {x = false} p-s'↦false (assert _ then return refl)))) =
-  PutGet-with-adaptation bs ((p , normal lens) ∷ bs') (p-s'↦false , ub) put↦
-PutGet-with-adaptation ((p , normal lens) ∷ bs) bs' ub
-  (_>>=_ {x = false} p-s↦ (put↦ >>= (_>>=_ {x = true} p-s'↦true (assert () then _))))
-PutGet-with-adaptation ((p , normal lens) ∷ bs) bs' ub
-  (_>>=_ {x = true} p-s↦ (lens-put↦ >>= p-s'↦true >>= assert refl then return refl)) =
-  get-revcat ((p , normal lens) ∷ bs) bs' ub (p-s'↦true >>= Lens.PutGet lens lens-put↦)
-PutGet-with-adaptation ((p , adaptive u ) ∷ bs) bs' ub
-  (_>>=_ {x = false} p-s↦false (put↦ >>= (_>>=_ {x = false} p-s'↦false (assert _ then return refl)))) =
-  PutGet-with-adaptation bs ((p , adaptive u) ∷ bs') (p-s'↦false , ub) put↦
-PutGet-with-adaptation ((p , adaptive u ) ∷ bs) bs' ub
-  (_>>=_ {x = false} p-s↦false (put↦ >>= (_>>=_ {x = true} p-s'↦true (assert () then _))))
-PutGet-with-adaptation ((p , adaptive u ) ∷ bs) bs' ub (_>>=_ {x = true} p-s↦ (u↦ >>= put↦)) =
-  PutGet-with-adaptation' (revcat bs' ((p , adaptive u) ∷ bs)) put↦
+  (bs : List Branch) {s : S} {v : V} {s' : S} (bs' : List Branch) →
+  {cont : S → Par S} → ({s s' : S} → cont s ↦ s' → get (revcat bs' bs) s' ↦ v) →
+  put-with-adaptation bs bs' s v cont ↦ s' → get (revcat bs' bs) s' ↦ v
+PutGet-with-adaptation []                      bs' PutGet-cont ()
+PutGet-with-adaptation ((p , bt)         ∷ bs) bs' PutGet-cont (_>>=_ {x = false} p-s↦false put↦) =
+  PutGet-with-adaptation bs ((p , bt) ∷ bs') PutGet-cont put↦
+PutGet-with-adaptation ((p , normal   l) ∷ bs) bs' PutGet-cont
+  (_>>=_ {x = true } p-s↦true  (put-s-v↦s' >>= p-s'↦true >>= assert refl then check-diversion↦ >>= return refl)) =
+  get-revcat ((p , normal l) ∷ bs) bs' check-diversion↦ (p-s'↦true >>= Lens.PutGet l put-s-v↦s')
+PutGet-with-adaptation ((p , adaptive u) ∷ bs) bs' PutGet-cont (_>>=_ {x = true } p-s↦true  (u↦ >>= cont↦)) =
+  PutGet-cont cont↦
 
 PutGet : (bs : List Branch) {s : S} {v : V} {s' : S} → put bs s v ↦ s' → get bs s' ↦ v
-PutGet bs = PutGet-with-adaptation bs [] tt
+PutGet bs = PutGet-with-adaptation bs [] (PutGet-with-adaptation bs [] (λ ()))
 
-GetPut-with-adaptation : (bs : List Branch) {f : S → Par S} {s : S} {v : V} →
-                         get bs s ↦ v → put-with-adaptation bs s v f ↦ s
-GetPut-with-adaptation []                       ()
-GetPut-with-adaptation ((p , normal lens) ∷ bs) (_>>=_ {x = false} p-s↦false get↦) =
-  p-s↦false >>= GetPut-with-adaptation bs get↦ >>= p-s↦false >>= assert refl then return refl
-GetPut-with-adaptation ((p , normal lens) ∷ bs) (_>>=_ {x = true} p-s↦true lens-get↦) =
-  p-s↦true >>= Lens.GetPut lens lens-get↦ >>= p-s↦true >>= assert refl then return refl
-GetPut-with-adaptation ((p , adaptive u ) ∷ bs) (_>>=_ {x = false} p-s↦false get↦) =
-  p-s↦false >>= GetPut-with-adaptation bs get↦ >>= p-s↦false >>= assert refl then return refl
-GetPut-with-adaptation ((p , adaptive u ) ∷ bs) (_>>=_ {x = true} p-s↦ ())
+GetPut-with-adaptation : (bs : List Branch) {f : S → Par S} {s : S} {v : V}
+                         (bs' : List Branch) → check-diversion bs' s ↦ tt →
+                         get bs s ↦ v → put-with-adaptation bs bs' s v f ↦ s
+GetPut-with-adaptation []                      bs' check-diversion↦ ()
+GetPut-with-adaptation ((p , bt        ) ∷ bs) bs' check-diversion↦ (_>>=_ {x = false} p-s↦false get↦) =
+  p-s↦false >>= GetPut-with-adaptation bs ((p , bt) ∷ bs') (p-s↦false >>= assert refl then check-diversion↦) get↦
+GetPut-with-adaptation ((p , normal   l) ∷ bs) bs' check-diversion↦ (_>>=_ {x = true } p-s↦true  get↦) =
+  p-s↦true >>= Lens.GetPut l get↦ >>= p-s↦true >>= assert refl then check-diversion↦ >>= return refl
+GetPut-with-adaptation ((p , adaptive u) ∷ bs) bs' check-diversion↦ (_>>=_ {x = true } p-s↦true  ()  )
 
 GetPut : (bs : List Branch) {f : S → Par S} {s : S} {v : V} → get bs s ↦ v → put bs s v ↦ s
-GetPut bs = GetPut-with-adaptation bs
+GetPut bs = GetPut-with-adaptation bs [] (return refl)
 
 caseS-lens : List Branch → S ⇆ V
 caseS-lens bs = record
   { put = put bs; get = get bs; PutGet = PutGet bs;
-    GetPut = λ {_} {v} → GetPut bs {λ s' → put-with-adaptation bs s' v (const fail)} }
+    GetPut = λ {_} {v} → GetPut bs {λ s' → put-with-adaptation bs [] s' v (const fail)} }
