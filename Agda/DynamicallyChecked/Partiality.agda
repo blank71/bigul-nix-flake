@@ -71,8 +71,7 @@ foldrPar : {A B : Set} → (A → B → Par B) → B → List A → Par B
 foldrPar f e []       = return e
 foldrPar f e (x ∷ xs) = foldrPar f e xs >>= f x
 
-infixr 1 _>>=_
-infix 1 assert_then_
+infixr 1 _>>=_ assert_then_
 
 mutual
 

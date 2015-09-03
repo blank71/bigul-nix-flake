@@ -59,7 +59,7 @@ PutGet-with-adaptation []                      bs' PutGet-cont ()
 PutGet-with-adaptation ((p , bt)         ∷ bs) bs' PutGet-cont (_>>=_ {x = false} p-s↦false put↦) =
   PutGet-with-adaptation bs ((p , bt) ∷ bs') PutGet-cont put↦
 PutGet-with-adaptation ((p , normal   l) ∷ bs) bs' PutGet-cont
-  (_>>=_ {x = true } p-s↦true  (put-s-v↦s' >>= p-s'↦true >>= assert refl then check-diversion↦ >>= return refl)) =
+  (_>>=_ {x = true } p-s↦true (put-s-v↦s' >>= p-s'↦true >>= assert refl then (check-diversion↦ >>= return refl))) =
   get-revcat ((p , normal l) ∷ bs) bs' check-diversion↦ (p-s'↦true >>= Lens.PutGet l put-s-v↦s')
 PutGet-with-adaptation ((p , adaptive u) ∷ bs) bs' PutGet-cont (_>>=_ {x = true } p-s↦true  (u↦ >>= cont↦)) =
   PutGet-cont cont↦
@@ -74,7 +74,7 @@ GetPut-with-adaptation []                      bs' check-diversion↦ ()
 GetPut-with-adaptation ((p , bt        ) ∷ bs) bs' check-diversion↦ (_>>=_ {x = false} p-s↦false get↦) =
   p-s↦false >>= GetPut-with-adaptation bs ((p , bt) ∷ bs') (p-s↦false >>= assert refl then check-diversion↦) get↦
 GetPut-with-adaptation ((p , normal   l) ∷ bs) bs' check-diversion↦ (_>>=_ {x = true } p-s↦true  get↦) =
-  p-s↦true >>= Lens.GetPut l get↦ >>= p-s↦true >>= assert refl then check-diversion↦ >>= return refl
+  p-s↦true >>= Lens.GetPut l get↦ >>= p-s↦true >>= assert refl then (check-diversion↦ >>= return refl)
 GetPut-with-adaptation ((p , adaptive u) ∷ bs) bs' check-diversion↦ (_>>=_ {x = true } p-s↦true  ()  )
 
 GetPut : (bs : List Branch) {f : S → Par S} {s : S} {v : V} → get bs s ↦ v → put bs s v ↦ s
