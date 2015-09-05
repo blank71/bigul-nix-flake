@@ -104,7 +104,7 @@ mutual
   interp (update pat bs) c = iso-lens (pat-iso pat) ↔ interp-update pat bs c
   interp (rearr vpat vpat' expr b) (c , c') = interp b c' ↔ iso-lens (view-rearrangement-iso vpat vpat' expr c)
   interp (dep {V' = V'} f b) c = interp b c ↔ iso-lens (sym-iso (dependency-iso f (U-dec V')))
-  interp (caseS branches) c = caseS-lens _ _ (interp-CaseSBranch branches c)
+  interp (caseS {S} {V} branches) c = caseS-lens (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)) (interp-CaseSBranch branches c)
   interp (caseV {V = V} branches) c = caseV-lens _ _ (U-dec V) (interp-CaseVBranch branches c)
   interp (align source-condition match? b create conceal) c = align-lens source-condition match? (interp b c) create conceal
 
