@@ -547,13 +547,6 @@ For more complicated well-behavedness proofs, the above naive approach quickly b
 %Also it may well happen that, after the programmer describes a |get|, the corresponding |put| synthesised by the language is not what the programmer expects.
 %All these problems simply do not exist for the putback-based approach.
 
-Having explained the infrastructure of our \Agda\ formalisation, we can now move on to the |BiGUL| language itself.
-Following the putback-based approach, our language |BiGUL| describes |put| functions, i.e., updates to a source using a view.
-\autoref{fig:BiGUL} shows (a simplified version of) the top-level definition of |BiGUL|.\todo{some of the auxiliary definitions will appear later}\
-In general, a |BiGUL| update proceeds by decomposing the source into several parts to be updated independently~(|update|; \autoref{sec:source-update}), and accordingly rearranging the view to match with these parts~(|rearr|; \autoref{sec:view-rearrangement}), until the source and the view are reduced to the extent that basic operations can be applied~(|replace|, |failB|, and |skip|; \autoref{sec:basic-lenses}).
-When both the source and the view are lists, there is a powerful aligning operation for synchronising the two lists~(|align|; \autoref{sec:list-alignment}).
-And we can do case analyses on either the source~(|caseS|; \autoref{sec:source-case}) or the view~(|caseV|; \autoref{sec:view-case}) for describing more flexible update strategies.
-
 \begin{figure}[t]
 \beforefigure
 \begin{code}
@@ -579,42 +572,50 @@ data ^^^BiGUL : U → U → Set₁ where
 \label{fig:BiGUL}
 \end{figure}
 
+Having explained the infrastructure of our \Agda\ formalisation, we can now move on to the |BiGUL| language itself.
+Following the putback-based approach, our language |BiGUL| describes |put| functions, i.e., updates to a source using a view.
+\autoref{fig:BiGUL} shows (a simplified version of) the main definition of |BiGUL| (which refers to some auxiliary definitions that will appear in later sub-sections).
+In general, a |BiGUL| update proceeds by decomposing the source into several parts to be updated independently~(|update|; \autoref{sec:source-update}), and accordingly rearranging the view to match with these parts~(|rearr|; \autoref{sec:view-rearrangement}), until the source and the view are reduced to the extent that basic operations can be applied~(|replace|, |failB|, and |skip|; \autoref{sec:basic-lenses}).
+When both the source and the view are lists, there is a powerful alignment operation for synchronising the two lists~(|align|; \autoref{sec:list-alignment}).
+And we can do case analyses on either the source~(|caseS|; \autoref{sec:source-case}) or the view~(|caseV|; \autoref{sec:view-case}) for describing more flexible update strategies.
+
+\begin{figure*}
+\beforefigure
+\begin{code}
+{-"\lno1"-}  align  (λ { (_ , _ , year , _ , instock) → year == 2015 && instock })
+{-"\lno2"-}         (λ { (stitle , _) (vtitle , _) → stitle == vtitle })
+{-"\lno3"-}         (rearr  (prod var var)  (prod  var (prod    (const tt) (prod   (const tt) (prod  var          (const tt)))))
+{-"\lno4"-}                                 (      inj₁ refl ,  tt ,               tt ,              inj₂ refl ,  tt)
+                    {-""-}  -- the two lines above are a deeply embedded representation of the function |λ { (title , price) -> (title , tt , tt , price , tt) }|
+{-"\lno5"-}         (update  (prod  var (prod        var (prod     var (prod     var              var))))
+{-"\lno6"-}                  ((_ ,  replace) , (_ ,  skip) , (_ ,  skip) , (_ ,  replace) , (_ ,  skip))))
+{-"\lno7"-}         (λ _ -> return ("" , "(to be updated)" , 2015 , 0 , true))
+{-"\lno8"-}         (λ { (title , author , year , price , instock) -> return (just (title , author , year , price , false)) })
+\end{code}
+\caption{Updating the prices of the books published in 2015}
+\label{fig:bookstore}
+\end{figure*}
+
 \autoref{fig:bookstore} gives a preview of a |BiGUL| program.
-(A bigger example is given at the end of this section.)
-The source is a list of book data of type |String × String × ℕ × ℕ × Bool| storing a book's title, author, publication year, price, and whether it is in stock, and we intend to update the price of those books published in 2015 which are still in stock.
+(A more complex example is given in \autoref{sec:transatlantic-corporation}.)
+The source is a list of book data of type |String × String × ℕ × ℕ × Bool| representing a book's title, author, publication year, price, and whether it is in stock, and we intend to update the price of those books published in 2015 which are still in stock.
 We thus prepare a list of pairs of book title and price of type |String × ℕ| as the view.
 The |BiGUL| program then describes how to update the source with the view:
 we focus on those books in the source list which is published in 2015 and still in stock~(line~1) and align them with the view list by title~(line~2);
-for every matched pair of source and view books, we rearrange the view~(lines 3--4) to match with the shape of the source, and replace the title and price of the source with those from the view~(lines 5--6)\todo{pattern matching on source};
-for every mismatched view book, we create a source book with default author information and publication year 2015 and mark it as in stock~(line~7), and its title and price will later be updated by the action for matched pairs;
-finally, for every mismatched source book, we mark it as out of stock~(line~8).
+for every matched pair of source and view books, we rearrange the view~(lines 3--4) to match with the shape of the source, decompose the source by pattern matching (line~5), and replace the title and price of the source with those from the view~(line~6);
+for every unmatched view book, we create a source book with default author information and publication year 2015 and mark it as in stock~(line~7), and its title and price will later be updated by the action for matched pairs;
+finally, for every unmatched source book, we mark it as out of stock~(line~8).
 
 The types of the |BiGUL| constructors are indexed by the source and view types expected by the operations represented by the constructors, and ultimately we can write a well-typed interpreter to |Lens|:
 \begin{code}
 ^^^interp : (HIDE({S V : U} ->)) BiGUL S V -> Lens ⟦ S ⟧ ⟦ V ⟧
 \end{code}
-(Definitions of |U|~and~|⟦_⟧| are in \autoref{sec:source-update}.)
+(|U|~and~|⟦_⟧| are defined in \autoref{sec:source-update}.)
 Since well-behavedness is built into the definition of |Lens|, being able to construct |interp| means that we have not only translated |BiGUL| to |put| and |get| functions, but also proved formally that |PutGet| and |GetPut| are satisfied, in the way explained in \autoref{sec:sample-well-behavedness-proof}.
-Due to space limitation, in this paper we will only provide a sketch of the lens semantics of |BiGUL|.\todo{Revise: a relatively complete treatment for |caseS|, sketches for others}\
-For each operation we will start from a natural semantics (for |put|) and then add necessary checks so a corresponding |get| can exist, arriving at the lens semantics for the operation (whose well-behavedness proofs are omitted from the presentation).
-We will not present the full definitions of |interp| nor the auxiliary types used in \autoref{fig:BiGUL}, which are actually straightforwardly derived from the lens semantics.
+For each operation we will start from a natural semantics (for |put|), then add necessary checks so a corresponding |get| can exist, arriving at the lens semantics for the operation (including well-behavedness proofs), and finally deeply embed the lens as a constructor of |BiGUL|.
+We will go through the whole process for the three basic operations in \autoref{sec:basic-lenses} and source case analysis in \autoref{sec:source-case}.
+For the rest of the operations we will only give a sketch for brevity.
 
-\begin{figure*}
-\beforefigure
-\begin{code}
-{-"\lno1"-}  align  (λ (_ , _ , year , _ , instock) → year == 2015 && instock)
-{-"\lno2"-}         (λ (stitle , _) (vtitle , _) → stitle == vtitle)
-{-"\lno3"-}         (rearr  (prod var var)  (prod  var (prod    (const tt) (prod   (const tt) (prod  var          (const tt)))))
-{-"\lno4"-}                                 (      inj₁ refl ,  tt ,               tt ,              inj₂ refl ,  tt)
-                    {-""-}  -- the two lines above are a deeply embedded representation of the function |λ { (title , price) -> (title , tt , tt , price , tt) }|
-{-"\lno5"-}         (update  (prod       var (prod        var (prod     var (prod     var              var))))
-{-"\lno6"-}                  ((String ,  replace) , (⊤ ,  skip) , (⊤ ,  skip) , (ℕ ,  replace) , (⊤ ,  skip))))
-{-"\lno7"-}         (λ _ -> return ("" , "(to be updated)" , 2015 , 0 , true))
-{-"\lno8"-}         (λ (title , author , year , price , instock) -> return (just (title , author , year , price , false)))
-\end{code}
-\caption{Updating the prices of the books published in 2015}
-\label{fig:bookstore}
-\end{figure*}
 
 \subsection{Replacing, failure, and skipping}
 \label{sec:basic-lenses}
@@ -718,10 +719,10 @@ It is, however, difficult to find a |get| to pair with this |put| semantics: the
 A more manageable solution is to insert a dynamic check at the end of |put| to ensure that the updated source must match the same branch as the original source, which is the solution adopted by Foster~et~al's concrete conditional lenses~\cite[Section~6.1]{Foster-lenses}.
 
 The above solution, however, is sometimes too restrictive in practice.
-For example, in our putback-based language \BiYacc~\cite{Zhu-BiYacc} for generating well-behaved pairs of parsers and ``reflective'' printers, a program specifies how a printer \emph{updates} a concrete syntax tree (the source) to become consistent with an abstract syntax tree (the view). % while preserving certain structures of the source (e.g., parentheses).
+For example, in our putback-based language \BiYacc~\cite{Zhu-BiYacc} for generating well-behaved pairs of parsers and ``reflective'' printers, a program specifies how a printer \emph{updates} a concrete syntax tree (the source) to become consistent with an abstract syntax tree (the view).
 The printer tries to retain the structure of a source wherever possible, but when the structure of the source is radically different from that of the view, we need to change the source completely, and this change of source structure would fail the aforementioned dynamic check that prevents branch switching.
 We therefore need a more flexible case analysis on source.
-The example in \autoref{sec:global-corporation} shows a simpler scenario in which we also need this increased flexibility.
+(See \autoref{sec:transatlantic-corporation} for a simpler scenario where we also need this increased flexibility.)
 
 \subsubsection{Enriching source case analysis with adaptive branches}
 Our solution is to add a special kind of branches called \emph{adaptive} branches to source case analysis, in addition to \emph{normal} branches.
@@ -791,7 +792,7 @@ GetPut-with-adaptation :
   (get bs s ↦ v) → (put-with-adaptation bs bs' s v cont ↦ s)
 \end{code}
 %It states that if |get| using the list~|bs| of branches succeeds, then |put-with-adaptation| will also succeed as long as all branches in~|bs'| indeed are mismatched branches, i.e., |check-diversion| is successful.
-|GetPut| is then proved by setting |bs'| to |[]|, in which case the premise about |check-diversion| becomes vacuously true.
+|GetPut| is then proved by setting |bs'| to |[]|, in which case the premise about |check-diversion| becomes trivially true.
 
 \subsubsection{Fitting the lens to the interpreter}
 
@@ -889,7 +890,7 @@ Since we need to compare the views in this check, we need to require |DecEq V|, 
 \subsection{List alignment}
 \label{sec:list-alignment}
 
-For the semantics of |align|, which is the key operation used in \autoref{fig:bookstore} (and in the \BiFluX\ language~\cite{Pacheco-BiFluX}), we employ a particular parametrised strategy for updating a list of sources of type~|S| with a list of views of type~|V|, which tries to align/match the sources with the views, synchronise the matched pairs of sources and views by an inner lens, and process the mismatched sources and views in some programmer-specified ways.
+For the semantics of |align|, which is the key operation used in \autoref{fig:bookstore} (and in the \BiFluX\ language~\cite{Pacheco-BiFluX}), we employ a particular parametrised strategy for updating a list of sources of type~|S| with a list of views of type~|V|, which tries to align/match the sources with the views, synchronise the matched pairs of sources and views by an inner lens, and process the unmatched sources and views in some programmer-specified ways.
 A few of the design choices made below are somewhat arbitrary and inflexible, but it should be easy to further parametrise the strategy or offer other different strategies.
 
 The lens semantics of |align| has type
@@ -905,10 +906,10 @@ First, from the source list we can select a sub-list that we intend to align wit
 The sub-list of sources satisfying the |source-condition| are then aligned with the list of views by finding pairs of source and view satisfying a given binary predicate |match : S -> V -> Par Bool|.
 The matching order is fixed in our strategy: for each view we find the first matching source that has not been matched with a previous view.
 On each matching pair of source and view we execute an inner lens |l : Lens S V| to update the source with the view.
-For mismatched views, we should create corresponding sources in the source list (so a subsequent |get| can produce these views).
+For unmatched views, we should create corresponding sources in the source list (so a subsequent |get| can produce these views).
 This is done by first applying a specified function |create : V → Par S| to the view to create a temporary source, and then updating this source with the view by~|l|.
-Finally, for mismatched sources, we can choose to simply delete them or transform them such that they do not satisfy the |source-condition|.
-This is specified by a function |conceal : S → Par (Maybe S)|: a mismatched source is deleted if applying |conceal| to it produces |nothing|, or transformed if |conceal| produces a new source wrapped in |just|.
+Finally, for unmatched sources, we can choose to simply delete them or transform them such that they do not satisfy the |source-condition|.
+This is specified by a function |conceal : S → Par (Maybe S)|: an unmatched source is deleted if applying |conceal| to it produces |nothing|, or transformed if |conceal| produces a new source wrapped in |just|.
 These transformed sources can be placed anywhere in the source list; currently we simply place all of them towards the front of the list.
 Finally, this list of updated sources is merged with those not satisfying |source-condition| in the beginning.
 
@@ -990,8 +991,8 @@ Lenses pat = VarPositions pat (\ D -> (E : U) × Lens ⟦ D ⟧ ⟦ E ⟧)
 \end{code}
 Given a pattern |pat| and a collection of lenses |ls : Lenses pat| at its variable positions, we can define a lens between |PatResult pat| and a type |Views pat ls| which is defined as a product of the view types specified in~|ls|:
 \begin{code}
-^^^update-lens : (HIDE({D : U} ->))
-  (pat : Pattern D) (ls : Lenses pat) -> Lens (PatResult pat) (Views pat ls)
+^^^update-lens : (HIDE({D : U} ->))  (pat : Pattern D) (ls : Lenses pat) ->
+                                     Lens (PatResult pat) (Views pat ls)
 \end{code}
 The lens semantics of the |update| operation is then just the composition of |pat-iso| (converted to a lens by |iso-lens|) and |update-lens|.
 Its |put| decomposes the source, updates its components with the lenses at the corresponding positions, and putting the updated components together, while its |get| again decomposes the source and extracts views from its components with the corresponding lenses.
@@ -1032,24 +1033,30 @@ view-rearrangement-iso : (HIDE({D E : U} ->))
 where |^^^Invertible pat pat' paths| is defined to state that |paths| can pass a check for ensuring that all components of the old view are used.
 The lens semantics we assign to |rearr| is the lens derived from this isomorphism (by |iso-lens|) composed with the lens semantics of the inner |BiGUL| operation.
 
-\subsection{A complete example: transatlantic corporation}
-\label{sec:global-corporation}
+\subsection{A showcase example: transatlantic corporation}
+\label{sec:transatlantic-corporation}
 
+We end this section by looking at an example in detail, which requires nontrivial putback logic, in particular involving |caseS| and |caseV|.
+Suppose that a transatlantic corporation regularly relocates employees between its UK and US offices, and pay them in the local currency.
+The payroll database stores for each employee their name, salary (a number interpreted as pounds or dollars depending on which country the employee works in), and current office location:
 \begin{code}
-^^^Location : U
-Location = UKLocation ⊕ USLocation
+^^^Employee = Name ⊗ (Salary ⊗ Location) : U
 \end{code}
-
+where |^^^Name : U| and |^^^Salary : U| are datatypes representing name and salary encoded as elements of~|U| (by~|k|).
+|Location| is defined as a disjoint sum:
 \begin{code}
-^^^Employee : U
-Employee = Name ⊗ (Salary ⊗ Location)
+^^^Location = UKLocation ⊕ USLocation : U
 \end{code}
-
+where |^^^UKLocation : U| and |^^^USLocation : U| are, again, encoded datatypes representing UK and US office locations.
+To manage relocation, we extract from the payroll database each employee's current office location:
 \begin{code}
-^^^Office : U
-Office = Name ⊗ Location
+^^^Office = Name ⊗ Location : U
 \end{code}
+We would like to add, remove, or relocate employees by modifying the extracted list and put the modified list back to the payroll database.
+Most interestingly, when an employee is relocated to the other country, their salary should also be converted to the other currency.
+Below we describe this putback logic in |BiGUL|.
 
+At top level, we align a list of |Employee|s with a list of |Office|s:
 \begin{code}
 ^^^relocate-employees : BiGUL (list Employee) (list Office)
 relocate-employees = align
@@ -1059,16 +1066,27 @@ relocate-employees = align
   (\ { (_ , loc) -> return ("" , 0 , loc) })
   (\ _ -> return nothing)
 \end{code}
+We are considering all |Employee|s in the list, so the source condition is always true.
+Entries from the two lists are matched by employee name.
+Pairs of matched |Employee| and |Office| entries are synchronised by an inner |BiGUL| statement |relocate-employee| defined later.
+An unmatched |Office| entry means that a new employee is inserted, so we create a default |Employee| entry in the source list, which is then updated by |relocate-employee| using the unmatched |Office| entry.
+(We put the view location in the default |Employee| entry merely for efficiency, as |relocate-employee| would not have to deal with mismatching source and view locations.)
+An unmatched |Employee| entry means that the employee is removed from the view, so we conceal the entry by deleting it from the source.
 
+Matched pairs of |Employee| and |Office| are synchronised by
 \begin{code}
 ^^^relocate-employee : BiGUL Employee Office
 relocate-employee =
   rearr  (prod var var)  (prod  var (prod    (const tt)  var))
                          (      inj₁ refl ,  tt ,        inj₂ refl)
+           -- |\ { (name , loc) -> (name , tt , loc) }|
          (update  (prod   var              var)
                   ((_ ,   replace) , (_ ,  adjust-salary-and-office)))
 \end{code}
+First we rearrange the view to the same shape as the source; specifically, we insert |tt| between the name and location, to be paired with the salary in the source later.
+Next we decompose the source by pattern matching to replace the name in the source with the name in the view --- this looks like a redundant step but is required because we enforce syntactically that all view information, in particular the name, must be put into the source.
 
+The rest of the source, i.e., salary and location, is further synchronised with the remaining view by
 \begin{code}
 ^^^adjust-salary-and-office : BiGUL  (Salary  ⊗ Location)
                                      (one     ⊗ Location)
@@ -1076,7 +1094,8 @@ adjust-salary-and-office = caseV
   (  (prod var (left   var) , relocate-to-UK  ) ∷
      (prod var (right  var) , relocate-to-US  ) ∷ [])
 \end{code}
-
+We match the view location with either the |left| or |right| pattern to know which country the employee will work in.
+If the employee will work in the UK, the update to the source is
 \begin{code}
 ^^^relocate-to-UK : BiGUL  (Salary  ⊗ Location    )
                            (one     ⊗ UKLocation  )
@@ -1085,7 +1104,24 @@ relocate-to-UK = caseS
                                  ((_ ,  skip) , (_ ,  replace)))) ∷
      (inUS  , adaptive  (λ {  (salary , _) →
                               {-"~~"-} return ($⇒£ salary , inj₁ "") })) ∷ [])
+\end{code}
+We probe which country the employee is in originally with a |caseS|.
+If the original country is the UK, the employee is not being relocated to a different country, so we can skip updating the salary and just replace the location.
+If it is the US, we should adapt the source by changing the salary from dollars to pounds (by a function |$⇒£ : Salary -> Salary|) and change the location to an empty one in the UK, which will be replaced by the view location in the second round of the source case analysis following the adaptation.
+The conditions |^^^inUK| and |^^^inUS| have type
+\begin{code}
+⟦ Salary ⟧ × (⟦ UKLocation ⟧ ⊎ ⟦ USLocation ⟧) → Par Bool
+\end{code}
+and are simply defined as
+\begin{code}
+inUK  (_ , inj₁  _) = return true
+inUK  (_ , inj₂  _) = return false
 
+inUS  (_ , inj₁  _) = return false
+inUS  (_ , inj₂  _) = return true
+\end{code}
+The other branch |relocate-to-US| is defined symmetrically:
+\begin{code}
 ^^^relocate-to-US : BiGUL  (Salary  ⊗ Location    )
                            (one     ⊗ USLocation  )
 relocate-to-US = caseS
@@ -1094,6 +1130,11 @@ relocate-to-US = caseS
      (inUK  , adaptive  (λ {  (salary , _) →
                               {-"~~"-} return (£⇒$ salary , inj₂ "") })) ∷ [])
 \end{code}
+
+We should now check, from the inside out, whether all constraints for passing dynamic checking are met.
+For the |caseS| statements in |relocate-to-UK| and |relocate-to-US|, the normal branches do not change the source country and thus do not switch branch, and the adaptive branches do change the source so it matches a normal branch.
+For the |caseV| in |adjust-salary-and-office|, the ranges of |relocate-to-UK| and |relocate-to-US| are disjoint since they respectively produce entries with UK and US locations.
+For the |align| in |relocate-employees|, since the source condition is always true, whatever |relocate-employee| produces does satisfy the source condition, and we must conceal unmatched sources by deleting them, which is indeed what we specify; finally, we must guarantee that the source produced by |relocate-employee| and the view used should again satisfy the matching condition, even when the view is an unmatched one and the original source is a default one created from the view, and this is indeed guaranteed because |relocate-employee| puts the name in the view into the source.
 
 
 \section{Concluding remarks}
