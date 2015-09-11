@@ -6,7 +6,6 @@ module DynamicallyChecked.BiGUL {n : ℕ} (F : Functor n) where
 open import DynamicallyChecked.Utilities
 open import DynamicallyChecked.Partiality
 open import DynamicallyChecked.Lens
-open import DynamicallyChecked.SourceUpdate
 open import DynamicallyChecked.ViewRearrangement
 open import DynamicallyChecked.SourceCase as SourceCase
 open import DynamicallyChecked.ViewCase as ViewCase
