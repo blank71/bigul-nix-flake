@@ -31,9 +31,12 @@ mutual
     dep     : {S V V' : U n} → (⟦ V ⟧ (μ F) → ⟦ V' ⟧ (μ F)) → BiGUL S V → BiGUL S (V ⊗ V')
     caseS   : {S V : U n} → (branches : List (CaseSBranch S V)) → BiGUL S V
     caseV   : {S V : U n} → (branches : List (CaseVBranch S V)) → BiGUL S V
-    align   : {S V : U n} → (source-condition : ⟦ S ⟧ (μ F) → Par Bool) (match? : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → Par Bool)
-                            (b : BiGUL S V) (create : ⟦ V ⟧ (μ F) → Par (⟦ S ⟧ (μ F)))
-                            (conceal : ⟦ S ⟧ (μ F) → Par (Maybe (⟦ S ⟧ (μ F)))) → BiGUL (list S) (list V)
+    align   : {S V : U n} → (source-condition : ⟦ S ⟧ (μ F) → Par Bool)
+                            (match? : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → Par Bool)
+                            (b : BiGUL S V)
+                            (create : ⟦ V ⟧ (μ F) → Par (⟦ S ⟧ (μ F)))
+                            (conceal : ⟦ S ⟧ (μ F) → Par (Maybe (⟦ S ⟧ (μ F)))) →
+                            BiGUL (list S) (list V)
 
   PatBiGUL : {G : U n} → Pattern F G → Set₁
   PatBiGUL {G} var          = Σ[ H ∈ U n ] BiGUL G H
