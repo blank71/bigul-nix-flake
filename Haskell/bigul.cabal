@@ -7,7 +7,7 @@ version:             0.1.0.0
 -- description:         
 license:             MIT
 author:              stefan.zan, joshko
-maintainer:          zantao@nii.ac.jp, hiang-shang@nii.ac.jp 
+maintainer:          zantao@nii.ac.jp, hsiang-shang@nii.ac.jp 
 -- copyright:           
 category:            Language
 build-type:          Simple
@@ -16,7 +16,7 @@ cabal-version:       >=1.10
 
 Library
   hs-source-dirs: src
-  build-depends: base >= 4.7 && < 4.8, mtl >= 2.2 && < 2.3, pretty
+  build-depends: base >= 4.7, mtl >= 2.2 && < 2.3, pretty
   default-language: Haskell2010
   exposed-modules:
     Generics.BiGUL

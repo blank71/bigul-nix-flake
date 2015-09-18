@@ -1,8 +1,6 @@
 {-# LANGUAGE TypeOperators, TypeFamilies, FlexibleContexts  #-}
 
-import Lang.MonadBiGULError
-import Lang.AST
-import Lang.Interpreter
+import Generics.BiGUL
 import Control.Monad
 import GHC.Generics
 --import qualified Netscape

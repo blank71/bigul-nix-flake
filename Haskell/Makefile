@@ -3,8 +3,8 @@ all:
 	cabal build
 	cabal install
 
-bigul:
-	ghci -isrc:Test/test/bookmark  Test/Test.hs
+test:
+	ghci Test/Test.hs
 
 dtd:
 	ghci -isrc Test/TestGenDTD.hs
@@ -22,3 +22,4 @@ tran:
 	ghci -isrc Test/TestTranslation.hs
 
 
+.PHONY: all test clean
