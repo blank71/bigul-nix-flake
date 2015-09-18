@@ -213,7 +213,7 @@ isBritain _        = False
 
 isAmerican :: Either Location Location -> Bool
 isAmerican (Right _) = True
-isAmerican _ = False
+isAmerican _         = False
 
 
 

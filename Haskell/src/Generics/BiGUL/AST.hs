@@ -1,11 +1,11 @@
 {-# LANGUAGE GADTs, KindSignatures, MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, DeriveGeneric, TupleSections #-}
-module Lang.AST where
+module Generics.BiGUL.AST where
 
 import Control.Monad.Except
 import GHC.Generics
 import GHC.InOut
 import Text.PrettyPrint
-import Lang.MonadBiGULError
+import Generics.BiGUL.MonadBiGULError
 
 
 data Pat :: * -> * -> *  where

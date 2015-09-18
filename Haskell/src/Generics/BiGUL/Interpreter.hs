@@ -1,8 +1,8 @@
 {-# LANGUAGE GADTs, KindSignatures, MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, DeriveGeneric, TupleSections #-}
-module Lang.Interpreter where
+module Generics.BiGUL.Interpreter (put, get) where
 
-import Lang.AST
-import Lang.MonadBiGULError
+import Generics.BiGUL.AST
+import Generics.BiGUL.MonadBiGULError
 import Control.Monad
 import Control.Monad.Except
 import GHC.InOut

@@ -1,5 +1,5 @@
 {-# LANGUAGE GADTs, KindSignatures, MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, DeriveGeneric, TupleSections #-}
-module Lang.MonadBiGULError where
+module Generics.BiGUL.MonadBiGULError where
 import Control.Monad.Except
 import Text.PrettyPrint
 
