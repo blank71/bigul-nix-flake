@@ -21,5 +21,7 @@ subtype:
 tran:
 	ghci -isrc Test/TestTranslation.hs
 
+TH:
+	ghci -isrc -iTest Test/TH.hs
 
 .PHONY: all test clean
