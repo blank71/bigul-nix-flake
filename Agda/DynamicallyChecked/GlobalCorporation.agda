@@ -5,7 +5,6 @@ open import DynamicallyChecked.Partiality
 open import DynamicallyChecked.Lens
 open import DynamicallyChecked.Universe
 open import DynamicallyChecked.BiGUL
-open import DynamicallyChecked.SourceUpdate
 open import DynamicallyChecked.ViewRearrangement
 
 open import Function

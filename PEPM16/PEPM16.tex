@@ -299,7 +299,7 @@ and a backward |put| which embeds information of a view back into a source, prod
  % (source and view).
 % From language approach: bx languages.
 Since it takes a lot of effort to write both transformations and also guarantee their well-behavedness,
-many bidirectional programming languages (e.g.,~\cite{Foster-lenses,Bohannon:06,MHNHT07,Hidaka:10,PachecoCunha:10,Barbosa:2010,Hofmann:2011,FoPP08,HoPW12}) have been designed
+many bidirectional programming languages~\cite{Foster-lenses,Bohannon:06,MHNHT07,Hidaka:10,PachecoCunha:10,Barbosa:2010,Hofmann:2011,FoPP08,HoPW12} have been designed
 to aid the user in writing bidirectional transformations,
 with which the programmer only needs to write one program that can be interpreted either as |get| or |put|, and the two interpretations are guaranteed to be well-behaved.
 %The correctness of this BX program is guaranteed by well-behavedness~\cite{Lenses}.
@@ -369,7 +369,7 @@ The concrete semantics of |BiGUL|, in contrast, can be faithfully ported to prac
 
 \item Lastly, |BiGUL| and its well-behavedness has been completely formally modelled and verified using the dependently typed programming language \Agda~\cite{Norell-thesis,Nore08}.
 (Full source code is available at \url{http://www.prg.nii.ac.jp/project/bigul}, which is checked by \Agda\ version 2.4.2.3 with standard library version~0.9.)
-Since the semantics of |BiGUL| is defined as concrete programs and directly proved correct, we can highly confidently guarantee that these programs, when ported to other languages, are indeed well-behaved; in particular, all the inserted dynamic checks can indeed help to establish well-behavedness.
+Since the semantics of |BiGUL| is defined as concrete programs and directly proved correct, we can highly confidently guarantee that these programs, when ported to other languages, are indeed well-behaved.
 The main proof technique is also worth mentioning: we reify computation steps of monadic programs as easily manipulable data, so well-behavedness proofs --- which have to cover all possible execution traces by analysing program structure --- can be carried out just like doing ordinary functional programming.
 \end{itemize}
 % finally prove our language is well-behaved.
@@ -396,7 +396,9 @@ Before presenting the |BiGUL| language in \autoref{sec:BiGUL}, we first give an 
 The key to the formalisation is the reification of computation steps of monadic programs as a type family~|_↦_| (\autoref{sec:reification}), which makes the construction of the proofs as easy as ordinary functional programming.
 
 We follow Foster~et~al's classic \emph{lens} approach~\cite{Foster-lenses}, but for the |PutGet| and |GetPut| laws we adopt the variant used by Pacheco et~al~\cite{Pacheco-putlenses}.
-A lens between a source type~|S| and a view type~|V| is defined in \Agda\ as the following record type:
+A lens between a \emph{source} type~|S| and a \emph{view} type~|V| is defined in \Agda\ as the following record type:%
+\footnote{Arguments wrapped in curly braces are \emph{implicit}, and are typeset in a less obtrusive style in this paper most of the time.
+We do not need to supply the implicit arguments when applying a function if \Agda\ can infer what those arguments should be.}
 \begin{code}
 record ^^^Lens (S V : Set) : Set₁ where
   field
@@ -406,15 +408,15 @@ record ^^^Lens (S V : Set) : Set₁ where
     ^^^GetPut  : (HIDE({s : S} {v : V} →))     (get s ↦ v) → (put s v ↦ s)
 \end{code}
 That is, a lens is a pair of functions |put| and |get| satisfying the |PutGet| and |GetPut| laws.
-We call the |PutGet| and |GetPut| laws the \emph{well-behavedness} properties.
-Precise definitions of |Par| and~|_↦_| will be presented in \autoref{sec:reification} below.
+The two laws are referred to as the \emph{well-behavedness} properties.
+Precise definitions of |Par| and~|_↦_| will be presented later in \autoref{sec:reification}.
 Here we offer an informal explanation first:
 Both |put| and |get| are partial functions that may or may not successfully produce a result.
-Execution of |put s v|, if successful, should produce an updated version of the source~|s| by properly embedding all information of the view~|v| into~|s|, while |get s| extracts the view embedded in~|s|.
+Execution of |put s v|, if successful, produces an updated version of the source~|s| by properly embedding all information of the view~|v| into~|s|, while |get s| extracts the view embedded in~|s|.
 The |PutGet| law states that, for all |s|,~|s' : S| and |v : V|, if |put s v| successfully computes to~|s'|, then subsequently |get s'| should successfully compute to~|v|; this ensures that |put| does its job properly --- after |put| updates a source with a view, |get| can completely recover the view from the updated source.
 On the other hand, the |GetPut| law states that, for all |s : S| and |v : V|, if |get s| successfully computes to~|v|, then subsequently |put s v| should successfully compute to~|s|; this ensures that |put| does nothing more than its designated job --- |put| performs no update on a source if the view it receives is directly extracted from the source by |get|.
 
-Note that our definition of lenses is stronger than the one given by Foster~et~al~\cite{Foster-lenses}: our |PutGet| law says that successful computation of |put| guarantees success of the subsequent computation of |get|, whereas in Foster~et~al's definition there is no such guarantee; the |GetPut| law is similar.
+Note that our definition of lenses is stronger (and more useful) than the one given by Foster~et~al~\cite{Foster-lenses}: our |PutGet| law says that successful computation of |put| guarantees success of the subsequent computation of |get|, whereas in Foster~et~al's definition there is no such guarantee; the |GetPut| law is similar.
 
 \subsection{Reification of monadic combinators and computation steps}
 \label{sec:reification}
@@ -422,24 +424,27 @@ Note that our definition of lenses is stronger than the one given by Foster~et~a
 The kind of partial transformations we need are actually total functions which wrap their results in the standard |^^^Maybe| datatype with two constructors |^^^just : A -> Maybe A| and |^^^nothing  : Maybe A| --- the result of a successful computation is wrapped in the |just| constructor, while failed computation is represented by |nothing|.
 It is thus always possible to know whether a computation succeeds or not in a finite amount of time.
 This notion of ``decidable partiality'' should be distinguished from the usual partiality as formalised in terms of complete partial orders and continuous functions between them:
-when defining the semantics of |BiGUL| (more specifically, for view case analysis in \autoref{sec:view-case}), we need to write programs that produce some result or fail respectively when a sub-program fails or produces some result, but this is not possible in the setting of complete partial orders.
+when defining the semantics of |BiGUL| (more specifically, for view case analysis in \autoref{sec:view-case}), we need to write programs that produce some result or fail respectively when a sub-program fails or produces some result, but this is not possible if failed computation is represented as a least element of a complete partial order.
 %(since such functions violate monotonicity, a necessary condition for computability).
 
 We can choose to write our transformations directly as |Maybe|-programs, usually structured with monadic combinators~\cite{Moggi-monads,Wadler-essence} like ``return'' and ``bind''.
 This approach does not work too satisfactorily, though, when we consider the kind of proofs we need to construct for these programs:
 When proving |PutGet| and |GetPut|, the antecedent is a proof that a program --- consisting of sub-programs bound together by the combinators --- computes successfully, and we need to analyse it to proofs affirming that each of the sub-programs computes successfully, before these proofs are reassembled to show that a related composite program also computes successfully.
 This task would be much easier if a proof of a successful composite computation is exactly a bunch of proofs that all its sub-computations succeed.
-To achieve this, we need to reify the monadic binding structure of |Maybe|-programs by deeply embedding the monadic combinators as the constructors of a datatype, so later we can define types of proofs of successful computation by induction on the binding structure.
+To achieve this, we can reify the monadic binding structure of |Maybe|-programs by deeply embedding the monadic combinators as the constructors of a datatype, so later we can define types of proofs of successful computation by induction on the binding structure.
 
-We thus define a datatype |Par|, which is a deep embedding of the operators that we use to write partial transformations:
+We thus define a datatype |Par|, which is a deep embedding of the operators that we use to write partial transformations:%
+\footnote{Identifiers with underscores can be used either in prefix or infix form.
+For example, we can write either |_>>=_ mx f| or |mx >>= f|.}
 \begin{code}
 data ^^^Par : Set -> Set1 where
   ^^^return        : (HIDE({A : Set} ->))    A -> Par A
   ^^^_>>=_         : (HIDE({A B : Set} ->))  Par A -> (A -> Par B) -> Par B
   ^^^fail          : (HIDE({A : Set} ->))    Par A
 \end{code}
-There are also other deeply embedded operators for error-handling (see \autoref{sec:view-case}) and assertion, which we omit here.
-The meaning of the constructors of |Par| is formally given by the following interpreter to |Maybe|:
+There are also other deeply embedded operators for error handling (see \autoref{sec:view-case}) and assertion, which we omit here.
+The meaning of the constructors of |Par| is formally given by the following interpreter to |Maybe|:%
+\footnote{The |with| notation evaluates an expression (here |runPar mx|) and matches the result with an additional pattern (appearing on the right of~`$||$').}
 \begin{code}
 ^^^runPar : (HIDE({A : Set} ->)) Par A -> Maybe A
 runPar (return x) = just x
@@ -449,15 +454,15 @@ runPar (mx >>= f)  | nothing  = nothing
 runPar fail = nothing
 \end{code}
 We say that |mx : Par A| computes to |x : A| exactly when |runPar mx ≡ just x|, and that |mx|~fails to compute exactly when |runPar mx ≡ nothing|.
-The equality |runPar mx ≡ just x| is already a family of types of proofs of successful computation, but these equality proofs are not so straightforward to analyse and construct.
+The equality |runPar mx ≡ just x| is already a family of types of proofs of successful computation, but these equality proofs are not so straightforward to analyse and construct (see the second half of \autoref{sec:sample-well-behavedness-proof}).
 We hence move on to define an equivalent family of types, whose proofs are easier to manipulate.
 
 For every |mx : Par A| and |x : A|, we define a type |mx ↦ x| whose inhabitants explain how the sub-programs in |mx| compute successfully one by one, eventually producing~|x|:%
 \footnote{We write dependent pair types $\mathrm{\Sigma}(x \in A)\;B\;x$ as |(x : A) × B x|.
 The underscore in |(x : _) × (mx ↦ x) × (f x ↦ y)| leaves the type of~|x| for \Agda\ to infer.}
 \begin{code}
-^^^_↦_ : (HIDE({A : Set} →)) Par A → A → Set₁
-(return x)  ↦ x'  =  x ≡ x'
+^^^_↦_ : (HIDE({A : Set} →)) Par A → A → Set
+(return x)  ↦ x'  =  x {-"\kern-2pt"-}≡{-"\kern-2pt"-} x'
 (mx >>= f)  ↦ y   =  (x : _) × (mx ↦ x) × (f x ↦ y)
 fail        ↦ x   =  ⊥
 \end{code}
@@ -468,7 +473,9 @@ We are thus entitled to use~|_↦_| in the statements of |PutGet| and |GetPut|.
 \subsection{A sample well-behavedness proof}
 \label{sec:sample-well-behavedness-proof}
 
-To give the reader a taste of how well-behavedness proofs are constructed in our \Agda\ setting, let us try to define an operator~|_↔_| for lens composition:
+To give the reader a taste of how well-behavedness proofs are constructed in our \Agda\ setting, let us try to define an operator~|_↔_| for lens composition:%
+\footnote{A field of a record is extracted by applying the field's accessor function to the record.
+For example, the accessor function |Lens.get| has type |(HIDE({S V : Set} ->)) Lens S V -> S -> Par V|.}
 \begin{code}
 ^^^_↔_ : (HIDE({A B C : Set} →)) Lens A B → Lens B C → Lens A C
 l ↔ r = record
@@ -524,7 +531,7 @@ bind-computes :
   (x : A) × (mx ≡ just x) × (f x ≡ just y)
 \end{code}
 Applying the lemma twice analyses the antecedent into three smaller equality proofs, achieving the same effect as the pattern matching in the $\lambda$-expression~\autoref{lambda-expression}.
-As for establishing the consequent, a probably easiest way is to rewrite |Lens.get l a'| to |just b'| with an application of |Lens.PutGet l| so the consequent simplifies to |Lens.get r b' ≡ just c|, which can then be discharged by an application of |Lens.PutGet r|.
+As for establishing the consequent, a probably easiest way is to rewrite |Lens.get l a'| to |just b'| with an application of |Lens.PutGet l| so the consequent type simplifies to |Lens.get r b' ≡ just c|, which can then be discharged by an application of |Lens.PutGet r|.
 The whole proof is
 \begin{code}
 pg {a  = a  }  p with bind-computes (Lens.get l a) p
@@ -533,7 +540,7 @@ pg             p | b , x , q | b' , y , z rewrite Lens.PutGet l z
 {-"\hfill"-} = Lens.PutGet r y
 \end{code}
 which is apparently more heavyweight than~\autoref{lambda-expression}, even for this small example about lens composition.
-For more complicated well-behavedness proofs, the above naive approach quickly becomes unmanageable, whereas our approach scales nicely.
+For more complicated well-behavedness proofs, the above approach quickly becomes unmanageable, whereas our approach scales nicely.
 
 \section{BiGUL and its formally verified lens semantics}
 \label{sec:BiGUL}
@@ -576,7 +583,7 @@ data ^^^BiGUL : U → U → Set₁ where
 \label{fig:BiGUL}
 \end{figure}
 
-Having explained the infrastructure of our \Agda\ formalisation, we can now move on to the |BiGUL| language itself.
+Having explained the infrastructure of our \Agda\ formalisation, we now move on to the |BiGUL| language itself.
 Following the putback-based approach, our language |BiGUL| describes |put| functions, i.e., updates to a source using a view.
 \autoref{fig:BiGUL} shows (a simplified version of) the main definition of |BiGUL| (which refers to some auxiliary definitions that will appear in later sub-sections).
 In general, a |BiGUL| update proceeds by decomposing the source into several parts to be updated independently~(|update|; \autoref{sec:source-update}), and accordingly rearranging the view to match with these parts~(|rearr|; \autoref{sec:view-rearrangement}), until the source and the view are reduced to the extent that basic operations can be applied~(|replace|, |failB|, and |skip|; \autoref{sec:basic-lenses}).
@@ -616,7 +623,7 @@ The types of the |BiGUL| constructors are indexed by the source and view types o
 \end{code}
 (|U|~and~|⟦_⟧| are defined in \autoref{sec:source-update}.)
 Since well-behavedness is built into the definition of |Lens|, being able to construct |interp| means that we have not only translated |BiGUL| to |put| and |get| functions, but also proved formally that |PutGet| and |GetPut| are satisfied, in the way explained in \autoref{sec:sample-well-behavedness-proof}.
-For each operation we will start from a natural semantics (for |put|), then add necessary checks so a corresponding |get| can exist, arriving at the lens semantics for the operation (including well-behavedness proofs), and finally deeply embed the lens as a constructor of |BiGUL|.
+For each operation we will start from a natural putback semantics, then add necessary checks so a corresponding |get| can exist, arriving at the lens semantics for the operation (including well-behavedness proofs), and finally deeply embed the lens as a constructor of |BiGUL|.
 (An exception is |update|, the development for which deviates slightly from this process to avoid some typing problem.)
 We will go through the whole process for the three basic operations in \autoref{sec:basic-lenses} and source case analysis in \autoref{sec:source-case}.
 For the rest of the operations we will only give a sketch for brevity.
@@ -638,7 +645,7 @@ record ^^^Iso (A B : Set) : Set₁ where
            ^^^to-from-inverse  : (HIDE({x : A} {y : B} →)) (to x ↦ y) → (from y ↦ x)
            ^^^from-to-inverse  : (HIDE({x : A} {y : B} →)) (from y ↦ x) → (to x ↦ y)
 \end{code}
-of which |Lens| is a generalisation, as we can easily convert an |Iso A B| to a |Lens A B|:
+of which |Lens| is a generalisation, as we can easily convert |Iso A B| to |Lens A B|:
 \begin{code}
 ^^^iso-lens : (HIDE({A B : Set} →)) Iso A B → Lens A B
 iso-lens iso = record  {    put     = λ _ b → Iso.from iso b
@@ -659,7 +666,7 @@ We can also derive the lens semantics for |failB| --- whose |get| and |put| simp
 empty-iso = record  {    to    = \ _ -> fail
                     SEP  from  = \ _ -> fail SEP ABBRV }
 
-interp fail = iso-lens empty-iso
+interp failB = iso-lens empty-iso
 \end{code}
 On the other hand, the |put| semantics of the |skip| operation is discarding the view and returning the original source, and its lens semantics is not an instance of |iso-lens|:
 \begin{code}
@@ -669,7 +676,7 @@ skip-lens = record  {    put  = \ s _ -> return s
 
 interp skip = skip-lens
 \end{code}
-Note that the view type is specified as~|^^^⊤|, which has one single inhabitant~|^^^tt| --- had the view type been a more complex type, there would have been no way for |get| to decide what to return.
+Note that the view type is specified as the unit type~|^^^⊤| (whose only inhabitant is~|^^^tt|) --- had the view type been a more complex type, there would have been no way for |get| to decide what to return.
 In general, |put| must embed all view information into the updated source so |get| can recover the entire view from the updated source, establishing |PutGet|.
 |⊤|~is a type with no information, and hence |Lens.put skip-lens| can safely ignore its view argument of type~|⊤|.
 
@@ -683,7 +690,8 @@ In general, |put| must embed all view information into the updated source so |ge
 \beforefigure
 \begin{code}
 ^^^caseS-lens : (S V : Set) -> List (CaseSBranch S V) -> Lens S V
-caseS-lens S V bs = record { put = put-with-adaptation bs [] s v (λ s' → put-with-adaptation bs [] s' v (\ _ -> fail)) SEP get = get' SEP ABBRV }
+caseS-lens S V bs = record  {    put  = \ s v -> put-with-adaptation bs [] s v (λ s' → put-with-adaptation bs [] s' v (\ _ -> fail))
+                            SEP  get  = get' bs SEP ABBRV }
   where
     ^^^branch : (HIDE'({l : Level})) {X : Set (HIDE'(l))} → (Lens S V → X) → ((S → Par S) → X) → CaseSBranchType → X
     branch f g (normal    l  ) = f  l
@@ -699,7 +707,7 @@ caseS-lens S V bs = record { put = put-with-adaptation bs [] s v (λ s' → put-
       p s >>= λ matched → if matched  then'  branch  (λ l →  Lens.put l s v >>= λ s' → p s' >>= λ matched' →
                                                              if matched' then' check-diversion bs' s' >>= (\ _ → return s') else fail)
                                                      (λ u → u s >>= cont) b
-                                      else   put-with-adaptation bs ((p , b) ∷ bs') s v f
+                                      else   put-with-adaptation bs ((p , b) ∷ bs') s v cont
 
     get' : List (CaseSBranch S V) → S → Par V
     get' []              s = fail
@@ -756,6 +764,7 @@ The |get| semantics, on the other hand, simply tries to match the source with ea
 A quick reasoning for the behaviour about adaptive branches is as follows:
 An abstract reading of the well-behavedness laws says that the domain of |get| must coincide with the range of updated sources produced by |put|.
 Since a successfully updated source necessarily comes out from, and will again match, a normal branch, |get| must fail for any source matching an adaptive branch.
+Of course, we still need to prove the well-behavedness properties to actually say that the |put| and |get| functions are defined correctly.
 
 \subsubsection{Sketch of the well-behavedness proofs}
 
@@ -767,9 +776,9 @@ PutGet-with-adaptation :
   (bs bs' : List (CaseSBranch S V))
   {v : V} {cont : S → Par S} →
   ({s s' : S} →  (cont s ↦ s') →
-                 (get (revcat bs' bs) s' ↦ v)) →
+                 (get' (revcat bs' bs) s' ↦ v)) →
   {s s' : S} →  (put-with-adaptation bs bs' s v cont ↦ s') →
-                (get (revcat bs' bs) s' ↦ v)
+                (get' (revcat bs' bs) s' ↦ v)
 \end{code}
 where |revcat| is defined by
 \begin{code}
@@ -788,7 +797,7 @@ GetPut-with-adaptation :
   (bs bs' : List (CaseSBranch S V))
   {cont : S → Par S} {s : S} {v : V} →
   (check-diversion bs' s ↦ tt) →
-  (get bs s ↦ v) → (put-with-adaptation bs bs' s v cont ↦ s)
+  (get' bs s ↦ v) → (put-with-adaptation bs bs' s v cont ↦ s)
 \end{code}
 %It states that if |get| using the list~|bs| of branches succeeds, then |put-with-adaptation| will also succeed as long as all branches in~|bs'| indeed are mismatched branches, i.e., |check-diversion| is successful.
 |GetPut| is then proved by setting |bs'| to |[]|, in which case the premise about |check-diversion| becomes trivially true.
@@ -833,8 +842,8 @@ To help \Agda\ see that |interp| is terminating, though, we need to define |inte
 
 For |caseV|, basically we still try to match the view with a list of branches, and execute the first branch matched.
 We must be more careful when it comes to the view, though:
-As mentioned at the end of \autoref{sec:basic-lenses}, we must ensure that view information is completely embedded into the source, and that requires more conscious management of view information.
-When the view matches a branch, the amount of view information that remains to be embedded into the source can actually be reduced.
+As mentioned at the end of \autoref{sec:basic-lenses}, we must ensure that view information is completely embedded into the source, and that requires conscious management of view information.
+When the view matches a branch, the amount of view information that remains to be embedded into the source may actually be reduced.
 For example, if there is a branch that matches an integer view which equals zero, then for this branch we may even perform no update on the source as long as we can guarantee that the subsequent |get| will choose this branch, in which case |get| can simply return zero --- the information that the view is zero is embedded implicitly in the control flow rather than explicitly in the updated source.
 Thus, in the definition of |CaseVBranch| below, we use a partial isomorphism on the view type which converts it to a possibly less informative type, instead of just a decidable predicate as in |CaseSBranch|:
 \begin{code}
@@ -878,7 +887,7 @@ caseV-lens :  (S V : Set) -> List (CaseVBranch S V) -> Lens S V
 The definitions of its |put| and |get| are shown in \autoref{fig:caseV}.
 They require |Par| to be extended with one more constructor
 \begin{code}
-^^^catch : {A B : Set} → Par A → (A → Par B) → Par B → Par B
+^^^catch : (HIDE({A B : Set} →)) Par A → (A → Par B) → Par B → Par B
 \end{code}
 interpreted by
 \begin{code}
@@ -893,8 +902,7 @@ For |get|, there is no obvious way to decide which branch to go --- unlike |put|
 Here we try to execute each of the branches until we reach one that computes a view successfully, which is the approach taken by Pacheco~et~al~\cite{Pacheco-putlenses}.
 This makes guaranteeing |PutGet| difficult, as we cannot easily guarantee that executing |put| followed by |get| would go through the same branch.
 Our compromised solution is to make |put| do an expensive check after a branch is matched and executed, requiring that the |get| for each of the previous branches must fail.
-To pass this check, the ranges of the |put| semantics of the branches have to be disjoint in order for |put| to compute successfully.
-(Since the range of |put| coincides with the domain of |get|, disjointness of |get| domains is the same as disjointness of |put| ranges.)
+To pass this check, the ranges of the |put| semantics of the branches (which coincide with the domains of |get|) have to be disjoint in order for |put| to compute successfully.
 
 \subsection{List alignment}
 \label{sec:list-alignment}
@@ -938,7 +946,7 @@ We follow the approach taken by \textsc{Flux}~\cite{Cheney-FLUX}, which requires
 It turns out that a pattern matching notation suits this task perfectly: pattern matching is arguably the most intuitive way to decompose a source, and we can specify apparently independent updates by writing them at the variable positions in a pattern.
 For example, in \autoref{fig:bookstore} we use |update| to match a source book of type |String × String × ℕ × ℕ × Bool| with a five-variable pattern and update its five components respectively by |replace|, |skip|, |skip|, |replace|, and |skip|.
 The idea itself is straightforward; what follows, despite its slight complexity (especially if the reader is not familiar with dependently typed programming), is merely our datatype-generic and strongly typed implementation of the idea in \Agda~\cite{Gibbons-DGP,Altenkirch-GP-within-DTP}.
-The definitions for |update| has three levels:
+The definitions for |update| will be laid out in three levels:
 we first define the class of datatypes that we wish to process with |BiGUL|; for every datatype, we define the patterns applicable to the inhabitants of the datatype; finally, every pattern induces a ``container'' type, whose inhabitants can be used to store inner |BiGUL| statements at the variable positions of the pattern.
 
 Since \Agda\ is fully dependently typed, we can naturally define patterns in a type-directed way such that nonsensical patterns are syntactically ruled out.
@@ -953,7 +961,7 @@ data U : Set₁ where             ⟦_⟧ : U → Set
   ^^^_⊗_   : U → U → U          ⟦ F ⊗ G   ⟧ = ⟦ F ⟧  ×  ⟦ G ⟧
   ^^^list  : U → U              ⟦ list F  ⟧ = List ⟦ F ⟧
 \end{code}
-The types that we can encode within~|U| are those expressible in terms of atomic types, |⊤|, |_⊎_|\ucomma |_×_|\ucomma and |List|; applying |⟦_⟧| to an inhabitant of the universe decodes it to the type it represents.
+The types that we can encode within~|U| are those expressible in terms of atomic types, the unit type~|⊤|, sum types~|_⊎_| (whose two constructors are |^^^inj₁| and |^^^inj₂|), product types~|_×_|\ucomma and |List|; applying |⟦_⟧| to an inhabitant of the universe decodes it to the type it represents.
 
 We can now define a family of types |Pattern : U -> Set| such that, for any |D : U|, the type |Pattern D| contains exactly those patterns sensible for |⟦ D ⟧|.
 Below is a simplified version covering the patterns used in this paper:
@@ -1163,7 +1171,7 @@ Matched pairs of |Employee| and |Office| are synchronised by
 relocate-employee =
   rearr  (prod var var)  (prod  var (prod    unit  var))
                          (      inj₁ refl ,  tt ,  inj₂ refl)
-           -- |\ { (name , loc) -> (name , tt , loc) }|
+         -- representing |\ { (name , loc) -> (name , tt , loc) }|
          (update  (prod   var              var)
                   ((_ ,   replace) , (_ ,  adjust-salary-and-office)))
 \end{code}
@@ -1184,7 +1192,7 @@ If the employee will work in the UK, the update to the source is
 ^^^relocate-to-UK : BiGUL  (Salary  ⊗ Location    )
                            (one     ⊗ UKLocation  )
 relocate-to-UK = caseS
-  (  (inUK  , normal'    (update  (prod  unit (left    var))
+  (  (inUK  , normal'    (update  (prod  var (left     var))
                                   ((_ ,  skip) , (_ ,  replace)))) ∷
      (inUS  , adaptive'  (λ {  (salary , _) →
                                {-"~"-} return (toPounds salary , inj₁ "") })) ∷ [])
@@ -1203,13 +1211,13 @@ inUS  (_ , inj₁  _) = return false
 inUS  (_ , inj₂  _) = return true
 \end{code}
 If the original country is the UK, the employee is not being relocated to a different country, so we can skip updating the salary and just replace the location.
-If it is the US, we should adapt the source by changing the salary from dollars to pounds (by a function |^^^toPounds : Salary -> Salary| defined elsewhere) and change the location to an empty one in the UK, which will be replaced by the view location in the second round of the source case analysis following the adaptation.
+If it is the US, we adapt the source by changing the salary from dollars to pounds (by a function |^^^toPounds : Salary -> Salary| defined elsewhere) and change the location to an empty one in the UK, which will be replaced by the view location in the second round of the source case analysis following the adaptation.
 The other branch |relocate-to-US| is defined symmetrically:
 \begin{code}
 ^^^relocate-to-US : BiGUL  (Salary  ⊗ Location    )
                            (one     ⊗ USLocation  )
 relocate-to-US = caseS
-  (  (inUS  , normal'    (update  (prod  unit (right   var))
+  (  (inUS  , normal'    (update  (prod  var (right    var))
                                   ((_ ,  skip) , (_ ,  replace)))) ∷
      (inUK  , adaptive'  (λ {  (salary , _) →
                                {-"~"-} return (£⇒$ salary , inj₂ "") })) ∷ [])
@@ -1233,9 +1241,9 @@ We designed |BiGUL| such that the natural way to understand a |BiGUL| program is
 (It may appear that the programmer needs to devise a |get| before programming a corresponding |put|, but that impression most likely stems from the confusion between general BX specifications --- e.g., consistency \emph{relations} between sources and views --- and |get| \emph{functions} as a much more specialised form of BX specifications.
 The programmer should of course have a specification in mind before programming |put|, but that specification is not necessarily a |get| function.)
 
-We admit, though, that the expressive power of the currently |BiGUL| is not clearly stronger than existing lenses (although the adaptive |put| semantics of |caseS| has shown some potential of putback-based design), and it might be hard to differentiate the putback-based approach in this paper from other approaches (to lenses) in terms of certain formal properties.
+We admit, though, that the expressive power of the current |BiGUL| is not obviously stronger than existing lenses (although the adaptive |put| semantics of |caseS| has shown some potential of putback-based design), and it might be hard to differentiate the putback-based approach in this paper from other approaches to lenses in terms of certain formal properties.
 We thus believe that the main contribution of this paper should be its completely formal development:
-Grohne~et~al~\cite{Grohne-formalizing-semantic-bidirectionalization} has also worked on formal verification about BXs (in \Agda), but that was about semantic bidirectionalisation based on parametric polymorphism~\cite{Voigtlander-BX-for-free}.
+Grohne~et~al~\cite{Grohne-formalizing-semantic-bidirectionalization} have also worked on formal verification about BXs (in \Agda), but their work was about semantic bidirectionalisation based on parametric polymorphism~\cite{Voigtlander-BX-for-free}.
 Our work is the first to formally describe and verify a collection of nontrivial and practically implemented lenses in a dependently typed language, in particular utilising the power of dependent types to design a logically clean abstract syntax and make well-behavedness proofs much easier to handle.
 
 %\todo[inline]{It is probably worth noting that the well-behavedness proofs in |align-lens| are more difficult, but it is mostly due to the inherent difficulty of the proofs --- there is little overhead regarding the formalisation per~se, due to the nice structure of the definition of well-behavedness (in terms of~|_↦_|).
