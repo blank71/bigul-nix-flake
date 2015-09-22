@@ -1,6 +1,6 @@
 {-# LANGUAGE TypeOperators, TypeFamilies, FlexibleContexts  #-}
-{- Notes by Zhenjiang Hu @ 22/09/2015 -}
-{- Better to read PEPM'16 together --}
+{- Studying notes by Zhenjiang Hu @ 22/09/2015 -}
+{- It would be better to read this together with the PEPM'16. --}
 
 import Generics.BiGUL
 import Control.Monad

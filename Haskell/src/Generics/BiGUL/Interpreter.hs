@@ -19,7 +19,7 @@ put (Dep f bigul) s (v, v') = if f v == v' then put bigul s v else throwError $ 
 put (CaseS branchList) s v = putCaseS branchList s v
 put (CaseV branchList) s v = putCaseV branchList s v
 put (Align sourceCond matchCond matchBigul create conceal) s v = putAlign sourceCond matchCond matchBigul create conceal s v
-
+put (Emb g p) s v = p s v
 
 putUPat :: MonadError' ErrorInfo m => UPat m s v -> s -> v -> m s
 putUPat (UVar bigul) s v = put bigul s v
@@ -172,7 +172,7 @@ get (Dep f bigul) s = get bigul s >>= \v -> return $ (v, f v)
 get (CaseS sbranches) s = getCaseS sbranches s
 get (CaseV vbranches) s = getCaseV vbranches s
 get (Align sourceCond matchCond matchBigul create conceal) s = getAlign sourceCond matchCond matchBigul create conceal s
-
+get (Emb g p) s = g s
 
 
 getUPat :: MonadError' ErrorInfo m => UPat m s v -> s -> m v

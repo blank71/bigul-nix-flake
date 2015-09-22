@@ -69,6 +69,9 @@ data BiGUL :: (* -> *) -> * -> * -> * where
           -> (v -> m s)
           -> (s -> m (Maybe s))
           -> BiGUL m [s] [v]
+  Emb     :: (s -> m v)
+          -> (s -> v -> m s)
+          -> BiGUL m s v
 
 newtype Var a = Var a
 
@@ -186,6 +189,7 @@ checkFullEmbed (Dep f bigul) = checkFullEmbed bigul
 checkFullEmbed (CaseS sbranches) = liftM and $ mapM checkSBranch sbranches
 checkFullEmbed (CaseV vbranches) = liftM and $ mapM checkVBranch vbranches
 checkFullEmbed (Align filter matchCond bigul create seal) = checkFullEmbed bigul
+checkFullEmbed (Emb g p) = return True
 
 checkSBranch :: MonadError' ErrorInfo m => (s -> m Bool, CaseSBranch m s v)  -> m Bool
 checkSBranch (cond, (Normal bigul)) = checkFullEmbed bigul
