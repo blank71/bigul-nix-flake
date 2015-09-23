@@ -3,8 +3,9 @@
 
 module Util where
 import Generics.BiGUL
+import Generics.BiGUL.MonadBiGULError
 import Control.Monad
-import GHC.Generics
+import Control.Monad.Except
 
 -- We prepare two simpler functions for testing put/get of 
 -- a bigul lens; it will give the result if it succeeds and 
@@ -15,3 +16,22 @@ testPut u s v = catchBind (put u s v) (\s' -> Right s') (\e -> Left e)
 
 testGet :: BiGUL (Either ErrorInfo) s v -> s -> Either ErrorInfo v
 testGet u s = catchBind (get u s) (\v' -> Right v') (\e -> Left e)
+
+-- The following is for composing two put lenses.
+
+(@@) :: MonadError' ErrorInfo m => BiGUL m s x -> BiGUL m x v -> BiGUL m s v
+u1 @@ u2 = Emb getc putc
+  where
+    getc s = do x <- get u1 s
+                get u2 x     
+    putc s v = do x <- get u1 s
+                  x' <- put u2 x v
+                  put u1 s x'
+
+-- We define a new lens fail to wrap Fail with the additional error message.
+
+failMsg :: MonadError' ErrorInfo m => String -> BiGUL m s v
+failMsg msg = Emb getf putf
+  where
+    getf s = throwError $ ErrorInfo msg
+    putf s v = throwError $ ErrorInfo msg

@@ -1,12 +1,11 @@
-{-# LANGUAGE TypeOperators, TypeFamilies, FlexibleContexts  #-}
 {- Studying notes by Zhenjiang Hu @ 23/09/2015 
-   This note is to show how new lenses can be defined in terms of 
-   explicit definitions of get/put.
+   This note is to show how some new lenses can be defined in terms of 
+   a pair of get and put. Certainly we should avoid using Emb
+   to introduce new lenses when necessary as their well-behavedness 
+   cannot be guaranteed.
 -}
 
 import Generics.BiGUL
-import Control.Monad
-import GHC.Generics
 import Util
 
 -- unGrouping:
@@ -48,4 +47,6 @@ Right [("x",1),("y",10),("y",11),("x",3)]
 Right [("x",1),("y",100),("y",11),("x",3)]
 
 -}
+
+-- Another example is the lens composition (@@) as defined in Util.hs.
 

@@ -1,10 +1,9 @@
-{-# LANGUAGE TypeOperators, TypeFamilies, FlexibleContexts  #-}
-{- Studying notes by Zhenjiang Hu @ 22/09/2015 -}
-{- It would be better to read this together with the PEPM'16. --}
+{- Studying notes by Zhenjiang Hu @ 22/09/2015 
+   It would be better to read this together with the paper 
+   submitted to PEPM'16 . 
+-}
 
 import Generics.BiGUL
-import Control.Monad
-import GHC.Generics
 
 -----------------------------------------------
 --  Test on basic combinators of BiGul
