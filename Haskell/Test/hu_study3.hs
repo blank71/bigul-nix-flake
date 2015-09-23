@@ -1,6 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {- Studying notes by Zhenjiang Hu @ 23/09/2015
-   This note is to show how to define interesting put lenses over lists.
+   This note demonstates definitions of interesting put lenses 
+   over pairs and lists.
 -}
 
 import Generics.BiGUL
@@ -173,7 +174,7 @@ uLeft :: (Eq a, MonadError' ErrorInfo m) => BiGUL m (Either a a) a
 uLeft = CaseS [ (return . isLeft, 
                    Normal $ Update (ULeft (UVar Replace))),
                 (return . const True, 
-                   Normal $ failMsg "rmLeftTags: all elements in the source should be a left value.")
+                   Normal $ failMsg "rmLeftTags: any element in the source should be a left value.")
               ]
         
 {-

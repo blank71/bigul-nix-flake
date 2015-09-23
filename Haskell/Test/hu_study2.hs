@@ -1,8 +1,8 @@
 {- Studying notes by Zhenjiang Hu @ 23/09/2015 
-   This note is to show how some new lenses can be defined in terms of 
+   This note is to show how new lenses can be defined in terms of 
    a pair of get and put. Certainly we should avoid using Emb
-   to introduce new lenses when necessary as their well-behavedness 
-   cannot be guaranteed.
+   to introduce new lenses as their well-behavedness cannot be 
+   automatically guaranteed.
 -}
 
 import Generics.BiGUL
