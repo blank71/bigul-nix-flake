@@ -1,5 +1,5 @@
 {-# LANGUAGE TypeOperators, TypeFamilies, FlexibleContexts  #-}
-{- Utilities for simple resting by Zhenjiang Hu @ 22/09/2015 -}
+{- Utilities for simple testing by Zhenjiang Hu @ 22/09/2015 -}
 
 module Util where
 import Generics.BiGUL
@@ -17,7 +17,7 @@ testPut u s v = catchBind (put u s v) (\s' -> Right s') (\e -> Left e)
 testGet :: BiGUL (Either ErrorInfo) s v -> s -> Either ErrorInfo v
 testGet u s = catchBind (get u s) (\v' -> Right v') (\e -> Left e)
 
--- The following is for composing two put lenses.
+-- Composion of two put lenses.
 
 (@@) :: MonadError' ErrorInfo m => BiGUL m s x -> BiGUL m x v -> BiGUL m s v
 u1 @@ u2 = Emb getc putc
@@ -28,7 +28,7 @@ u1 @@ u2 = Emb getc putc
                   x' <- put u2 x v
                   put u1 s x'
 
--- We define a new lens fail to wrap Fail with the additional error message.
+-- We define a new lens to wrap Fail with additional error messages.
 
 failMsg :: MonadError' ErrorInfo m => String -> BiGUL m s v
 failMsg msg = Emb getf putf
