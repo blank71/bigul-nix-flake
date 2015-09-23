@@ -135,8 +135,8 @@ Right [1,2,3,100,5,6,7,8,9,10]
 
 uLefts :: (MonadError' ErrorInfo m, Eq a) => a -> BiGUL m [Either a a] [Either a a]
 uLefts a0 = CaseV [ CaseVBranch (PConst []) $
-                      CaseS [ (return . (==[]), Normal Skip),
-                              (return . (/=[]), Adaptive (\s -> return (rmLefts s)))
+                      CaseS [ (return . all (not . isLeft), Normal Skip),
+                              (return . const True, Adaptive (\s -> return (rmLefts s)))
                             ],
                     CaseVBranch (PElem PVar PVar) $
                       CaseS [ (\s -> return (s/=[] && hasLeftHead s),
