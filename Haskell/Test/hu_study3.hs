@@ -1,4 +1,4 @@
-{-# LANGUAGE FlexibleContexts  #-}
+{-# LANGUAGE FlexibleContexts #-}
 {- Studying notes by Zhenjiang Hu @ 23/09/2015
    This note is to show how to define interesting put lenses over lists.
 -}
@@ -126,10 +126,6 @@ Right [1,2,3,100,5,6,7,8,9,10]
 
 -}
 
--- type error ... ???
--- Qestion: how to write a put which applies a lens to the tail of a list
---          while keeping the first unchanged?
-
 -- uLefts
 --  [Left 1, Right 1, Left 3, Left 3, Right 2] <-> [Left 1, Left 3, Left 3]
 
@@ -147,10 +143,52 @@ uLefts a0 = CaseV [ CaseVBranch (PConst []) $
                               (return . (==[]), Adaptive (\s -> return [Left a0]))
                             ]
                   ]
-  where
-    hasLeftHead (Left _ : _) = True
-    hasLeftHead _ = False
-    rmLefts xs = [ x | x <- xs, not (isLeft x) ]
-    isLeft (Left _) = True
-    isLeft _ = False
 
+hasLeftHead (Left _ : _) = True
+hasLeftHead _ = False
+rmLefts xs = [ x | x <- xs, not (isLeft x) ]
+isLeft (Left _) = True
+isLeft _ = False
+
+{-
+
+*Main> testGet (uLefts (-1)) [Left 1, Right 1, Left 3, Left 3, Right 2] 
+Right [Left 1,Left 3,Left 3]
+*Main> testPut (uLefts (-1)) [Left 1, Right 1, Left 3, Left 3, Right 2] []
+Right [Right 1,Right 2]
+*Main> testPut (uLefts (-1)) [Left 1, Right 1, Left 3, Left 3, Right 2] [Left 100]
+Right [Left 100,Right 1,Right 2]
+*Main> testPut (uLefts (-1)) [Left 1, Right 1, Left 3, Left 3, Right 2] [Left 100, Left 200, Left 300, Left 400]
+Right [Left 100,Right 1,Left 200,Left 300,Right 2,Left 400]
+
+-}
+
+-- rmLeftTags 
+--  [Left 1, Left 2, Left 3] <-> [1,2,3]
+
+rmLeftTags :: (Eq a, MonadError' ErrorInfo m) => a -> BiGUL m [Either a a] [a]
+rmLeftTags a = mapU (Left a) uLeft
+ 
+uLeft :: (Eq a, MonadError' ErrorInfo m) => BiGUL m (Either a a) a
+uLeft = CaseS [ (return . isLeft, 
+                   Normal $ Update (ULeft (UVar Replace))),
+                (return . const True, 
+                   Normal $ failMsg "rmLeftTags: all elements in the source should be a left value.")
+              ]
+        
+{-
+
+*Main> testGet (rmLeftTags 0) [Left 1, Left 2, Left 3]
+Right [1,2,3]
+*Main> testGet (rmLeftTags 0) [Left 1, Left 2, Left 3, Right 4]
+Left (ErrorInfo "failed.")
+*Main> testPut (rmLeftTags 0) [Left 1, Left 2, Left 3] [10,20,30]
+Right [Left 10,Left 20,Left 30]
+*Main> testPut (rmLeftTags 0) [Left 1, Left 2, Left 3] [10,20,30,40]
+Right [Left 10,Left 20,Left 30,Left 40]
+*Main> testPut (rmLeftTags 0) [Left 1, Left 2, Left 3] [10,20]
+Right [Left 10,Left 20]
+*Main> testPut (rmLeftTags 0) [Left 1, Right 2, Left 3] [10,20]
+Left (ErrorInfo "rmLeftTags: all elements in the source should be a left value.")
+
+-}
