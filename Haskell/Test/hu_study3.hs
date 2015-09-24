@@ -135,7 +135,7 @@ uLefts a0 = CaseV [ CaseVBranch (PConst []) $
                       CaseS [ (return . all (not . isLeft), Normal Skip),
                               (return . const True, Adaptive (\s -> return (rmLefts s)))
                             ],
-                    CaseVBranch (PElem PVar PVar) $
+                    CaseVBranch (POut (PRight (PProd PVar PVar))) $
                       CaseS [ (\s -> return (s/=[] && hasLeftHead s),
                                  Normal (Update (UElem (UVar Replace) (UVar (uLefts a0))))),
                               (\s -> return (s/=[] && not (hasLeftHead s)),
@@ -144,6 +144,29 @@ uLefts a0 = CaseV [ CaseVBranch (PConst []) $
                               (return . (==[]), Adaptive (\s -> return [Left a0]))
                             ]
                   ]
+
+{-
+-- uLefts written in the new syntax.
+-- 2015/09/24
+
+uLefts :: (MonadError' ErrorInfo m, Eq a) => a -> BiGUL m [Either a a] [Either a a]
+uLefts a0 = CaseV [ $(branch [p| [] |])  $
+                      CaseS [ $(normal' [| all (not . isLeft) |]) Skip,
+                              $(adaptive [p| _ |]) (return . rmLefts)
+                            ],
+                    $(branch [p| _ : _ |]) $ 
+                      CaseS [ $(normal [p| Left _ : _ |])
+                                        ($(update [p| x : xs |])
+                                                  [d| x  = Replace
+                                                      xs = uLefts a0 |]),
+                                      -- $(update' [| Replace : uLefts a0 |])
+                              $(normal [p| Right _ : _ |])
+                                       ($(rearr [e| \(x, xs) -> ((), x : xs) |]) 
+                                         $(update [p| _ : xs |] [d| xs = uLefts a0 |])),
+                              $(adaptive [p| [] |]) (\s -> return [Left a0])
+                            ]
+                  ]
+-}
 
 hasLeftHead (Left _ : _) = True
 hasLeftHead _ = False

@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators, TypeFamilies, FlexibleContexts  #-}
+{-# LANGUAGE TypeOperators, TypeFamilies, FlexibleContexts, DeriveGeneric  #-}
 
 import Generics.BiGUL
 import Control.Monad
@@ -17,7 +17,7 @@ getIter :: [Int] -> Either ErrorInfo Int
 getIter s = get iterBigul s
 
 ---- 1. Bookstore example
-data SBook = SBook String [String] Double Int deriving (Show)
+data SBook = SBook String [String] Double Int deriving (Show, Generic)
 data VBook = VBook String Double deriving (Show)
 s = [SBook "Real World Haskell is Not GOOD!" ["zantao"] 30.0 2015]
 v = [VBook "Real World Haskell is Not GOOD!" 10.0, VBook "Learn You Haskell is GOOD!"  20.0]
