@@ -15,5 +15,5 @@ lookupValueConstructor name errMsg = lookupValueName name >>= maybe (fail errMsg
 type TypeConstructor = String
 type ValueConstructor = String 
 type ErrorMessage = String
-genericTypeCTuple :: [TypeConstructor] -> [ValueConstructor] -> ErrorMessage -> Q ([Name], [Name])
-genericTypeCTuple typeCList valueCList errMsg = liftM2 (,) (mapM (flip lookupTypeConstructor errMsg) typeCList) (mapM (flip lookupValueConstructor errMsg) valueCList)
+lookupNames :: [TypeConstructor] -> [ValueConstructor] -> ErrorMessage -> Q ([Name], [Name])
+lookupNames typeCList valueCList errMsg = liftM2 (,) (mapM (flip lookupTypeConstructor errMsg) typeCList) (mapM (flip lookupValueConstructor errMsg) valueCList)
