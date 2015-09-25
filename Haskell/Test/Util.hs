@@ -35,3 +35,17 @@ failMsg msg = Emb getf putf
   where
     getf s = throwError $ ErrorInfo msg
     putf s v = throwError $ ErrorInfo msg
+
+-- Useful higher order lenses
+
+mapU :: (Eq s, Eq v, Monad m) => s -> BiGUL m s v -> BiGUL m [s] [v]
+mapU s0 u = CaseV [ CaseVBranch (PConst []) $
+                      CaseS [ (return . (==[]), Normal Skip),
+                              (return . (/=[]), Adaptive (\s -> return []))
+                            ],
+                    CaseVBranch (PElem PVar PVar) $
+                      CaseS [ (return . (/=[]), Normal (Update (UElem (UVar u) (UVar (mapU s0 u))))),
+                              (return . (==[]), Adaptive (\s -> return [s0]))
+                            ]
+                  ]
+

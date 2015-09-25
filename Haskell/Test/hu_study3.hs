@@ -83,17 +83,6 @@ Right [1,100,200,300]
 -- mapU upHead:
 --   [[1,2,3],[10,11,12,13],[20]] <-> [1,10,20]
 
-mapU :: (Eq s, Eq v, Monad m) => s -> BiGUL m s v -> BiGUL m [s] [v]
-mapU s0 u = CaseV [ CaseVBranch (PConst []) $
-                      CaseS [ (return . (==[]), Normal Skip),
-                              (return . (/=[]), Adaptive (\s -> return []))
-                            ],
-                    CaseVBranch (PElem PVar PVar) $
-                      CaseS [ (return . (/=[]), Normal (Update (UElem (UVar u) (UVar (mapU s0 u))))),
-                              (return . (==[]), Adaptive (\s -> return [s0]))
-                            ]
-                  ]
-
 mapUpHead :: MonadError' ErrorInfo m => BiGUL m [[Int]] [Int]
 mapUpHead = mapU [0] upHead
 
