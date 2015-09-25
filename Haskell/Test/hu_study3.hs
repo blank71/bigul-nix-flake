@@ -1,4 +1,5 @@
 {-# LANGUAGE FlexibleContexts #-}
+{-# LANGUAGE TemplateHaskell #-}
 {- Studying notes by Zhenjiang Hu @ 23/09/2015
    This note demonstates definitions of interesting put lenses 
    over pairs and lists.
@@ -6,6 +7,10 @@
 
 import Generics.BiGUL
 import Util
+import Generics.BiGUL.AST
+import Language.Haskell.TH as TH
+import Generics.BiGUL.TH
+import Pat2BPat
 
 -- upFst:
 --  (a,b) <-> a
@@ -120,11 +125,13 @@ Right [1,2,3,100,5,6,7,8,9,10]
 --  [Left 1, Right 1, Left 3, Left 3, Right 2] <-> [Left 1, Left 3, Left 3]
 
 uLefts :: (MonadError' ErrorInfo m, Eq a) => a -> BiGUL m [Either a a] [Either a a]
-uLefts a0 = CaseV [ CaseVBranch (PConst []) $
+uLefts a0 = CaseV [ $(branch [p| [] |]) $
+                    -- CaseVBranch (PConst []) $
                       CaseS [ (return . all (not . isLeft), Normal Skip),
                               (return . const True, Adaptive (\s -> return (rmLefts s)))
                             ],
-                    CaseVBranch (POut (PRight (PProd PVar PVar))) $
+                     $(branch [p| _ : _ |]) $
+                    --CaseVBranch (POut (PRight (PProd PVar PVar))) $
                       CaseS [ (\s -> return (s/=[] && hasLeftHead s),
                                  Normal (Update (UElem (UVar Replace) (UVar (uLefts a0))))),
                               (\s -> return (s/=[] && not (hasLeftHead s)),
@@ -133,6 +140,8 @@ uLefts a0 = CaseV [ CaseVBranch (PConst []) $
                               (return . (==[]), Adaptive (\s -> return [Left a0]))
                             ]
                   ]
+
+
 
 {-
 -- uLefts written in the new syntax.
@@ -205,3 +214,4 @@ Right [Left 10,Left 20]
 Left (ErrorInfo "rmLeftTags: all elements in the source should be a left value.")
 
 -}
+
