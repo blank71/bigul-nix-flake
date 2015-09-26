@@ -131,7 +131,7 @@ uLefts a0 = CaseV [ $(branch [p| [] |]) $
                               (return . const True, Adaptive (\s -> return (rmLefts s)))
                             ],
                      $(branch [p| _ : _ |]) $
-                    --CaseVBranch (POut (PRight (PProd PVar PVar))) $
+                    -- CaseVBranch (POut (PRight (PProd PVar PVar))) $
                       CaseS [ (\s -> return (s/=[] && hasLeftHead s),
                                  Normal (Update (UElem (UVar Replace) (UVar (uLefts a0))))),
                               (\s -> return (s/=[] && not (hasLeftHead s)),
