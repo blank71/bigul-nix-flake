@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TemplateHaskell #-}
 {- Studying notes by Zhenjiang Hu @ 23/09/2015
-   This note demonstates definitions of interesting put lenses 
+   This note demonstates definitions of interesting put lenses
    over pairs and lists.
 -}
 
@@ -124,20 +124,41 @@ Right [1,2,3,100,5,6,7,8,9,10]
 -- uLefts
 --  [Left 1, Right 1, Left 3, Left 3, Right 2] <-> [Left 1, Left 3, Left 3]
 
+
+--original uLefts
+--uLefts :: (MonadError' ErrorInfo m, Eq a) => a -> BiGUL m [Either a a] [Either a a]
+--uLefts a0 = CaseV [ CaseVBranch (PConst []) $
+--                      CaseS [ (return . all (not . isLeft), Normal Skip),
+--                              (return . const True, Adaptive (\s -> return (rmLefts s)))
+--                            ],
+--                    CaseVBranch (POut (PRight (PProd PVar PVar))) $
+--                      CaseS [ (\s -> return (s/=[] && hasLeftHead s),
+--                                 Normal (Update (UElem (UVar Replace) (UVar (uLefts a0))))),
+--                              (\s -> return (s/=[] && not (hasLeftHead s)),
+--                                 Normal $ Rearr (RProd RVar RVar) (EProd (EConst ()) (EElem (EDir (DLeft DVar)) (EDir (DRight DVar))))
+--                                                (Update (UElem (UVar Skip) (UVar (uLefts a0))))),
+--                              (return . (==[]), Adaptive (\s -> return [Left a0]))
+--                            ]
+--                  ]
+
 uLefts :: (MonadError' ErrorInfo m, Eq a) => a -> BiGUL m [Either a a] [Either a a]
 uLefts a0 = CaseV [ $(branch [p| [] |]) $
-                    -- CaseVBranch (PConst []) $
-                      CaseS [ (return . all (not . isLeft), Normal Skip),
-                              (return . const True, Adaptive (\s -> return (rmLefts s)))
+                      CaseS [ $(normal' [| all (not . isLeft) |]) Skip,
+                              $(adaptive [p| _ |]) (return . rmLefts)
                             ],
                      $(branch [p| _ : _ |]) $
-                    -- CaseVBranch (POut (PRight (PProd PVar PVar))) $
-                      CaseS [ (\s -> return (s/=[] && hasLeftHead s),
-                                 Normal (Update (UElem (UVar Replace) (UVar (uLefts a0))))),
-                              (\s -> return (s/=[] && not (hasLeftHead s)),
-                                 Normal $ Rearr (RProd RVar RVar) (EProd (EConst ()) (EElem (EDir (DLeft DVar)) (EDir (DRight DVar))))
-                                                (Update (UElem (UVar Skip) (UVar (uLefts a0))))),
-                              (return . (==[]), Adaptive (\s -> return [Left a0]))
+                      CaseS [ ( $(normal [p| Left _ : _ |]) $
+                                 (Update (UElem (UVar Replace) (UVar (uLefts a0))))
+                              ),
+                              ( $(normal [p| Right _ : _ |]) $
+                                  Rearr (RProd RVar RVar)
+                                        (EProd (EConst ()) (EElem (EDir (DLeft DVar)) (EDir (DRight DVar))))
+                                        (Update (UElem (UVar Skip)
+                                                       (UVar (uLefts a0))
+                                                 )
+                                        )
+                              ),
+                              $(adaptive [p| [] |]) (\s -> return [Left a0])
                             ]
                   ]
 
@@ -152,14 +173,14 @@ uLefts a0 = CaseV [ $(branch [p| [] |])  $
                       CaseS [ $(normal' [| all (not . isLeft) |]) Skip,
                               $(adaptive [p| _ |]) (return . rmLefts)
                             ],
-                    $(branch [p| _ : _ |]) $ 
+                    $(branch [p| _ : _ |]) $
                       CaseS [ $(normal [p| Left _ : _ |])
                                         ($(update [p| x : xs |])
                                                   [d| x  = Replace
                                                       xs = uLefts a0 |]),
                                       -- $(update' [| Replace : uLefts a0 |])
                               $(normal [p| Right _ : _ |])
-                                       ($(rearr [e| \(x, xs) -> ((), x : xs) |]) 
+                                       ($(rearr [e| \(x, xs) -> ((), x : xs) |])
                                          $(update [p| _ : xs |] [d| xs = uLefts a0 |])),
                               $(adaptive [p| [] |]) (\s -> return [Left a0])
                             ]
@@ -184,6 +205,8 @@ Right [Left 100,Right 1,Right 2]
 Right [Left 100,Right 1,Left 200,Left 300,Right 2,Left 400]
 
 -}
+zz = testPut (uLefts (-1)) [Left 1, Right 1, Left 3, Left 3, Right 2] [Left 100]
+
 
 -- rmLeftTags 
 --  [Left 1, Left 2, Left 3] <-> [1,2,3]

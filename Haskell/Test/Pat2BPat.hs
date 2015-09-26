@@ -1,6 +1,6 @@
 {-# LANGUAGE TemplateHaskell #-}
 
-module Pat2BPat where
+module Pat2BPat(branch, normal',adaptive,normal) where
 
 import Generics.BiGUL
 import Generics.BiGUL.AST
@@ -15,58 +15,83 @@ pat2BPat p = do
     Nothing -> error $ "cannot find constructor CaseVBranch"
     Just conCaseVB ->
       return $ ConE conCaseVB `AppE` pat
-  where
-    mkNPat :: TH.Pat -> Q TH.Exp
-    -- pattern ([]) ---> PConst []
-    mkNPat (ConP name []) = do
-      (_, [pconst]) <- lookupNames [] ["Generics.BiGUL.AST.PConst"] "cannot find constructors PConst from Generics.BiGUL.AST."
-      ConP name' [] <- [p| [] |]
-      if name == name'
-        then return $ ConE pconst `AppE` (ListE [])
-        else error $ "constructors mismatch: " ++ nameBase name ++ " and " ++ nameBase name'
 
-    -- pattern ([_]) or (_ : []) singleton list ---> POut (PRight (PProd PVar (PConst [])
-    -- (_ : []) is handled by "InfixP WildP name pats" with pats = ConP GHC.Types.[] []
-    mkNPat (ListP [WildP]) = [p| _:[] |] >>= mkNPat
+mkNPat :: TH.Pat -> Q TH.Exp
+-- pattern ([]) ---> PConst []
+mkNPat (ConP name []) = do
+  (_, [pconst]) <- lookupNames [] ["Generics.BiGUL.AST.PConst"] "cannot find constructors PConst from Generics.BiGUL.AST."
+  ConP name' [] <- [p| [] |]
+  if name == name'
+    then return $ ConE pconst `AppE` (ListE [])
+    else error $ "constructors mismatch: " ++ nameBase name ++ " and " ++ nameBase name'
 
-    -- pattern ([_, _]). (_ : _ : []) is handled by "InfixP WildP name pats"
-    mkNPat (ListP (WildP:xs)) = do
-      rexp <- mkNPat (ListP xs)
+-- pattern ([_]) or (_ : []) singleton list ---> POut (PRight (PProd PVar (PConst [])
+-- (_ : []) is handled by "InfixP WildP name pats" with pats = ConP GHC.Types.[] []
+mkNPat (ListP [WildP]) = [p| _:[] |] >>= mkNPat
+
+-- pattern ([_, _]). (_ : _ : []) is handled by "InfixP WildP name pats"
+mkNPat (ListP (WildP:xs)) = do
+  rexp <- mkNPat (ListP xs)
+  (_, [pvar, pprod, pright, pout]) <- lookupNames [] ["Generics.BiGUL.AST." ++ s | s <- ["PVar", "PProd", "PRight", "POut"]] "cannot find type constructors PVar PProd PRight POut from Generics.BiGUL.AST."
+  return $ ConE pout `AppE` (ConE pright `AppE` (ConE pprod `AppE` (ConE pvar) `AppE` rexp))
+
+-- pattern (_:_) ---> POut (PRight (PProd PVar PVar
+mkNPat (InfixP WildP name pats) =
+  case pats of
+    VarP _ -> error $ "cannot use variables in list patterns. use wildcast instead"
+    _      -> do
+      rpat <- mkNPat pats
       (_, [pvar, pprod, pright, pout]) <- lookupNames [] ["Generics.BiGUL.AST." ++ s | s <- ["PVar", "PProd", "PRight", "POut"]] "cannot find type constructors PVar PProd PRight POut from Generics.BiGUL.AST."
-      return $ ConE pout `AppE` (ConE pright `AppE` (ConE pprod `AppE` (ConE pvar) `AppE` rexp))
+      ConE name' <- [| (:) |]
+      if name == name'
+        then return $ ConE pout `AppE` (ConE pright `AppE` (ConE pprod `AppE` (ConE pvar) `AppE` rpat))
+        else error $ "constructors mismatch: " ++ nameBase name ++ " and " ++ nameBase name'
+mkNPat (WildP) = lookupNames [] ["Generics.BiGUL.AST.PVar"]  "cannot find constructors PVar from Generics.BiGUL.AST." >>= \(_, [pvar]) -> return $ ConE pvar
 
-    -- pattern (_:_) ---> POut (PRight (PProd PVar PVar
-    mkNPat (InfixP WildP name pats) =
-      case pats of
-        VarP _ -> error $ "cannot use variables in list patterns. use wildcast instead"
-        _      -> do
-          rpat <- mkNPat pats
-          (_, [pvar, pprod, pright, pout]) <- lookupNames [] ["Generics.BiGUL.AST." ++ s | s <- ["PVar", "PProd", "PRight", "POut"]] "cannot find type constructors PVar PProd PRight POut from Generics.BiGUL.AST."
-          ConE name' <- [| (:) |]
-          if name == name'
-            then return $ ConE pout `AppE` (ConE pright `AppE` (ConE pprod `AppE` (ConE pvar) `AppE` rpat))
-            else error $ "constructors mismatch: " ++ nameBase name ++ " and " ++ nameBase name'
-    mkNPat (WildP) = lookupNames [] ["Generics.BiGUL.AST.PVar"]  "cannot find constructors PVar from Generics.BiGUL.AST." >>= \(_, [pvar]) -> return $ ConE pvar
+-- pattern (x,y,z)) ---> PProd (PLeft)
+mkNPat (TupP [p]) = mkNPat p
+mkNPat (TupP (p:ps)) = do
+  lexp <- mkNPat p
+  rexp <- mkNPat (TupP ps)
+  (_, [pprod, pleft, pright]) <- lookupNames [] ["Generics.BiGUL.AST." ++ s | s <- ["PProd", "PLeft", "PRight"]] "cannot find constructors PProd PLeft PRight from Generics.BiGUL.AST."
+  return ((ConE pprod `AppE` lexp) `AppE` rexp)
 
-    -- pattern (x,y,z)) ---> PProd (PLeft)
-    mkNPat (TupP [p]) = mkNPat p
-    mkNPat (TupP (p:ps)) = do
-      lexp <- mkNPat p
-      rexp <- mkNPat (TupP ps)
-      (_, [pprod, pleft, pright]) <- lookupNames [] ["Generics.BiGUL.AST." ++ s | s <- ["PProd", "PLeft", "PRight"]] "cannot find constructors PProd PLeft PRight from Generics.BiGUL.AST."
-      return ((ConE pprod `AppE` lexp) `AppE` rexp)
-
-    -- pattern (x) ---> PVar
-    mkNPat (VarP x) = do
-      (_, [pvar]) <- lookupNames [] ["Generics.BiGUL.AST.PVar"] "cannot find constructors PVar from Generics.BiGUL.AST."
-      return $ ConE pvar
+-- pattern (x) ---> PVar
+mkNPat (VarP x) = error $ "please do not use variables in patterns. use wildcast(_) instead."
+mkNPat _ = error $ "pattern not handled yet."
 
 
 branch :: Q TH.Pat -> Q TH.Exp
 branch quote = quote >>= pat2BPat
 
-      --(_, [pvar, pprod, pright, pout]) <- lookupNames [] ["Generics.BiGUL.AST." ++ s | s <- ["PVar", "PProd", "PRight", "POut"]] "cannot find type constructors PVar PProd PRight POut from Generics.BiGUL.AST."
-      --ConE name' <- [| (:) |]
-      --if name == name'
-      --  then return $ ConE pout `AppE` (ConE pright `AppE` (ConE pprod `AppE` (ConE pvar) `AppE` (ConE pvar)))
-      --  else error $ "type constructors mismatch: " ++ nameBase name ++ " and " ++ nameBase name'
+
+normal' :: Q TH.Exp -> Q TH.Exp
+normal' exp = [|\update -> fmap ($ update) $([| (($([| return . $(exp) |])), Normal) |])|]
+
+normal :: Q TH.Pat -> Q TH.Exp
+normal pat = let a = [| ( $([|\s -> return $ case s of $(pat) -> True; _ -> False|]) , Normal ) |]
+             in      [| \update -> fmap ($ update) $(a)   |]
+
+adaptive :: Q TH.Pat -> Q TH.Exp
+adaptive pat = let a = [| ($([|\s -> return $ case s of $(pat) -> True; _ -> False|]), Adaptive) |]
+               in      [| \adapt -> fmap ($ adapt) $(a) |]
+
+
+
+
+
+
+
+--(Update (UElem (UVar Replace) (UVar (uLefts a0))))
+
+--($(update [p| x : xs |])
+          --[d| x  = Replace
+          --    xs = uLefts a0 |])
+
+
+
+--(Update (UElem (UVar Skip)
+--             (UVar (uLefts a0))
+--       )
+--)
+-- $(update [p| _ : xs |] [d| xs = uLefts a0 |]))
