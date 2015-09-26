@@ -2,7 +2,7 @@
 module GenericDerivingTest where
 
 import GHC.Generics
-import GHC.InOut
+--import GHC.InOut
 import Language.Haskell.TH
 import Control.Monad
 import Generics.BiGUL.TH
