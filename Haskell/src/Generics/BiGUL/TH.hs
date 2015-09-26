@@ -1,18 +1,19 @@
 {-# LANGUAGE TupleSections, DeriveDataTypeable #-}
-module Generics.BiGUL.TH 
-	(
-    ConTagSeq(..),
-		lookupNames, -- for temporary usage, will be deleted later.
-		deriveBiGULGeneric 
-	)
+module Generics.BiGUL.TH
+  (
+    ConTag(..), contag, ConTagSeq(..), lookupNames, constructLRs, lookupLRs, -- for temporary usage, will be deleted later.
+    deriveBiGULGeneric
+  )
 where
 import Data.Data
+import Data.Maybe
+import Data.List as List
 import Language.Haskell.TH
 import Language.Haskell.TH.Quote
 import Control.Monad
 
 
-data ConTag = L | R 
+data ConTag = L | R
     deriving (Show, Data, Typeable)
 
 contag :: a -> a -> ConTag -> a
@@ -25,23 +26,23 @@ class ConTagSeq a where
 
 
 type TypeConstructor = String
-type ValueConstructor = String 
+type ValueConstructor = String
 type ErrorMessage = String
 
 
-lookupName :: (String -> Q (Maybe Name)) -> ErrorMessage -> String -> Q Name 
+lookupName :: (String -> Q (Maybe Name)) -> ErrorMessage -> String -> Q Name
 lookupName f errMsg name = f name >>= maybe (fail errMsg) return
 
 -- ["Generic", "K1", "U1", ":+:", ":*:", "Rep"]
 lookupNames :: [TypeConstructor] -> [ValueConstructor] -> ErrorMessage -> Q ([Name], [Name])
-lookupNames typeCList valueCList errMsg = liftM2 (,) (mapM (lookupName lookupTypeName  errMsg) typeCList) 
+lookupNames typeCList valueCList errMsg = liftM2 (,) (mapM (lookupName lookupTypeName  errMsg) typeCList)
                                                      (mapM (lookupName lookupValueName errMsg) valueCList)
 
 -- Find the Type Dec by Name
 -- Construct an InstanceDec.
 deriveBiGULGeneric :: Name -> Q [InstanceDec]
 deriveBiGULGeneric name = do
-  (name, constructors) <- 
+  (name, constructors) <-
     do
       info <- reify name
       case info of
@@ -51,31 +52,31 @@ deriveBiGULGeneric name = do
     lookupNames [ "GHC.Generics." ++ s | s <- ["Generic", "Rep", "K1", "R", "U1", ":+:", ":*:", "V1"] ]
                 [ "GHC.Generics." ++ s | s <- ["from", "to", "K1", "L1", "R1", "U1", ":*:"] ]
                 "cannot find type/value constructors from GHC.Generics."
-  ([nConTagSeq], [vToConTags]) <- lookupNames ["Generics.BiGUL.TH." ++ s | s <- ["ConTagSeq"]] ["Generics.BiGUL.TH." ++ s | s <- ["toConTags"]] "cannot find type/value constructors from Generics.BiGUL.TH"  
+  ([nConTagSeq], [vToConTags]) <- lookupNames ["Generics.BiGUL.TH." ++ s | s <- ["ConTagSeq"]] ["Generics.BiGUL.TH." ++ s | s <- ["toConTags"]] "cannot find type/value constructors from Generics.BiGUL.TH"
   env <- consToEnv constructors
   let fromClauses = map (constructFuncFromClause (vK1, vU1, vL1, vR1, vProd)) env
-  let toClauses   = map (constructFuncToClause (vK1, vU1, vL1, vR1, vProd)) env 
+  let toClauses   = map (constructFuncToClause (vK1, vU1, vL1, vR1, vProd)) env
   conTagsClause <- toconTagsClause env
-  return $ [InstanceD [] 
-                     (AppT (ConT nGeneric) (ConT name)) 
-                     [TySynInstD nRep 
-                                 (TySynEqn 
-                                    [ConT name] 
-                                    (constructorsToSum (nSum, nV1) (map (constructorToProduct (nK1, nR, nU1, nProd)) constructors))), 
+  return $ [InstanceD []
+                     (AppT (ConT nGeneric) (ConT name))
+                     [TySynInstD nRep
+                                 (TySynEqn
+                                    [ConT name]
+                                    (constructorsToSum (nSum, nV1) (map (constructorToProduct (nK1, nR, nU1, nProd)) constructors))),
                       FunD vFrom fromClauses,
                       FunD vTo toClauses ],
-            InstanceD [] 
-                      (AppT (ConT nConTagSeq) (ConT name)) 
+            InstanceD []
+                      (AppT (ConT nConTagSeq) (ConT name))
                       [FunD vToConTags [conTagsClause]]
-            ]        
+            ]
 
 toconTagsClause :: [(Name, [ConTag], [Name])] -> Q Clause
 toconTagsClause env = do
-  (_, [vEq, vError]) <- lookupNames [] ["==", "error"] "cannot find functions for eq or error."               
+  (_, [vEq, vError]) <- lookupNames [] ["==", "error"] "cannot find functions for eq or error."
   conTagsVarName <- newName "name"
   expEnv <- mapM (\(n, conTags, _) -> liftM2 (,) (dataToExpQ (const Nothing) n) (dataToExpQ (const Nothing) conTags)) env
-  let conTagsClauseBody = (foldr (\(nExp, lrsExp) e -> CondE ((VarE vEq `AppE` nExp) `AppE` VarE conTagsVarName) lrsExp e) 
-                (VarE vError `AppE` LitE (StringL "cannot find name.")) 
+  let conTagsClauseBody = (foldr (\(nExp, lrsExp) e -> CondE ((VarE vEq `AppE` nExp) `AppE` VarE conTagsVarName) lrsExp e)
+                (VarE vError `AppE` LitE (StringL "cannot find name."))
                 expEnv)
   return $ Clause [WildP, VarP conTagsVarName] (NormalB conTagsClauseBody) []
 
@@ -87,8 +88,8 @@ constructorsToSum (sum, v1) tps = foldr1 (\t1 t2 -> (ConT sum `AppT` t1) `AppT` 
 
 
 constructorToProduct :: (Name, Name, Name, Name) -> Con -> Type
-constructorToProduct (k1, r, u1, prod) (NormalC _ [] ) = ConT u1 
-constructorToProduct (k1, r, u1, prod) (NormalC _ sts) = foldr1 (\t1 t2 -> (ConT prod `AppT` t1 ) `AppT` t2) $ map (AppT (ConT k1 `AppT` ConT r) . snd) sts 
+constructorToProduct (k1, r, u1, prod) (NormalC _ [] ) = ConT u1
+constructorToProduct (k1, r, u1, prod) (NormalC _ sts) = foldr1 (\t1 t2 -> (ConT prod `AppT` t1 ) `AppT` t2) $ map (AppT (ConT k1 `AppT` ConT r) . snd) sts
 constructorToProduct _ _ = error "not supported Con"
 
 
@@ -98,7 +99,7 @@ constructorToPatAndBody _ = fail "not supported Cons"
 
 
 zipWithLRs :: [(Name, [Name])] ->  [(Name, [ConTag], [Name])]
-zipWithLRs nns = zipWith (\(n, ns) lrs -> (n, lrs, ns)) nns (constructLRs (length nns)) 
+zipWithLRs nns = zipWith (\(n, ns) lrs -> (n, lrs, ns)) nns (constructLRs (length nns))
 
 consToEnv :: [Con] -> Q [(Name, [ConTag], [Name])]
 consToEnv cons = liftM zipWithLRs $ mapM constructorToPatAndBody cons
@@ -123,11 +124,21 @@ constructFuncToClause (vK1, vU1, vL1, vR1, vProd) (n, lrs, names)  = Clause [wra
     deriveGeneric :: [Name] -> Pat
     deriveGeneric []    = ConP vU1 []
     deriveGeneric names = foldr1 (\p1 p2 -> ConP vProd [p1, p2]) $ map (ConP vK1 . (:[]) . VarP) names
-  
+
 
 constructLRs :: Int -> [[ConTag]]
 constructLRs 0 = []
 constructLRs 1 = [[]]
 constructLRs n = [L] : map (R:) (constructLRs (n-1))
 
+lookupLRs :: Name -> Q [ConTag]
+lookupLRs conName = do
+  info <- reify conName
+  datatypeName <-
+    case info of
+      DataConI _ _ n _ -> return n
+      _ -> fail $ nameBase conName ++ " is not a data constructor"
+  TyConI (DataD _ _ _ cons _) <- reify datatypeName
+  return $ constructLRs (length cons) !!
+             fromJust (List.findIndex (== conName) (map (\(NormalC n _) -> n) cons))
 

@@ -22,6 +22,6 @@ tran:
 	ghci -isrc Test/TestTranslation.hs
 
 TH:
-	ghci -isrc -iTest Test/TH.hs
+	ghci -isrc -iTest Test/TH.hs -XTemplateHaskell
 
 .PHONY: all test clean

@@ -1,23 +1,43 @@
 module THAST where
 
 import Generics.BiGUL
+import Generics.BiGUL.TH
 import Language.Haskell.TH as TH
 import Data.Map (Map)
+import Data.List as List
+import Data.Maybe
 import qualified Data.Map as Map
 
 rearrPatTH :: TH.Pat -> Q (Exp, Map Name Exp)
-rearrPatTH (VarP name)   = do Just conRVar <- lookupValueName "RVar"
-                              Just conDVar <- lookupValueName "DVar"
-                              return (ConE conRVar, Map.singleton name (ConE conDVar))
+rearrPatTH (VarP name)   = do
+  Just conRVar <- lookupValueName "RVar"
+  Just conDVar <- lookupValueName "DVar"
+  return (ConE conRVar, Map.singleton name (ConE conDVar))
+rearrPatTH (ConP name ps) = do
+  (_, [nRConst, nROut, nRLeft, nRRight, nRProd, nDLeft, nDRight]) <-
+    lookupNames [] [ "Generics.BiGUL.AST." ++ s | s <- ["RConst", "ROut", "RLeft", "RRight", "RProd", "DLeft", "DRight"] ] "cannot find data constructors from Generic.BiGUL.AST"
+  ConE nUnit <- [| () |]
+  ems <- mapM rearrPatTH ps
+  lrs <- lookupLRs name
+  let con = foldl (.) (AppE (ConE nROut))
+              (map (AppE . ConE . contag nRLeft nRRight) lrs)
+  let prodE = case ps of
+                [] -> ConE nRConst `AppE` ConE nUnit
+                _  -> foldr1 (\e0 e1 -> (ConE nRProd `AppE` e0) `AppE` e1)
+                        (map fst ems)
+  let envs = zipWith (Map.map . foldr (.) id . map (AppE . ConE . contag nDLeft nDRight))
+                     (constructLRs (length ps)) (map snd ems)
+  return (con prodE, Map.unions envs)
 rearrPatTH (TupP [p])    = rearrPatTH p
-rearrPatTH (TupP (p:ps)) = do (lexp, lenv) <- rearrPatTH p
-                              (rexp, renv) <- rearrPatTH (TupP ps)
-                              Just conRProd <- lookupValueName "RProd"
-                              Just conDLeft <- lookupValueName "DLeft"
-                              Just conDRight <- lookupValueName "DRight"
-                              return ((ConE conRProd `AppE` lexp) `AppE` rexp,
-                                      Map.map (ConE conDLeft `AppE`) lenv `Map.union`
-                                      Map.map (ConE conDRight `AppE`) renv)
+rearrPatTH (TupP (p:ps)) = do
+  (lexp, lenv) <- rearrPatTH p
+  (rexp, renv) <- rearrPatTH (TupP ps)
+  Just conRProd <- lookupValueName "RProd"
+  Just conDLeft <- lookupValueName "DLeft"
+  Just conDRight <- lookupValueName "DRight"
+  return ((ConE conRProd `AppE` lexp) `AppE` rexp,
+          Map.map (ConE conDLeft `AppE`) lenv `Map.union`
+          Map.map (ConE conDRight `AppE`) renv)
 
 
 rearrExprTH :: Exp -> Map Name Exp -> Q Exp
@@ -39,3 +59,5 @@ rearrTH (LamE [p] e) = do (pat, env) <- rearrPatTH p
                           Just conRearr <- lookupValueName "Rearr"
                           return ((ConE conRearr `AppE` pat) `AppE` expr)
 
+rearr :: Q Exp -> Q Exp
+rearr = (rearrTH =<<)

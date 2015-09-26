@@ -1,4 +1,4 @@
-{-# LANGUAGE KindSignatures, GADTs, Rank2Types, ImpredicativeTypes #-}
+{-# LANGUAGE KindSignatures, GADTs, Rank2Types, ImpredicativeTypes, FlexibleContexts #-}
 module BiFlux.DTD.Subtyping where
 
 import BiFlux.DTD.Type as BType
