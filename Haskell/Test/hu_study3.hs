@@ -143,7 +143,7 @@ Right [1,2,3,100,5,6,7,8,9,10]
 
 uLefts :: (MonadError' ErrorInfo m, Eq a) => a -> BiGUL m [Either a a] [Either a a]
 uLefts a0 = CaseV [ $(branch [p| [] |]) $
-                      CaseS [ $(normal' [| all (not . isLeft) |]) Skip,
+                      CaseS [ $(normal' [| \s -> all (not . isLeft) s|]) Skip,
                               $(adaptive [p| _ |]) (return . rmLefts)
                             ],
                      $(branch [p| _ : _ |]) $
@@ -170,7 +170,7 @@ uLefts a0 = CaseV [ $(branch [p| [] |]) $
 
 uLefts :: (MonadError' ErrorInfo m, Eq a) => a -> BiGUL m [Either a a] [Either a a]
 uLefts a0 = CaseV [ $(branch [p| [] |])  $
-                      CaseS [ $(normal' [| all (not . isLeft) |]) Skip,
+                      CaseS [ $(normal' [| \s -> all (not . isLeft) s |]) Skip,
                               $(adaptive [p| _ |]) (return . rmLefts)
                             ],
                     $(branch [p| _ : _ |]) $

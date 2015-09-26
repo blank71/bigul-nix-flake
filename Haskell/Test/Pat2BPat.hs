@@ -12,7 +12,7 @@ pat2BPat p = do
   pat <- mkNPat p
   maybeConCaseVB <- lookupValueName "Generics.BiGUL.AST.CaseVBranch"
   case maybeConCaseVB of
-    Nothing -> error $ "cannot find constructor CaseVBranch"
+    Nothing -> fail $ "cannot find constructor CaseVBranch"
     Just conCaseVB ->
       return $ ConE conCaseVB `AppE` pat
 
@@ -23,7 +23,7 @@ mkNPat (ConP name []) = do
   ConP name' [] <- [p| [] |]
   if name == name'
     then return $ ConE pconst `AppE` (ListE [])
-    else error $ "constructors mismatch: " ++ nameBase name ++ " and " ++ nameBase name'
+    else fail $ "constructors mismatch: " ++ nameBase name ++ " and " ++ nameBase name'
 
 -- pattern ([_]) or (_ : []) singleton list ---> POut (PRight (PProd PVar (PConst [])
 -- (_ : []) is handled by "InfixP WildP name pats" with pats = ConP GHC.Types.[] []
@@ -38,14 +38,14 @@ mkNPat (ListP (WildP:xs)) = do
 -- pattern (_:_) ---> POut (PRight (PProd PVar PVar
 mkNPat (InfixP WildP name pats) =
   case pats of
-    VarP _ -> error $ "cannot use variables in list patterns. use wildcast instead"
+    VarP _ -> fail $ "cannot use variables in list patterns. use wildcast instead"
     _      -> do
       rpat <- mkNPat pats
       (_, [pvar, pprod, pright, pout]) <- lookupNames [] ["Generics.BiGUL.AST." ++ s | s <- ["PVar", "PProd", "PRight", "POut"]] "cannot find type constructors PVar PProd PRight POut from Generics.BiGUL.AST."
       ConE name' <- [| (:) |]
       if name == name'
         then return $ ConE pout `AppE` (ConE pright `AppE` (ConE pprod `AppE` (ConE pvar) `AppE` rpat))
-        else error $ "constructors mismatch: " ++ nameBase name ++ " and " ++ nameBase name'
+        else fail $ "constructors mismatch: " ++ nameBase name ++ " and " ++ nameBase name'
 mkNPat (WildP) = lookupNames [] ["Generics.BiGUL.AST.PVar"]  "cannot find constructors PVar from Generics.BiGUL.AST." >>= \(_, [pvar]) -> return $ ConE pvar
 
 -- pattern (x,y,z)) ---> PProd (PLeft)
@@ -57,8 +57,8 @@ mkNPat (TupP (p:ps)) = do
   return ((ConE pprod `AppE` lexp) `AppE` rexp)
 
 -- pattern (x) ---> PVar
-mkNPat (VarP x) = error $ "please do not use variables in patterns. use wildcast(_) instead."
-mkNPat _ = error $ "pattern not handled yet."
+mkNPat (VarP x) = fail $ "please do not use variables in patterns. use wildcast(_) instead."
+mkNPat _ = fail $ "pattern not handled yet."
 
 
 branch :: Q TH.Pat -> Q TH.Exp
@@ -66,7 +66,18 @@ branch quote = quote >>= pat2BPat
 
 
 normal' :: Q TH.Exp -> Q TH.Exp
-normal' exp = [|\update -> fmap ($ update) $([| (($([| return . $(exp) |])), Normal) |])|]
+normal' me  = do
+  e <- me
+  case e of
+    (LamE pat exp) -> do
+      exp' <- [| return $ $(return exp) |]
+      let mexp = return (LamE pat exp')
+      let a = [| ( $([| $(mexp) |]), Normal) |]
+      [| \update -> fmap ($ update) $(a) |]
+    _  -> do
+      let a = [| ( $([| return . $(me) |]), Normal) |]
+      [| \update -> fmap ($ update) $(a) |]
+
 
 normal :: Q TH.Pat -> Q TH.Exp
 normal pat = let a = [| ( $([|\s -> return $ case s of $(pat) -> True; _ -> False|]) , Normal ) |]
