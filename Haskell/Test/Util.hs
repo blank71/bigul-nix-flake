@@ -7,8 +7,8 @@ import Generics.BiGUL.MonadBiGULError
 import Control.Monad
 import Control.Monad.Except
 
--- We prepare two simpler functions for testing put/get of 
--- a bigul lens; it will give the result if it succeeds and 
+-- We prepare two simpler functions for testing put/get of
+-- a bigul lens; it will give the result if it succeeds and
 -- shows an error message if it fails.
 
 testPut :: BiGUL (Either ErrorInfo) s v -> s -> v -> Either ErrorInfo s
@@ -23,7 +23,7 @@ testGet u s = catchBind (get u s) (\v' -> Right v') (\e -> Left e)
 u1 @@ u2 = Emb getc putc
   where
     getc s = do x <- get u1 s
-                get u2 x     
+                get u2 x
     putc s v = do x <- get u1 s
                   x' <- put u2 x v
                   put u1 s x'
@@ -41,11 +41,11 @@ failMsg msg = Emb getf putf
 mapU :: (Eq s, Eq v, Monad m) => s -> BiGUL m s v -> BiGUL m [s] [v]
 mapU s0 u = CaseV [ CaseVBranch (PConst []) $
                       CaseS [ (return . (==[]), Normal Skip),
-                              (return . (/=[]), Adaptive (\s -> return []))
+                              (return . (/=[]), Adaptive (\s v -> return []))
                             ],
                     CaseVBranch (PElem PVar PVar) $
                       CaseS [ (return . (/=[]), Normal (Update (UElem (UVar u) (UVar (mapU s0 u))))),
-                              (return . (==[]), Adaptive (\s -> return [s0]))
+                              (return . (==[]), Adaptive (\s v -> return [s0]))
                             ]
                   ]
 

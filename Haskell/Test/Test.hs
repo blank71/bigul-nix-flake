@@ -17,8 +17,9 @@ getIter :: [Int] -> Either ErrorInfo Int
 getIter s = get iterBigul s
 
 ---- 1. Bookstore example
-data SBook = SBook String [String] Double Int deriving (Show, Generic)
+data SBook = SBook String [String] Double Int deriving (Show)
 data VBook = VBook String Double deriving (Show)
+
 s = [SBook "Real World Haskell is Not GOOD!" ["zantao"] 30.0 2015]
 v = [VBook "Real World Haskell is Not GOOD!" 10.0, VBook "Learn You Haskell is GOOD!"  20.0]
 
@@ -26,9 +27,9 @@ bookstore :: MonadError' ErrorInfo m => BiGUL m [SBook] [VBook]
 bookstore =
   Align (\_ -> return True)
         (\(SBook stitle _ _ _) (VBook vtitle _) -> return $ stitle == vtitle)
-        (Rearr (ROut (RProd RVar RVar))  --(ROut RVar)
+        (Rearr (RIn (RProd RVar RVar))
                (EProd (EDir (DLeft DVar)) (EProd (EConst ()) (EProd (EDir (DRight DVar)) (EConst ()))))
-               (Update (UOut (UProd (UVar Replace) (UProd (UVar Skip) (UProd (UVar Replace) (UVar Skip)))))))
+               (Update (UIn (UProd (UVar Replace) (UProd (UVar Skip) (UProd (UVar Replace) (UVar Skip)))))))
         (\(VBook vtitle vprice) -> return $ SBook vtitle [] vprice 2012 )
         (\_ -> return Nothing)
 
@@ -85,9 +86,9 @@ checkBook = liftM (show) (checkFullEmbed bookstore)
 --bookstore =
 --  Align (\_ -> return True)
 --        (\(SBook stitle _ _ _) (VBook vtitle _) -> return $ stitle == vtitle)
---        (Rearr (ROut (RProd RVar RVar))  --(ROut RVar)
+--        (Rearr (RIn (RProd RVar RVar))
 --               (EProd (EDir (DLeft DVar)) (EProd (EConst ()) (EProd (EDir (DLeft DVar)) (EConst ()))))
---               (Update (UOut (UProd (UVar Replace) (UProd (UVar Skip) (UProd (UVar Replace) (UVar Skip)))))))
+--               (Update (UIn (UProd (UVar Replace) (UProd (UVar Skip) (UProd (UVar Replace) (UVar Skip)))))))
 --        (\(VBook vtitle vprice) -> return $ SBook vtitle [] vprice 2012 )
 --        (\_ -> return Nothing)
 --
@@ -99,22 +100,22 @@ checkBook = liftM (show) (checkFullEmbed bookstore)
 
 
 --top :: MonadError' ErrorInfo m =>  BiGUL m Netscape.Html Xbel.Xbel
---top = Update (UOut (UVar (
---                  Rearr (ROut RVar) (EDir DVar) (
+--top = Update (UIn (UVar (
+--                  Rearr (RIn RVar) (EDir DVar) (
 --                    Update (UVar (
 --                            Rearr RVar (EDir DVar) (
 --                                Align  --TODO: source, view is not a list.
 --                                  (\_ -> return True)
 --                                  (\_ _ -> return True)
 --                                  (
---                                     (Update (UOut (UProd
+--                                     (Update (UIn (UProd
 --                                       (UVar Skip)
---                                       (UOut (UProd
---                                         (UVar (Rearr (ROut (RProd (ROut Var) RVar))
+--                                       (UIn (UProd
+--                                         (UVar (Rearr (RIn (RProd (RIn Var) RVar))
 --                                                      (EDir (DLeft DVar))
 --                                                      Replace))
---                                         (UOut (UVar (Rearr
---                                                       (ROut (RProd (ROut Var) RVar))
+--                                         (UIn (UVar (Rearr
+--                                                       (RIn (RProd (RIn Var) RVar))
 --                                                       (EDir (DRight DVar))
 --                                                       (contents) -- not supported yet.
 --                                        )))
@@ -138,17 +139,17 @@ checkBook = liftM (show) (checkFullEmbed bookstore)
 --                            (\_ _ -> return True)
 --                            (Rearr RVar (EDir DVar)
 --                                  (CaseV [
---                                    CaseVBranch (POut (PProd (POut PVar) (POut PVar)))
---                                                (Rearr (ROut (RProd (ROut RVar) (ROut RVar)))
+--                                    CaseVBranch (PIn (PProd (PIn PVar) (PIn PVar)))
+--                                                (Rearr (RIn (RProd (RIn RVar) (RIn RVar)))
 --                                                       (EIn (EIn (EProd (EIn (EDir (DLeft DVar))) (EDir (DRight DVar))))) --TODO: check attribute representation.
 --                                                       (Update (UVar Replace))),
---                                    CaseVBranch (POut (PProd (POut PVar) PVar))
+--                                    CaseVBranch (PIn (PProd (PIn PVar) PVar))
 --                                                (--caseS
 --                                                  Update (UVar
 --                                                         ([
---                                                           (evalPatToBool(dd...), Normal (Update (UOut (UProd
---                                                                (UVar (Rearr (POut (PProd (POut PVar) (PVar))) (EDir (DLeft DVar)) Replace))
---                                                                (UVar (Rearr (POut (PProd (POut PVar) (PVar))) (EDir (DRight DVar)) contents )))))),
+--                                                           (evalPatToBool(dd...), Normal (Update (UIn (UProd
+--                                                                (UVar (Rearr (PIn (PProd (PIn PVar) (PVar))) (EDir (DLeft DVar)) Replace))
+--                                                                (UVar (Rearr (PIn (PProd (PIn PVar) (PVar))) (EDir (DRight DVar)) contents )))))),
 --                                                           (const (return True), Adaptive (\_ -> createS(expr)) ) -- ADAPT SOURCE s -> m s
 --                                                          ]))
 --                                                  )
@@ -179,25 +180,25 @@ type EmployeeView = [EmployeeSimplified]
 u :: MonadError' e m => BiGUL m EmployeeSource EmployeeView
 u = Align (\_ -> return True)
           (\(sName, _) (vName, _) -> return (sName == vName))
-          (Rearr (RVar `RProd` RVar) 
-                 (EDir (DLeft DVar) `EProd` (EConst () `EProd` (EDir (DRight DVar)))) 
+          (Rearr (RVar `RProd` RVar)
+                 (EDir (DLeft DVar) `EProd` (EConst () `EProd` (EDir (DRight DVar))))
                  (Update (UVar Replace `UProd`
                           UVar (
                             CaseV [
                               CaseVBranch (PVar `PProd` (PLeft PVar)) (
                                   CaseS [
                                     (return . isBritain . snd, Normal (Update (UVar Skip `UProd` ULeft (UVar Replace)))),
-                                    (return . isAmerican . snd, Adaptive (\(salary, _) -> return (salary*3/5, Left "")))
+                                    (return . isAmerican . snd, Adaptive (\(salary, _) _ -> return (salary*3/5, Left "")))
                                   ]
                                 ),
                               CaseVBranch (PVar `PProd` (PRight PVar)) (
                                   CaseS [
                                     ((return . isAmerican . snd), Normal (Update (UVar Skip `UProd` URight (UVar Replace)))),
-                                    ((return . isBritain . snd), Adaptive (\(salary, _) -> return (salary*5/3, Right "")))
+                                    ((return . isBritain . snd), Adaptive (\(salary, _) _ -> return (salary*5/3, Right "")))
                                   ]
                                 )
                             ]
-                          ) 
+                          )
                          )
                  )
           )
@@ -207,7 +208,7 @@ u = Align (\_ -> return True)
 
 isBritain :: Either Location Location -> Bool
 isBritain (Left _) = True
-isBritain _        = False 
+isBritain _        = False
 
 isAmerican :: Either Location Location -> Bool
 isAmerican (Right _) = True

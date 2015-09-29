@@ -1,7 +1,7 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TemplateHaskell #-}
 {- Studying notes by Zhenjiang Hu @ 23/09/2015
-   This note demonstates definitions of interesting put lenses 
+   This note demonstates definitions of interesting put lenses
    over pairs and lists.
 -}
 
@@ -128,7 +128,7 @@ uLefts :: (MonadError' ErrorInfo m, Eq a) => a -> BiGUL m [Either a a] [Either a
 uLefts a0 = CaseV [ $(branch [p| [] |]) $
                     -- CaseVBranch (PConst []) $
                       CaseS [ (return . all (not . isLeft), Normal Skip),
-                              (return . const True, Adaptive (\s -> return (rmLefts s)))
+                              (return . const True, Adaptive (\s v -> return (rmLefts s)))
                             ],
                      $(branch [p| _ : _ |]) $
                     -- CaseVBranch (POut (PRight (PProd PVar PVar))) $
@@ -137,7 +137,7 @@ uLefts a0 = CaseV [ $(branch [p| [] |]) $
                               (\s -> return (s/=[] && not (hasLeftHead s)),
                                  Normal $ Rearr (RProd RVar RVar) (EProd (EConst ()) (EElem (EDir (DLeft DVar)) (EDir (DRight DVar))))
                                                 (Update (UElem (UVar Skip) (UVar (uLefts a0))))),
-                              (return . (==[]), Adaptive (\s -> return [Left a0]))
+                              (return . (==[]), Adaptive (\s v -> return [Left a0]))
                             ]
                   ]
 
@@ -152,14 +152,14 @@ uLefts a0 = CaseV [ $(branch [p| [] |])  $
                       CaseS [ $(normal' [| all (not . isLeft) |]) Skip,
                               $(adaptive [p| _ |]) (return . rmLefts)
                             ],
-                    $(branch [p| _ : _ |]) $ 
+                    $(branch [p| _ : _ |]) $
                       CaseS [ $(normal [p| Left _ : _ |])
                                         ($(update [p| x : xs |])
                                                   [d| x  = Replace
                                                       xs = uLefts a0 |]),
                                       -- $(update' [| Replace : uLefts a0 |])
                               $(normal [p| Right _ : _ |])
-                                       ($(rearr [e| \(x, xs) -> ((), x : xs) |]) 
+                                       ($(rearr [e| \(x, xs) -> ((), x : xs) |])
                                          $(update [p| _ : xs |] [d| xs = uLefts a0 |])),
                               $(adaptive [p| [] |]) (\s -> return [Left a0])
                             ]
@@ -174,7 +174,7 @@ isLeft _ = False
 
 {-
 
-*Main> testGet (uLefts (-1)) [Left 1, Right 1, Left 3, Left 3, Right 2] 
+*Main> testGet (uLefts (-1)) [Left 1, Right 1, Left 3, Left 3, Right 2]
 Right [Left 1,Left 3,Left 3]
 *Main> testPut (uLefts (-1)) [Left 1, Right 1, Left 3, Left 3, Right 2] []
 Right [Right 1,Right 2]
@@ -185,19 +185,19 @@ Right [Left 100,Right 1,Left 200,Left 300,Right 2,Left 400]
 
 -}
 
--- rmLeftTags 
+-- rmLeftTags
 --  [Left 1, Left 2, Left 3] <-> [1,2,3]
 
 rmLeftTags :: (Eq a, MonadError' ErrorInfo m) => a -> BiGUL m [Either a a] [a]
 rmLeftTags a = mapU (Left a) uLeft
- 
+
 uLeft :: (Eq a, MonadError' ErrorInfo m) => BiGUL m (Either a a) a
-uLeft = CaseS [ (return . isLeft, 
+uLeft = CaseS [ (return . isLeft,
                    Normal $ Update (ULeft (UVar Replace))),
-                (return . const True, 
+                (return . const True,
                    Normal $ failMsg "rmLeftTags: any element in the source should be a left value.")
               ]
-        
+
 {-
 
 *Main> testGet (rmLeftTags 0) [Left 1, Left 2, Left 3]

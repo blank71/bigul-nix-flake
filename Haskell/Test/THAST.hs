@@ -14,12 +14,12 @@ rearrPatTH (VarP name)   = do
   Just conDVar <- lookupValueName "DVar"
   return (ConE conRVar, Map.singleton name (ConE conDVar))
 rearrPatTH (ConP name ps) = do
-  (_, [nRConst, nROut, nRLeft, nRRight, nRProd, nDLeft, nDRight]) <-
-    lookupNames [] [ "Generics.BiGUL.AST." ++ s | s <- ["RConst", "ROut", "RLeft", "RRight", "RProd", "DLeft", "DRight"] ] "cannot find data constructors from Generic.BiGUL.AST"
+  (_, [nRConst, nRIn, nRLeft, nRRight, nRProd, nDLeft, nDRight]) <-
+    lookupNames [] [ "Generics.BiGUL.AST." ++ s | s <- ["RConst", "RIn", "RLeft", "RRight", "RProd", "DLeft", "DRight"] ] "cannot find data constructors from Generic.BiGUL.AST"
   ConE nUnit <- [| () |]
   ems <- mapM rearrPatTH ps
   lrs <- lookupLRs name
-  let con = foldl (.) (AppE (ConE nROut))
+  let con = foldl (.) (AppE (ConE nRIn))
               (map (AppE . ConE . contag nRLeft nRRight) lrs)
   let prodE = case ps of
                 [] -> ConE nRConst `AppE` ConE nUnit

@@ -6,27 +6,11 @@ import GHC.Generics
 import Language.Haskell.TH
 import Control.Monad
 import Generics.BiGUL.TH
+import THAST
 
 data Bookmark = Bookmark String String Bool
               | Folder String [Bookmark]
-              | Sep 
+              | Sep
               deriving (Show)
 
-
 deriveBiGULGeneric ''Bookmark
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-

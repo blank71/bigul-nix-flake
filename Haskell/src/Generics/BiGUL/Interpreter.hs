@@ -29,7 +29,7 @@ putUPat (ULeft upat) (Left s) v = liftM Left (putUPat upat s v)
 putUPat (ULeft _   ) _ _ = throwError $ ErrorInfo "Either Left not match"
 putUPat (URight upat) (Right s) v = liftM Right (putUPat upat s v)
 putUPat (URight _) _ _ = throwError $ ErrorInfo "Either Right not match"
-putUPat (UOut upat) s v = liftM inn (putUPat upat (out s) v)
+putUPat (UIn upat) s v = liftM inn (putUPat upat (out s) v)
 putUPat (UElem upath upatt) [] (v, vs)  = throwError $ ErrorInfo "UElem pat not match"
 putUPat (UElem upath upatt) (s:xs) (v, vs) = liftM2 (:) (putUPat upath s v) (putUPat upatt xs vs)
 
@@ -42,10 +42,10 @@ putCaseSAccu :: MonadError' ErrorInfo m => [(s -> m Bool, CaseSBranch m s v)] ->
 putCaseSAccu [] s v _ _ _ = throwError $ ErrorInfo "No matching pattern for caseS"
 putCaseSAccu branches@(x@(p, branch): xs) s v allBranches flag accuPs = p s >>=
   \b -> if b
-    then case branch of 
+    then case branch of
       Normal bigul -> put bigul s v >>= \s' -> p s' >>= \b' -> if b' then return s' else checkAccuBranches accuPs s' v
       Adaptive f   -> if flag then throwError $ ErrorInfo "meet adaptive branch again"
-                              else f s >>= \s' -> putCaseSAccu allBranches s' v allBranches True []
+                              else f s v >>= \s' -> putCaseSAccu allBranches s' v allBranches True []
     else putCaseSAccu xs s v allBranches flag (accuPs ++ [p])
 
 -- AccuBranches only contains normal branches.
@@ -65,7 +65,7 @@ putCaseSHelp branches@(x@(p, branch): xs) s v backBranches flag = p s >>=
                   Normal bigul -> put bigul s v >>= \s' -> p s' >>= \b' -> if b' then return s' else throwError $ ErrorInfo "update changes the branch."
                   Adaptive f -> if flag
                                    then throwError $ ErrorInfo "meet adaptive branch again"
-                                   else f s >>= \s' -> putCaseSHelp backBranches s' v backBranches True
+                                   else f s v >>= \s' -> putCaseSHelp backBranches s' v backBranches True
            else putCaseSHelp xs s v  backBranches flag >>= \s' -> p s' >>= \b -> if b then throwError $ ErrorInfo "previous pat matches the updated source" else return s'
 
 
@@ -183,7 +183,7 @@ getUPat (ULeft  upat) (Left s)  = getUPat upat s
 getUPat (ULeft  upat) _         = throwError $ ErrorInfo "ULeft pat not match"
 getUPat (URight upat) (Right s) = getUPat upat s
 getUPat (URight upat) _         = throwError $ ErrorInfo "URight pat not match"
-getUPat (UOut  upat) s          = getUPat upat (out s)
+getUPat (UIn    upat) s          = getUPat upat (out s)
 getUPat (UElem upath upatt) []  = throwError $ ErrorInfo "UElem cannot accept empty source list"
 getUPat (UElem upath upatt) (x: xs) = liftM2 (,) (getUPat upath x) (getUPat upatt xs)
 

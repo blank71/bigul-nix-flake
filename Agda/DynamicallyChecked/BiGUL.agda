@@ -58,7 +58,7 @@ mutual
 
   data CaseSBranchType (S V : U n) : Set₁ where
     normal   : BiGUL S V → CaseSBranchType S V
-    adaptive : (⟦ S ⟧ (μ F) → Par (⟦ S ⟧ (μ F))) → CaseSBranchType S V
+    adaptive : (⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → Par (⟦ S ⟧ (μ F))) → CaseSBranchType S V
 
   CaseSBranch : (S V : U n) → Set₁
   CaseSBranch S V = (⟦ S ⟧ (μ F) → Par Bool) × CaseSBranchType S V

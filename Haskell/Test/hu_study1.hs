@@ -1,6 +1,6 @@
-{- Studying notes by Zhenjiang Hu @ 22/09/2015 
-   It would be better to read this together with the paper 
-   submitted to PEPM'16 . 
+{- Studying notes by Zhenjiang Hu @ 22/09/2015
+   It would be better to read this together with the paper
+   submitted to PEPM'16 .
 -}
 
 import Generics.BiGUL
@@ -9,8 +9,8 @@ import Generics.BiGUL
 --  Test on basic combinators of BiGul
 -----------------------------------------------
 
--- We prepare two simpler functions for testing put/get of 
--- a bigul lens; it will give the result if it succeeds and 
+-- We prepare two simpler functions for testing put/get of
+-- a bigul lens; it will give the result if it succeeds and
 -- shows an error message if it fails.
 
 testPut :: BiGUL (Either ErrorInfo) s v -> s -> v -> Either ErrorInfo s
@@ -30,14 +30,14 @@ Left (ErrorInfo "get failed")
 *Main> testPut Fail 1 2
 Left (ErrorInfo "update fails")
 
-*Main> testGet Skip 1 
+*Main> testGet Skip 1
 Right ()
 *Main> testPut Skip 1 ()
 Right 1
 
 Note that the view of Skip should be ().
 
-*Main> testGet Replace 1 
+*Main> testGet Replace 1
 Right 1
 *Main> testPut Replace 1 2
 Right 2
@@ -61,7 +61,7 @@ Right (100,2)
 -}
 
 -- UProd is left associative
-upat2 = UVar Replace `UProd` UVar Skip `UProd` UVar Skip  
+upat2 = UVar Replace `UProd` UVar Skip `UProd` UVar Skip
 update2 = Update upat2
 
 {-
@@ -73,7 +73,7 @@ Right ((100,2),3)
 
 -}
 
-upat3 = ULeft upat1 
+upat3 = ULeft upat1
 update3 = Update upat3
 
 {-
@@ -123,7 +123,7 @@ Right [100,200,300,400]
 
 rearr1 :: (Eq a0, Eq b0) => BiGUL m (b0, a0) (a0, b0)
 rearr1 = Rearr rp1 ep1 Replace
-  where 
+  where
     rp1 = RVar `RProd` RVar
     ep1 = EDir (DRight DVar) `EProd` EDir (DLeft DVar)
 
@@ -138,12 +138,12 @@ Right (200,100)
 
 rearr2 :: (Eq a0, Eq b0) => BiGUL m ((b0, ()), a0) (a0, b0)
 rearr2 = Rearr rp1 ep2 Replace
-  where 
+  where
     rp1 = RVar `RProd` RVar
     ep2 = (EDir (DRight DVar) `EProd` EConst ()) `EProd` EDir (DLeft DVar)
     -- u = Update ((UVar Replace `UProd` UVar Skip) `UProd` UVar Replace)
 
-{- 
+{-
 
 *Main> testGet rearr2 ((1,()),2)
 Right (2,1)
@@ -158,8 +158,8 @@ Right ((200,()),100)
 -- Testing dependency in the view: Dep
 ---------------------------------------
 
-dep1 :: BiGUL m Int (Int, Int) 
-dep1 = Dep (\v -> v+1) Replace 
+dep1 :: BiGUL m Int (Int, Int)
+dep1 = Dep (\v -> v+1) Replace
 
 {-
 
@@ -180,7 +180,7 @@ Left (ErrorInfo "view dependency not match")
 cases1 :: Monad m => BiGUL m Int Int
 cases1 = CaseS [ (return . (>=100), Normal $ Fail),
                  (return . (\s -> s>=0 && s<100), Normal Replace),
-                 (return . (<0), Adaptive $ return . (\s->(-s))) ]
+                 (return . (<0), Adaptive (\s v -> return (-s))) ]
 
 {-
 
@@ -233,18 +233,18 @@ type Persons = [(Name, Salary)]
 type Name = String
 type Salary = Int
 
--- Suppose the view contains those persons 
+-- Suppose the view contains those persons
 -- who have salary greater than 10.
 
 align1 :: Monad m => BiGUL m [(String, Int)] [(String, Int)]
 align1 = Align (\s -> return (salary s > 10))
                (\s v -> return (name s == name v))
-               {- case matched -}  Replace  
+               {- case matched -}  Replace
                {- case unmatchS -} return
                {- case unmatchV -} (\s -> return Nothing)
-  where 
+  where
     salary (n,s) = s
-    name (n,s) = n                   
+    name (n,s) = n
 
 {-
 
@@ -256,10 +256,10 @@ Left (ErrorInfo "created source not satisfy the source filter condition")
 Right [("a",1),("b",50),("c",60)]
 *Main> testPut align1 [("a",1), ("b", 20)] [("c",60)]
 Right [("a",1),("c",60)]
-*Main> 
+*Main>
 
 -}
-         
+
 
 
 

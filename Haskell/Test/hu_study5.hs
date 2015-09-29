@@ -9,7 +9,7 @@ import Util
 -- alignPos:
 --   [("a",10),("b",20),("c",30)] <-> [10,20,30]
 
-data Edit a = Ins Pos 
+data Edit a = Ins Pos
             | Del Pos
 type Pos = Int
 
@@ -32,7 +32,7 @@ uListByList :: (Eq a, Eq b, MonadError' ErrorInfo m) => BiGUL m a b -> BiGUL m [
 uListByList u1 u2 = uListByPair Replace Replace @@ uProd u1 u2 @@ uPairByList Replace Replace
 
 -- main function
--- I hope the lens "alignPos [Ins 2, Del 3] Replace" has the following behavior: 
+-- I hope the lens "alignPos [Ins 2, Del 3] Replace" has the following behavior:
 --     get: [1,2,3,4,5] -> [1,2,3,4,5]
 --     put: [1,2,3,4,5] [1,2,100,3,5] -> [1,2,100,3,5]
 
@@ -41,32 +41,32 @@ alignPos eds u = alignPos' eds 0 u
 
 alignPos' :: (Val a, Eq a, Eq b, MonadError' ErrorInfo m) => [Edit b] -> Pos -> BiGUL m a b -> BiGUL m [a] [b]
 alignPos' [] _ u = mapU defaultV u
-alignPos' (ed:eds) pos0 u 
+alignPos' (ed:eds) pos0 u
   | getPos ed > pos0  = uListByList u (alignPos' (ed:eds) (pos0+1) u)
-  | getPos ed == pos0 = case ed of 
-                          Ins pos -> CaseS [ (return . isNewHead, 
+  | getPos ed == pos0 = case ed of
+                          Ins pos -> CaseS [ (return . isNewHead,
                                                 Normal $ uListByList u (alignPos' eds pos0 u)),
-                                             (return . not . isNewHead, 
-                                                Adaptive (\s -> return (newV : s)))
+                                             (return . not . isNewHead,
+                                                Adaptive (\s v -> return (newV : s)))
                                            ]
-                          Del pos -> CaseS [ (return . (==[]), 
+                          Del pos -> CaseS [ (return . (==[]),
                                                 Normal $ failMsg "alignPos': no corresponding source element for deletion"),
-                                             (return . const True, 
-                                                Adaptive (\s -> return (tail s)))
+                                             (return . const True,
+                                                Adaptive (\s v -> return (tail s)))
                                            ]
   | otherwise = error "The positions in the edition list should be in an increasing order."
-  where 
+  where
     getPos (Ins pos) = pos
     getPos (Del pos) = pos
-    isNewHead (x:xs) = isNewV x  
-    isNewHead _ = False                          
+    isNewHead (x:xs) = isNewV x
+    isNewHead _ = False
 
 
 class Eq a => Val a where
   newV :: a
   defaultV :: a
   isNewV :: a -> Bool
-  isNewV v = v == newV                                                                       
+  isNewV v = v == newV
 
 
 -- for testing

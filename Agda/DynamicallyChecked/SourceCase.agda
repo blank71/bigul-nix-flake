@@ -14,12 +14,12 @@ open import Relation.Binary.PropositionalEquality
 
 data BranchType : Set₁ where
   normal   : (S ⇆ V) → BranchType
-  adaptive : (S → Par S) → BranchType
+  adaptive : (S → V → Par S) → BranchType
 
 Branch : Set₁
 Branch = (S → Par Bool) × BranchType
 
-elimBranchType : {l : Level} {A : Set l} → ((S ⇆ V) → A) → ((S → Par S) → A) → BranchType → A
+elimBranchType : {l : Level} {A : Set l} → ((S ⇆ V) → A) → ((S → V → Par S) → A) → BranchType → A
 elimBranchType f g (normal   l) = f l
 elimBranchType f g (adaptive u) = g u
 
@@ -33,7 +33,7 @@ put-with-adaptation ((p , bt) ∷ bs) bs' s v f =
   p s >>= λ b →
   if b then elimBranchType
               (λ lens → Lens.put lens s v >>= λ s' → p s' >>= λ b' → assert b' then check-diversion bs' s' >> return s')
-              (λ u → u s >>= f) bt
+              (λ u → u s v >>= f) bt
        else put-with-adaptation bs ((p , bt) ∷ bs') s v f
 
 put : List Branch → S → V → Par S

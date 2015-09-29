@@ -58,10 +58,10 @@ globalCorporation =
                             caseS ((inBritain ,
                                       normal (update (prod var (left  var)) ((, skip) , (, replace)))) ∷
                                    (inAmerica ,
-                                      adaptive (λ s → return (⌈ proj₁ s /2⌉ , inj₁ ""))) ∷ [])) ∷
+                                      adaptive (λ s _ → return (⌈ proj₁ s /2⌉ , inj₁ ""))) ∷ [])) ∷
                          (prod var (right var) ,
                             caseS ((inBritain ,
-                                      adaptive (λ s → return (2 * proj₁ s , inj₂ ""))) ∷
+                                      adaptive (λ s _ → return (2 * proj₁ s , inj₂ ""))) ∷
                                    (inAmerica ,
                                       normal (update (prod var (right var)) ((, skip) , (, replace)))) ∷ [])) ∷ [])))))
         ((String × (String ⊎ String) → Par (String × ℕ × (String ⊎ String))) ∋

@@ -14,7 +14,7 @@ data Pat :: * -> * -> *  where
   PProd  :: Pat a a' -> Pat b b' -> Pat (a, b) (a', b')
   PLeft  :: Pat a a' -> Pat (Either a b) a'
   PRight :: Pat b b'  -> Pat (Either a b) b'
-  POut :: InOut a => Pat (F a) b -> Pat a b
+  PIn    :: InOut a => Pat (F a) b -> Pat a b
   PElem  :: Pat a b -> Pat [a] b' -> Pat [a] (b, b')
 
 deconstruct :: MonadError' ErrorInfo m => Pat a b -> a -> m b
@@ -25,7 +25,7 @@ deconstruct (PLeft  pat)      (Left  x) = deconstruct pat x
 deconstruct (PLeft  pat)      (Right y) = throwError $ ErrorInfo  "left pattern for right value"
 deconstruct (PRight pat)      (Left  x) = throwError $ ErrorInfo "right pattern for left value"
 deconstruct (PRight pat)      (Right y) = deconstruct pat y
-deconstruct (POut pat)      x         = deconstruct pat (out x)
+deconstruct (PIn    pat)      x         = deconstruct pat (out x)
 deconstruct (PElem hpat tpat) []        = throwError $ ErrorInfo "head-tail pattern for empty list"
 deconstruct (PElem hpat tpat) (x : xs)  = liftM2 (,) (deconstruct hpat x) (deconstruct tpat xs)
 
@@ -35,10 +35,8 @@ construct (PConst y)        _      = y
 construct (PProd lpat rpat) (x, y) = (construct lpat x, construct rpat y)
 construct (PLeft  pat)      x      = Left  (construct pat x)
 construct (PRight pat)      y      = Right (construct pat y)
-construct (POut pat)      x      = inn (construct pat x)
+construct (PIn    pat)      x      = inn (construct pat x)
 construct (PElem hpat tpat) (x, y) = construct hpat x : construct tpat y
-
-
 
 data UPat :: (* -> *) -> * -> * -> * where
   UVar   :: BiGUL m s v -> UPat m s v
@@ -46,10 +44,10 @@ data UPat :: (* -> *) -> * -> * -> * where
   UProd  :: UPat m s v -> UPat m s' v' -> UPat m (s, s') (v, v')
   ULeft  :: UPat m s v -> UPat m (Either s s') v
   URight :: UPat m s' v -> UPat m (Either s s') v
-  UOut :: InOut s => UPat m (F s) v -> UPat m s v
+  UIn    :: InOut s => UPat m (F s) v -> UPat m s v
   UElem  :: UPat m s v -> UPat m [s] v' -> UPat m [s] (v, v')
 
-data CaseSBranch m s v = Normal (BiGUL m s v) | Adaptive (s -> m s)
+data CaseSBranch m s v = Normal (BiGUL m s v) | Adaptive (s -> v -> m s)
 
 data CaseVBranch m s v where
   CaseVBranch :: Pat v v' -> BiGUL m s v' -> CaseVBranch m s v
@@ -82,7 +80,7 @@ data RPat :: * -> * -> * -> * where
   RProd  :: RPat a a' a'' -> RPat b b' b'' -> RPat (a, b) (a', b') (a'', b'')
   RLeft  :: RPat a a' a'' -> RPat (Either a b) a' a''
   RRight :: RPat b b' b'' -> RPat (Either a b) b' b''
-  ROut :: InOut a => RPat (F a) b c -> RPat a b c
+  RIn    :: InOut a => RPat (F a) b c -> RPat a b c
   RElem  :: RPat a b c -> RPat [a] b' c' -> RPat [a] (b, b') (c, c')
 
 deconstructR :: MonadError' ErrorInfo m => RPat v env con -> v -> m env
@@ -93,7 +91,7 @@ deconstructR (RLeft rpatl)       (Left vl)  = deconstructR rpatl vl
 deconstructR (RLeft rpatl)       _          = throwError $ ErrorInfo "RLeft pattern error"
 deconstructR (RRight rpatr)      (Right vr) = deconstructR rpatr vr
 deconstructR (RRight rpatr)      _          = throwError $ ErrorInfo "RRight pattern error"
-deconstructR (ROut rpat)         v          = deconstructR rpat (out v)
+deconstructR (RIn rpat)          v          = deconstructR rpat (out v)
 deconstructR (RElem rpath rpatt) []         = throwError $ ErrorInfo "view element cannot be empty"
 deconstructR (RElem rpath rpatt) (v: vs)    = liftM2 (,) (deconstructR rpath v) (deconstructR rpatt vs)
 
@@ -104,7 +102,7 @@ constructR (RConst c)          con          = return c
 constructR (RProd rpatl rpatr) (conl, conr) = liftM2 (,) (constructR rpatl conl) (constructR rpatr conr)
 constructR (RLeft rpat)        con          = liftM Left (constructR rpat con)
 constructR (RRight rpat)       con          = liftM Right (constructR rpat con)
-constructR (ROut rpat)         con          = liftM inn (constructR rpat con)
+constructR (RIn rpat)          con          = liftM inn (constructR rpat con)
 constructR (RElem rpath rpatt) (conh, cont) = liftM2 (:) (constructR rpath conh) (constructR rpatt cont)
 
 emptyContainer :: RPat v env con -> con
@@ -113,7 +111,7 @@ emptyContainer (RConst  c)                    = ()
 emptyContainer (RProd rpatl rpatr)            = (emptyContainer rpatl, emptyContainer rpatr)
 emptyContainer (RLeft pat        )            = emptyContainer pat
 emptyContainer (RRight pat       )            = emptyContainer pat
-emptyContainer (ROut   pat       )            = emptyContainer pat
+emptyContainer (RIn  pat         )            = emptyContainer pat
 emptyContainer (RElem rpath rpatt)            = (emptyContainer rpath, emptyContainer rpatt)
 
 
@@ -174,7 +172,7 @@ updateRPat (RProd rpatl rpatr) (DLeft dir)   v' (conl, conr) = liftM (, conr) (u
 updateRPat (RProd rpatl rpatr) (DRight dir)  v' (conl, conr) = liftM (conl ,) (updateRPat rpatr dir v' conr)
 updateRPat (RLeft rpatl      ) dir           v' con          = updateRPat rpatl dir v' con
 updateRPat (RRight rpatr     ) dir           v' con          = updateRPat rpatr dir v' con
-updateRPat (ROut  rpat       ) dir           v' con          = updateRPat rpat  dir v' con
+updateRPat (RIn rpat         ) dir           v' con          = updateRPat rpat  dir v' con
 updateRPat (RElem rpath rpatt) (DLeft dir)   v' (conl, conr) = liftM (, conr) (updateRPat rpath dir v' conl)
 updateRPat (RElem rpath rpatt) (DRight dir)  v' (conl, conr) = liftM (conl ,) (updateRPat rpatt dir v' conr)
 
@@ -204,7 +202,7 @@ checkUPat (UConst c)   = return True
 checkUPat (UProd upatl upatr) = checkUPat upatl >>= \b -> if b then checkUPat upatr else return False
 checkUPat (ULeft upatl)       = checkUPat upatl
 checkUPat (URight upatr)      = checkUPat upatr
-checkUPat (UOut upat)         = checkUPat upat
+checkUPat (UIn upat)          = checkUPat upat
 checkUPat (UElem upath upatt) = checkUPat upath >>= \b -> if b then checkUPat upatt else return False
 
 
@@ -218,7 +216,7 @@ checkCon (RConst c)           _            = return True
 checkCon (RProd rpatl rpatr)  (conl, conr) = checkCon rpatl conl >>= \b -> if b then checkCon rpatr conr else return b
 checkCon (RLeft rpatl      )  con          = checkCon rpatl con
 checkCon (RRight rpatr     )  con          = checkCon rpatr con
-checkCon (ROut  rpat       )  con          = checkCon rpat  con
+checkCon (RIn rpat         )  con          = checkCon rpat  con
 checkCon (RElem rpath rpatt)  (conl, conr) = checkCon rpath conl >>= \b -> if b then checkCon rpatt conr else return b
 
 updateCon :: MonadError' ErrorInfo m => Expr env v' -> RPat v env con -> con -> m con
@@ -238,7 +236,7 @@ updateDir (RProd rpatl rpatr) (DLeft dir)  (conl, conr) = liftM (, conr) (update
 updateDir (RProd rpatl rpatr) (DRight dir) (conl, conr) = liftM (conl, ) (updateDir rpatr dir conr)
 updateDir (RLeft rpatl      ) dir          con          = updateDir rpatl dir con
 updateDir (RRight rpatr     ) dir          con          = updateDir rpatr dir con
-updateDir (ROut   rpat      ) dir          con          = updateDir rpat  dir con
+updateDir (RIn rpat         ) dir          con          = updateDir rpat  dir con
 updateDir (RElem rpath rpatt) (DLeft dir)  (conl, conr) = liftM (, conr) (updateDir rpath dir conl)
 updateDir (RElem rpath rpatt) (DRight dir) (conl, conr) = liftM (conl, ) (updateDir rpatt dir conr)
 
@@ -249,21 +247,6 @@ iter bigul = CaseS [
   (return . (== 1) . length, Normal (Rearr RVar (EProd (EDir DVar) (EConst ())) (Update (UElem (UVar bigul) (UVar Skip))))),
   (return . not . null, Normal(Rearr RVar (EProd (EDir DVar) (EDir DVar)) (Update (UElem (UVar bigul) (UVar (iter bigul))))))
   ]
-
-
-{-
-
-
-bookstore :: MonadError' String m => BiGUL m [SBook] [VBook]
-bookstore =
-  Align (const (return True))
-        (\(SBook stitle _ _ _) (VBook vtitle _) -> return (stitle == vtitle))
-        (Rearr ((EPath (SOut (SProdL STip)) `EProd` EConst ()) `EProd` (EPath (SOut (SProdR STip)) `EProd` (EConst ())))
-               (Update (UOut ((UVar Replace `UProd` UVar Skip) `UProd` (UVar Replace `UProd` UVar Skip)))))
-        (\(VBook title price) -> return (SBook title [] price 0))
-        (const (return Nothing))
-
--}
 
 {-
 
