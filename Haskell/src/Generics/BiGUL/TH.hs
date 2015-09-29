@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections, DeriveDataTypeable #-}
 module Generics.BiGUL.TH
   (
-    ConTag(..), contag, ConTagSeq(..), lookupNames, constructLRs, lookupLRs, -- for temporary usage, will be deleted later.
+    ConTag(..), contag, ConTagSeq(..), lookupNames, constructLRs, lookupLRs, mkConstrutorFromLRs, -- for temporary usage, will be deleted later.
     deriveBiGULGeneric
   )
 where
@@ -142,3 +142,7 @@ lookupLRs conName = do
   return $ constructLRs (length cons) !!
              fromJust (List.findIndex (== conName) (map (\(NormalC n _) -> n) cons))
 
+
+mkConstrutorFromLRs :: [ConTag] -> String -> Q (Exp -> Exp)
+mkConstrutorFromLRs lrs patTag = do (_, [gin, gleft, gright]) <- lookupNames [] [ "Generics.BiGUL.AST." ++ patTag ++ s | s <- ["In", "Left", "Right"] ] "cannot find data constructors from Generic.BiGUL.AST"
+                                    return $ foldl (.) (AppE (ConE gin)) (map (AppE . ConE . contag gleft gright) lrs)
