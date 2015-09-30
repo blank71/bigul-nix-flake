@@ -1,17 +1,30 @@
 {-# LANGUAGE FlexibleContexts #-}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE TypeFamilies #-}
 {- Studying notes by Zhenjiang Hu @ 23/09/2015
    This note demonstates definitions of interesting put lenses
    over pairs and lists.
 -}
 
+import GHC.Generics
 import Generics.BiGUL
 import Util
 import Generics.BiGUL.AST
 import Language.Haskell.TH as TH
 import Generics.BiGUL.TH
 import Pat2BPat
+--import THAST
 
+data Bookmark = Bookmark String String Bool
+              | Folder String [Bookmark]
+              | Sep
+              deriving (Show)
+
+
+deriveBiGULGeneric ''Bookmark
+
+zzz = [p| Folder "aaa" [Sep] |] >>= flip mkPat PTag
+zzzz = [p| Sep |] >>= flip mkPat PTag
 -- upFst:
 --  (a,b) <-> a
 upFst :: Eq a => BiGUL m (a,b) a
@@ -127,9 +140,9 @@ Right [1,2,3,100,5,6,7,8,9,10]
 
 --original uLefts
 --uLefts :: (MonadError' ErrorInfo m, Eq a) => a -> BiGUL m [Either a a] [Either a a]
---uLefts a0 = CaseV [ CaseVBranch (PConst []) $
+--uLefts a0 = CaseV [ CaseVBranch (PIn (PLeft (PConst ()))) $
 --                      CaseS [ (return . all (not . isLeft), Normal Skip),
---                              (return . const True, Adaptive (\s -> return (rmLefts s)))
+--                              (return . const True, Adaptive (\s v-> return (rmLefts s)))
 --                            ],
 --                    CaseVBranch (PIn (PRight (PProd PVar PVar))) $
 --                      CaseS [ (\s -> return (s/=[] && hasLeftHead s),
@@ -137,7 +150,7 @@ Right [1,2,3,100,5,6,7,8,9,10]
 --                              (\s -> return (s/=[] && not (hasLeftHead s)),
 --                                 Normal $ Rearr (RProd RVar RVar) (EProd (EConst ()) (EElem (EDir (DLeft DVar)) (EDir (DRight DVar))))
 --                                                (Update (UElem (UVar Skip) (UVar (uLefts a0))))),
---                              (return . (==[]), Adaptive (\s -> return [Left a0]))
+--                              (return . (==[]), Adaptive (\s -> return undefined))
 --                            ]
 --                  ]
 
@@ -146,21 +159,21 @@ uLefts a0 = CaseV [ $(branch [p| [] |]) $
                       CaseS [ $(normal' [| \s -> all (not . isLeft) s |]) Skip,
                               $(adaptive [p| _ |]) (\s v -> return (rmLefts s))
                             ],
-                     $(branch [p| _ : _ |]) $
-                      CaseS [ ( $(normal [p| Left _ : _ |]) $
-                                 (Update (UElem (UVar Replace) (UVar (uLefts a0))))
-                              ),
-                              ( $(normal [p| Right _ : _ |]) $
-                                  Rearr (RProd RVar RVar)
-                                        (EProd (EConst ()) (EElem (EDir (DLeft DVar)) (EDir (DRight DVar))))
-                                        (Update (UElem (UVar Skip)
-                                                       (UVar (uLefts a0))
-                                                 )
-                                        )
-                              ),
-                              $(adaptive [p| [] |]) (\s -> return [Left a0])
+                     $(branch [p| _:_ |]) $
+                      CaseS [ $(normal [p| Left _ : _ |]) (Update (UElem (UVar Replace) (UVar (uLefts a0)))),
+                              $(normal [p| Right _ : _ |]) $
+                                          $(rearr [e| \(x, xs) -> ((), x : xs) |])
+                                          $(update [p| _ : xs |] [d| xs = uLefts a0 |]),
+                                  --Rearr (RProd RVar RVar)
+                                  --      (EProd (EConst ()) (EElem (EDir (DLeft DVar)) (EDir (DRight DVar))))
+                                          --(Update (UElem (UVar Skip)
+                                          --               (UVar (uLefts a0))
+                                          --         )
+                                          --),
+                              $(adaptive [p| [] |]) (\s v-> return undefined)
                             ]
                   ]
+
 
 
 

@@ -1,7 +1,7 @@
 {-# LANGUAGE TupleSections, DeriveDataTypeable #-}
 module Generics.BiGUL.TH
   (
-    ConTag(..), contag, ConTagSeq(..), lookupNames, constructLRs, lookupLRs, mkConstrutorFromLRs, -- for temporary usage, will be deleted later.
+    ConTag(..), contag, ConTagSeq(..), lookupNames, constructLRs, lookupLRs, mkConstrutorFromLRs,PatTag(..), -- for temporary usage, will be deleted later.
     deriveBiGULGeneric
   )
 where
@@ -15,6 +15,14 @@ import Control.Monad
 
 data ConTag = L | R
     deriving (Show, Data, Typeable)
+
+
+data PatTag = PTag | UTag | RTag
+
+instance Show PatTag where
+   show PTag = "P"
+   show UTag = "U"
+   show RTag = "R" 
 
 contag :: a -> a -> ConTag -> a
 contag a1 _  L = a1
@@ -143,6 +151,6 @@ lookupLRs conName = do
              fromJust (List.findIndex (== conName) (map (\(NormalC n _) -> n) cons))
 
 
-mkConstrutorFromLRs :: [ConTag] -> String -> Q (Exp -> Exp)
-mkConstrutorFromLRs lrs patTag = do (_, [gin, gleft, gright]) <- lookupNames [] [ "Generics.BiGUL.AST." ++ patTag ++ s | s <- ["In", "Left", "Right"] ] "cannot find data constructors from Generic.BiGUL.AST"
+mkConstrutorFromLRs :: [ConTag] -> PatTag -> Q (Exp -> Exp)
+mkConstrutorFromLRs lrs patTag = do (_, [gin, gleft, gright]) <- lookupNames [] [ "Generics.BiGUL.AST." ++ show patTag ++ s | s <- ["In", "Left", "Right"] ] "cannot find data constructors from Generic.BiGUL.AST"
                                     return $ foldl (.) (AppE (ConE gin)) (map (AppE . ConE . contag gleft gright) lrs)

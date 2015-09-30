@@ -1,3 +1,4 @@
+{-# Language TemplateHaskell #-}
 module THAST where
 
 import Generics.BiGUL
@@ -52,6 +53,15 @@ rearrExprTH (TupE (e:es)) env = do e0 <- rearrExprTH e env
                                    e1 <- rearrExprTH (TupE es) env
                                    Just conEProd <- lookupValueName "EProd"
                                    return ((ConE conEProd `AppE` e0) `AppE` e1)
+
+rearrExprTH (InfixE (Just l) (ConE mustbecons) (Just r)) env = do
+  e0 <- rearrExprTH l env
+  e1 <- rearrExprTH r env
+  ConE cons <- [|(:)|]
+  if cons == mustbecons
+    then [| EIn (ERight (EProd $(return e0) $(return e1))) |] -- dangerous. please check whether these constructor exists
+    else fail "the infix operator should be ListCons (:)"
+
 
 rearrTH :: Exp -> Q Exp
 rearrTH (LamE [p] e) = do (pat, env) <- rearrPatTH p
