@@ -12,7 +12,7 @@ import Util
 import Generics.BiGUL.AST
 import Language.Haskell.TH as TH
 import Generics.BiGUL.TH
-import Pat2BPat
+import BiGULSugar
 --import THAST
 
 data Bookmark = Bookmark String String Bool
@@ -23,8 +23,8 @@ data Bookmark = Bookmark String String Bool
 
 deriveBiGULGeneric ''Bookmark
 
-zzz = [p| Folder "aaa" [Sep] |] >>= flip mkPat PTag
-zzzz = [p| Sep |] >>= flip mkPat PTag
+--zzz = [p| Folder "aaa" [Sep] |] >>= flip mkPat PTag
+--zzzz = [p| Sep |] >>= flip mkPat PTag
 -- upFst:
 --  (a,b) <-> a
 upFst :: Eq a => BiGUL m (a,b) a
