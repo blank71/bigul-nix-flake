@@ -43,30 +43,30 @@ putCaseSAccu [] s v _ _ _ = throwError $ ErrorInfo "No matching pattern for case
 putCaseSAccu branches@(x@(p, branch): xs) s v allBranches flag accuPs = p s >>=
   \b -> if b
     then case branch of
-      Normal bigul -> put bigul s v >>= \s' -> p s' >>= \b' -> if b' then return s' else checkAccuBranches accuPs s' v
+      Normal bigul -> put bigul s v >>= \s' -> p s' >>= \b' -> if b' then checkAccuBranches accuPs s' else throwError $ ErrorInfo "updated source does not satisfy the condition." 
       Adaptive f   -> if flag then throwError $ ErrorInfo "meet adaptive branch again"
                               else f s v >>= \s' -> putCaseSAccu allBranches s' v allBranches True []
     else putCaseSAccu xs s v allBranches flag (accuPs ++ [p])
 
 -- AccuBranches only contains normal branches.
-checkAccuBranches :: MonadError' ErrorInfo m => [s -> m Bool] -> s -> v  -> m s
-checkAccuBranches [] s v = return s
-checkAccuBranches (p: xs) s v = p s >>=
+checkAccuBranches :: MonadError' ErrorInfo m => [s -> m Bool] -> s -> m s
+checkAccuBranches [] s = return s
+checkAccuBranches (p: xs) s = p s >>=
   \b -> if b
     then throwError $ ErrorInfo "Updated source matched with previous branch"
-    else checkAccuBranches xs s v
+    else checkAccuBranches xs s
 
-putCaseSHelp :: MonadError' ErrorInfo m => [(s -> m Bool, CaseSBranch m s v)] -> s -> v -> [(s -> m Bool, CaseSBranch m s v)] -> Bool -> m s
-putCaseSHelp [] s v _ _ = throwError $ ErrorInfo "caseS empty with no matching pat"
-putCaseSHelp branches@(x@(p, branch): xs) s v backBranches flag = p s >>=
-  \b -> if b
-           then
-             case branch of
-                  Normal bigul -> put bigul s v >>= \s' -> p s' >>= \b' -> if b' then return s' else throwError $ ErrorInfo "update changes the branch."
-                  Adaptive f -> if flag
-                                   then throwError $ ErrorInfo "meet adaptive branch again"
-                                   else f s v >>= \s' -> putCaseSHelp backBranches s' v backBranches True
-           else putCaseSHelp xs s v  backBranches flag >>= \s' -> p s' >>= \b -> if b then throwError $ ErrorInfo "previous pat matches the updated source" else return s'
+--putCaseSHelp :: MonadError' ErrorInfo m => [(s -> m Bool, CaseSBranch m s v)] -> s -> v -> [(s -> m Bool, CaseSBranch m s v)] -> Bool -> m s
+--putCaseSHelp [] s v _ _ = throwError $ ErrorInfo "caseS empty with no matching pat"
+--putCaseSHelp branches@(x@(p, branch): xs) s v backBranches flag = p s >>=
+--  \b -> if b
+--           then
+--             case branch of
+--                  Normal bigul -> put bigul s v >>= \s' -> p s' >>= \b' -> if b' then return s' else throwError $ ErrorInfo "update changes the branch."
+--                  Adaptive f -> if flag
+--                                   then throwError $ ErrorInfo "meet adaptive branch again"
+--                                   else f s v >>= \s' -> putCaseSHelp backBranches s' v backBranches True
+--           else putCaseSHelp xs s v  backBranches flag >>= \s' -> p s' >>= \b -> if b then throwError $ ErrorInfo "previous pat matches the updated source" else return s'
 
 
 putCaseV :: MonadError' ErrorInfo m => [CaseVBranch m s v] -> s -> v -> m s
