@@ -12,7 +12,7 @@ import Util
 import Generics.BiGUL.AST
 import Language.Haskell.TH as TH
 import Generics.BiGUL.TH
-import BiGULSugar
+--import BiGULSugar
 --import THAST
 
 data Bookmark = Bookmark String String Bool
