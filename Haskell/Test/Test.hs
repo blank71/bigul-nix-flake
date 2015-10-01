@@ -1,6 +1,8 @@
 {-# LANGUAGE TypeOperators, TypeFamilies, FlexibleContexts, DeriveGeneric  #-}
 
 import Generics.BiGUL
+import Generics.BiGUL.AST
+import Generics.BiGUL.TH
 import Control.Monad
 import GHC.Generics
 --import qualified Netscape
@@ -20,6 +22,9 @@ getIter s = get iterBigul s
 data SBook = SBook String [String] Double Int deriving (Show)
 data VBook = VBook String Double deriving (Show)
 
+deriveBiGULGeneric ''SBook
+deriveBiGULGeneric ''VBook
+
 s = [SBook "Real World Haskell is Not GOOD!" ["zantao"] 30.0 2015]
 v = [VBook "Real World Haskell is Not GOOD!" 10.0, VBook "Learn You Haskell is GOOD!"  20.0]
 
@@ -27,26 +32,16 @@ bookstore :: MonadError' ErrorInfo m => BiGUL m [SBook] [VBook]
 bookstore =
   Align (\_ -> return True)
         (\(SBook stitle _ _ _) (VBook vtitle _) -> return $ stitle == vtitle)
-        (Rearr (RIn (RProd RVar RVar))
-               (EProd (EDir (DLeft DVar)) (EProd (EConst ()) (EProd (EDir (DRight DVar)) (EConst ()))))
-               (Update (UIn (UProd (UVar Replace) (UProd (UVar Skip) (UProd (UVar Replace) (UVar Skip)))))))
+        ($(rearr [| \(VBook title price) -> (title, (), price, ()) |])
+           $(update [p| SBook title _ price _ |]
+                    [d| title = Replace
+                        price = Replace
+                        |]))
         (\(VBook vtitle vprice) -> return $ SBook vtitle [] vprice 2012 )
         (\_ -> return Nothing)
 
-
-instance Generic SBook where
-  type Rep SBook = K1 R String :*: K1 R [String] :*: K1 R Double :*: K1 R Int
-  from (SBook title authors price year) = K1 title :*: K1 authors :*: K1 price :*: K1 year
-  to (K1 title :*: K1 authors :*: K1 price :*: K1 year) = (SBook title authors price year)
-
-instance Generic VBook where
-  type Rep VBook = K1 R String :*: K1 R Double
-  from (VBook title price) = K1 title :*: K1 price
-  to (K1 title :*: K1 price) = (VBook title price)
-
-
 putBook :: Either ErrorInfo String
-putBook = catchBind (put bookstore s v) (\s' -> Right (show s')) (\e -> Left e)
+putBook = catchBind (put bookstore s v) (Right . show) Left
 
 putBookWithCheck :: Either ErrorInfo String
 putBookWithCheck = checkFullEmbed bookstore >>= \b ->
@@ -180,41 +175,26 @@ type EmployeeView = [EmployeeSimplified]
 u :: MonadError' e m => BiGUL m EmployeeSource EmployeeView
 u = Align (\_ -> return True)
           (\(sName, _) (vName, _) -> return (sName == vName))
-          (Rearr (RVar `RProd` RVar)
-                 (EDir (DLeft DVar) `EProd` (EConst () `EProd` (EDir (DRight DVar))))
-                 (Update (UVar Replace `UProd`
-                          UVar (
-                            CaseV [
-                              CaseVBranch (PVar `PProd` (PLeft PVar)) (
-                                  CaseS [
-                                    (return . isBritain . snd, Normal (Update (UVar Skip `UProd` ULeft (UVar Replace)))),
-                                    (return . isAmerican . snd, Adaptive (\(salary, _) _ -> return (salary*3/5, Left "")))
-                                  ]
-                                ),
-                              CaseVBranch (PVar `PProd` (PRight PVar)) (
-                                  CaseS [
-                                    ((return . isAmerican . snd), Normal (Update (UVar Skip `UProd` URight (UVar Replace)))),
-                                    ((return . isBritain . snd), Adaptive (\(salary, _) _ -> return (salary*5/3, Right "")))
-                                  ]
-                                )
-                            ]
-                          )
-                         )
-                 )
-          )
+          ($(rearr [| \(name, loc) -> (name, (), loc) |])
+             $(update [p| (name, rest) |]
+                      [d| name = Replace
+                          rest = CaseV [ $(branch [p| (_, Left _) |])
+                                           (CaseS [ $(normal [p| (_, Left _) |])
+                                                      $(update [p| (_, Left britLoc) |]
+                                                               [d| britLoc = Replace |]),
+                                                    $(adaptive [p| (_, Right _) |])
+                                                      (\(salary, _) _ -> return (salary*3/5, Left ""))
+                                                  ]),
+                                         $(branch [p| (_, Right _) |])
+                                           (CaseS [ $(normal   [p| (_, Right _) |])
+                                                      $(update [p| (_, Right ameLoc) |]
+                                                               [d| ameLoc = Replace |]),
+                                                    $(adaptive [p| (_, Left _) |])
+                                                      (\(salary, _) _ -> return (salary*5/3, Right ""))
+                                                  ])
+                                       ] |]))
           (\(vName, location) -> return (vName, (0, location)))
           (\_ -> return Nothing)
-
-
-isBritain :: Either Location Location -> Bool
-isBritain (Left _) = True
-isBritain _        = False
-
-isAmerican :: Either Location Location -> Bool
-isAmerican (Right _) = True
-isAmerican _         = False
-
-
 
 employeeS :: EmployeeSource
 employeeS = [("Jermy Gibbons", (82495, Left "Oxford University")),
@@ -239,7 +219,4 @@ employeeView' = [
 
 putEmployee :: Either ErrorInfo String
 putEmployee =liftM (show) (put u employeeS employeeView')
-
-
-
 
