@@ -4,7 +4,7 @@ all:
 	cabal install
 
 test:
-	ghci Test/Test.hs
+	ghci -isrc Test/Test.hs
 
 dtd:
 	ghci -isrc Test/TestGenDTD.hs
