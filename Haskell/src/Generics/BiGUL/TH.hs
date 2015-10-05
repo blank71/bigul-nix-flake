@@ -391,22 +391,31 @@ normal' me  = do
       [| \update -> fmap ($ update) $(a) |]
 
 
+sToBool :: TH.Pat -> Q TH.Exp
+sToBool p =  do
+  (_, [hreturn,htrue,hfalse]) <- lookupNames [] ["return","True","False"] (notFoundMsg "return,True,False")
+  name                        <-  newName "s"
+  case p of 
+    TH.WildP -> return $ LamE [VarP name] (AppE (VarE hreturn) (ConE htrue))
+    _        -> return $ LamE [VarP name] (AppE (VarE hreturn) (CaseE (VarE name) 
+                        [Match p (NormalB (ConE htrue)) [],Match WildP (NormalB (ConE hfalse)) []]))
+
 normal :: Q TH.Pat -> Q TH.Exp
 normal mpat = do
   pat <- mpat
   checkVariables pat
-  let a = case pat of
-            TH.WildP -> [| ( $([|\s -> return $ case s of $(mpat) -> True|]) , Normal ) |]
-            _        -> [| ( $([|\s -> return $ case s of $(mpat) -> True; _ -> False|]) , Normal ) |]
+  (_, [bnormal]) <- lookupNames [] [astNameSpace ++ "Normal"] (notFoundMsg "Normal")
+  exp <- sToBool pat
+  let a =  return $ TupE [exp,ConE bnormal]
   [| \update -> fmap ($ update) $(a)   |]
 
 adaptive :: Q TH.Pat -> Q TH.Exp
 adaptive mpat = do
   pat <- mpat
   checkVariables pat
-  let a = case pat of
-            TH.WildP -> [| ($([|\s -> return $ case s of $(mpat) -> True|]), Adaptive) |]
-            _        -> [| ($([|\s -> return $ case s of $(mpat) -> True; _ -> False|]), Adaptive) |]
+  (_, [badaptive]) <- lookupNames [] [astNameSpace ++ "Adaptive"] (notFoundMsg "Adaptive")
+  exp <- sToBool pat
+  let a =  return $ TupE [exp,ConE badaptive]
   [| \adapt -> fmap ($ adapt) $(a) |]
 
 --
