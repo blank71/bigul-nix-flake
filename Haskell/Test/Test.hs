@@ -8,6 +8,9 @@ import GHC.Generics
 --import qualified Netscape
 --import qualified Xbel
 
+main :: IO ()
+main = putStrLn "Nothing to do: load the program into GHCi to test it."
+
 ---- 0 . iter operation test
 iterBigul :: MonadError' ErrorInfo m => BiGUL m [Int] Int
 iterBigul = iter Replace
