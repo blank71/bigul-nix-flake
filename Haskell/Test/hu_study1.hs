@@ -2,9 +2,11 @@
    It would be better to read this together with the paper
    submitted to PEPM'16 .
 -}
-
+import GHC.Generics
 import Generics.BiGUL
-
+import Generics.BiGUL.AST
+import Language.Haskell.TH as TH hiding(Name)
+import Generics.BiGUL.TH
 -----------------------------------------------
 --  Test on basic combinators of BiGul
 -----------------------------------------------
@@ -48,8 +50,10 @@ Right 2
 -- testing source update: Update
 ---------------------------------
 
-upat1 = UVar Replace `UProd` UVar Skip
-update1 = Update upat1
+--upat1 = UVar Replace `UProd` UVar Skip
+--update1 = Update upat1
+update1 = $(update [p| (x,_) |] [d| x = Replace |])
+
 
 {-
 
@@ -61,8 +65,11 @@ Right (100,2)
 -}
 
 -- UProd is left associative
-upat2 = UVar Replace `UProd` UVar Skip `UProd` UVar Skip
-update2 = Update upat2
+--upat2 = UVar Replace `UProd` UVar Skip `UProd` UVar Skip
+--update2 = Update upat2
+
+-- (x,_ ,_ ...) in new syntax is right associative by default
+update2 = $(update [p| ((x,_),_) |] [d| x = Replace |])
 
 {-
 
@@ -73,8 +80,12 @@ Right ((100,2),3)
 
 -}
 
-upat3 = ULeft upat1
-update3 = Update upat3
+--upat3 = ULeft upat1
+--update3 = Update upat3
+
+-- !!!!!!!!! if you use data constructors , you need add type declaration explicitly
+update3 :: BiGUL m (Either (a,b) c) (a,())
+update3 = $(update [p| Left (x,_) |] [d| x = Replace|])
 
 {-
 
@@ -110,6 +121,23 @@ Right [100,200,300]
 *Main> testPut (Update (UElem (UVar Replace) (UVar Replace))) [1,2,3] (100,[200,300,400])
 Right [100,200,300,400]
 
+
+
+*Main> testGet  $(update [p| 5 |] [d| |]) 5
+Right ()
+*Main> testPut  $(update [p| 5 |] [d| |]) 5 ()
+Right 5
+
+*Main> testGet  $(update [p| 5 |] [d| |]) 1
+Left (ErrorInfo "source is not a constant.")
+
+*Main> testGet  $(update [p| x:xs |] [d| x = Replace; xs = Replace |]) [1,2,3]
+Right (1,[2,3])
+*Main> testPut  $(update [p| x:xs |] [d| x = Replace; xs = Replace |]) [1,2,3] (100,[200,300])
+Right [100,200,300]
+
+*Main> testPut  $(update [p| x:xs |] [d| x = Replace; xs = Replace |]) [1,2,3] (100,[200,300,400])
+Right [100,200,300,400]
 -}
 
 -- Question: Why UOut is necessary?
@@ -122,10 +150,12 @@ Right [100,200,300,400]
 ---------------------------------------------------
 
 rearr1 :: (Eq a0, Eq b0) => BiGUL m (b0, a0) (a0, b0)
-rearr1 = Rearr rp1 ep1 Replace
-  where
-    rp1 = RVar `RProd` RVar
-    ep1 = EDir (DRight DVar) `EProd` EDir (DLeft DVar)
+--rearr1 = Rearr rp1 ep1 Replace
+--  where
+--    rp1 = RVar `RProd` RVar
+--    ep1 = EDir (DRight DVar) `EProd` EDir (DLeft DVar)
+
+rearr1 = $(rearr [| \(x,y) -> (y,x) |]) Replace
 
 {-
 
@@ -137,11 +167,13 @@ Right (200,100)
 -}
 
 rearr2 :: (Eq a0, Eq b0) => BiGUL m ((b0, ()), a0) (a0, b0)
-rearr2 = Rearr rp1 ep2 Replace
-  where
-    rp1 = RVar `RProd` RVar
-    ep2 = (EDir (DRight DVar) `EProd` EConst ()) `EProd` EDir (DLeft DVar)
+--rearr2 = Rearr rp1 ep2 Replace
+--  where
+--    rp1 = RVar `RProd` RVar
+--    ep2 = (EDir (DRight DVar) `EProd` EConst ()) `EProd` EDir (DLeft DVar)
     -- u = Update ((UVar Replace `UProd` UVar Skip) `UProd` UVar Replace)
+
+rearr2 = $(rearr [| \(x,y) -> ((y,()),x)|]) $(update [p| ((x,_),y) |] [d| x = Replace ; y = Replace|])
 
 {-
 
@@ -178,9 +210,14 @@ Left (ErrorInfo "view dependency not match")
 -----------------------------------------
 
 cases1 :: Monad m => BiGUL m Int Int
-cases1 = CaseS [ (return . (>=100), Normal $ Fail),
-                 (return . (\s -> s>=0 && s<100), Normal Replace),
-                 (return . (<0), Adaptive (\s v -> return (-s))) ]
+--cases1 = CaseS [ (return . (>=100), Normal $ Fail),
+--                 (return . (\s -> s>=0 && s<100), Normal Replace),
+--                 (return . (<0), Adaptive (\s v -> return (-s))) ]
+
+cases1 = CaseS [ $(normal' [| \s -> s>=100 |]) Fail,
+                 $(normal' [| \s -> s>=0 && s<100 |]) Replace,
+                 $(adaptive' [| \s -> s<0 |]) (\s v -> return (-s))
+               ]
 
 {-
 
@@ -207,9 +244,13 @@ Right 50
 ---------------------------------------
 
 casev1 :: BiGUL m (Either b' b) (Either b' ())
+--casev1 = CaseV [
+--           CaseVBranch (PLeft PVar)  $ Update (ULeft (UVar Replace)),
+--           CaseVBranch (PRight PVar) $ Update (URight (UVar Skip))
+--         ]
 casev1 = CaseV [
-           CaseVBranch (PLeft PVar)  $ Update (ULeft (UVar Replace)),
-           CaseVBranch (PRight PVar) $ Update (URight (UVar Skip))
+            $(branch [p| Left _ |]) $(update [p| Left x |] [d| x = Replace |]),
+            $(branch [p| Right _ |]) $(update [p| Right _ |] [d| |])
          ]
 
 {-
