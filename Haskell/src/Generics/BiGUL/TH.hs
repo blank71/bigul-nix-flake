@@ -1,6 +1,5 @@
 {-# LANGUAGE TemplateHaskell, TupleSections, DeriveDataTypeable #-}
-module Generics.BiGUL.TH( branch, normal',adaptive,normal,rearr,update,deriveBiGULGeneric) where
-
+module Generics.BiGUL.TH( branch, normal',adaptive',adaptive,normal,rearr,update,deriveBiGULGeneric) where
 import Data.Data
 import Data.Maybe
 import Data.List as List
@@ -377,46 +376,70 @@ branch mp = do
   return $ ConE caseVBranch `AppE` pat
 
 
-normal' :: Q TH.Exp -> Q TH.Exp
-normal' me  = do
-  e <- me
-  case e of
-    (LamE pat exp) -> do
-      exp' <- [| return $ $(return exp) |]
-      let mexp = return (LamE pat exp')
-      let a = [| ( $([| $(mexp) |]), Normal) |]
-      [| \update -> fmap ($ update) $(a) |]
-    _  -> do
-      let a = [| ( $([| return . $(me) |]), Normal) |]
-      [| \update -> fmap ($ update) $(a) |]
 
-
-sToBool :: TH.Pat -> Q TH.Exp
-sToBool p =  do
+patToFunc :: TH.Pat -> Q TH.Exp
+patToFunc p =  do
   (_, [hreturn,htrue,hfalse]) <- lookupNames [] ["return","True","False"] (notFoundMsg "return,True,False")
   name                        <-  newName "s"
-  case p of 
+  case p of
     TH.WildP -> return $ LamE [VarP name] (AppE (VarE hreturn) (ConE htrue))
-    _        -> return $ LamE [VarP name] (AppE (VarE hreturn) (CaseE (VarE name) 
+    _        -> return $ LamE [VarP name] (AppE (VarE hreturn) (CaseE (VarE name)
                         [Match p (NormalB (ConE htrue)) [],Match WildP (NormalB (ConE hfalse)) []]))
+
+
+addNormal :: TH.Exp -> Q TH.Exp
+addNormal exp = do
+  (_, [bnormal]) <- lookupNames [] [astNameSpace ++ "Normal"] (notFoundMsg "Normal")
+  return $ TupE [exp,ConE bnormal]
+
+addAdaptive :: TH.Exp -> Q TH.Exp
+addAdaptive exp = do
+  (_, [badaptive]) <- lookupNames [] [astNameSpace ++ "Adaptive"] (notFoundMsg "Adaptive")
+  return $ TupE [exp,ConE badaptive]
+
+normal' :: Q TH.Exp -> Q TH.Exp
+normal' me  = do
+  (_, [hreturn,hcomposition]) <- lookupNames [] ["return","."] (notFoundMsg "return,composition")
+  e <- me
+  let a = addNormal $ InfixE (Just (VarE hreturn)) (VarE hcomposition) (Just e)
+  [| \update -> fmap ($ update) $(a) |]
+  --case e of
+  --  (LamE pat exp) -> do
+  --    exp' <- [| return $ $(return exp) |]
+  --    let mexp = return (LamE pat exp')
+  --    let a = [| ( $(mexp) , Normal) |]
+  --    [| \update -> fmap ($ update) $(a) |]
+  --  _  -> do
+  --    let a = [| ( $([| return . $(me) |]), Normal) |]
+  --    [| \update -> fmap ($ update) $(a) |]
+
+
+adaptive' :: Q TH.Exp -> Q TH.Exp
+adaptive' me = do
+  (_, [hreturn,hcomposition]) <- lookupNames [] ["return","."] (notFoundMsg "return,composition")
+  e <- me
+  let a = addAdaptive $ InfixE (Just (VarE hreturn)) (VarE hcomposition) (Just e)
+  [| \update -> fmap ($ update) $(a) |]
 
 normal :: Q TH.Pat -> Q TH.Exp
 normal mpat = do
   pat <- mpat
   checkVariables pat
   (_, [bnormal]) <- lookupNames [] [astNameSpace ++ "Normal"] (notFoundMsg "Normal")
-  exp <- sToBool pat
-  let a =  return $ TupE [exp,ConE bnormal]
-  [| \update -> fmap ($ update) $(a)   |]
+  exp <- patToFunc pat
+  a   <- addNormal exp
+  [| \update -> fmap ($ update) $(return a)   |]
+
 
 adaptive :: Q TH.Pat -> Q TH.Exp
 adaptive mpat = do
   pat <- mpat
   checkVariables pat
   (_, [badaptive]) <- lookupNames [] [astNameSpace ++ "Adaptive"] (notFoundMsg "Adaptive")
-  exp <- sToBool pat
-  let a =  return $ TupE [exp,ConE badaptive]
-  [| \adapt -> fmap ($ adapt) $(a) |]
+  exp <- patToFunc pat
+  a   <- addAdaptive exp
+  [| \adapt -> fmap ($ adapt) $(return a) |]
+
 
 --
 notFoundMsg :: String -> String
