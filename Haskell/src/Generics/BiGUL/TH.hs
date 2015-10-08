@@ -16,12 +16,13 @@ data ConTag = L | R
     deriving (Show, Data, Typeable)
 
 
-data PatTag = PTag | UTag | RTag
+data PatTag = PTag | UTag | RTag | ETag
 
 instance Show PatTag where
    show PTag = "P"
    show UTag = "U"
    show RTag = "R"
+   show ETag = "E"
 
 contag :: a -> a -> ConTag -> a
 contag a1 _  L = a1
@@ -285,13 +286,35 @@ mkEnvForRearr  _    =  fail $ "Pattern not handled yet."
 
 
 
+splitDataAndCon:: TH.Exp -> Q (TH.Exp,[TH.Exp])
+
+splitDataAndCon (AppE (ConE name) e2) = do
+  con <- mkBodyExpForRearr (ConE name)
+  d   <- mkBodyExpForRearr e2
+  return (con,[d])
+
+splitDataAndCon (AppE e1 e2) = do
+  (c, ds) <- splitDataAndCon e1
+  d        <- mkBodyExpForRearr e2
+  return (c,ds++[d])
+
+splitDataAndCon _            =  fail $ "Invalid data constructor in lambda body expression"
+
 
 
 mkBodyExpForRearr :: TH.Exp -> Q TH.Exp
 
-mkBodyExpForRearr (LitE c) = return (LitE c)
+mkBodyExpForRearr (LitE c) = do
+  (_, [econst]) <- lookupNames [] [astNameSpace ++ "EConst"] (notFoundMsg "EConst")
+  return $ ConE econst `AppE` (LitE c)
 
 mkBodyExpForRearr (VarE name) =  return $ VarE name
+
+mkBodyExpForRearr (AppE e1 e2) = do
+  (_, [eprod]) <- lookupNames [] [astNameSpace ++ "EProd"] (notFoundMsg "EProd")
+  (con, ds)   <- splitDataAndCon (AppE e1 e2)
+  return $ con `AppE` (foldr1 (\d1 d2 -> ConE eprod `AppE` d1 `AppE` d2) ds)
+
 
 -- a little trick here, in order to extract conInEither from Exp -> Exp type
 mkBodyExpForRearr (ConE name) =  do
@@ -300,7 +323,7 @@ mkBodyExpForRearr (ConE name) =  do
   then do (_, [econst]) <- lookupNames [] [astNameSpace ++ s | s <- ["EConst"] ] (notFoundMsg "EConst")
           return $ ConE econst `AppE` (ConE name)
   else do lrs <- lookupLRs name
-          conWithAppE <- mkConstrutorFromLRs lrs RTag
+          conWithAppE <- mkConstrutorFromLRs lrs ETag
           let (AppE conInEither _) = conWithAppE (ConE name)
           return $ conInEither
 
