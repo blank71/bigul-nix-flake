@@ -37,17 +37,17 @@ executable test
                     , TupleSections, TemplateHaskell
   default-language:    Haskell2010
 
---executable example-pairlist
---  main-is:            examples/PairList.hs
---  hs-source-dirs:     src
---  build-depends:      base >= 4.0, mtl >= 2.2 && < 2.3, pretty
---                    , containers
---                    , template-haskell
---  default-extensions: FlexibleContexts, TemplateHaskell
---  other-modules:      Generics.BiGUL
---                    , Generics.BiGUL.AST
---                    , Generics.BiGUL.Interpreter
---                    , Generics.BiGUL.MonadBiGULError
---                    , Generics.BiGUL.TH
---                    , GHC.InOut
---  default-language:   Haskell2010
+executable example-pairlist
+  main-is:            examples/PairList.hs
+  hs-source-dirs:     ., src
+  build-depends:      base >= 4.0, mtl >= 2.2 && < 2.3, pretty
+                    , containers
+                    , template-haskell
+  default-extensions: FlexibleContexts, TemplateHaskell
+  other-modules:      Generics.BiGUL
+                    , Generics.BiGUL.AST
+                    , Generics.BiGUL.Interpreter
+                    , Generics.BiGUL.MonadBiGULError
+                    , Generics.BiGUL.TH
+                    , GHC.InOut
+  default-language:   Haskell2010

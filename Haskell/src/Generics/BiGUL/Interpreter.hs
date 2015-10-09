@@ -6,6 +6,7 @@ import Generics.BiGUL.MonadBiGULError
 import Control.Monad
 import Control.Monad.Except
 import GHC.InOut
+import Data.Maybe (catMaybes)
 import Data.Foldable
 import Control.Arrow
 
@@ -152,15 +153,9 @@ firstMatch v (s: ss) matchCond =
 
 unfilterP :: [s] -> [Maybe s] -> [s]
 unfilterP xs [] = xs
-unfilterP [] myss@(my: mys) = condense myss
+unfilterP [] myss@(my: mys) = catMaybes myss
 unfilterP (x: xs) (Nothing : mys) = x : unfilterP xs mys
 unfilterP xss@(x: xs) (Just y  : mys) = y : unfilterP xss mys
-
-
-condense :: [Maybe s] ->[s]
-condense [] = []
-condense (Nothing : mxs) = condense mxs
-condense (Just s: mxs) = s: condense mxs
 
 get :: MonadError' ErrorInfo m => BiGUL m s v -> s -> m v
 get Fail s = throwError $ ErrorInfo "get failed"
