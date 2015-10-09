@@ -50,11 +50,11 @@ lookupNames typeCList valueCList errMsg = liftM2 (,) (mapM (lookupName lookupTyp
 -- Construct an InstanceDec.
 deriveBiGULGeneric :: Name -> Q [InstanceDec]
 deriveBiGULGeneric name = do
-  (name, constructors) <-
+  (name, typeVars, constructors) <-
     do
       info <- reify name
       case info of
-        (TyConI (DataD [] name [] constructors _)) -> return (name, constructors)
+        (TyConI (DataD [] name typeVars constructors _)) -> return (name, typeVars, constructors)
         _            -> fail ( "cannot find " ++ nameBase name ++ ", or not a (supported) datatype.")
   ([nGeneric, nRep, nK1, nR, nU1, nSum, nProd, nV1, nS1, nSelector, nDataType], [vFrom, vTo, vK1, vL1, vR1, vU1, vProd, vSelName, vDataTypeName, vModuleName, vM1]) <-
     lookupNames [ "GHC.Generics." ++ s | s <- ["Generic", "Rep", "K1", "R", "U1", ":+:", ":*:", "V1", "S1", "Selector", "Datatype"] ]
@@ -73,10 +73,10 @@ deriveBiGULGeneric name = do
            listMaybe2Just (concat selectorDataTypeMaybeList) ++ 
            listMaybe2Just (concat selectorInstanceDecList) ++ 
            [InstanceD []
-                     (AppT (ConT nGeneric) (ConT name))
+                     (AppT (ConT nGeneric) (generateTypeVarsType name typeVars))
                      [TySynInstD nRep
                                  (TySynEqn
-                                    [ConT name]
+                                    [generateTypeVarsType name typeVars]
                                     (constructorsToSum (nSum, nV1) (map (constructorToProduct (nK1, nR, nU1, nProd, nS1)) selectorNameAndConList))),
                       FunD vFrom fromClauses,
                       FunD vTo toClauses ]
@@ -183,6 +183,15 @@ generateSelectorInstanceDec' nSelector vSelName (Just selectorName, (name, _, _)
 generateSelectorInstanceDec' _         _         _                          = Nothing
 
 
+-- generate type representation of polymorhpic type
+-- e.g. VBook a b is represented as: AppT (ConT name) (ConT name_a `AppT` ConT name_b)
+generateTypeVarsType :: Name -> [TyVarBndr] -> Type
+generateTypeVarsType n []    = ConT n -- not polymorphic case.
+generateTypeVarsType n tvars = foldl (\a b -> AppT a b) (ConT n) $ map (\tvar -> 
+   case tvar of 
+    { PlainTV  name      -> VarT name; 
+      KindedTV name kind -> error "kind type variables are not supported yet."
+    }) tvars 
 
 
 constructLRs :: Int -> [[ConTag]]
