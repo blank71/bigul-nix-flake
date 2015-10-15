@@ -21,12 +21,15 @@ open import Relation.Nullary.Decidable
 open import Relation.Binary.PropositionalEquality
 
 
+kℕ : {n : ℕ} → U n
+kℕ = k ℕ Data.Nat._≟_
+
 kString : {n : ℕ} → U n
 kString = k String Data.String._≟_
 
 -- name, salary, British or American office location
 EmployeeU : {n : ℕ} → U n
-EmployeeU = kString ⊗ (k ℕ Data.Nat._≟_ ⊗ (kString ⊕ kString))
+EmployeeU = kString ⊗ (kℕ ⊗ (kString ⊕ kString))
 
 -- name, British or American office location
 LocationU : {n : ℕ} → U n
@@ -38,11 +41,11 @@ emptyF ()
 emptyTEnv : Fin 0 → Set
 emptyTEnv ()
 
-inBritain : ℕ × (String ⊎ String) → Par Bool
+inBritain : {A : Set} → A × (String ⊎ String) → Par Bool
 inBritain (_ , inj₁ _) = return true
 inBritain (_ , inj₂ _) = return false
 
-inAmerica : ℕ × (String ⊎ String) → Par Bool
+inAmerica : {A : Set} → A × (String ⊎ String) → Par Bool
 inAmerica (_ , inj₁ _) = return false
 inAmerica (_ , inj₂ _) = return true
 
@@ -54,23 +57,27 @@ globalCorporation =
         (rearr (prod var var) (prod var (prod (k tt) var)) (inj₁ refl , tt , inj₂ refl)
            (update (prod var var)
               ((, replace) ,
-               (, caseV ((prod var (left  var) ,
-                            caseS ((inBritain ,
-                                      normal (update (prod var (left  var)) ((, skip) , (, replace)))) ∷
-                                   (inAmerica ,
-                                      adaptive (λ s _ → return (⌈ proj₁ s /2⌉ , inj₁ ""))) ∷ [])) ∷
-                         (prod var (right var) ,
-                            caseS ((inBritain ,
-                                      adaptive (λ s _ → return (2 * proj₁ s , inj₂ ""))) ∷
-                                   (inAmerica ,
-                                      normal (update (prod var (right var)) ((, skip) , (, replace)))) ∷ [])) ∷ [])))))
+               (, caseV ((inBritain ,
+                            rearr (prod var (left var)) (prod var var) (inj₁ refl , inj₂ refl)
+                              (caseS ((inBritain ,
+                                         normal (update (prod var (left  var)) ((, skip) , (, replace)))) ∷
+                                      (inAmerica ,
+                                         adaptive (λ s _ → return (⌈ proj₁ s /2⌉ , inj₁ ""))) ∷ []))) ∷
+                         (inAmerica ,
+                            rearr (prod var (right var)) (prod var var) (inj₁ refl , inj₂ refl)
+                              (caseS ((inBritain ,
+                                         adaptive (λ s _ → return (2 * proj₁ s , inj₂ ""))) ∷
+                                      (inAmerica ,
+                                         normal (update (prod var (right var)) ((, skip) , (, replace)))) ∷ []))) ∷ [])))))
         ((String × (String ⊎ String) → Par (String × ℕ × (String ⊎ String))) ∋
            (λ { (name , location) → return (name , 0 , location) }))
         (const (return nothing))
 
 globalCorporation-CompleteExpr : BiGULCompleteExpr emptyF globalCorporation
 globalCorporation-CompleteExpr = (return refl >>= return refl) ,
-                                   tt , ((tt , tt) , tt) , ((tt , tt) , tt) , tt
+                                   tt ,
+                                   ((return refl >>= return refl) , (tt , tt) , tt) ,
+                                   ((return refl >>= return refl) , (tt , tt) , tt) , tt
 
 employees : ⟦ list EmployeeU ⟧ emptyTEnv
 employees = ("Jeremy Gibbons" , 82495 , inj₁ "Oxford University" ) ∷

@@ -64,7 +64,7 @@ mutual
   CaseSBranch S V = (⟦ S ⟧ (μ F) → Par Bool) × CaseSBranchType S V
 
   CaseVBranch : (S V : U n) → Set₁
-  CaseVBranch S V = Σ[ pat ∈ Pattern F V ] BiGUL S (PatResultU pat)
+  CaseVBranch S V = (⟦ V ⟧ (μ F) → Par Bool) × BiGUL S V
 
 mutual
 
@@ -104,8 +104,8 @@ mutual
   interp skip c = skip-lens
   interp replace c = iso-lens id-iso
   interp (update pat bs) c = iso-lens (pat-iso pat) ↔ interp-update pat bs c
-  interp (rearr vpat vpat' expr b) (c , c') = interp b c' ↔ iso-lens (view-rearrangement-iso vpat vpat' expr c)
-  interp (dep {V' = V'} f b) c = interp b c ↔ iso-lens (sym-iso (dependency-iso f (U-dec V')))
+  interp (rearr vpat vpat' expr b) (c , c') = interp b c' ◁ view-rearrangement-iso vpat vpat' expr c
+  interp (dep {V' = V'} f b) c = interp b c ◁ sym-iso (dependency-iso f (U-dec V'))
   interp (caseS {S} {V} branches) c = caseS-lens (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)) (interp-CaseSBranch branches c)
   interp (caseV {V = V} branches) c = caseV-lens _ _ (U-dec V) (interp-CaseVBranch branches c)
   interp (align source-condition match? b create conceal) c = align-lens source-condition match? (interp b c) create conceal
@@ -128,6 +128,5 @@ mutual
   
   interp-CaseVBranch : {S V : U n} (branches : List (CaseVBranch S V)) → CaseVBranchesCompleteExpr branches →
                        List (ViewCase.Branch (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)) (U-dec V))
-  interp-CaseVBranch []                     c        = []
-  interp-CaseVBranch ((pat , b) ∷ branches) (c , c') =
-    (PatResult pat , interp b c , sym-iso (pat-iso pat)) ∷ interp-CaseVBranch branches c'
+  interp-CaseVBranch []                   c        = []
+  interp-CaseVBranch ((p , b) ∷ branches) (c , c') = (p , interp b c) ∷ interp-CaseVBranch branches c'

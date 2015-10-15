@@ -20,15 +20,16 @@ open import Data.List
 
 
 Branch : Set₁
-Branch = Σ[ V' ∈ Set ] ((S ⇆ V') × (V' ≅ V))
+Branch = (V → Par Bool) × (S ⇆ V)
 
-get-selected : {V' : Set} → S ⇆ V' → V' ≅ V → S → Par V
-get-selected lens iso s = Lens.get lens s >>= Iso.to iso
+get-selected : (V → Par Bool) → (S ⇆ V) → S → Par V
+get-selected p l s = Lens.get l s >>= λ v → p v >>= λ matched → assert matched then return v
 
 put : (bs : List Branch) → S → V → Par S
-put []                       s v = fail
-put ((V' , lens , iso) ∷ bs) s v = catch (Iso.from iso v) (Lens.put lens s)
-                                         (put bs s v >>= λ s' → catch (get-selected lens iso s')
+put []             s v = fail
+put ((p , l) ∷ bs) s v = p v >>= λ matched →
+                         if matched then (Lens.put l s v)
+                                    else (put bs s v >>= λ s' → catch (get-selected p l s')
                                                                       (guarded-return s' v)
                                                                       (return s'))
   where
@@ -38,28 +39,28 @@ put ((V' , lens , iso) ∷ bs) s v = catch (Iso.from iso v) (Lens.put lens s)
     guarded-return s' v v' | no  _ = fail
 
 get : (bs : List Branch) → S → Par V
-get []                       s = fail
-get ((V' , lens , iso) ∷ bs) s = catch (get-selected lens iso s) return
-                                       (get bs s >>= λ v → catch (Iso.from iso v) (const fail) (return v))
+get []             s = fail
+get ((p , l) ∷ bs) s = catch (get-selected p l s) return
+                             (get bs s >>= λ v → p v >>= λ matched → assert (not matched) then return v)
 
 PutGet : (bs : List Branch) {s s' : S} {v : V} → put bs s v ↦ s' → get bs s' ↦ v
-PutGet []                       ()
-PutGet ((V' , lens , iso) ∷ bs) (catch-fst from-v↦v' l-put-s-v'↦s') =
-  catch-fst (Lens.PutGet lens l-put-s-v'↦s' >>= Iso.from-to-inverse iso from-v↦v') (return refl)
-PutGet ((V' , lens , iso) ∷ bs) {v = v} (catch-snd from↦ᶠ (l-put↦ >>= catch-fst {x = v'} _ comp)) with dec v v'
-PutGet ((V' , lens , iso) ∷ bs) (catch-snd from↦ᶠ (l-put↦ >>= catch-fst get↦ (return refl))) | yes refl =
-  catch-fst get↦ (return refl)
-PutGet ((V' , lens , iso) ∷ bs) {v = v} (catch-snd from↦ᶠ (l-put↦ >>= catch-fst {x = v'} _ ())) | no  _
-PutGet ((V' , lens , iso) ∷ bs) (catch-snd from↦ᶠ (l-put↦ >>= catch-snd get-selected↦ᶠ (return refl))) =
-  catch-snd get-selected↦ᶠ (PutGet bs l-put↦ >>= catch-snd from↦ᶠ (return refl))
+PutGet []             ()
+PutGet ((p , l) ∷ bs) (_>>=_ {x = true } p-v↦true  put-l-s-v↦s') =
+  catch-fst (Lens.PutGet l put-l-s-v↦s' >>= p-v↦true >>= assert refl then return refl) (return refl)
+PutGet ((p , l) ∷ bs) {v = v} (_>>=_ {x = false} p-v↦false (put-s-v↦s' >>= catch-fst {x = v'} comp comp')) with dec v v'
+PutGet ((p , l) ∷ bs) (_>>=_ {x = false} p-v↦false (put-s-v↦s' >>= catch-fst (get-l-s'↦v' >>= p-v'↦true >>= assert refl then return refl) (return refl))) | yes refl =
+  catch-fst (get-l-s'↦v' >>= p-v'↦true >>= assert refl then return refl) (return refl)
+PutGet ((p , l) ∷ bs) (_>>=_ {x = false} p-v↦false (put-s-v↦s' >>= catch-fst comp ())) | no  _
+PutGet ((p , l) ∷ bs) (_>>=_ {x = false} p-v↦false (put-s-v↦s' >>= catch-snd fcomp (return refl))) =
+  catch-snd fcomp (PutGet bs put-s-v↦s' >>= p-v↦false >>= (assert refl then return refl))
 
 GetPut : (bs : List Branch) {s : S} {v : V} → get bs s ↦ v → put bs s v ↦ s
-GetPut []                       () 
-GetPut ((V' , lens , iso) ∷ bs) (catch-fst (l-get-s↦v' >>= to-v'↦v) (return refl)) =
-  catch-fst (Iso.to-from-inverse iso to-v'↦v) (Lens.GetPut lens l-get-s↦v')
-GetPut ((V' , lens , iso) ∷ bs) (catch-snd get-selected↦ᶠ (get↦ >>= catch-fst _ ()))
-GetPut ((V' , lens , iso) ∷ bs) (catch-snd get-selected↦ᶠ (get↦ >>= catch-snd from↦ᶠ (return refl))) =
-  catch-snd from↦ᶠ (GetPut bs get↦ >>= catch-snd get-selected↦ᶠ (return refl))
+GetPut []             () 
+GetPut ((p , l) ∷ bs) (catch-fst (get-l-s↦v >>= p-v↦true >>= assert refl then return refl) (return refl)) =
+  p-v↦true >>= Lens.GetPut l get-l-s↦v
+GetPut ((p , l) ∷ bs) (catch-snd fcomp (get-s↦v >>= (_>>=_ {x = true } p-v↦true  (assert () then _))))
+GetPut ((p , l) ∷ bs) (catch-snd fcomp (get-s↦v >>= (_>>=_ {x = false} p-v↦false (assert _ then return refl)))) =
+  p-v↦false >>= GetPut bs get-s↦v >>= catch-snd fcomp (return refl)
 
 caseV-lens : (bs : List Branch) → S ⇆ V
 caseV-lens bs = record { put = put bs; get = get bs; PutGet = PutGet bs; GetPut = GetPut bs }
