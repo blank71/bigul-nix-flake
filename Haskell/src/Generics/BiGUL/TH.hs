@@ -6,6 +6,7 @@ import Data.List as List
 import Data.Map (Map)
 import qualified Data.Map as Map
 import Language.Haskell.TH as TH
+import qualified Language.Haskell.TH.Syntax as THS
 import Language.Haskell.TH.Quote
 import Generics.BiGUL
 import Generics.BiGUL.AST
@@ -16,12 +17,13 @@ data ConTag = L | R
     deriving (Show, Data, Typeable)
 
 
-data PatTag = PTag | UTag | RTag
+data PatTag = PTag | UTag | RTag | ETag
 
 instance Show PatTag where
    show PTag = "P"
    show UTag = "U"
    show RTag = "R"
+   show ETag = "E"
 
 contag :: a -> a -> ConTag -> a
 contag a1 _  L = a1
@@ -49,35 +51,47 @@ lookupNames typeCList valueCList errMsg = liftM2 (,) (mapM (lookupName lookupTyp
 -- Construct an InstanceDec.
 deriveBiGULGeneric :: Name -> Q [InstanceDec]
 deriveBiGULGeneric name = do
-  (name, constructors) <-
+  (name, typeVars, constructors) <-
     do
       info <- reify name
       case info of
-        (TyConI (DataD [] name [] constructors _)) -> return (name, constructors)
+        (TyConI (DataD [] name typeVars constructors _)) -> return (name, typeVars, constructors)
         _            -> fail ( "cannot find " ++ nameBase name ++ ", or not a (supported) datatype.")
-  ([nGeneric, nRep, nK1, nR, nU1, nSum, nProd, nV1], [vFrom, vTo, vK1, vL1, vR1, vU1, vProd]) <-
-    lookupNames [ "GHC.Generics." ++ s | s <- ["Generic", "Rep", "K1", "R", "U1", ":+:", ":*:", "V1"] ]
-                [ "GHC.Generics." ++ s | s <- ["from", "to", "K1", "L1", "R1", "U1", ":*:"] ]
+  ([nGeneric, nRep, nK1, nR, nU1, nSum, nProd, nV1, nS1, nSelector, nDataType], [vFrom, vTo, vK1, vL1, vR1, vU1, vProd, vSelName, vDataTypeName, vModuleName, vM1]) <-
+    lookupNames [ "GHC.Generics." ++ s | s <- ["Generic", "Rep", "K1", "R", "U1", ":+:", ":*:", "V1", "S1", "Selector", "Datatype"] ]
+                [ "GHC.Generics." ++ s | s <- ["from", "to", "K1", "L1", "R1", "U1", ":*:", "selName", "datatypeName", "moduleName", "M1"] ]
                 "cannot find type/value constructors from GHC.Generics."
   env <- consToEnv constructors
-  let fromClauses = map (constructFuncFromClause (vK1, vU1, vL1, vR1, vProd)) env
-  let toClauses   = map (constructFuncToClause (vK1, vU1, vL1, vR1, vProd)) env
-  conTagsClause <- toconTagsClause env
-  return $ [InstanceD []
-                     (AppT (ConT nGeneric) (ConT name))
+  let selectorsNameList =  generateSelectorNames constructors
+  let selectorDataDMaybeList = generateSelectorDataD selectorsNameList
+  let selectorDataTypeMaybeList = map (generateSelectorDataType nDataType vDataTypeName vModuleName (maybe "" id (nameModule name))) selectorsNameList
+  let selectorNameAndConList = zip selectorsNameList constructors
+  let selectorInstanceDecList = map (generateSelectorInstanceDec nSelector vSelName) selectorNameAndConList
+  let fromClauses = map (constructFuncFromClause (vK1, vU1, vL1, vR1, vProd, vM1)) env
+  let toClauses   = map (constructFuncToClause (vK1, vU1, vL1, vR1, vProd, vM1)) env
+  --conTagsClause <- toconTagsClause env
+  return $ listMaybe2Just selectorDataDMaybeList ++
+           listMaybe2Just (concat selectorDataTypeMaybeList) ++ 
+           listMaybe2Just (concat selectorInstanceDecList) ++ 
+           [InstanceD []
+                     (AppT (ConT nGeneric) (generateTypeVarsType name typeVars))
                      [TySynInstD nRep
                                  (TySynEqn
-                                    [ConT name]
-                                    (constructorsToSum (nSum, nV1) (map (constructorToProduct (nK1, nR, nU1, nProd)) constructors))),
+                                    [generateTypeVarsType name typeVars]
+                                    (constructorsToSum (nSum, nV1) (map (constructorToProduct (nK1, nR, nU1, nProd, nS1)) selectorNameAndConList))),
                       FunD vFrom fromClauses,
                       FunD vTo toClauses ]
-            ]
+            ] 
 
-toconTagsClause :: [(Name, [ConTag], [Name])] -> Q Clause
+listMaybe2Just :: [Maybe a] -> [a]
+listMaybe2Just xs = foldr (\a b -> case a of {Just v -> v:b; Nothing -> b}) [] xs
+
+
+toconTagsClause :: [(Bool, Name, [ConTag], [Name])] -> Q Clause
 toconTagsClause env = do
   (_, [vEq, vError]) <- lookupNames [] ["==", "error"] "cannot find functions for eq or error."
   conTagsVarName <- newName "name"
-  expEnv <- mapM (\(n, conTags, _) -> liftM2 (,) (dataToExpQ (const Nothing) n) (dataToExpQ (const Nothing) conTags)) env
+  expEnv <- mapM (\(b, n, conTags, _) -> liftM2 (,) (dataToExpQ (const Nothing) n) (dataToExpQ (const Nothing) conTags)) env
   let conTagsClauseBody = (foldr (\(nExp, lrsExp) e -> CondE ((VarE vEq `AppE` nExp) `AppE` VarE conTagsVarName) lrsExp e)
                 (VarE vError `AppE` LitE (StringL "cannot find name."))
                 expEnv)
@@ -90,43 +104,95 @@ constructorsToSum (sum, v1) []  = ConT v1 -- empty
 constructorsToSum (sum, v1) tps = foldr1 (\t1 t2 -> (ConT sum `AppT` t1) `AppT` t2) tps
 
 
-constructorToProduct :: (Name, Name, Name, Name) -> Con -> Type
-constructorToProduct (k1, r, u1, prod) (NormalC _ [] ) = ConT u1
-constructorToProduct (k1, r, u1, prod) (NormalC _ sts) = foldr1 (\t1 t2 -> (ConT prod `AppT` t1 ) `AppT` t2) $ map (AppT (ConT k1 `AppT` ConT r) . snd) sts
+constructorToProduct :: (Name, Name, Name, Name, Name) -> ([Maybe Name], Con) -> Type
+constructorToProduct (k1, r, u1, prod, s1) (_,     NormalC _ [] ) = ConT u1
+constructorToProduct (k1, r, u1, prod, s1) (_,     NormalC _ sts) = foldr1 (\t1 t2 -> (ConT prod `AppT` t1 ) `AppT` t2) $ map (AppT (ConT k1 `AppT` ConT r) . snd) sts
+constructorToProduct (k1, r, u1, prod, s1) (names, RecC    _ sts) = foldr1 (\t1 t2 -> (ConT prod `AppT` t1 ) `AppT` t2) $ map (\(Just n, st) -> AppT (ConT s1 `AppT` ConT n) ((ConT k1 `AppT` ConT r) `AppT` third st)) (zip names sts)
 constructorToProduct _ _ = error "not supported Con"
 
+third :: (a, b, c) -> c
+third  (_, _, z) = z
 
-constructorToPatAndBody :: Con -> Q (Name, [Name])
-constructorToPatAndBody (NormalC name sts) = liftM (name,) $ replicateM (length sts) (newName "var")
+-- Bool indicates: if Normal then False else RecC True
+constructorToPatAndBody :: Con -> Q (Bool, Name, [Name])
+constructorToPatAndBody (NormalC name sts) = liftM (False, name,) $ replicateM (length sts) (newName "var")
+constructorToPatAndBody (RecC    name sts) = liftM (True, name,) $ replicateM (length sts) (newName "var")
 constructorToPatAndBody _ = fail "not supported Cons"
 
 
-zipWithLRs :: [(Name, [Name])] ->  [(Name, [ConTag], [Name])]
-zipWithLRs nns = zipWith (\(n, ns) lrs -> (n, lrs, ns)) nns (constructLRs (length nns))
+zipWithLRs :: [(Bool, Name, [Name])] ->  [(Bool, Name, [ConTag], [Name])]
+zipWithLRs nns = zipWith (\(b, n, ns) lrs -> (b, n, lrs, ns)) nns (constructLRs (length nns))
 
-consToEnv :: [Con] -> Q [(Name, [ConTag], [Name])]
+consToEnv :: [Con] -> Q [(Bool, Name, [ConTag], [Name])]
 consToEnv cons = liftM zipWithLRs $ mapM constructorToPatAndBody cons
 
-constructFuncFromClause :: (Name, Name, Name, Name, Name) -> (Name, [ConTag], [Name]) -> Clause
-constructFuncFromClause (vK1, vU1, vL1, vR1, vProd) (n, lrs, names) =  Clause [ConP n (map VarP names)] (NormalB (wrapLRs lrs (deriveGeneric names))) []
+constructFuncFromClause :: (Name, Name, Name, Name, Name, Name) -> (Bool, Name, [ConTag], [Name]) -> Clause
+constructFuncFromClause (vK1, vU1, vL1, vR1, vProd, vM1) (b, n, lrs, names) =  Clause [ConP n (map VarP names)] (NormalB (wrapLRs lrs (deriveGeneric names))) []
   where
     wrapLRs :: [ConTag] -> Exp -> Exp
     wrapLRs lrs exp = foldr (\lr e -> ConE (contag vL1 vR1 lr) `AppE` e) exp lrs
 
     deriveGeneric :: [Name] -> Exp
     deriveGeneric []    = ConE vU1
-    deriveGeneric names = foldr1 (\e1 e2 -> (ConE vProd `AppE` e1) `AppE` e2) $ map ((ConE vK1 `AppE`) . VarE) names
+    deriveGeneric names = foldr1 (\e1 e2 -> (ConE vProd `AppE` e1) `AppE` e2) $ map (\name -> if b then ConE vM1 `AppE` (ConE vK1 `AppE` VarE name) else ConE vK1 `AppE` VarE name) names
 
 
-constructFuncToClause :: (Name, Name, Name, Name, Name) -> (Name, [ConTag], [Name])  -> Clause
-constructFuncToClause (vK1, vU1, vL1, vR1, vProd) (n, lrs, names)  = Clause [wrapLRs lrs (deriveGeneric names)] (NormalB (foldl (\e1 name -> e1 `AppE` (VarE name)) (ConE n) names) ) []
+constructFuncToClause :: (Name, Name, Name, Name, Name, Name) -> (Bool, Name, [ConTag], [Name])  -> Clause
+constructFuncToClause (vK1, vU1, vL1, vR1, vProd, vM1) (b, n, lrs, names)  = Clause [wrapLRs lrs (deriveGeneric names)] (NormalB (foldl (\e1 name -> e1 `AppE` (VarE name)) (ConE n) names) ) []
   where
     wrapLRs :: [ConTag] -> TH.Pat -> TH.Pat
     wrapLRs lrs pat = foldr (\lr p -> ConP (contag vL1 vR1 lr) [p]) pat lrs
 
     deriveGeneric :: [Name] -> TH.Pat
     deriveGeneric []    = ConP vU1 []
-    deriveGeneric names = foldr1 (\p1 p2 -> ConP vProd [p1, p2]) $ map (ConP vK1 . (:[]) . VarP) names
+    deriveGeneric names = foldr1 (\p1 p2 -> ConP vProd [p1, p2]) $ map (\name -> if b then (ConP vM1 ((:[]) (ConP vK1 ((:[]) (VarP name))))) else (ConP vK1 ((:[]) (VarP name)))) names
+
+-- construct selector names from constructors
+generateSelectorNames :: [Con] -> [[Maybe Name]]
+generateSelectorNames = map (\con -> 
+  case con of { 
+      RecC _ sts -> map (\(n, _, _) -> Just (mkName ( "Selector_" ++ nameBase n))) sts;
+      _          -> []
+    })
+
+generateSelectorDataD :: [[Maybe Name]] -> [Maybe Dec]
+generateSelectorDataD names = map (\name -> case name of {Just n -> Just $ DataD [] n [] [] []; Nothing -> Nothing}) (concat names)
+
+-- Selector DataType Generation
+generateSelectorDataType :: Name -> Name -> Name -> String -> [Maybe Name] -> [Maybe Dec]
+generateSelectorDataType nDataType vDataTypeName vModuleName moduleName = map (generateSelectorDataType' nDataType vDataTypeName vModuleName moduleName)
+
+generateSelectorDataType' :: Name -> Name -> Name -> String -> Maybe Name -> Maybe Dec
+generateSelectorDataType' nDataType vDataTypeName vModuleName moduleName (Just selectorName) =
+  Just $ InstanceD []
+    (AppT (ConT nDataType) (ConT selectorName))
+    [FunD vDataTypeName ([Clause [WildP] (NormalB (LitE (StringL (show selectorName)))) []]),
+     FunD vModuleName   ([Clause [WildP] (NormalB (LitE (StringL moduleName))) []]) 
+    ]
+generateSelectorDataType' nDataType vDataTypeName vModuleName moduleName _ = Nothing
+
+-- Selector Instance Declaration generation
+generateSelectorInstanceDec :: Name -> Name -> ([Maybe Name], Con) -> [Maybe Dec]
+generateSelectorInstanceDec nSelector vSelName ([]   , _  ) = []
+generateSelectorInstanceDec nSelector vSelName (names, (RecC _ sts)) = map (generateSelectorInstanceDec' nSelector vSelName) (zip names sts)
+
+generateSelectorInstanceDec' :: Name -> Name -> (Maybe Name, THS.VarStrictType) -> Maybe Dec
+generateSelectorInstanceDec' nSelector vSelName (Just selectorName, (name, _, _)) = 
+  Just $ InstanceD []
+            (AppT (ConT nSelector) (ConT selectorName))
+            [FunD vSelName ([Clause [WildP] (NormalB (LitE (StringL (nameBase name)))) []])]
+generateSelectorInstanceDec' _         _         _                          = Nothing
+
+
+-- generate type representation of polymorhpic type
+-- e.g. VBook a b is represented as: AppT (ConT name) (ConT name_a `AppT` ConT name_b)
+generateTypeVarsType :: Name -> [TyVarBndr] -> Type
+generateTypeVarsType n []    = ConT n -- not polymorphic case.
+generateTypeVarsType n tvars = foldl (\a b -> AppT a b) (ConT n) $ map (\tvar -> 
+   case tvar of 
+    { PlainTV  name      -> VarT name; 
+      KindedTV name kind -> error "kind type variables are not supported yet."
+    }) tvars 
 
 
 constructLRs :: Int -> [[ConTag]]
@@ -143,7 +209,7 @@ lookupLRs conName = do
       _ -> fail $ nameBase conName ++ " is not a data constructor"
   TyConI (DataD _ _ _ cons _) <- reify datatypeName
   return $ constructLRs (length cons) !!
-             fromJust (List.findIndex (== conName) (map (\(NormalC n _) -> n) cons))
+             fromJust (List.findIndex (== conName) (map (\con -> case con of { NormalC n _ -> n; RecC n _ -> n}) cons))
 
 
 mkConstrutorFromLRs :: [ConTag] -> PatTag -> Q (Exp -> Exp)
@@ -285,13 +351,35 @@ mkEnvForRearr  _    =  fail $ "Pattern not handled yet."
 
 
 
+splitDataAndCon:: TH.Exp -> Q (TH.Exp,[TH.Exp])
+
+splitDataAndCon (AppE (ConE name) e2) = do
+  con <- mkBodyExpForRearr (ConE name)
+  d   <- mkBodyExpForRearr e2
+  return (con,[d])
+
+splitDataAndCon (AppE e1 e2) = do
+  (c, ds) <- splitDataAndCon e1
+  d        <- mkBodyExpForRearr e2
+  return (c,ds++[d])
+
+splitDataAndCon _            =  fail $ "Invalid data constructor in lambda body expression"
+
 
 
 mkBodyExpForRearr :: TH.Exp -> Q TH.Exp
 
-mkBodyExpForRearr (LitE c) = return (LitE c)
+mkBodyExpForRearr (LitE c) = do
+  (_, [econst]) <- lookupNames [] [astNameSpace ++ "EConst"] (notFoundMsg "EConst")
+  return $ ConE econst `AppE` (LitE c)
 
 mkBodyExpForRearr (VarE name) =  return $ VarE name
+
+mkBodyExpForRearr (AppE e1 e2) = do
+  (_, [eprod]) <- lookupNames [] [astNameSpace ++ "EProd"] (notFoundMsg "EProd")
+  (con, ds)   <- splitDataAndCon (AppE e1 e2)
+  return $ con `AppE` (foldr1 (\d1 d2 -> ConE eprod `AppE` d1 `AppE` d2) ds)
+
 
 -- a little trick here, in order to extract conInEither from Exp -> Exp type
 mkBodyExpForRearr (ConE name) =  do
@@ -300,7 +388,7 @@ mkBodyExpForRearr (ConE name) =  do
   then do (_, [econst]) <- lookupNames [] [astNameSpace ++ s | s <- ["EConst"] ] (notFoundMsg "EConst")
           return $ ConE econst `AppE` (ConE name)
   else do lrs <- lookupLRs name
-          conWithAppE <- mkConstrutorFromLRs lrs RTag
+          conWithAppE <- mkConstrutorFromLRs lrs ETag
           let (AppE conInEither _) = conWithAppE (ConE name)
           return $ conInEither
 

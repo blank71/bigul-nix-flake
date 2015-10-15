@@ -39,7 +39,7 @@ executable test
 
 executable example-pairlist
   main-is:            examples/PairList.hs
-  hs-source-dirs:     src
+  hs-source-dirs:     ., src
   build-depends:      base >= 4.0, mtl >= 2.2 && < 2.3, pretty
                     , containers
                     , template-haskell
