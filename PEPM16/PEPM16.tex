@@ -704,10 +704,10 @@ caseS-lens S V bs = record  {    put  = \ s v -> put-with-adaptation bs [] s v (
     ^^^put-with-adaptation : List (CaseSBranch S V) → List (CaseSBranch S V) → S → V → (S → Par S) → Par S
     put-with-adaptation []              bs' s v cont = fail
     put-with-adaptation ((p , b) ∷ bs)  bs' s v cont =
-      p s >>= λ matched → if matched  then'  branch  (λ l →  Lens.put l s v >>= λ s' → p s' >>= λ matched' →
-                                                             if matched' then' check-diversion bs' s' >>= (\ _ → return s') else fail)
-                                                     (λ u → u s >>= cont) b
-                                      else   put-with-adaptation bs ((p , b) ∷ bs') s v cont
+      p s >>= λ matched → if matched   then'  branch  (λ l →  Lens.put l s v >>= λ s' → p s' >>= λ matched' →
+                                                              if matched' then' check-diversion bs' s' >>= (\ _ → return s') else fail)
+                                                      (λ u → u s >>= cont) b
+                                       else   put-with-adaptation bs ((p , b) ∷ bs') s v cont
 
     get' : List (CaseSBranch S V) → S → Par V
     get' []              s = fail
