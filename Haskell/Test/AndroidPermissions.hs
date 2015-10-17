@@ -1,8 +1,8 @@
 {-# LANGUAGE ViewPatterns #-}
 
-import Lang.MonadBiGULError
-import Lang.AST
-import Lang.Interpreter
+import Generics.BiGUL.MonadBiGULError
+import Generics.BiGUL.AST
+import Generics.BiGUL.Interpreter
 import Control.Monad
 import Data.Char
 import Data.List
@@ -328,4 +328,3 @@ showHelp opts = do
     prg <- getProgName
     hPutStrLn stderr (usageInfo ("Usage: "++prg++" [OPTION...]") opts)
     hFlush stderr
-
