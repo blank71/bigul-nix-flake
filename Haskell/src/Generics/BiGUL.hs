@@ -1,6 +1,6 @@
 module Generics.BiGUL
 (
-	module Generics.BiGUL.AST
+  module Generics.BiGUL.AST
   , module Generics.BiGUL.Interpreter
   , module Generics.BiGUL.MonadBiGULError
   , module GHC.InOut

@@ -6,6 +6,7 @@ import GHC.Generics
 import GHC.InOut
 import Text.PrettyPrint
 import Generics.BiGUL.MonadBiGULError
+import Data.List(intersperse)
 
 
 data Pat :: * -> * -> *  where
@@ -38,19 +39,34 @@ construct (PRight pat)      y      = Right (construct pat y)
 construct (PIn    pat)      x      = inn (construct pat x)
 construct (PElem hpat tpat) (x, y) = construct hpat x : construct tpat y
 
+
+
 data UPat :: (* -> *) -> * -> * -> * where
   UVar   :: BiGUL m s v -> UPat m s v
-  UConst :: Eq s => s -> UPat m s ()
+  UConst :: (Eq s,Show s) => s -> UPat m s ()
   UProd  :: UPat m s v -> UPat m s' v' -> UPat m (s, s') (v, v')
   ULeft  :: UPat m s v -> UPat m (Either s s') v
   URight :: UPat m s' v -> UPat m (Either s s') v
   UIn    :: InOut s => UPat m (F s) v -> UPat m s v
   UElem  :: UPat m s v -> UPat m [s] v' -> UPat m [s] (v, v')
 
+instance Show (UPat m s v) where
+  show (UVar bigul)    = "(UVar " ++ show bigul ++ " )"
+  show (UConst c)      = show c
+  show (UProd up1 up2) = "(UProd " ++ show up1 ++ " " ++ show up2 ++ " )"
+  show (ULeft up)      = "(ULeft " ++ show up ++ " )"
+  show (URight up)     = "(URight " ++ show up ++ " )"
+  show (UIn up)        = "(UIn " ++ show up ++ " )"
+  show _               = "show error in UPat"
+
 data CaseSBranch m s v = Normal (BiGUL m s v) | Adaptive (s -> v -> m s)
 
-data CaseVBranch m s v where
-  CaseVBranch :: Pat v v' -> BiGUL m s v' -> CaseVBranch m s v
+instance Show (CaseSBranch m s v) where
+  show (Normal bigul) = "Normal " ++ show bigul
+  show (Adaptive _) = "Adaptive <adaptive function>"
+
+--data CaseVBranch m s v where
+--  CaseVBranch :: Pat v v' -> BiGUL m s v' -> CaseVBranch m s v
 
 data BiGUL :: (* -> *) -> * -> * -> * where
   Fail    :: BiGUL m s v
@@ -60,7 +76,8 @@ data BiGUL :: (* -> *) -> * -> * -> * where
   Rearr   :: (Eq v') => RPat v env con -> Expr env v' -> BiGUL m s v' -> BiGUL m s v
   Dep     :: (Eq v') => (v -> v') -> BiGUL m s v -> BiGUL m s (v, v')
   CaseS   :: [(s -> m Bool, CaseSBranch m s v)] -> BiGUL m s v
-  CaseV   :: [CaseVBranch m s v] -> BiGUL m s v
+  CaseV   :: [(v -> m Bool, BiGUL m s v)] -> BiGUL m s v
+  CaseSV  :: [(s -> v -> m Bool,BiGUL m s v)] -> BiGUL m s v
   Align   :: (s -> m Bool)
           -> (s -> v -> m Bool)
           -> BiGUL m s v
@@ -70,18 +87,49 @@ data BiGUL :: (* -> *) -> * -> * -> * where
   Emb     :: (s -> m v)
           -> (s -> v -> m s)
           -> BiGUL m s v
+  Xfork   :: (s -> m Bool)
+          -> (v -> m Bool)
+          -> BiGUL m [s] [v]
+          -> BiGUL m [s] [v]
+          -> BiGUL m [s] [v]
+  Compose :: BiGUL m s u
+          -> BiGUL m u v
+          -> BiGUL m s v
+
+
+instance Show (BiGUL m s v) where
+  show Fail = "Fail"
+  show Skip = "Skip"
+  show Replace = "Replace"
+  show (Update up) = "(Update " ++ show up ++ " )"
+  show (Rearr rp exp bigul) = "(Rearr " ++ show rp ++ "  " ++ show exp ++ "  " ++ show bigul ++ " )"
+  show (Dep _ bigul) = "(Dep   <dependency function>  " ++ show bigul ++ " )"
+  show (CaseS bs) = "(CaseS [" ++ unwords (intersperse "\n" (map (\(_,b) -> "(precidtion , " ++ show b ++ " )") bs)) ++ " ])"
+  show (CaseV bs) = "(CaseV [" ++ unwords (intersperse "\n" (map (\(_,b) -> "(precidtion , " ++ show b ++ " )") bs)) ++ " ])"
+  show (Align _ _ bigul _ _) = "(Align <source condition>\n       <match condition>\n       " ++ show bigul ++ "\n       <create function>\n       <conceal function>)"
+  show _ = "Invalid BiGUL program in show"
 
 newtype Var a = Var a
 
 -- RPat (view type) (environment type) (container type)
 data RPat :: * -> * -> * -> * where
   RVar   :: Eq a => RPat a (Var a) (Maybe a)
-  RConst :: Eq a => a -> RPat a () ()
+  RConst :: (Eq a,Show a) => a -> RPat a () ()
   RProd  :: RPat a a' a'' -> RPat b b' b'' -> RPat (a, b) (a', b') (a'', b'')
   RLeft  :: RPat a a' a'' -> RPat (Either a b) a' a''
   RRight :: RPat b b' b'' -> RPat (Either a b) b' b''
   RIn    :: InOut a => RPat (F a) b c -> RPat a b c
   RElem  :: RPat a b c -> RPat [a] b' c' -> RPat [a] (b, b') (c, c')
+
+
+instance Show (RPat v e c) where
+  show  RVar           = "RVar"
+  show (RConst c)      = show c
+  show (RProd rp1 rp2) = "(RProd " ++ show rp1 ++ " " ++ show rp2 ++ " )"
+  show (RLeft rp)      = "(RLeft " ++ show rp ++ " )"
+  show (RRight rp)     = "(RRight " ++ show rp ++ " )"
+  show (RIn rp)        = "(RIn " ++ show rp ++ " )"
+  show _               = "show error in RPat"
 
 deconstructR :: MonadError' ErrorInfo m => RPat v env con -> v -> m env
 deconstructR RVar                v          = return $ Var v
@@ -123,6 +171,11 @@ data Direction :: * -> * -> * where
   DLeft   :: Direction a t -> Direction (a, b) t
   DRight  :: Direction b t -> Direction (a, b) t
 
+instance Show (Direction a t) where
+  show  DVar = "DVar"
+  show (DLeft dir)  = "(DLeft " ++ show dir ++ " )"
+  show (DRight dir) = "(DRight " ++ show dir ++ " )"
+
 retrieve :: (Eq t) => Direction a t -> a -> t
 retrieve  DVar      (Var x) = x
 retrieve (DLeft  p) (x, y)  = retrieve p x
@@ -130,13 +183,22 @@ retrieve (DRight p) (x, y)  = retrieve p y
 
 data Expr :: * -> * -> * where
   EDir   :: (Eq a) => Direction orig a -> Expr orig a
-  EConst :: (Eq a) =>  a -> Expr orig a
+  EConst :: (Eq a, Show a) =>  a -> Expr orig a
   EIn    :: (InOut a, Eq (F a)) => Expr orig (F a) -> Expr orig a
   EProd  :: (Eq a, Eq b) => Expr orig a -> Expr orig b -> Expr orig (a, b)
   ELeft  :: (Eq a, Eq b) => Expr orig a -> Expr orig (Either a b)
   ERight :: (Eq a, Eq b) => Expr orig b -> Expr orig (Either a b)
   EElem  :: (Eq a) => Expr orig a -> Expr orig [a] -> Expr orig [a]
   ECompare :: (Eq a) => Expr orig a -> a -> Expr orig (Either () a)
+
+instance Show (Expr orig a) where
+  show (EDir dir)      = "(EDir " ++ show dir ++ " )"
+  show (EConst c)      = "(EConst " ++ show c ++ " )"
+  show (EProd e1 e2)   = "(EProd " ++ show e1 ++ " " ++ show e2 ++ " )"
+  show (ELeft e)      = "(ELeft " ++ show e ++ " )"
+  show (ERight e)     = "(ERight " ++ show e ++ " )"
+  show (EIn e)        = "(EIn " ++ show e ++ " )"
+  show _               = "show error in Expr"
 
 eval :: (Eq v') => Expr env v' -> env -> v'
 eval (EDir dir)          env = retrieve dir env
@@ -193,8 +255,8 @@ checkSBranch :: MonadError' ErrorInfo m => (s -> m Bool, CaseSBranch m s v)  -> 
 checkSBranch (cond, (Normal bigul)) = checkFullEmbed bigul
 checkSBranch (cond, _)              = return True
 
-checkVBranch :: MonadError' ErrorInfo m => CaseVBranch m s v  -> m Bool
-checkVBranch (CaseVBranch pat bigul) = checkFullEmbed bigul
+checkVBranch :: MonadError' ErrorInfo m => (v -> m Bool, BiGUL m s v)  ->  m Bool
+checkVBranch (cond, bigul) = checkFullEmbed bigul
 
 checkUPat :: MonadError' ErrorInfo m => UPat m s v -> m Bool
 checkUPat (UVar bigul) = checkFullEmbed bigul

@@ -456,12 +456,12 @@ update qp qds = do
   env <- mkEnvForUpdate ds
   rearrangeExp (ConE upd `AppE` pat) env
 
-branch :: Q TH.Pat -> Q TH.Exp
-branch mp = do
-  p <- mp
-  pat <- mkPat p PTag
-  (_, [caseVBranch]) <- lookupNames [] [astNameSpace ++ "CaseVBranch"] (notFoundMsg "CaseVBranch")
-  return $ ConE caseVBranch `AppE` pat
+--branch :: Q TH.Pat -> Q TH.Exp
+--branch mp = do
+--  p <- mp
+--  pat <- mkPat p PTag
+--  (_, [caseVBranch]) <- lookupNames [] [astNameSpace ++ "CaseVBranch"] (notFoundMsg "CaseVBranch")
+--  return $ ConE caseVBranch `AppE` pat
 
 
 
@@ -508,6 +508,12 @@ adaptive' me = do
   e <- me
   let a = addAdaptive $ InfixE (Just (VarE hreturn)) (VarE hcomposition) (Just e)
   [| \update -> fmap ($ update) $(a) |]
+
+branch :: Q TH.Pat -> Q TH.Exp
+branch mpat = do
+  pat <- mpat
+  checkVariables pat
+  [| \bigul -> ($(patToFunc pat),bigul) |]
 
 normal :: Q TH.Pat -> Q TH.Exp
 normal mpat = do
