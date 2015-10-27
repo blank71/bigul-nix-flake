@@ -103,7 +103,7 @@ mutual
   interp fail c = iso-lens empty-iso
   interp skip c = skip-lens
   interp replace c = iso-lens id-iso
-  interp (update pat bs) c = iso-lens (pat-iso pat) ↔ interp-update pat bs c
+  interp (update pat bs) c = pat-iso pat ▷ interp-update pat bs c
   interp (rearr vpat vpat' expr b) (c , c') = interp b c' ◁ view-rearrangement-iso vpat vpat' expr c
   interp (dep {V' = V'} f b) c = interp b c ◁ sym-iso (dependency-iso f (U-dec V'))
   interp (caseS {S} {V} branches) c = caseS-lens (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)) (interp-CaseSBranch branches c)

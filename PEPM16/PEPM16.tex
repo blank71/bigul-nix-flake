@@ -251,6 +251,8 @@
 
 \maketitle
 
+\todo[inline]{check grammar of conditional sentences}
+
 \begin{abstract}
 
 Putback-based bidirectional programming allows the programmer to write only one putback transformation, from which the unique corresponding forward transformation is derived for free.
@@ -272,7 +274,6 @@ putback-based bidirectional transformations,
 dependent types,
 formal verification
 
-
 \section{Introduction}
 \label{sec:introduction}
 % Sketch:
@@ -292,13 +293,13 @@ formal verification
 %Due to the increase in technology, smart devices for different purpose are developed, thus come into an explosion in the number of devices and information.
 %The duplication of information among different devices makes it hard to be kept consistent which is an important issue.
 % BX for synchronization
-\emph{Bidirectional transformations}~(BXs)~\cite{GRACE:09} provide a novel mechanism for maintaining consistency between two pieces of related information, one referred to as the source and the other the view.
+\emph{Bidirectional transformations}~(BXs)~\cite{GRACE:09} provide a novel mechanism for maintaining consistency between two pieces of related information, one referred to as the source and the other as the view.
 A bidirectional transformation consists of a pair of transformations ---
 a forward |get| which extracts information from a source to construct an abstract view,
 and a backward |put| which embeds information of a view back into a source, producing an updated source --- and this pair of transformations should be \emph{well-behaved}, i.e., they should satisfy two round-tripping laws (|PutGet| and |GetPut|; see \autoref{sec:BX}).
  % (source and view).
 % From language approach: bx languages.
-Since it takes a lot of effort to write both transformations and also guarantee their well-behavedness,
+Since writing both transformations while guaranteeing their well-behavedness can take a lot of effort,
 many bidirectional programming languages~\cite{Foster-lenses,Bohannon:06,MHNHT07,Hidaka:10,PachecoCunha:10,Barbosa:2010,Hofmann:2011,FoPP08,HoPW12} have been designed
 to aid the user in writing bidirectional transformations,
 with which the programmer only needs to write one program that can be interpreted either as |get| or |put|, and the two interpretations are guaranteed to be well-behaved.
@@ -307,7 +308,7 @@ with which the programmer only needs to write one program that can be interprete
 Recently there have been investigations into the feasibility of writing bidirectional programs by describing solely their putback directions~\cite{Hu-putback-validity, Pacheco-putlenses, Pacheco-BiFluX}.
 The rationale behind this \emph{putback-based} approach is that the |put| component of a bidirectional transformation uniquely determines its |get| component~\cite[Lemma~2.2.5]{Foster:09}.
 The combinator library \Putlenses~\cite{Pacheco-putlenses} follows this approach, providing a set of putback-based \emph{lens} combinators~\cite{Foster-lenses} for writing complex BX programs.
-Based on \Putlenses\ and the functional XML update language \textsc{Flux}~\cite{Cheney-FLUX}, a bidirectional XML update language~\BiFluX~\cite{Pacheco-BiFluX} is also designed and implemented.
+Based on \Putlenses\ and the functional XML update language \textsc{Flux}~\cite{Cheney-FLUX}, a bidirectional XML update language~\BiFluX~\cite{Pacheco-BiFluX} has also been designed and implemented.
 Putback-based programming is more delicate than previous approaches which centre around writing |get|, not only because |put| --- being an update --- is inherently more complex than |get|, but also because not all updates give rise to well-behaved BXs.
 This introduces a new challenge of ensuring the well-behavedness of a |put|, in the sense that a unique |get| can indeed be derived from the |put| to form a well-behaved BX.
 \Putlenses\ and \BiFluX\ meet this challenge by inserting dynamic (runtime) checks around programmer-specified actions used in |put|, and the programmer is supposed to supply only actions that can pass these dynamic checks.
@@ -416,7 +417,7 @@ Execution of |put s v|, if successful, produces an updated version of the source
 The |PutGet| law states that, for all |s|,~|s' : S| and |v : V|, if |put s v| successfully computes to~|s'|, then subsequently |get s'| should successfully compute to~|v|; this ensures that |put| does its job properly --- after |put| updates a source with a view, |get| can completely recover the view from the updated source.
 On the other hand, the |GetPut| law states that, for all |s : S| and |v : V|, if |get s| successfully computes to~|v|, then subsequently |put s v| should successfully compute to~|s|; this ensures that |put| does nothing more than its designated job --- |put| performs no update on a source if the view it receives is directly extracted from the source by |get|.
 
-Note that our definition of lenses is stronger (and more useful) than the one given by Foster~et~al~\cite{Foster-lenses}: our |PutGet| law says that successful computation of |put| guarantees success of the subsequent computation of |get|, whereas in Foster~et~al's definition there is no such guarantee; the |GetPut| law is similar.
+Note that our definition of lenses is stronger than the one given by Foster~et~al~\cite{Foster-lenses}: our |PutGet| law says that successful computation of |put| guarantees success of the subsequent computation of |get|, whereas in Foster~et~al's definition there is no such guarantee; the |GetPut| law is similar.
 
 \subsection{Reification of monadic combinators and computation steps}
 \label{sec:reification}
@@ -428,8 +429,8 @@ when defining the semantics of |BiGUL| (more specifically, for view case analysi
 %(since such functions violate monotonicity, a necessary condition for computability).
 
 We can choose to write our transformations directly as |Maybe|-programs, usually structured with monadic combinators~\cite{Moggi-monads,Wadler-essence} like ``return'' and ``bind''.
-This approach does not work too satisfactorily, though, when we consider the kind of proofs we need to construct for these programs:
-When proving |PutGet| and |GetPut|, the antecedent is a proof that a program --- consisting of sub-programs bound together by the combinators --- computes successfully, and we need to analyse it to proofs affirming that each of the sub-programs computes successfully, before these proofs are reassembled to show that a related composite program also computes successfully.
+This approach does not work too satisfactorily, though (see the second half of \autoref{sec:sample-well-behavedness-proof} for an example), when we consider the kind of proofs we need to construct for these programs:
+When proving |PutGet| and |GetPut|, the antecedent is a proof that a program --- consisting of sub-programs bound together by the combinators --- computes successfully, and we need to analyse it to obtain proofs saying that each of the sub-programs computes successfully, before these proofs are reassembled to show that a related composite program also computes successfully.
 This task would be much easier if a proof of a successful composite computation is exactly a bunch of proofs that all its sub-computations succeed.
 To achieve this, we can reify the monadic binding structure of |Maybe|-programs by deeply embedding the monadic combinators as the constructors of a datatype, so later we can define types of proofs of successful computation by induction on the binding structure.
 
@@ -539,8 +540,10 @@ pg {c  = c  }  p | b , x , q with bind-computes (Lens.put r b c) q
 pg             p | b , x , q | b' , y , z rewrite Lens.PutGet l z
 {-"\hfill"-} = Lens.PutGet r y
 \end{code}
-which is apparently more heavyweight than~\autoref{lambda-expression}, even for this small example about lens composition.
+which is apparently more heavyweight than~\autoref{lambda-expression}, even for this small lens composition example.
 For more complicated well-behavedness proofs, the above approach quickly becomes unmanageable, whereas our approach scales nicely.
+
+\todo[inline]{Hugo: In my understanding, you are advocating that a deep embedding of the proofs in Agda is more manageable than a shallow embedding? If so, this is standard nomenclature for PEPM, and deep embeddings are known for being more flexible.}
 
 \section{BiGUL and its formally verified lens semantics}
 \label{sec:BiGUL}
@@ -624,7 +627,7 @@ The types of the |BiGUL| constructors are indexed by the source and view types o
 (|U|~and~|⟦_⟧| are defined in \autoref{sec:source-update}.)
 Since well-behavedness is built into the definition of |Lens|, being able to construct |interp| means that we have not only translated |BiGUL| to |put| and |get| functions, but also proved formally that |PutGet| and |GetPut| are satisfied, in the way explained in \autoref{sec:sample-well-behavedness-proof}.
 For each operation we will start from a natural putback semantics, then add necessary checks so a corresponding |get| can exist, arriving at the lens semantics for the operation (including well-behavedness proofs), and finally deeply embed the lens as a constructor of |BiGUL|.
-(An exception is |update|, the development for which deviates slightly from this process to avoid some typing problem.)
+(An exception is |update|, the development for which deviates slightly from the general process to avoid some typing problem.)
 We will go through the whole process for the three basic operations in \autoref{sec:basic-lenses} and source case analysis in \autoref{sec:source-case}.
 For the rest of the operations we will only give a sketch for brevity.
 
@@ -676,7 +679,7 @@ skip-lens = record  {    put  = \ s _ -> return s
 
 interp skip = skip-lens
 \end{code}
-Note that the view type is specified as the unit type~|^^^⊤| (whose only inhabitant is~|^^^tt|) --- had the view type been a more complex type, there would have been no way for |get| to decide what to return.
+Note that the view type is specified as the unit type~|^^^⊤| (whose only inhabitant is~|^^^tt|) --- had the view type been more complex, there would have been no way for |get| to decide what to return.
 In general, |put| must embed all view information into the updated source so |get| can recover the entire view from the updated source, establishing |PutGet|.
 |⊤|~is a type with no information, and hence |Lens.put skip-lens| can safely ignore its view argument of type~|⊤|.
 
@@ -774,11 +777,10 @@ For |PutGet|, the main statement we prove is
 \begin{code}
 PutGet-with-adaptation :
   (bs bs' : List (CaseSBranch S V))
-  {v : V} {cont : S → Par S} →
-  ({s s' : S} →  (cont s ↦ s') →
-                 (get' (revcat bs' bs) s' ↦ v)) →
-  {s s' : S} →  (put-with-adaptation bs bs' s v cont ↦ s') →
-                (get' (revcat bs' bs) s' ↦ v)
+  {s s' : S} {v : V} {cont : S → Par S} →
+  ({s : S} →  (cont s ↦ s') → (get' (revcat bs' bs) s' ↦ v)) →
+  (put-with-adaptation bs bs' s v cont ↦ s') →
+  (get' (revcat bs' bs) s' ↦ v)
 \end{code}
 where |revcat| is defined by
 \begin{code}
@@ -840,7 +842,7 @@ To help \Agda\ see that |interp| is terminating, though, we need to define |inte
 \subsection{Case analysis on view}
 \label{sec:view-case}
 
-For |caseV|, basically we still try to match the view with a list of branches, and execute the first branch matched.
+For |caseV|, basically we still try to match the view with a list of branches, and execute the first branch that matched.
 We must be more careful when it comes to the view, though:
 As mentioned at the end of \autoref{sec:basic-lenses}, we must ensure that view information is completely embedded into the source, and that requires conscious management of view information.
 When the view matches a branch, the amount of view information that remains to be embedded into the source may actually be reduced.
@@ -885,7 +887,7 @@ The lens semantics we assign to |caseV| has type
 caseV-lens :  (S V : Set) -> List (CaseVBranch S V) -> Lens S V
 \end{code}
 The definitions of its |put| and |get| are shown in \autoref{fig:caseV}.
-They require |Par| to be extended with one more constructor
+They require |Par| to be extended with one more constructor\todo{Hugo: perhaps make a reference to monadic exceptions or MonadPlus to explain the intuition of catch}
 \begin{code}
 ^^^catch : (HIDE({A B : Set} →)) Par A → (A → Par B) → Par B → Par B
 \end{code}
@@ -1223,7 +1225,7 @@ relocate-to-US = caseS
                                {-"~"-} return (£⇒$ salary , inj₂ "") })) ∷ [])
 \end{code}
 
-We should now check whether all constraints for passing dynamic checking are met, working from the inner statements towards the outer ones.
+We should now check\todo{Hugo: why do we need to check? Only for the purpose of ensuring totality, I suppose.}\ whether all constraints for passing dynamic checking are met, working from the inner statements towards the outer ones.
 For the |caseS| statements in |relocate-to-UK| and |relocate-to-US|, the normal branches do not change the source country and thus do not switch branch, and the adaptive branches do change the source so it matches a normal branch.
 For the |caseV| in |adjust-salary-and-office|, the ranges of |relocate-to-UK| and |relocate-to-US| are disjoint since they respectively produce UK and US locations.
 For the |align| in |relocate-employees|, since the source condition is always true, whatever |relocate-employee| produces necessarily satisfies the source condition, and we must conceal unmatched sources by deleting them, which is indeed what we specify; finally, we must guarantee that the updated source produced by |relocate-employee| and the view again satisfy the matching condition, even when the view is an unmatched one and the original source is a temporary one created from the view, and this is indeed guaranteed because |relocate-employee| puts the name in the view into the source.
@@ -1236,12 +1238,12 @@ We have given an account of the design and semantics of |BiGUL| and also how the
 Below we conclude this paper by commenting on the putback-based approach to bidirectional transformations, emphasising our formal development, discussing issues about dynamic checking, comparing |BiGUL| with its closest relative \Putlenses, and talking briefly about porting |BiGUL| to \Haskell.
 
 One might wonder how |BiGUL|, being described as a putback-based language, stands out from existing work on lenses ---
-after all, the fundamental definition of |Lens| is exactly the classic symmetric definition.
+after all, the fundamental definition of |Lens| is exactly the classic symmetric definition.\todo{Hugo: classical lenses are asymmetric}\
 We designed |BiGUL| such that the natural way to understand a |BiGUL| program is to read it as a description of putback logic, and, more importantly, a |BiGUL| program can be written by thinking solely in the putback direction (as opposed to programming the |get| direction or, worse, switching between |get| and |put|).
 (It may appear that the programmer needs to devise a |get| before programming a corresponding |put|, but that impression most likely stems from the confusion between general BX specifications --- e.g., consistency \emph{relations} between sources and views --- and |get| \emph{functions} as a much more specialised form of BX specifications.
 The programmer should of course have a specification in mind before programming |put|, but that specification is not necessarily a |get| function.)
 
-We admit, though, that the expressive power of the current |BiGUL| is not obviously stronger than existing lenses (although the adaptive |put| semantics of |caseS| has shown some potential of putback-based design), and it might be hard to differentiate the putback-based approach in this paper from other approaches to lenses in terms of certain formal properties.
+We admit, though, that the expressive power of the current |BiGUL| is not obviously stronger than existing lenses (although the adaptive |put| semantics of |caseS| has shown some potential of putback-based design), and it might be hard to find some formal properties to differentiate the putback-based approach in this paper from other approaches to lenses.
 We thus believe that the main contribution of this paper should be its completely formal development:
 Grohne~et~al~\cite{Grohne-formalizing-semantic-bidirectionalization} have also worked on formal verification about BXs (in \Agda), but their work was about semantic bidirectionalisation based on parametric polymorphism~\cite{Voigtlander-BX-for-free}.
 Our work is the first to formally describe and verify a collection of nontrivial and practically implemented lenses in a dependently typed language, in particular utilising the power of dependent types to design a logically clean abstract syntax and make well-behavedness proofs much easier to handle.
@@ -1267,6 +1269,10 @@ The types need some adaptation because \Haskell\ is not fully dependently typed 
 A significant difference between \Agda\ and \Haskell\ is that \Haskell\ freely allows general recursion, whereas \Agda\ requires every recursive program to be evidently well-founded.
 We do not consider recursion in the \Agda\ formalisation, but we need general recursion in \BiFluX\ and \BiYacc, which is a major reason for porting |BiGUL| to \Haskell.
 We believe that the total correctness proved in \Agda\ can be translated into some sort of partial correctness in \Haskell\ (perhaps along the line of Danielsson~et~al~\cite{Danielsson-fast-and-loose-reasoning}); that is, a |BiGUL| program in \Haskell\ may not terminate, but when it does, it is guaranteed to be well-behaved.
+
+\section*{Acknowledgements}
+
+We would like to thank Li Liu, Hugo Pacheco, and the anonymous reviewers of APLAS and PEPM for their valuable comments.
 
 %\section{Conclusion}
 %\label{sec:con}

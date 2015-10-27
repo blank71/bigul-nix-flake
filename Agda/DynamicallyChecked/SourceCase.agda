@@ -53,7 +53,7 @@ get-revcat bs ((p , bt) ∷ bs') (_>>=_ {x = false} p-s↦false (assert _ then c
 
 PutGet-with-adaptation :
   (bs : List Branch) {s : S} {v : V} {s' : S} (bs' : List Branch) →
-  {cont : S → Par S} → ({s s' : S} → cont s ↦ s' → get (revcat bs' bs) s' ↦ v) →
+  {cont : S → Par S} → ({s : S} → cont s ↦ s' → get (revcat bs' bs) s' ↦ v) →
   put-with-adaptation bs bs' s v cont ↦ s' → get (revcat bs' bs) s' ↦ v
 PutGet-with-adaptation []                      bs' PutGet-cont ()
 PutGet-with-adaptation ((p , bt)         ∷ bs) bs' PutGet-cont (_>>=_ {x = false} p-s↦false put↦) =

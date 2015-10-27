@@ -34,7 +34,21 @@ uniqueness : {S V : Set} (l l' : S ⇆ V) →
              ({s : S} {v : V} → Lens.put l s v ≈ᴾ Lens.put l' s v) → {s : S} → Lens.get l s ≈ᴾ Lens.get l' s
 uniqueness l l' put-eq = uniqueness-lemma l l' (proj₁ put-eq) , uniqueness-lemma l' l (proj₂ put-eq)
 
-infixr 3 _↔_
+iso-lens : {A B : Set} → A ≅ B → A ⇆ B
+iso-lens iso = record
+  { put = const (Iso.from iso)
+  ; get = Iso.to iso
+  ; PutGet = Iso.from-to-inverse iso
+  ; GetPut = Iso.to-from-inverse iso }
+
+skip-lens : {S : Set} → S ⇆ ⊤
+skip-lens = record
+  { put = λ s _ → return s
+  ; get = λ s → return tt
+  ; PutGet = λ { {._} (return refl) → return refl }
+  ; GetPut = λ _ → return refl }
+
+infixr 3 _↔_ _↕_ _◁_ _▷_
 
 _↔_ : {A B C : Set} → A ⇆ B → B ⇆ C → A ⇆ C
 l ↔ r = record
@@ -50,23 +64,12 @@ l ◁ iso = record
   ; PutGet = λ { (from-v↦v' >>= put-s-v'↦s') → Lens.PutGet l put-s-v'↦s' >>= Iso.from-to-inverse iso from-v↦v' }
   ; GetPut = λ { (get-s↦v >>= to-v↦v') → Iso.to-from-inverse iso to-v↦v' >>= Lens.GetPut l get-s↦v } } 
 
+_▷_ : {A B C : Set} → A ≅ B → B ⇆ C → A ⇆ C
+iso ▷ l = iso-lens iso ↔ l
+
 _↕_ : {A B C D : Set} → A ⇆ B → C ⇆ D → A × C ⇆ B × D
 l ↕ r = record
   { put = λ { (a , c) (b , d) → liftPar₂ _,_ (Lens.put l a b) (Lens.put r c d) }
   ; get = λ { (a , c) → liftPar₂ _,_ (Lens.get l a) (Lens.get r c) }
   ; PutGet = λ { (put-l↦ >>= put-r↦ >>= return refl) → Lens.PutGet l put-l↦ >>= Lens.PutGet r put-r↦ >>= return refl }
   ; GetPut = λ { (get-l↦ >>= get-r↦ >>= return refl) → Lens.GetPut l get-l↦ >>= Lens.GetPut r get-r↦ >>= return refl } }
-
-iso-lens : {A B : Set} → A ≅ B → A ⇆ B
-iso-lens iso = record
-  { put = const (Iso.from iso)
-  ; get = Iso.to iso
-  ; PutGet = Iso.from-to-inverse iso
-  ; GetPut = Iso.to-from-inverse iso }
-
-skip-lens : {S : Set} → S ⇆ ⊤
-skip-lens = record
-  { put = λ s _ → return s
-  ; get = λ s → return tt
-  ; PutGet = λ { {._} (return refl) → return refl }
-  ; GetPut = λ _ → return refl }
