@@ -87,11 +87,6 @@ data BiGUL :: (* -> *) -> * -> * -> * where
   Emb     :: (s -> m v)
           -> (s -> v -> m s)
           -> BiGUL m s v
-  Xfork   :: (s -> m Bool)
-          -> (v -> m Bool)
-          -> BiGUL m [s] [v]
-          -> BiGUL m [s] [v]
-          -> BiGUL m [s] [v]
   Compose :: BiGUL m s u
           -> BiGUL m u v
           -> BiGUL m s v

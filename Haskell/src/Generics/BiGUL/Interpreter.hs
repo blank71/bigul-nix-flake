@@ -22,22 +22,9 @@ put (CaseV branchList) s v = putCaseV branchList s v
 put (CaseSV branchList) s v = putCaseSV branchList s v
 put (Align sourceCond matchCond matchBigul create conceal) s v = putAlign sourceCond matchCond matchBigul create conceal s v
 put (Emb g p) s v = p s v
-
-put (Xfork ps pv bigul1 bigul2) s v =  do (s1,s2) <- xsplit s ps
-                                          (v1,v2) <- xsplit v pv
-                                          s1' <- put bigul1 s1 v1
-                                          s2' <- put bigul2 s2 v2
-                                          return $ s1'++s2'
-
 put (Compose bigul1 bigul2) s v = do u <- get bigul1 s
                                      u2 <- put bigul2 u v
                                      put bigul1 s u2
-
-xsplit :: MonadError' ErrorInfo m => [a] -> (a -> m Bool) -> m ([a],[a])
-xsplit [] _ = return ([],[])
-xsplit (x:xs) p = do b <- p x
-                     (ls1,ls2) <- xsplit xs p
-                     if b then return (x:ls1,ls2) else return (ls1,x:ls2)
 
 
 putUPat :: MonadError' ErrorInfo m => UPat m s v -> s -> v -> m s
@@ -195,16 +182,6 @@ get (CaseS sbranches) s = getCaseS sbranches s
 get (CaseV vbranches) s = getCaseV vbranches s
 get (Align sourceCond matchCond matchBigul create conceal) s = getAlign sourceCond matchCond matchBigul create conceal s
 get (Emb g p) s = g s
-
-get (Xfork ps pv bigul1 bigul2) s = do (s1,s2) <- xsplit s ps
-                                       v1 <- get bigul1 s1
-                                       v2 <- get bigul2 s2
-                                       bs1 <- mapM pv v1
-                                       bs2 <- mapM pv v2
-                                       if and bs1 && not (or bs2)
-                                       then return $ v1++v2
-                                       else throwError $ ErrorInfo "view is not valid int get Xfork"
-
 get (Compose bigul1 bigul2) s = do u <- get bigul1 s
                                    get bigul2 u
 
