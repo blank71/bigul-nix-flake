@@ -24,8 +24,6 @@ import Generics.BiGUL.TH
          )
 -- import Control.Monad.Error.Class
 import Control.Monad.Error.Class
-import Control.Monad.Trans.Except (catchE)
-import Control.Monad.Trans.State.Lazy (liftCatch)
 import Control.Monad.State hiding (get, put)
 import System.Exit (exitFailure)
 
@@ -44,7 +42,7 @@ main = do
   putStrLn ""
   putStr   "Checking..."
   b <- case evalStateT (checkFullEmbed pairlistcount) (0,0,0) of
-    Left err -> putStrLn " [fail]" >> putStrLn (show err) >> exitFailure
+    Left err -> putStrLn " [fail]" >> print err >> exitFailure
     Right b0 -> return b0
   if b then putStrLn " [ok]"
        else putStrLn " [fail]" >> exitFailure
@@ -60,7 +58,7 @@ main = do
             Right (s', c) -> putStrLn ("Source: " ++ show s' ++ "\n")
                           >> showCount c
         -- values
-        values = [ (0, s0, v0)
+        values = [ (0::Int, s0, v0)
                  , (1, s0, v1)
                  , (2, s0, v2)
                  , (3, s0, v3)
@@ -78,7 +76,7 @@ showCount (t, a, d) =
 -- Test values
 s0 :: [(Int, Char)]
 s0 = [(1,'a'),(2,'b'),(3,'c'),(4,'d'),(5,'e')]
-v0, v1, v2, v3, v4, v5 :: [Int]
+v0, v1, v2, v3, v4, v5, v6 :: [Int]
 v0 = [1,2,3,4,5]
 v1 = [1,2,3]
 v2 = [3,2,1]
@@ -101,7 +99,7 @@ pairlistcount =
     -- source condition
     (\ _ -> return True)
     -- match
-    (\ (sa, sb) va -> return (sa == va))
+    (\ (sa, _) va -> return (sa == va))
     -- b
     (effect (modify incTotal) pairkey)
     -- create
