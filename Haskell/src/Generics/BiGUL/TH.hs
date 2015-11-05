@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell, TupleSections, DeriveDataTypeable #-}
-module Generics.BiGUL.TH( branch, normal',adaptive',adaptive,normal,rearr,update,deriveBiGULGeneric) where
+module Generics.BiGUL.TH( branch, normal',adaptive',adaptive,normal,rearr,update,rearrAndUpdate,deriveBiGULGeneric) where
 import Data.Data
 import Data.Maybe
 import Data.List as List
@@ -191,7 +191,7 @@ generateTypeVarsType n []    = ConT n -- not polymorphic case.
 generateTypeVarsType n tvars = foldl (\a b -> AppT a b) (ConT n) $ map (\tvar -> 
    case tvar of 
     { PlainTV  name      -> VarT name; 
-      KindedTV name kind -> error "kind type variables are not supported yet."
+      KindedTV name kind -> VarT name-- error "kind type variables are not supported yet."
     }) tvars 
 
 
@@ -210,6 +210,28 @@ lookupLRs conName = do
   TyConI (DataD _ _ _ cons _) <- reify datatypeName
   return $ constructLRs (length cons) !!
              fromJust (List.findIndex (== conName) (map (\con -> case con of { NormalC n _ -> n; RecC n _ -> n}) cons))
+
+lookupRecordLength :: Name -> Q Int
+lookupRecordLength conName = do
+  info <- reify conName
+  datatypeName <-
+    case info of
+      DataConI _ _ n _ -> return n
+      _ -> fail $ nameBase conName ++ " is not a data constructor"
+  TyConI (DataD _ _ _ cons _) <- reify datatypeName
+  return $ (\(RecC _ fs) -> length fs) (fromJust (List.find (\(RecC n _) -> n == conName) cons))
+
+lookupRecordField :: Name -> Name -> Q Int
+lookupRecordField conName fieldName = do
+  info <- reify conName
+  datatypeName <-
+    case info of
+      DataConI _ _ n _ -> return n
+      _ -> fail $ nameBase conName ++ " is not a data constructor"
+  TyConI (DataD _ _ _ cons _) <- reify datatypeName
+  case (List.findIndex (\(n,_,_) -> n == fieldName) ((\(RecC _ fs) -> fs) $ fromJust (List.find (\(RecC n _) -> n == conName) cons))) of
+       Just res -> return res
+       Nothing -> fail $ nameBase fieldName ++ " is not a field in " ++ nameBase conName
 
 
 mkConstrutorFromLRs :: [ConTag] -> PatTag -> Q (Exp -> Exp)
@@ -242,6 +264,19 @@ mkPat (ConP name ps) patTag = do
                        [] -> [p| () |] >>= flip mkPat patTag
                        _  -> mkPat (TupP ps)  patTag
        return $ conInEither pes
+
+
+
+mkPat (RecP name ps) patTag = do
+  len <- lookupRecordLength name
+  indexs <- mapM (\(n,_) -> lookupRecordField name n) ps
+  let nps = map snd ps
+  mkPat (ConP name (helper 0 len (zip indexs nps) [])) patTag
+  where findInPair [] i = WildP
+        findInPair ((j,p):xs) i | i == j = p
+                                | otherwise = findInPair xs i
+        helper i n pairs acc  | i == n = acc
+                              | otherwise = helper (i+1) n pairs (acc++[findInPair pairs i])
 
 
 mkPat (ListP []) patTag = [p| [] |] >>= flip mkPat patTag
@@ -302,8 +337,7 @@ rearrangeExp :: Exp -> Map String Exp -> Q Exp
 rearrangeExp (VarE name) env  =
   case Map.lookup (nameBase name) env of
     Just val -> return val
-    Nothing  -> fail $ "cannot find name " ++ nameBase name ++ " in env.\n" ++
-                       "Please use wildcard(_) for unupdate pattern variable"
+    Nothing  -> fail $ "cannot find name " ++ nameBase name ++ " in env."
 rearrangeExp (AppE e1 e2) env = liftM2 AppE (rearrangeExp e1 env) (rearrangeExp e2 env)
 rearrangeExp (ConE name) env  = return $ ConE name
 rearrangeExp (LitE c)    env  = return $ LitE c
@@ -322,6 +356,18 @@ mkEnvForRearr (LitP c) = return Map.empty
 
 -- empty list is ok , mkEnvForRearr return Q Map.empty for it
 mkEnvForRearr (ConP name ps) = mkEnvForRearr (ListP ps)
+
+mkEnvForRearr (RecP name ps) = do
+  len <- lookupRecordLength name
+  indexs <- mapM (\(n,_) -> lookupRecordField name n) ps
+  let nps = map snd ps
+  mkEnvForRearr (ConP name (helper 0 len (zip indexs nps) []))
+  where findInPair [] i = WildP
+        findInPair ((j,p):xs) i | i == j = p
+                                | otherwise = findInPair xs i
+        helper i n pairs acc  | i == n = acc
+                              | otherwise = helper (i+1) n pairs (acc++[findInPair pairs i])
+
 
 mkEnvForRearr (ListP ps)     = do
   (_, [dleft,dright]) <- lookupNames [] [ astNameSpace ++ s | s <- ["DLeft", "DRight"] ] (notFoundMsg "DLeft, DRight")
@@ -351,10 +397,11 @@ mkEnvForRearr  _    =  fail $ "Pattern not handled yet."
 
 
 
-splitDataAndCon:: TH.Exp -> Q (TH.Exp,[TH.Exp])
+splitDataAndCon:: TH.Exp -> Q (TH.Exp -> TH.Exp ,[TH.Exp])
 
 splitDataAndCon (AppE (ConE name) e2) = do
-  con <- mkBodyExpForRearr (ConE name)
+  lrs <- lookupLRs name
+  con <- mkConstrutorFromLRs lrs ETag
   d   <- mkBodyExpForRearr e2
   return (con,[d])
 
@@ -378,19 +425,28 @@ mkBodyExpForRearr (VarE name) =  return $ VarE name
 mkBodyExpForRearr (AppE e1 e2) = do
   (_, [eprod]) <- lookupNames [] [astNameSpace ++ "EProd"] (notFoundMsg "EProd")
   (con, ds)   <- splitDataAndCon (AppE e1 e2)
-  return $ con `AppE` (foldr1 (\d1 d2 -> ConE eprod `AppE` d1 `AppE` d2) ds)
+  return $ con (foldr1 (\d1 d2 -> ConE eprod `AppE` d1 `AppE` d2) ds)
 
 
--- a little trick here, in order to extract conInEither from Exp -> Exp type
 mkBodyExpForRearr (ConE name) =  do
   (ConE name') <- [| () |]
+  (_, [econst]) <- lookupNames [] [astNameSpace ++ s | s <- ["EConst"] ] (notFoundMsg "EConst")
   if name == name'
-  then do (_, [econst]) <- lookupNames [] [astNameSpace ++ s | s <- ["EConst"] ] (notFoundMsg "EConst")
-          return $ ConE econst `AppE` (ConE name)
-  else do lrs <- lookupLRs name
-          conWithAppE <- mkConstrutorFromLRs lrs ETag
-          let (AppE conInEither _) = conWithAppE (ConE name)
-          return $ conInEither
+  then return $ ConE econst `AppE` (ConE name)
+  else mkBodyExpForRearr (AppE (ConE name) (ConE name'))
+
+mkBodyExpForRearr (RecConE name es) = do
+  (ConE name') <- [| () |]
+  (_, [econst,eprod]) <- lookupNames [] [astNameSpace ++ s | s <- ["EConst","EProd"]] (notFoundMsg "EConst and EProd")
+  len <- lookupRecordLength name
+  indexs <- mapM (\(n,_) -> lookupRecordField name n) es
+  let nes = map snd es
+  return $ foldr1 (\e1 acc -> ConE eprod `AppE` e1 `AppE` acc) (helper 0 len (zip indexs nes) [] (ConE econst `AppE` (ConE name')))
+  where findInPair [] i  unit = unit
+        findInPair ((j,p):xs) i unit | i == j = p
+                                     | otherwise = findInPair xs i unit
+        helper i n pairs acc unit | i == n = acc
+                                  | otherwise = helper (i+1) n pairs (acc ++[(findInPair pairs i unit)]) unit
 
 -- restrict infix op to : for now
 mkBodyExpForRearr (InfixE (Just e1) (ConE name) (Just e2)) = do
@@ -436,6 +492,56 @@ rearr' (LamE [p] e) = do
 
 rearr :: Q TH.Exp -> Q TH.Exp
 rearr = (rearr' =<<)
+
+
+
+mkExpFromPat :: TH.Pat -> Q TH.Exp
+mkExpFromPat (LitP c) = return (LitE c)
+mkExpFromPat (ConP name ps) = do
+  es <- mapM mkExpFromPat ps
+  return $ foldl (\acc e -> (AppE acc e)) (ConE name) es
+mkExpFromPat (RecP name ps) = do
+  rs <- mapM mkExpFromPat (map snd ps)
+  let es = zip (map fst ps) rs
+  return (RecConE name es)
+mkExpFromPat (ListP ps) = do
+  es <- mapM mkExpFromPat ps
+  return (ListE es)
+mkExpFromPat (InfixP pl name pr) = do
+  epl <- mkExpFromPat pl
+  epr <- mkExpFromPat pr
+  return (InfixE (Just epl) (ConE name) (Just epr))
+mkExpFromPat (TupP ps) = do
+  es <- mapM mkExpFromPat ps
+  return (TupE es)
+mkExpFromPat (VarP name) = return (VarE name)
+mkExpFromPat WildP = [| () |]
+mkExpFromPat _ = fail $ "pattern not handled in mkExpFromPat"
+
+
+preprocessUpat :: TH.Pat -> Q TH.Pat
+preprocessUpat (RecP name ps) = do
+  let nps = map (\(n,_) -> (n, (VarP n))) ps
+  return (RecP name nps)
+preprocessUpat oth = return oth
+
+
+rearrAndUpdate :: Q TH.Pat -> Q TH.Pat -> Q [TH.Dec] -> Q TH.Exp
+rearrAndUpdate qrp qup qud = do
+  (_, [edir,rearrc,upd]) <- lookupNames [] [astNameSpace ++ s | s <- ["EDir","Rearr","Update"] ] (notFoundMsg "EDir, Rearr, Update")
+  rp <- qrp
+  up <- qup
+  ud <- qud
+  rpat <- mkPat rp RTag
+  bexp <- mkExpFromPat up
+  rexp <- mkBodyExpForRearr bexp
+  renv <- mkEnvForRearr rp
+  newrexp <- rearrangeExp rexp (Map.map (ConE edir `AppE`) renv)
+  preproup <- preprocessUpat up
+  upat <- mkPat preproup UTag
+  uenv <- mkEnvForUpdate ud
+  ubigul <- rearrangeExp (ConE upd `AppE` upat) uenv
+  return $ ((ConE rearrc `AppE` rpat) `AppE` newrexp) `AppE` ubigul
 
 
 mkEnvForUpdate :: [TH.Dec] -> Q (Map String TH.Exp)
