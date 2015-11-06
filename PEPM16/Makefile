@@ -1,5 +1,5 @@
 LaTeX = pdflatex
-lhs2TeX =/Users/zan/Library/Haskell/bin/lhs2TeX
+lhs2TeX =lhs2TeX
 
 PEPM16: PEPM16-processed.tex
 	$(LaTeX) -jobname PEPM16 PEPM16-processed.tex

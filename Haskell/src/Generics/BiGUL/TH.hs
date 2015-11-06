@@ -235,7 +235,7 @@ lookupRecordField conName fieldName = do
 
 
 mkConstrutorFromLRs :: [ConTag] -> PatTag -> Q (Exp -> Exp)
-mkConstrutorFromLRs lrs patTag = do (_, [gin, gleft, gright]) <- lookupNames [] [ "Generics.BiGUL.AST." ++ show patTag ++ s | s <- ["In", "Left", "Right"] ] "cannot find data constructors from Generic.BiGUL.AST"
+mkConstrutorFromLRs lrs patTag = do (_, [gin, gleft, gright]) <- lookupNames [] [ "Generics.BiGUL.AST." ++ show patTag ++ s | s <- ["In", "Left", "Right"] ] "cannot find data constructors *what* from Generic.BiGUL.AST"
                                     return $ foldl (.) (AppE (ConE gin)) (map (AppE . ConE . contag gleft gright) lrs)
 
 
@@ -585,7 +585,7 @@ patToFunc p =  do
   case p of
     TH.WildP -> return $ LamE [VarP name] (AppE (VarE hreturn) (ConE htrue))
     _        -> return $ LamE [VarP name] (AppE (VarE hreturn) (CaseE (VarE name)
-                        [Match p (NormalB (ConE htrue)) [],Match WildP (NormalB (ConE hfalse)) []]))
+                        [Match p (NormalB (ConE htrue)) [], Match WildP (NormalB (ConE hfalse)) []]))
 
 
 addNormal :: TH.Exp -> Q TH.Exp

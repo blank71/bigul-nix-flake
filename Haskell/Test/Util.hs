@@ -39,13 +39,15 @@ failMsg msg = Emb getf putf
 -- Useful higher order lenses
 
 mapU :: (Eq s, Eq v, Monad m) => s -> BiGUL m s v -> BiGUL m [s] [v]
-mapU s0 u = CaseV [ CaseVBranch (PConst []) $
-                      CaseS [ (return . (==[]), Normal Skip),
+mapU s0 u = CaseV [ (\v -> return $ v == [],
+                      CaseS [ (return . (==[]), Normal (constV [])),
                               (return . (/=[]), Adaptive (\s v -> return []))
-                            ],
-                    CaseVBranch (PElem PVar PVar) $
-                      CaseS [ (return . (/=[]), Normal (Update (UElem (UVar u) (UVar (mapU s0 u))))),
-                              (return . (==[]), Adaptive (\s v -> return [s0]))
-                            ]
+                            ]),
+                    (\v -> return $ v == undefined:[undefined],
+                      Rearr (RElem RVar RVar)
+                            (EProd (EDir (DLeft DVar)) (EDir (DRight DVar)))
+                            (CaseS
+                              [ (return . (/=[]), Normal (Update (UElem (UVar u) (UVar (mapU s0 u))))),
+                                (return . (==[]), Adaptive (\s v -> return [s0]))])
+                    )
                   ]
-

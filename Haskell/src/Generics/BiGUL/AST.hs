@@ -90,7 +90,13 @@ data BiGUL :: (* -> *) -> * -> * -> * where
   Compose :: BiGUL m s u
           -> BiGUL m u v
           -> BiGUL m s v
+  Seq     :: (Eq s0) => BiGUL m s0 v0
+          -> BiGUL m s0 v1
+          -> BiGUL m s0 (v0,v1)
+  ConstV   :: BiGUL m s ()  -> v -> BiGUL m s v
 
+constV :: v -> BiGUL m s v
+constV = ConstV Skip
 
 instance Show (BiGUL m s v) where
   show Fail = "Fail"
@@ -105,6 +111,9 @@ instance Show (BiGUL m s v) where
   show _ = "Invalid BiGUL program in show"
 
 newtype Var a = Var a
+
+instance Show a => Show (Var a) where
+  show (Var a) = "Var: " ++ show a
 
 -- RPat (view type) (environment type) (container type)
 data RPat :: * -> * -> * -> * where
@@ -177,22 +186,22 @@ retrieve (DLeft  p) (x, y)  = retrieve p x
 retrieve (DRight p) (x, y)  = retrieve p y
 
 data Expr :: * -> * -> * where
-  EDir   :: (Eq a) => Direction orig a -> Expr orig a
-  EConst :: (Eq a, Show a) =>  a -> Expr orig a
-  EIn    :: (InOut a, Eq (F a)) => Expr orig (F a) -> Expr orig a
-  EProd  :: (Eq a, Eq b) => Expr orig a -> Expr orig b -> Expr orig (a, b)
-  ELeft  :: (Eq a, Eq b) => Expr orig a -> Expr orig (Either a b)
-  ERight :: (Eq a, Eq b) => Expr orig b -> Expr orig (Either a b)
-  EElem  :: (Eq a) => Expr orig a -> Expr orig [a] -> Expr orig [a]
-  ECompare :: (Eq a) => Expr orig a -> a -> Expr orig (Either () a)
+  EDir     :: (Eq a)              => Direction orig a -> Expr orig a
+  EConst   :: (Eq a, Show a)      =>  a -> Expr orig a
+  EIn      :: (InOut a, Eq (F a)) => Expr orig (F a) -> Expr orig a
+  EProd    :: (Eq a, Eq b)        => Expr orig a -> Expr orig b -> Expr orig (a, b)
+  ELeft    :: (Eq a, Eq b)        => Expr orig a -> Expr orig (Either a b)
+  ERight   :: (Eq a, Eq b)        => Expr orig b -> Expr orig (Either a b)
+  EElem    :: (Eq a)              => Expr orig a -> Expr orig [a] -> Expr orig [a]
+  ECompare :: (Eq a)              => Expr orig a -> a -> Expr orig (Either () a)
 
 instance Show (Expr orig a) where
   show (EDir dir)      = "(EDir " ++ show dir ++ " )"
   show (EConst c)      = "(EConst " ++ show c ++ " )"
   show (EProd e1 e2)   = "(EProd " ++ show e1 ++ " " ++ show e2 ++ " )"
-  show (ELeft e)      = "(ELeft " ++ show e ++ " )"
-  show (ERight e)     = "(ERight " ++ show e ++ " )"
-  show (EIn e)        = "(EIn " ++ show e ++ " )"
+  show (ELeft e)       = "(ELeft " ++ show e ++ " )"
+  show (ERight e)      = "(ERight " ++ show e ++ " )"
+  show (EIn e)         = "(EIn " ++ show e ++ " )"
   show _               = "show error in Expr"
 
 eval :: (Eq v') => Expr env v' -> env -> v'

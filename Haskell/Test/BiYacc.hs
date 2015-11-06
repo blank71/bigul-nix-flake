@@ -5,6 +5,15 @@ import Generics.BiGUL.TH
 import Language.Haskell.TH
 import BiYaccDef
 
+testPut :: BiGUL (Either ErrorInfo) s v -> s -> v -> Either ErrorInfo s
+testPut u s v = catchBind (put u s v) (\s' -> Right s') (\e -> Left e)
+
+testGet :: BiGUL (Either ErrorInfo) s v -> s -> Either ErrorInfo v
+testGet u s = catchBind (get u s) (\v' -> Right v') (\e -> Left e)
+
+--t1 = testGet ruleExprArith0 (EAdd (ETerm . TFactor . FNum $ 4 ) (TFactor (FNum 3)))
+--t2 = testPut ruleExprArith0 (EAdd (ETerm . TFactor . FNum $ 4 ) (TFactor (FNum 3)))
+
 ruleExprArith0 :: BiGUL (Either ErrorInfo) Expr Arith
 ruleExprArith0 =
   $(rule [p| Add _ _ |]

@@ -20,15 +20,29 @@ deriveBiGULGeneric ''Factor
 deriveBiGULGeneric ''Arith
 
 
+--rule :: Q Pat -> Q Pat -> Q Exp -> Q Exp -> Q Exp
+--rule vPat sPat upd next =
+--  [| CaseS [ $(normal sPat)
+--               (CaseV [ $(branch vPat) $(upd),
+--                        $(branch [p| _ |]) $(next)
+--                      ]),
+--             $(normal [p| _ |]) $(next)
+--           ]
+--  |]
+
 rule :: Q Pat -> Q Pat -> Q Exp -> Q Exp -> Q Exp
 rule vPat sPat upd next =
-  [| CaseS [ $(normal sPat)
-               (CaseV [ $(branch vPat) $(upd),
-                        $(branch [p| _ |]) $(next)
-                      ]),
-             $(normal [p| _ |]) $(next)
-           ]
+  [| CaseV [ $(branch vPat)
+              (CaseS [ $(normal sPat)     $(upd),
+                       $(normal [p| _ |]) $(next)
+                     ]),
+            $(branch [p| _ |]) $(next)
+          ]
   |]
+
+
+
+
 
 adaptation :: Q Pat -> Q Pat -> Q Exp -> Q Exp -> Q Exp
 adaptation vPat sPat upd new =
