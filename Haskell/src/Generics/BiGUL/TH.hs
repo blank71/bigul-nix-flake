@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell, TupleSections, DeriveDataTypeable #-}
-module Generics.BiGUL.TH( branch, normal',adaptive',adaptive,normal,rearr,update,rearrAndUpdate,mkExpFromPat,toProduct,mkBodyExpForRearr,deriveBiGULGeneric) where
+module Generics.BiGUL.TH( branch, normal',adaptive',adaptive,normal,rearr,update,rearrAndUpdate,deriveBiGULGeneric) where
 import Data.Data
 import Data.Maybe
 import Data.List as List
