@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell, TupleSections, DeriveDataTypeable #-}
-module Generics.BiGUL.TH( branch, normal',adaptive',adaptive,normal,rearr,update,rearrAndUpdate,deriveBiGULGeneric) where
+module Generics.BiGUL.TH( branch, normal',adaptive',adaptive,normal,rearr,update,rearrAndUpdate,mkExpFromPat,toProduct,mkBodyExpForRearr,deriveBiGULGeneric) where
 import Data.Data
 import Data.Maybe
 import Data.List as List
@@ -440,8 +440,8 @@ mkBodyExpForRearr (RecConE name es) = do
   (_, [econst,eprod]) <- lookupNames [] [astNameSpace ++ s | s <- ["EConst","EProd"]] (notFoundMsg "EConst and EProd")
   len <- lookupRecordLength name
   indexs <- mapM (\(n,_) -> lookupRecordField name n) es
-  let nes = map snd es
-  return $ foldr1 (\e1 acc -> ConE eprod `AppE` e1 `AppE` acc) (helper 0 len (zip indexs nes) [] (ConE econst `AppE` (ConE name')))
+  let nes =  map snd es
+  mkBodyExpForRearr (foldl (\acc e -> acc `AppE` e) (ConE name) (helper 0 len (zip indexs nes) [] (ConE name')))
   where findInPair [] i  unit = unit
         findInPair ((j,p):xs) i unit | i == j = p
                                      | otherwise = findInPair xs i unit
@@ -518,13 +518,20 @@ mkExpFromPat (VarP name) = return (VarE name)
 mkExpFromPat WildP = [| () |]
 mkExpFromPat _ = fail $ "pattern not handled in mkExpFromPat"
 
+toProduct :: TH.Exp -> Q TH.Exp
+toProduct (AppE e1 e2) = do
+  (ConE unitn) <- [| () |]
+  (_, [econst,ein,eleft,eright]) <- lookupNames [] [ astNameSpace ++ s | s <- ["EConst","EIn","ELeft", "ERight"] ] (notFoundMsg "EConst, EIn, ELeft, ERight")
+  re2 <- toProduct e2
+  re1 <- toProduct e1
+  if e1 == (ConE eleft) || e1 == (ConE eright) || e1 == (ConE ein)
+  then return re2
+  else if e1 == (ConE econst)
+       then return (AppE e1 (ConE unitn))
+       else return (AppE re1 re2)
 
-preprocessUpat :: TH.Pat -> Q TH.Pat
-preprocessUpat (RecP name ps) = do
-  let nps = map (\(n,_) -> (n, (VarP n))) ps
-  return (RecP name nps)
-preprocessUpat oth = return oth
 
+toProduct other = return other
 
 rearrAndUpdate :: Q TH.Pat -> Q TH.Pat -> Q [TH.Dec] -> Q TH.Exp
 rearrAndUpdate qrp qup qud = do
@@ -535,10 +542,10 @@ rearrAndUpdate qrp qup qud = do
   rpat <- mkPat rp RTag
   bexp <- mkExpFromPat up
   rexp <- mkBodyExpForRearr bexp
+  proexp <- toProduct rexp
   renv <- mkEnvForRearr rp
-  newrexp <- rearrangeExp rexp (Map.map (ConE edir `AppE`) renv)
-  preproup <- preprocessUpat up
-  upat <- mkPat preproup UTag
+  newrexp <- rearrangeExp proexp (Map.map (ConE edir `AppE`) renv)
+  upat <- mkPat up UTag
   uenv <- mkEnvForUpdate ud
   ubigul <- rearrangeExp (ConE upd `AppE` upat) uenv
   return $ ((ConE rearrc `AppE` rpat) `AppE` newrexp) `AppE` ubigul

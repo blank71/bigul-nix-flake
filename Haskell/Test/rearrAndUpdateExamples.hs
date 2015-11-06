@@ -17,14 +17,14 @@ deriveBiGULGeneric ''Bar
 
 
 test1 :: MonadError' ErrorInfo m => BiGUL m Bar Int
-test1 = $(rearrAndUpdate [p| z |] [p| X {x1 = z} |] [d| x1 = Replace|])
+test1 = $(rearrAndUpdate [p| z |] [p| X {x1 = z} |] [d| z = Replace|])
 
 {-
 test1 is equivalent to the following program
-$(rearr [| \z -> X { x1 = z } |]) $(update [p| X { x1 = z } |] [d| x1 = Replace|])
+$(rearr [| \z -> X { x1 = z } |]) $(update [p| X { x1 = z } |] [d| z = Replace|])
 
 and then it will be translated to low level form
-$(rearr [| \z -> ((),(z,())) |]) $(update [p| X _ x1 _ |] [d| x1 = Replace|])
+$(rearr [| \z -> ((),(z,())) |]) $(update [p| X _ z _ |] [d| z = Replace|])
 
 *Main> testPut test1 (X {x0 = 1, x1 = 2, x2 = 3}) 5
 Right (X {x0 = 1, x1 = 5, x2 = 3})
