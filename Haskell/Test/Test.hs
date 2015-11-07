@@ -182,19 +182,21 @@ u = Align (\_ -> return True)
              $(update [p| (name, rest) |]
                       [d| name = Replace
                           rest = CaseV [ $(branch [p| (_, Left _) |])
-                                           (CaseS [ $(normal [p| (_, Left _) |])
-                                                      $(update [p| (_, Left britLoc) |]
-                                                               [d| britLoc = Replace |]),
-                                                    $(adaptive [p| (_, Right _) |])
-                                                      (\(salary, _) _ -> return (salary*3/5, Left ""))
-                                                  ]),
+                                           ($(rearr [| \(x, Left y) -> (x, y) |])
+                                              (CaseS [ $(normal [p| (_, Left _) |])
+                                                         $(update [p| (_, Left britLoc) |]
+                                                                  [d| britLoc = Replace |]),
+                                                       $(adaptive [p| (_, Right _) |])
+                                                         (\(salary, _) _ -> return (salary*3/5, Left ""))
+                                                     ])),
                                          $(branch [p| (_, Right _) |])
-                                           (CaseS [ $(normal   [p| (_, Right _) |])
-                                                      $(update [p| (_, Right ameLoc) |]
-                                                               [d| ameLoc = Replace |]),
-                                                    $(adaptive [p| (_, Left _) |])
-                                                      (\(salary, _) _ -> return (salary*5/3, Right ""))
-                                                  ])
+                                           ($(rearr [| \(x, Right y) -> (x, y) |])
+                                              (CaseS [ $(normal   [p| (_, Right _) |])
+                                                         $(update [p| (_, Right ameLoc) |]
+                                                                  [d| ameLoc = Replace |]),
+                                                       $(adaptive [p| (_, Left _) |])
+                                                         (\(salary, _) _ -> return (salary*5/3, Right ""))
+                                                     ]))
                                        ] |]))
           (\(vName, location) -> return (vName, (0, location)))
           (\_ -> return Nothing)
