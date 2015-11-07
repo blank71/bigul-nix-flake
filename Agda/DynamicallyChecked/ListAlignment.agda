@@ -148,17 +148,13 @@ module AlignLens {S V : Set} (source-condition : S → Par Bool) (match? : S →
   conceal-source-list : List S → Par (List S)
   conceal-source-list = foldrPar (λ s ss' → conceal s >>=
                                             maybe (λ s' → source-condition s' >>= λ b →
-                                                          assert (not b) then return (s' ∷ ss'))
+                                                          assert-not b then return (s' ∷ ss'))
                                                   (return ss')) []
 
   conceal-source-list-all-false : {ss ss' : List S} → conceal-source-list ss ↦ ss' → AllFalseᴾ source-condition ss'
   conceal-source-list-all-false {[]    } (return refl) = tt
-  conceal-source-list-all-false {s ∷ ss}
-    (conceal-source-list↦ >>= (_>>=_ {x = just s'} conceal↦ (_>>=_ {x = true } source-condition↦ (assert () then _))))
-  conceal-source-list-all-false {s ∷ ss}
-    (conceal-source-list↦ >>= (_>>=_ {x = just s'} conceal↦ (_>>=_ {x = false} source-condition↦
-                                                                               (assert _ then return refl)))) =
-    source-condition↦ , (conceal-source-list-all-false conceal-source-list↦)
+  conceal-source-list-all-false {s ∷ ss} (conceal-source-list↦ >>= (_>>=_ {x = just s'} conceal↦ (source-condition↦ >>= assert-not refl then return refl))) =
+    source-condition↦ , conceal-source-list-all-false conceal-source-list↦
   conceal-source-list-all-false {s ∷ ss} (conceal-source-list↦ >>= (_>>=_ {x = nothing} conceal↦ (return refl))) =
     conceal-source-list-all-false conceal-source-list↦
 

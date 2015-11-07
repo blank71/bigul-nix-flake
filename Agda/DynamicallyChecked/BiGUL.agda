@@ -8,7 +8,7 @@ open import DynamicallyChecked.Partiality
 open import DynamicallyChecked.Lens
 open import DynamicallyChecked.ViewRearrangement
 open import DynamicallyChecked.SourceCase as SourceCase
-open import DynamicallyChecked.ViewCase as ViewCase
+open import DynamicallyChecked.SourceViewCase as SourceViewCase
 open import DynamicallyChecked.ListAlignment
 
 open import Data.Product
@@ -29,14 +29,15 @@ mutual
     rearr   : {S V V' : U n} → (vpat : Pattern F V) (vpat' : Pattern F V') (expr : Expr vpat vpat')
                                (b : BiGUL S V') → BiGUL S V
     dep     : {S V V' : U n} → (⟦ V ⟧ (μ F) → ⟦ V' ⟧ (μ F)) → BiGUL S V → BiGUL S (V ⊗ V')
-    caseS   : {S V : U n} → (branches : List (CaseSBranch S V)) → BiGUL S V
-    caseV   : {S V : U n} → (branches : List (CaseVBranch S V)) → BiGUL S V
+    caseS   : {S V : U n} → (branches : List (CaseSBranch  S V)) → BiGUL S V
+    caseSV  : {S V : U n} → (branches : List (CaseSVBranch S V)) → BiGUL S V
     align   : {S V : U n} → (source-condition : ⟦ S ⟧ (μ F) → Par Bool)
                             (match? : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → Par Bool)
                             (b : BiGUL S V)
                             (create : ⟦ V ⟧ (μ F) → Par (⟦ S ⟧ (μ F)))
                             (conceal : ⟦ S ⟧ (μ F) → Par (Maybe (⟦ S ⟧ (μ F)))) →
                             BiGUL (list S) (list V)
+    compose : {A B C : U n} → BiGUL A B → BiGUL B C → BiGUL A C
 
   PatBiGUL : {G : U n} → Pattern F G → Set₁
   PatBiGUL {G} var          = Σ[ H ∈ U n ] BiGUL G H
@@ -63,8 +64,8 @@ mutual
   CaseSBranch : (S V : U n) → Set₁
   CaseSBranch S V = (⟦ S ⟧ (μ F) → Par Bool) × CaseSBranchType S V
 
-  CaseVBranch : (S V : U n) → Set₁
-  CaseVBranch S V = (⟦ V ⟧ (μ F) → Par Bool) × BiGUL S V
+  CaseSVBranch : (S V : U n) → Set₁
+  CaseSVBranch S V = (⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → Par Bool) × BiGUL S V
 
 mutual
 
@@ -75,9 +76,10 @@ mutual
   BiGULCompleteExpr (update pat bs) = PatBiGULCompleteExpr pat bs
   BiGULCompleteExpr (rearr vpat vpat' expr b) = CompleteExpr vpat vpat' expr × BiGULCompleteExpr b
   BiGULCompleteExpr (dep f b) = BiGULCompleteExpr b
-  BiGULCompleteExpr (caseS branches) = CaseSBranchesCompleteExpr branches
-  BiGULCompleteExpr (caseV branches) = CaseVBranchesCompleteExpr branches
+  BiGULCompleteExpr (caseS  branches) = CaseSBranchesCompleteExpr  branches
+  BiGULCompleteExpr (caseSV branches) = CaseSVBranchesCompleteExpr branches
   BiGULCompleteExpr (align source-condition match? b create conceal) = BiGULCompleteExpr b
+  BiGULCompleteExpr (compose b b') = BiGULCompleteExpr b × BiGULCompleteExpr b'
 
   PatBiGULCompleteExpr : {S : U n} (pat : Pattern F S) → PatBiGUL pat → Set₁
   PatBiGULCompleteExpr var              (_ , b)    = BiGULCompleteExpr b
@@ -93,9 +95,9 @@ mutual
   CaseSBranchesCompleteExpr ((p , normal   b) ∷ branches) = BiGULCompleteExpr b × CaseSBranchesCompleteExpr branches
   CaseSBranchesCompleteExpr ((p , adaptive u) ∷ branches) = CaseSBranchesCompleteExpr branches
 
-  CaseVBranchesCompleteExpr : {S V : U n} → List (CaseVBranch S V) → Set₁
-  CaseVBranchesCompleteExpr []                     = ⊤
-  CaseVBranchesCompleteExpr ((pat , b) ∷ branches) = BiGULCompleteExpr b × CaseVBranchesCompleteExpr branches
+  CaseSVBranchesCompleteExpr : {S V : U n} → List (CaseSVBranch S V) → Set₁
+  CaseSVBranchesCompleteExpr []                   = ⊤
+  CaseSVBranchesCompleteExpr ((p , b) ∷ branches) = BiGULCompleteExpr b × CaseSVBranchesCompleteExpr branches
 
 mutual
 
@@ -106,9 +108,10 @@ mutual
   interp (update pat bs) c = pat-iso pat ▷ interp-update pat bs c
   interp (rearr vpat vpat' expr b) (c , c') = interp b c' ◁ view-rearrangement-iso vpat vpat' expr c
   interp (dep {V' = V'} f b) c = interp b c ◁ sym-iso (dependency-iso f (U-dec V'))
-  interp (caseS {S} {V} branches) c = caseS-lens (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)) (interp-CaseSBranch branches c)
-  interp (caseV {V = V} branches) c = caseV-lens _ _ (U-dec V) (interp-CaseVBranch branches c)
+  interp (caseS  {S} {V} branches) c = caseS-lens (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)) (interp-CaseSBranch branches c)
+  interp (caseSV {S} {V} branches) c = caseSV-lens (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)) (U-dec V) (interp-CaseSVBranch branches c)
   interp (align source-condition match? b create conceal) c = align-lens source-condition match? (interp b c) create conceal
+  interp (compose b b') (c , c') = interp b c ↔ interp b' c'
 
   interp-update : {S : U n} (pat : Pattern F S) (bs : PatBiGUL pat) → PatBiGULCompleteExpr pat bs →
                   PatResult pat ⇆ ⟦ PatBiGULViews pat bs ⟧ (μ F)
@@ -126,7 +129,7 @@ mutual
   interp-CaseSBranch ((p , normal   b) ∷ branches) (c , c') = (p , normal (interp b c)) ∷ interp-CaseSBranch branches c'
   interp-CaseSBranch ((p , adaptive u) ∷ branches) c        = (p , adaptive u) ∷ interp-CaseSBranch branches c
   
-  interp-CaseVBranch : {S V : U n} (branches : List (CaseVBranch S V)) → CaseVBranchesCompleteExpr branches →
-                       List (ViewCase.Branch (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)) (U-dec V))
-  interp-CaseVBranch []                   c        = []
-  interp-CaseVBranch ((p , b) ∷ branches) (c , c') = (p , interp b c) ∷ interp-CaseVBranch branches c'
+  interp-CaseSVBranch : {S V : U n} (branches : List (CaseSVBranch S V)) → CaseSVBranchesCompleteExpr branches →
+                        List (SourceViewCase.Branch (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)) (U-dec V))
+  interp-CaseSVBranch []                   c        = []
+  interp-CaseSVBranch ((p , b) ∷ branches) (c , c') = (p , interp b c) ∷ interp-CaseSVBranch branches c'
