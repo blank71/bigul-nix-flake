@@ -355,7 +355,7 @@ mkEnvForRearr :: TH.Pat -> Q (Map String Exp)
 mkEnvForRearr (LitP c) = return Map.empty
 
 -- empty list is ok , mkEnvForRearr return Q Map.empty for it
-mkEnvForRearr (ConP name ps) = mkEnvForRearr (ListP ps)
+mkEnvForRearr (ConP name ps) = mkEnvForRearr (TupP ps)
 
 mkEnvForRearr (RecP name ps) = do
   len <- lookupRecordLength name
@@ -368,13 +368,13 @@ mkEnvForRearr (RecP name ps) = do
         helper i n pairs acc  | i == n = acc
                               | otherwise = helper (i+1) n pairs (acc++[findInPair pairs i])
 
-
-mkEnvForRearr (ListP ps)     = do
+mkEnvForRearr (ListP []) = return Map.empty
+mkEnvForRearr (ListP (pl:pr))     = do
   (_, [dleft,dright]) <- lookupNames [] [ astNameSpace ++ s | s <- ["DLeft", "DRight"] ] (notFoundMsg "DLeft, DRight")
-  subenvs             <- mapM mkEnvForRearr ps
-  let envs            =  zipWith (Map.map . foldr (.) id . map (AppE . ConE . contag dleft dright))
-                                 (constructLRs (length ps)) subenvs
-  return $ Map.unions envs
+  lenv <- mkEnvForRearr pl
+  renv <- mkEnvForRearr (ListP pr)
+  return $ Map.map (ConE dleft `AppE`) lenv `Map.union`
+          Map.map (ConE dright `AppE`) renv
 
 mkEnvForRearr (InfixP pl name pr) = do
   (_, [dleft,dright]) <- lookupNames [] [ astNameSpace ++ s | s <- ["DLeft", "DRight"] ] (notFoundMsg "DLeft, DRight")
@@ -383,7 +383,12 @@ mkEnvForRearr (InfixP pl name pr) = do
   return $ Map.map (ConE dleft `AppE`) lenv `Map.union`
           Map.map (ConE dright `AppE`) renv
 
-mkEnvForRearr (TupP ps) = mkEnvForRearr (ListP ps)
+mkEnvForRearr (TupP ps) = do
+  (_, [dleft,dright]) <- lookupNames [] [ astNameSpace ++ s | s <- ["DLeft", "DRight"] ] (notFoundMsg "DLeft, DRight")
+  subenvs             <- mapM mkEnvForRearr ps
+  let envs            =  zipWith (Map.map . foldr (.) id . map (AppE . ConE . contag dleft dright))
+                                 (constructLRs (length ps)) subenvs
+  return $ Map.unions envs
 
 mkEnvForRearr WildP = return Map.empty
 
