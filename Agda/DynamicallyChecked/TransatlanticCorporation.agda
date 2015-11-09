@@ -1,4 +1,4 @@
-module DynamicallyChecked.GlobalCorporation where
+module DynamicallyChecked.TransatlanticCorporation where
 
 open import DynamicallyChecked.Utilities
 open import DynamicallyChecked.Partiality
@@ -57,18 +57,18 @@ globalCorporation =
         (rearr (prod var var) (prod var (prod (k tt) var)) (inj₁ refl , tt , inj₂ refl)
            (update (prod var var)
               ((, replace) ,
-               (, caseV ((inBritain ,
-                            rearr (prod var (left var)) (prod var var) (inj₁ refl , inj₂ refl)
-                              (caseS ((inBritain ,
-                                         normal (update (prod var (left  var)) ((, skip) , (, replace)))) ∷
-                                      (inAmerica ,
-                                         adaptive (λ s _ → return (⌈ proj₁ s /2⌉ , inj₁ ""))) ∷ []))) ∷
-                         (inAmerica ,
-                            rearr (prod var (right var)) (prod var var) (inj₁ refl , inj₂ refl)
-                              (caseS ((inBritain ,
-                                         adaptive (λ s _ → return (2 * proj₁ s , inj₂ ""))) ∷
-                                      (inAmerica ,
-                                         normal (update (prod var (right var)) ((, skip) , (, replace)))) ∷ []))) ∷ [])))))
+               (, caseSV ((const inBritain ,
+                             rearr (prod var (left var)) (prod var var) (inj₁ refl , inj₂ refl)
+                               (caseS ((inBritain ,
+                                          normal (update (prod var (left  var)) ((, skip) , (, replace)))) ∷
+                                       (inAmerica ,
+                                          adaptive (λ s _ → return (⌈ proj₁ s /2⌉ , inj₁ ""))) ∷ []))) ∷
+                          (const inAmerica ,
+                             rearr (prod var (right var)) (prod var var) (inj₁ refl , inj₂ refl)
+                               (caseS ((inBritain ,
+                                          adaptive (λ s _ → return (2 * proj₁ s , inj₂ ""))) ∷
+                                       (inAmerica ,
+                                          normal (update (prod var (right var)) ((, skip) , (, replace)))) ∷ []))) ∷ [])))))
         ((String × (String ⊎ String) → Par (String × ℕ × (String ⊎ String))) ∋
            (λ { (name , location) → return (name , 0 , location) }))
         (const (return nothing))

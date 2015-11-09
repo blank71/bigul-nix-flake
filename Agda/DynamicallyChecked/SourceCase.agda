@@ -25,7 +25,7 @@ elimBranchType f g (adaptive u) = g u
 
 check-diversion : List Branch → S → Par ⊤
 check-diversion [] s = return tt
-check-diversion ((p , _) ∷ bs) s = p s >>= λ b → assert not b then check-diversion bs s
+check-diversion ((p , _) ∷ bs) s = p s >>= λ b → assert-not b then check-diversion bs s
 
 put-with-adaptation : List Branch → List Branch → S → V → (S → Par S) → Par S
 put-with-adaptation []              bs' s v f = fail
@@ -47,8 +47,7 @@ get ((p , bt) ∷ bs) s = p s >>= λ b → if b then elimBranchType (λ lens →
 get-revcat : (bs : List Branch) {s : S} {v : V} (bs' : List Branch) → check-diversion bs' s ↦ tt →
              get bs s ↦ v → get (revcat bs' bs) s ↦ v
 get-revcat bs []               _    get↦ = get↦
-get-revcat bs ((p , bt) ∷ bs') (_>>=_ {x = true } p-s↦true  (assert () then _              )) get↦
-get-revcat bs ((p , bt) ∷ bs') (_>>=_ {x = false} p-s↦false (assert _ then check-diversion↦)) get↦ =
+get-revcat bs ((p , bt) ∷ bs') (p-s↦false >>= assert-not refl then check-diversion↦) get↦ =
   get-revcat ((p , bt) ∷ bs) bs' check-diversion↦ (p-s↦false >>= get↦)
 
 PutGet-with-adaptation :
@@ -72,7 +71,7 @@ GetPut-with-adaptation : (bs : List Branch) {f : S → Par S} {s : S} {v : V}
                          get bs s ↦ v → put-with-adaptation bs bs' s v f ↦ s
 GetPut-with-adaptation []                      bs' check-diversion↦ ()
 GetPut-with-adaptation ((p , bt        ) ∷ bs) bs' check-diversion↦ (_>>=_ {x = false} p-s↦false get↦) =
-  p-s↦false >>= GetPut-with-adaptation bs ((p , bt) ∷ bs') (p-s↦false >>= assert refl then check-diversion↦) get↦
+  p-s↦false >>= GetPut-with-adaptation bs ((p , bt) ∷ bs') (p-s↦false >>= assert-not refl then check-diversion↦) get↦
 GetPut-with-adaptation ((p , normal   l) ∷ bs) bs' check-diversion↦ (_>>=_ {x = true } p-s↦true  get↦) =
   p-s↦true >>= Lens.GetPut l get↦ >>= p-s↦true >>= assert refl then (check-diversion↦ >>= return refl)
 GetPut-with-adaptation ((p , adaptive u) ∷ bs) bs' check-diversion↦ (_>>=_ {x = true } p-s↦true  ()  )
