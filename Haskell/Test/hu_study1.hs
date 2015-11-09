@@ -243,14 +243,18 @@ Right 50
 -- testing analysis on the view: CaseV
 ---------------------------------------
 
-casev1 :: BiGUL m (Either b' b) (Either b' ())
+casev1 :: (Eq b',Monad m) => BiGUL m (Either b' b) (Either b' ())
 --casev1 = CaseV [
 --           CaseVBranch (PLeft PVar)  $ Update (ULeft (UVar Replace)),
 --           CaseVBranch (PRight PVar) $ Update (URight (UVar Skip))
 --         ]
 casev1 = CaseV [
-            $(branch [p| Left _ |]) $(update [p| Left x |] [d| x = Replace |]),
-            $(branch [p| Right _ |]) $(update [p| Right _ |] [d| |])
+            $(branch [p| Left _ |]) 
+               ($(rearr [| \(Left x') -> x' |])
+                     ($(update [p| Left x |] [d| x = Replace |]))),
+            $(branch [p| Right _ |]) 
+               ($(rearr [| \(Right y') -> y' |])
+                     ($(update [p| Right _ |] [d| |])))
          ]
 
 {-

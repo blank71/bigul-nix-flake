@@ -96,6 +96,7 @@ Right [1,100,200,300]
 
 -}
 
+
 -- mapU upHead:
 --   [[1,2,3],[10,11,12,13],[20]] <-> [1,10,20]
 
@@ -114,6 +115,8 @@ Right [[100,2,3],[200,11,12,13],[300],[400]]
 Right [[100,2,3],[200,11,12,13]]
 
 -}
+
+
 
 -- embedAt 2:
 --  [1,2,300,4] <--> 300
@@ -154,23 +157,23 @@ Right [1,2,3,100,5,6,7,8,9,10]
 
 
 
-
-
 uLefts :: (MonadError' ErrorInfo m, Eq a) => a -> BiGUL m [Either a a] [Either a a]
-uLefts a0 = CaseV [ $(branch [p| [] |])  $
-                      CaseS [ $(normal' [| all (not . isLeft) |]) Skip,
-                              $(adaptive [p| _ |]) (\s v-> return (rmLefts s))
-                            ],
-                    $(branch [p| _ : _ |]) $
-                      CaseS [ $(normal [p| Left _ : _ |])
-                                        $(update [p| x : xs |]
-                                                  [d| x  = Replace
-                                                      xs = uLefts a0 |]),
-                              $(normal [p| Right _ : _ |])
-                                        ($(rearr [| \(x, xs) -> ((), x : xs) |])
-                                         $(update [p| _ : xs |] [d| xs = uLefts a0 |])),
-                              $(adaptive [p| [] |]) (\s v-> return [Left a0])
-                            ]
+uLefts a0 = CaseV [ $(branch [p| [] |])  
+                      ($(rearr [| \([]) -> () |])
+                        (CaseS [ $(normal' [| all (not . isLeft) |]) Skip,
+                                 $(adaptive [p| _ |]) (\s v-> return (rmLefts s))
+                               ])),
+                    $(branch [p| _ : _ |]) 
+                      ($(rearr [| \(x:y) -> (x,y) |])
+                        (CaseS [ $(normal [p| Left _ : _ |])
+                                          $(update [p| x : xs |]
+                                                   [d| x  = Replace
+                                                       xs = uLefts a0 |]),
+                                 $(normal [p| Right _ : _ |])
+                                          ($(rearr [| \(x, xs) -> ((), x : xs) |])
+                                           $(update [p| _ : xs |] [d| xs = uLefts a0 |])),
+                                $(adaptive [p| [] |]) (\s v-> return [Left a0])
+                              ]))
                   ]
 
 
