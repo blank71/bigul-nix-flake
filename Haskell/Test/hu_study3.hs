@@ -200,7 +200,7 @@ Right [Left 100,Right 1,Left 200,Left 300,Right 2,Left 400]
 -- rmLeftTags
 --  [Left 1, Left 2, Left 3] <-> [1,2,3]
 
-rmLeftTags :: (Eq a, MonadError' ErrorInfo m) => a -> BiGUL m [Either a a] [a]
+rmLeftTags :: (Eq a, Show a, MonadError' ErrorInfo m) => a -> BiGUL m [Either a a] [a]
 rmLeftTags a = mapU (Left a) uLeft
 
 uLeft :: (Eq a, MonadError' ErrorInfo m) => BiGUL m (Either a a) a

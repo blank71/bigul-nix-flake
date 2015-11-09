@@ -25,19 +25,6 @@ put (Emb g p) s v = p s v
 put (Compose bigul1 bigul2) s v = do u <- get bigul1 s
                                      u2 <- put bigul2 u v
                                      put bigul1 s u2
-put (Seq bigul0 bigul1) s0 (v0,v1) = do
-  s2  <- put bigul0 s0 v0 >>= swap_2_3 put bigul1 v1
-  s2' <- put bigul1 s0 v1 >>= swap_2_3 put bigul0 v0
-  if s2 == s2'
-    then return s2
-    else error "though swap the sequence of the put, the result should be the same"
-
-
-swap_1_2 = flip
-swap_2_3 = (.) flip
-swap_3_4 = ((.).(.)) flip
-swap_4_5 = ((.).(.).(.)) flip
-swap_5_6 = ((.).(.).(.).(.)) flip
 
 putUPat :: MonadError' ErrorInfo m => UPat m s v -> s -> v -> m s
 putUPat (UVar bigul) s v = put bigul s v
@@ -196,10 +183,6 @@ get (Align sourceCond matchCond matchBigul create conceal) s = getAlign sourceCo
 get (Emb g p) s = g s
 get (Compose bigul1 bigul2) s = do u <- get bigul1 s
                                    get bigul2 u
-get (Seq bigul0 bigul1) s = liftM2 (,) (get bigul0 s) (get bigul1 s)
-
-zz = Update $ UVar Replace `UProd` UVar Skip
-z  = Update $ UVar Skip `UProd` UVar Replace
 
 
 getUPat :: MonadError' ErrorInfo m => UPat m s v -> s -> m v
