@@ -1118,7 +1118,7 @@ The |to| direction is more delicate:
 It creates an empty container of type |VarPositions p (Maybe ∘ ⟦_⟧)| (all of whose variable positions are |nothing|) and fills it with components obtained by matching the input |⟦ E ⟧| with~|q|.
 If the container can be completely and consistently filled up --- that is, every position in the container is filled with one and only one value --- then we turn the container into a ``necessarily full'' container of type |VarPositions p ⟦_⟧| --- i.e., |PatResult p| --- by stripping all the |just| tags, and use it as an environment for evaluating~|p| to an inhabitant of |⟦ D ⟧|.
 
-Finally, the lens semantics we assign to |rearr| is
+Finally, the lens semantics we assign to |rearr| is\todo{composition with iso}
 \begin{code}
 interp (rearr p q paths b) =
   interp b ↔ iso-lens (view-rearr-iso p q paths ABBRV)
