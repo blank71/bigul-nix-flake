@@ -5,7 +5,7 @@ open import DynamicallyChecked.Partiality
 open import DynamicallyChecked.Lens
 open import DynamicallyChecked.Universe
 open import DynamicallyChecked.BiGUL
-open import DynamicallyChecked.ViewRearrangement
+open import DynamicallyChecked.Rearrangement
 
 open import Function
 open import Data.Product
@@ -44,9 +44,10 @@ bookstore =
            (λ { (_ , _ , year , _ , instock) → return (⌊ year Data.Nat.≟ 2015 ⌋ ∧ instock) }))
         ((String × String × ℕ × ℕ × Bool → String × ℕ → Par Bool) ∋
            (λ { (stitle , _) (vtitle , _) → return (stitle == vtitle) }))
-        (rearr (prod var var) (prod var (prod (k tt) (prod (k tt) (prod var (k tt))))) (inj₁ refl , tt , tt , inj₂ refl , tt)
-               (update (prod var (prod var (prod var (prod var var))))
-                       ((, replace) , (, skip) , (, skip) , (, replace) , (, skip))))
+        (rearrV (prod var var) (prod var (prod (k tt) (prod (k tt) (prod var (k tt)))))
+                (inj₁ refl , tt , tt , inj₂ refl , tt)
+                (update (prod var (prod var (prod var (prod var var))))
+                        ((, replace) , (, skip) , (, skip) , (, replace) , (, skip))))
         (const (return ("" , "(to be updated)" , 2015 , 0 , true)))
         (λ { (title , author , year , price , instock) → return (just (title , author , year , price , false)) })
 

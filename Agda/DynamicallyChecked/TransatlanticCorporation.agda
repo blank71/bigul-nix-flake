@@ -5,7 +5,7 @@ open import DynamicallyChecked.Partiality
 open import DynamicallyChecked.Lens
 open import DynamicallyChecked.Universe
 open import DynamicallyChecked.BiGUL
-open import DynamicallyChecked.ViewRearrangement
+open import DynamicallyChecked.Rearrangement
 
 open import Function
 open import Data.Product
@@ -54,17 +54,17 @@ globalCorporation =
   align (const (return true))
         ((String × ℕ × (String ⊎ String) → String × (String ⊎ String) → Par Bool) ∋
            (λ { (sname , _) (vname , _) → return ⌊ sname Data.String.≟ vname ⌋ }))
-        (rearr (prod var var) (prod var (prod (k tt) var)) (inj₁ refl , tt , inj₂ refl)
+        (rearrV (prod var var) (prod var (prod (k tt) var)) (inj₁ refl , tt , inj₂ refl)
            (update (prod var var)
               ((, replace) ,
                (, caseSV ((const inBritain ,
-                             rearr (prod var (left var)) (prod var var) (inj₁ refl , inj₂ refl)
+                             rearrV (prod var (left var)) (prod var var) (inj₁ refl , inj₂ refl)
                                (caseS ((inBritain ,
                                           normal (update (prod var (left  var)) ((, skip) , (, replace)))) ∷
                                        (inAmerica ,
                                           adaptive (λ s _ → return (⌈ proj₁ s /2⌉ , inj₁ ""))) ∷ []))) ∷
                           (const inAmerica ,
-                             rearr (prod var (right var)) (prod var var) (inj₁ refl , inj₂ refl)
+                             rearrV (prod var (right var)) (prod var var) (inj₁ refl , inj₂ refl)
                                (caseS ((inBritain ,
                                           adaptive (λ s _ → return (2 * proj₁ s , inj₂ ""))) ∷
                                        (inAmerica ,

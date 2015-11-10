@@ -1,7 +1,7 @@
 open import DynamicallyChecked.Universe
 open import Data.Nat
 
-module DynamicallyChecked.ViewRearrangement {n : ℕ} {F : Functor n} where
+module DynamicallyChecked.Rearrangement {n : ℕ} {F : Functor n} where
 
 open import DynamicallyChecked.Utilities
 open import DynamicallyChecked.Partiality
@@ -39,22 +39,22 @@ eval-path (elem hpat tpat) (inj₁ path) (r , r') = eval-path hpat path r
 eval-path (elem hpat tpat) (inj₂ path) (r , r') = eval-path tpat path r'
 
 Expr : {G : U n} → Pattern F G → {H : U n} → Pattern F H → Set₁
-Expr vpat {H} var          = VarPath vpat H
-Expr vpat (k x           ) = ⊤
-Expr vpat (child pat     ) = Expr vpat pat
-Expr vpat (left pat      ) = Expr vpat pat
-Expr vpat (right pat     ) = Expr vpat pat
-Expr vpat (prod lpat rpat) = Expr vpat lpat × Expr vpat rpat
-Expr vpat (elem hpat tpat) = Expr vpat hpat × Expr vpat tpat
+Expr p {H} var          = VarPath p H
+Expr p (k x           ) = ⊤
+Expr p (child pat     ) = Expr p pat
+Expr p (left pat      ) = Expr p pat
+Expr p (right pat     ) = Expr p pat
+Expr p (prod lpat rpat) = Expr p lpat × Expr p rpat
+Expr p (elem hpat tpat) = Expr p hpat × Expr p tpat
 
-eval : {G : U n} (vpat : Pattern F G) {H : U n} (spat : Pattern F H) → Expr vpat spat → PatResult vpat → PatResult spat
-eval vpat var              p              vs = eval-path vpat p vs
-eval vpat (k x           ) expr           vs = tt
-eval vpat (child spat    ) expr           vs = eval vpat spat expr vs
-eval vpat (left spat     ) expr           vs = eval vpat spat expr vs
-eval vpat (right spat    ) expr           vs = eval vpat spat expr vs
-eval vpat (prod lpat rpat) (expr , expr') vs = eval vpat lpat expr vs , eval vpat rpat expr' vs
-eval vpat (elem hpat tpat) (expr , expr') vs = eval vpat hpat expr vs , eval vpat tpat expr' vs
+eval : {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) → Expr pat pat' → PatResult pat → PatResult pat'
+eval pat var              p              vs = eval-path pat p vs
+eval pat (k x           ) expr           vs = tt
+eval pat (child pat'    ) expr           vs = eval pat pat' expr vs
+eval pat (left pat'     ) expr           vs = eval pat pat' expr vs
+eval pat (right pat'    ) expr           vs = eval pat pat' expr vs
+eval pat (prod lpat rpat) (expr , expr') vs = eval pat lpat expr vs , eval pat rpat expr' vs
+eval pat (elem hpat tpat) (expr , expr') vs = eval pat hpat expr vs , eval pat tpat expr' vs
 
 Container : {G : U n} → Pattern F G → Set
 Container pat = ⟦ pat ⟧ᴾ (λ H → Maybe (⟦ H ⟧ (μ F)))
@@ -76,15 +76,15 @@ uneval-path (prod lpat rpat) (inj₂ path) x (c , c') = liftPar (     _,_ c ) (u
 uneval-path (elem hpat tpat) (inj₁ path) x (c , c') = liftPar (flip _,_ c') (uneval-path hpat path x c )
 uneval-path (elem hpat tpat) (inj₂ path) x (c , c') = liftPar (     _,_ c ) (uneval-path tpat path x c')
 
-uneval : {G : U n} (vpat : Pattern F G) {H : U n} (spat : Pattern F H) →
-         Expr vpat spat → PatResult spat → Container vpat → Par (Container vpat)
-uneval vpat  var             path             r       = uneval-path vpat path r
-uneval vpat (k x           ) expr             r       = return
-uneval vpat (child pat     ) expr             r       = uneval vpat pat expr r
-uneval vpat (left pat      ) expr             r       = uneval vpat pat expr r
-uneval vpat (right pat     ) expr             r       = uneval vpat pat expr r
-uneval vpat (prod lpat rpat) (lexpr , rexpr) (r , r') = uneval vpat rpat rexpr r' <=< uneval vpat lpat lexpr r
-uneval vpat (elem hpat tpat) (hexpr , texpr) (r , r') = uneval vpat tpat texpr r' <=< uneval vpat hpat hexpr r
+uneval : {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) →
+         Expr pat pat' → PatResult pat' → Container pat → Par (Container pat)
+uneval p  var             path             r       = uneval-path p path r
+uneval p (k x           ) expr             r       = return
+uneval p (child pat     ) expr             r       = uneval p pat expr r
+uneval p (left pat      ) expr             r       = uneval p pat expr r
+uneval p (right pat     ) expr             r       = uneval p pat expr r
+uneval p (prod lpat rpat) (lexpr , rexpr) (r , r') = uneval p rpat rexpr r' <=< uneval p lpat lexpr r
+uneval p (elem hpat tpat) (hexpr , texpr) (r , r') = uneval p tpat texpr r' <=< uneval p hpat hexpr r
 
 fromContainer : {G : U n} (pat : Pattern F G) → Container pat → Par (PatResult pat)
 fromContainer  var             (just x) = return x
@@ -111,15 +111,15 @@ runCheckTree-path (prod lpat rpat) (inj₂ path) (t , t') = t , runCheckTree-pat
 runCheckTree-path (elem hpat tpat) (inj₁ path) (t , t') = runCheckTree-path hpat path t , t'
 runCheckTree-path (elem hpat tpat) (inj₂ path) (t , t') = t , runCheckTree-path tpat path t'
 
-runCheckTree : {G : U n} (vpat : Pattern F G) {H : U n} (spat : Pattern F H) →
-               Expr vpat spat → CheckTree vpat → CheckTree vpat
-runCheckTree vpat var              path            = runCheckTree-path vpat path
-runCheckTree vpat (k x           ) expr            = id
-runCheckTree vpat (child pat     ) expr            = runCheckTree vpat pat expr
-runCheckTree vpat (left pat      ) expr            = runCheckTree vpat pat expr
-runCheckTree vpat (right pat     ) expr            = runCheckTree vpat pat expr
-runCheckTree vpat (prod lpat rpat) (lexpr , rexpr) = runCheckTree vpat rpat rexpr ∘ runCheckTree vpat lpat lexpr
-runCheckTree vpat (elem hpat tpat) (hexpr , texpr) = runCheckTree vpat tpat texpr ∘ runCheckTree vpat hpat hexpr
+runCheckTree : {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) →
+               Expr pat pat' → CheckTree pat → CheckTree pat
+runCheckTree p var              path            = runCheckTree-path p path
+runCheckTree p (k x           ) expr            = id
+runCheckTree p (child pat     ) expr            = runCheckTree p pat expr
+runCheckTree p (left pat      ) expr            = runCheckTree p pat expr
+runCheckTree p (right pat     ) expr            = runCheckTree p pat expr
+runCheckTree p (prod lpat rpat) (lexpr , rexpr) = runCheckTree p rpat rexpr ∘ runCheckTree p lpat lexpr
+runCheckTree p (elem hpat tpat) (hexpr , texpr) = runCheckTree p tpat texpr ∘ runCheckTree p hpat hexpr
 
 completeCheckTree : {G : U n} (pat : Pattern F G) → CheckTree pat → Par ⊤
 completeCheckTree var               false    = fail
@@ -134,11 +134,11 @@ completeCheckTree (elem  hpat tpat) (t , t') = completeCheckTree hpat t >> compl
 empty-checkTree : {G : U n} (pat : Pattern F G) → CheckTree pat
 empty-checkTree pat = defaultᴾ pat (const Bool) (const false)
 
-completeExpr : {G : U n} (vpat : Pattern F G) {H : U n} (spat : Pattern F H) → Expr vpat spat → Par ⊤
-completeExpr vpat spat expr = completeCheckTree vpat (runCheckTree vpat spat expr (empty-checkTree vpat))
+completeExpr : {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) → Expr pat pat' → Par ⊤
+completeExpr pat pat' expr = completeCheckTree pat (runCheckTree pat pat' expr (empty-checkTree pat))
 
-CompleteExpr : {G : U n} (vpat : Pattern F G) {H : U n} (spat : Pattern F H) → Expr vpat spat → Set₁
-CompleteExpr vpat spat expr = completeExpr vpat spat expr ↦ tt
+CompleteExpr : {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) → Expr pat pat' → Set₁
+CompleteExpr pat pat' expr = completeExpr pat pat' expr ↦ tt
 
 AbsInterpCCT : {G : U n} (pat : Pattern F G) → Container pat → CheckTree pat → Set
 AbsInterpCCT var              (just x) true     = ⊤
@@ -185,18 +185,18 @@ uneval-AbsInterpCCT-path (elem hpat tpat) (inj₂ path) x (c , c') (t , t') (abs
   abs , uneval-AbsInterpCCT-path tpat path x c' t' abs' comp
 
 uneval-AbsInterpCCT :
-  {G : U n} (vpat : Pattern F G) {H : U n} (spat : Pattern F H) (expr : Expr vpat spat)
-  (r : PatResult spat) (c : Container vpat) (t : CheckTree vpat) → AbsInterpCCT vpat c t →
-  {c' : Container vpat} → uneval vpat spat expr r c ↦ c' → AbsInterpCCT vpat c' (runCheckTree vpat spat expr t)
-uneval-AbsInterpCCT vpat var              path r c t abs comp = uneval-AbsInterpCCT-path vpat path r c t abs comp
-uneval-AbsInterpCCT vpat (k x)            expr r c t abs (return refl) = abs
-uneval-AbsInterpCCT vpat (child pat)      expr r c t abs comp = uneval-AbsInterpCCT vpat pat expr r c t abs comp
-uneval-AbsInterpCCT vpat (left  pat)      expr r c t abs comp = uneval-AbsInterpCCT vpat pat expr r c t abs comp
-uneval-AbsInterpCCT vpat (right pat)      expr r c t abs comp = uneval-AbsInterpCCT vpat pat expr r c t abs comp
-uneval-AbsInterpCCT vpat (prod lpat rpat) (lexpr , rexpr) (r , r') c t abs (comp >>= comp') =
-  uneval-AbsInterpCCT vpat rpat rexpr r' _ _ (uneval-AbsInterpCCT vpat lpat lexpr r c t abs comp) comp'
-uneval-AbsInterpCCT vpat (elem hpat tpat) (hexpr , texpr) (r , r') c t abs (comp >>= comp') =
-  uneval-AbsInterpCCT vpat tpat texpr r' _ _ (uneval-AbsInterpCCT vpat hpat hexpr r c t abs comp) comp'
+  {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) (expr : Expr pat pat')
+  (r : PatResult pat') (c : Container pat) (t : CheckTree pat) → AbsInterpCCT pat c t →
+  {c' : Container pat} → uneval pat pat' expr r c ↦ c' → AbsInterpCCT pat c' (runCheckTree pat pat' expr t)
+uneval-AbsInterpCCT p var              path r c t abs comp = uneval-AbsInterpCCT-path p path r c t abs comp
+uneval-AbsInterpCCT p (k x)            expr r c t abs (return refl) = abs
+uneval-AbsInterpCCT p (child pat)      expr r c t abs comp = uneval-AbsInterpCCT p pat expr r c t abs comp
+uneval-AbsInterpCCT p (left  pat)      expr r c t abs comp = uneval-AbsInterpCCT p pat expr r c t abs comp
+uneval-AbsInterpCCT p (right pat)      expr r c t abs comp = uneval-AbsInterpCCT p pat expr r c t abs comp
+uneval-AbsInterpCCT p (prod lpat rpat) (lexpr , rexpr) (r , r') c t abs (comp >>= comp') =
+  uneval-AbsInterpCCT p rpat rexpr r' _ _ (uneval-AbsInterpCCT p lpat lexpr r c t abs comp) comp'
+uneval-AbsInterpCCT p (elem hpat tpat) (hexpr , texpr) (r , r') c t abs (comp >>= comp') =
+  uneval-AbsInterpCCT p tpat texpr r' _ _ (uneval-AbsInterpCCT p hpat hexpr r c t abs comp) comp'
 
 completeCCT : {G : U n} (pat : Pattern F G) (c : Container pat) (t : CheckTree pat) →
               AbsInterpCCT pat c t → completeCheckTree pat t ↦ tt → Σ[ r ∈ PatResult pat ] (fromContainer pat c ↦ r)
@@ -253,9 +253,9 @@ fromContainer-consistent-complete (elem hpat tpat) (r , r') (c , c') (p , p') (c
   cong₂ _,_ (fromContainer-consistent-complete hpat r c p comp) (fromContainer-consistent-complete tpat r' c' p' comp')
 
 eval-uneval-path :
-  {G : U n} (vpat : Pattern F G) {H : U n} (path : VarPath vpat H)
-  (r : PatResult vpat) (c : Container vpat) → Consistent vpat r c →
-  Σ[ c' ∈ Container vpat ] ((uneval-path vpat path (eval-path vpat path r) c ↦ c') × Consistent vpat r c')
+  {G : U n} (pat : Pattern F G) {H : U n} (path : VarPath pat H)
+  (r : PatResult pat) (c : Container pat) → Consistent pat r c →
+  Σ[ c' ∈ Container pat ] ((uneval-path pat path (eval-path pat path r) c ↦ c') × Consistent pat r c')
 eval-uneval-path {G} var          refl        r        (just x) p with U-dec G r x
 eval-uneval-path {G} var          refl        r        (just x) p | yes _ = just x , return refl , p
 eval-uneval-path {G} var          refl        r        (just x) p | no r≢x with r≢x p
@@ -279,22 +279,22 @@ eval-uneval-path (elem hpat tpat) (inj₂ path) (r , r') (c , c') (p , p') =
   in  (c , c'') , (comp >>= return refl) , (p , p'')
 
 eval-uneval :
-  {G : U n} (vpat : Pattern F G) {H : U n} (spat : Pattern F H) (expr : Expr vpat spat)
-  (r : PatResult vpat) (c : Container vpat) → Consistent vpat r c →
-  Σ[ c' ∈ Container vpat ] ((uneval vpat spat expr (eval vpat spat expr r) c ↦ c') × Consistent vpat r c')
-eval-uneval vpat var              path r c p = eval-uneval-path vpat path r c p
-eval-uneval vpat (k x)            expr r c p = c , return refl , p
-eval-uneval vpat (child pat)      expr r c p = eval-uneval vpat pat expr r c p
-eval-uneval vpat (left  pat)      expr r c p = eval-uneval vpat pat expr r c p
-eval-uneval vpat (right pat)      expr r c p = eval-uneval vpat pat expr r c p
-eval-uneval vpat (prod lpat rpat) (lexpr , rexpr) r c p =
-  let (c'  , comp'  , p' ) = eval-uneval vpat lpat lexpr r c  p
-      (c'' , comp'' , p'') = eval-uneval vpat rpat rexpr r c' p'
-  in  c'' , (comp' >>= comp'') , p''
-eval-uneval vpat (elem hpat tpat) (hexpr , texpr) r c p =
-  let (c'  , comp'  , p' ) = eval-uneval vpat hpat hexpr r c  p
-      (c'' , comp'' , p'') = eval-uneval vpat tpat texpr r c' p'
-  in  c'' , (comp' >>= comp'') , p''
+  {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) (expr : Expr pat pat')
+  (r : PatResult pat) (c : Container pat) → Consistent pat r c →
+  Σ[ c' ∈ Container pat ] ((uneval pat pat' expr (eval pat pat' expr r) c ↦ c') × Consistent pat r c')
+eval-uneval p var              path            r c consis = eval-uneval-path p path r c consis
+eval-uneval p (k x)            expr            r c consis = c , return refl , consis
+eval-uneval p (child pat)      expr            r c consis = eval-uneval p pat expr r c consis
+eval-uneval p (left  pat)      expr            r c consis = eval-uneval p pat expr r c consis
+eval-uneval p (right pat)      expr            r c consis = eval-uneval p pat expr r c consis
+eval-uneval p (prod lpat rpat) (lexpr , rexpr) r c consis =
+  let (c'  , comp'  , consis' ) = eval-uneval p lpat lexpr r c  consis
+      (c'' , comp'' , consis'') = eval-uneval p rpat rexpr r c' consis'
+  in  c'' , (comp' >>= comp'') , consis''
+eval-uneval p (elem hpat tpat) (hexpr , texpr) r c consis =
+  let (c'  , comp'  , consis' ) = eval-uneval p hpat hexpr r c  consis
+      (c'' , comp'' , consis'') = eval-uneval p tpat texpr r c' consis'
+  in  c'' , (comp' >>= comp'') , consis''
 
 FullEmbedding-path :
   {G : U n} (pat : Pattern F G) {T : U n} (path : VarPath pat T) →
@@ -310,17 +310,17 @@ FullEmbedding-path (elem hpat tpat) (inj₁ path) x (c , c') = FullEmbedding-pat
 FullEmbedding-path (elem hpat tpat) (inj₂ path) x (c , c') = FullEmbedding-path tpat path x c'
 
 FullEmbedding :
-  {G : U n} (vpat : Pattern F G) {H : U n} (spat : Pattern F H) (expr : Expr vpat spat) →
-  PatResult spat → Container vpat → Set
-FullEmbedding vpat var              path            r        c = FullEmbedding-path vpat path r c
-FullEmbedding vpat (k x)            expr            r        c = ⊤
-FullEmbedding vpat (child pat)      expr            r        c = FullEmbedding vpat pat expr r c
-FullEmbedding vpat (left  pat)      expr            r        c = FullEmbedding vpat pat expr r c
-FullEmbedding vpat (right pat)      expr            r        c = FullEmbedding vpat pat expr r c
-FullEmbedding vpat (prod lpat rpat) (lexpr , rexpr) (r , r') c = FullEmbedding vpat lpat lexpr r  c ×
-                                                                 FullEmbedding vpat rpat rexpr r' c
-FullEmbedding vpat (elem hpat tpat) (hexpr , texpr) (r , r') c = FullEmbedding vpat hpat hexpr r  c ×
-                                                                 FullEmbedding vpat tpat texpr r' c
+  {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) (expr : Expr pat pat') →
+  PatResult pat' → Container pat → Set
+FullEmbedding p var              path            r        c = FullEmbedding-path p path r c
+FullEmbedding p (k x)            expr            r        c = ⊤
+FullEmbedding p (child pat)      expr            r        c = FullEmbedding p pat expr r c
+FullEmbedding p (left  pat)      expr            r        c = FullEmbedding p pat expr r c
+FullEmbedding p (right pat)      expr            r        c = FullEmbedding p pat expr r c
+FullEmbedding p (prod lpat rpat) (lexpr , rexpr) (r , r') c = FullEmbedding p lpat lexpr r  c ×
+                                                              FullEmbedding p rpat rexpr r' c
+FullEmbedding p (elem hpat tpat) (hexpr , texpr) (r , r') c = FullEmbedding p hpat hexpr r  c ×
+                                                              FullEmbedding p tpat texpr r' c
 
 Extension : {G : U n} (pat : Pattern F G) → Container pat → Container pat → Set
 Extension var              nothing  d        = ⊤
@@ -334,12 +334,12 @@ Extension (elem hpat tpat) (c , c') (d , d') = Extension hpat c d × Extension t
 
 Extension-reflexive : 
   {G : U n} (pat : Pattern F G) (c : Container pat) → Extension pat c c
-Extension-reflexive var         nothing  = tt 
-Extension-reflexive var         (just _) = refl 
-Extension-reflexive (k x)       c = tt 
-Extension-reflexive (child pat) c = Extension-reflexive pat c 
-Extension-reflexive (left  pat) c = Extension-reflexive pat c 
-Extension-reflexive (right pat) c = Extension-reflexive pat c 
+Extension-reflexive var         nothing       = tt 
+Extension-reflexive var         (just _)      = refl 
+Extension-reflexive (k x)       c             = tt 
+Extension-reflexive (child pat) c             = Extension-reflexive pat c 
+Extension-reflexive (left  pat) c             = Extension-reflexive pat c 
+Extension-reflexive (right pat) c             = Extension-reflexive pat c 
 Extension-reflexive (prod lpat rpat) (c , c') = Extension-reflexive lpat c , Extension-reflexive rpat c'
 Extension-reflexive (elem hpat tpat) (c , c') = Extension-reflexive hpat c , Extension-reflexive tpat c'
 
@@ -375,18 +375,18 @@ FullEmbedding-path-Extension (elem hpat tpat) (inj₂ path) x (c , c') (d , d') 
   FullEmbedding-path-Extension tpat path x c' d' fe ex'
 
 FullEmbedding-Extension :
-  {G : U n} (vpat : Pattern F G) {H : U n} (spat : Pattern F H) (expr : Expr vpat spat) →
-  (r : PatResult spat) (c c' : Container vpat) →
-  FullEmbedding vpat spat expr r c → Extension vpat c c' → FullEmbedding vpat spat expr r c'
-FullEmbedding-Extension vpat var              path r c c' fe ex = FullEmbedding-path-Extension vpat path r c c' fe ex
-FullEmbedding-Extension vpat (k x)            expr r c c' fe ex = tt
-FullEmbedding-Extension vpat (child pat)      expr r c c' fe ex = FullEmbedding-Extension vpat pat expr r c c' fe ex
-FullEmbedding-Extension vpat (left  pat)      expr r c c' fe ex = FullEmbedding-Extension vpat pat expr r c c' fe ex
-FullEmbedding-Extension vpat (right pat)      expr r c c' fe ex = FullEmbedding-Extension vpat pat expr r c c' fe ex
-FullEmbedding-Extension vpat (prod lpat rpat) (lexpr , rexpr) (r , r') c c' (fe , fe') ex =
-  FullEmbedding-Extension vpat lpat lexpr r c c' fe ex , FullEmbedding-Extension vpat rpat rexpr r' c c' fe' ex
-FullEmbedding-Extension vpat (elem hpat tpat) (hexpr , texpr) (r , r') c c' (fe , fe') ex =
-  FullEmbedding-Extension vpat hpat hexpr r c c' fe ex , FullEmbedding-Extension vpat tpat texpr r' c c' fe' ex
+  {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) (expr : Expr pat pat') →
+  (r : PatResult pat') (c c' : Container pat) →
+  FullEmbedding pat pat' expr r c → Extension pat c c' → FullEmbedding pat pat' expr r c'
+FullEmbedding-Extension p var              path r c c' fe ex = FullEmbedding-path-Extension p path r c c' fe ex
+FullEmbedding-Extension p (k x)            expr r c c' fe ex = tt
+FullEmbedding-Extension p (child pat)      expr r c c' fe ex = FullEmbedding-Extension p pat expr r c c' fe ex
+FullEmbedding-Extension p (left  pat)      expr r c c' fe ex = FullEmbedding-Extension p pat expr r c c' fe ex
+FullEmbedding-Extension p (right pat)      expr r c c' fe ex = FullEmbedding-Extension p pat expr r c c' fe ex
+FullEmbedding-Extension p (prod lpat rpat) (lexpr , rexpr) (r , r') c c' (fe , fe') ex =
+  FullEmbedding-Extension p lpat lexpr r c c' fe ex , FullEmbedding-Extension p rpat rexpr r' c c' fe' ex
+FullEmbedding-Extension p (elem hpat tpat) (hexpr , texpr) (r , r') c c' (fe , fe') ex =
+  FullEmbedding-Extension p hpat hexpr r c c' fe ex , FullEmbedding-Extension p tpat texpr r' c c' fe' ex
 
 uneval-path-Extension :
   {G : U n} (pat : Pattern F G) {T : U n} (path : VarPath pat T) →
@@ -410,20 +410,20 @@ uneval-path-Extension (elem hpat tpat) (inj₂ path) x (c , c') (uneval-path↦ 
   Extension-reflexive hpat c , uneval-path-Extension tpat path x c' uneval-path↦
 
 uneval-Extension :
-  {G : U n} (vpat : Pattern F G) {H : U n} (spat : Pattern F H) (expr : Expr vpat spat) →
-  (r : PatResult spat) (c : Container vpat) {c' : Container vpat} →
-  uneval vpat spat expr r c ↦ c' → Extension vpat c c'
-uneval-Extension vpat var              path r c uneval↦ = uneval-path-Extension vpat path r c uneval↦
-uneval-Extension vpat (k x)            expr r c (return refl) = Extension-reflexive vpat c
-uneval-Extension vpat (child pat)      expr r c uneval↦ = uneval-Extension vpat pat expr r c uneval↦
-uneval-Extension vpat (left  pat)      expr r c uneval↦ = uneval-Extension vpat pat expr r c uneval↦
-uneval-Extension vpat (right pat)      expr r c uneval↦ = uneval-Extension vpat pat expr r c uneval↦
-uneval-Extension vpat (prod lpat rpat) (lexpr , rexpr) (r , r') c (uneval↦ >>= uneval↦') =
-  Extension-transitive vpat _ _ _ (uneval-Extension vpat lpat lexpr r  c uneval↦ )
-                                  (uneval-Extension vpat rpat rexpr r' _ uneval↦')
-uneval-Extension vpat (elem hpat tpat) (hexpr , texpr) (r , r') c (uneval↦ >>= uneval↦') =
-  Extension-transitive vpat _ _ _ (uneval-Extension vpat hpat hexpr r  c uneval↦ )
-                                  (uneval-Extension vpat tpat texpr r' _ uneval↦')
+  {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) (expr : Expr pat pat') →
+  (r : PatResult pat') (c : Container pat) {c' : Container pat} →
+  uneval pat pat' expr r c ↦ c' → Extension pat c c'
+uneval-Extension p var              path r c uneval↦ = uneval-path-Extension p path r c uneval↦
+uneval-Extension p (k x)            expr r c (return refl) = Extension-reflexive p c
+uneval-Extension p (child pat)      expr r c uneval↦ = uneval-Extension p pat expr r c uneval↦
+uneval-Extension p (left  pat)      expr r c uneval↦ = uneval-Extension p pat expr r c uneval↦
+uneval-Extension p (right pat)      expr r c uneval↦ = uneval-Extension p pat expr r c uneval↦
+uneval-Extension p (prod lpat rpat) (lexpr , rexpr) (r , r') c (uneval↦ >>= uneval↦') =
+  Extension-transitive p _ _ _ (uneval-Extension p lpat lexpr r  c uneval↦ )
+                               (uneval-Extension p rpat rexpr r' _ uneval↦')
+uneval-Extension p (elem hpat tpat) (hexpr , texpr) (r , r') c (uneval↦ >>= uneval↦') =
+  Extension-transitive p _ _ _ (uneval-Extension p hpat hexpr r  c uneval↦ )
+                               (uneval-Extension p tpat texpr r' _ uneval↦')
 
 uneval-path-FullEmbedding :
   {G : U n} (pat : Pattern F G) {T : U n} (path : VarPath pat T) →
@@ -447,22 +447,22 @@ uneval-path-FullEmbedding (elem hpat tpat) (inj₂ path) x (c , c') (uneval-path
   uneval-path-FullEmbedding tpat path x c' uneval-path↦
 
 uneval-FullEmbedding :
-  {G : U n} (vpat : Pattern F G) {H : U n} (spat : Pattern F H) (expr : Expr vpat spat) →
-  (r : PatResult spat) (c : Container vpat) {c' : Container vpat} →
-  uneval vpat spat expr r c ↦ c' → FullEmbedding vpat spat expr r c'
-uneval-FullEmbedding vpat var              path r c uneval↦ = uneval-path-FullEmbedding vpat path r c uneval↦
-uneval-FullEmbedding vpat (k x)            expr r c uneval↦ = tt
-uneval-FullEmbedding vpat (child pat)      expr r c uneval↦ = uneval-FullEmbedding vpat pat expr r c uneval↦
-uneval-FullEmbedding vpat (left  pat)      expr r c uneval↦ = uneval-FullEmbedding vpat pat expr r c uneval↦
-uneval-FullEmbedding vpat (right pat)      expr r c uneval↦ = uneval-FullEmbedding vpat pat expr r c uneval↦
-uneval-FullEmbedding vpat (prod lpat rpat) (lexpr , rexpr) (r , r') c (uneval↦ >>= uneval↦') =
-  FullEmbedding-Extension vpat lpat lexpr r _ _ (uneval-FullEmbedding vpat lpat lexpr r  _ uneval↦ )
-                                                (uneval-Extension     vpat rpat rexpr r' _ uneval↦') ,
-  uneval-FullEmbedding vpat rpat rexpr r' _ uneval↦'
-uneval-FullEmbedding vpat (elem hpat tpat) (hexpr , texpr) (r , r') c (uneval↦ >>= uneval↦') =
-  FullEmbedding-Extension vpat hpat hexpr r _ _ (uneval-FullEmbedding vpat hpat hexpr r  _ uneval↦ )
-                                                (uneval-Extension     vpat tpat texpr r' _ uneval↦') ,
-  uneval-FullEmbedding vpat tpat texpr r' _ uneval↦'
+  {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) (expr : Expr pat pat') →
+  (r : PatResult pat') (c : Container pat) {c' : Container pat} →
+  uneval pat pat' expr r c ↦ c' → FullEmbedding pat pat' expr r c'
+uneval-FullEmbedding p var              path r c uneval↦ = uneval-path-FullEmbedding p path r c uneval↦
+uneval-FullEmbedding p (k x)            expr r c uneval↦ = tt
+uneval-FullEmbedding p (child pat)      expr r c uneval↦ = uneval-FullEmbedding p pat expr r c uneval↦
+uneval-FullEmbedding p (left  pat)      expr r c uneval↦ = uneval-FullEmbedding p pat expr r c uneval↦
+uneval-FullEmbedding p (right pat)      expr r c uneval↦ = uneval-FullEmbedding p pat expr r c uneval↦
+uneval-FullEmbedding p (prod lpat rpat) (lexpr , rexpr) (r , r') c (uneval↦ >>= uneval↦') =
+  FullEmbedding-Extension p lpat lexpr r _ _ (uneval-FullEmbedding p lpat lexpr r  _ uneval↦ )
+                                             (uneval-Extension     p rpat rexpr r' _ uneval↦') ,
+  uneval-FullEmbedding p rpat rexpr r' _ uneval↦'
+uneval-FullEmbedding p (elem hpat tpat) (hexpr , texpr) (r , r') c (uneval↦ >>= uneval↦') =
+  FullEmbedding-Extension p hpat hexpr r _ _ (uneval-FullEmbedding p hpat hexpr r  _ uneval↦ )
+                                             (uneval-Extension     p tpat texpr r' _ uneval↦') ,
+  uneval-FullEmbedding p tpat texpr r' _ uneval↦'
 
 uneval-eval-path :
   {G : U n} (pat : Pattern F G) {T : U n} (path : VarPath pat T)
@@ -483,54 +483,56 @@ uneval-eval-path (elem hpat tpat) (inj₂ path) x (c , c') fe (_ >>= fromContain
   uneval-eval-path tpat path x c' fe fromContainer↦
 
 uneval-eval :
-  {G : U n} (vpat : Pattern F G) {H : U n} (spat : Pattern F H) (expr : Expr vpat spat)
-  (r : PatResult spat) {r' : PatResult vpat} (c : Container vpat) →
-  FullEmbedding vpat spat expr r c → fromContainer vpat c ↦ r' → eval vpat spat expr r' ≡ r
-uneval-eval vpat var              path r c fe fromContainer↦ = uneval-eval-path vpat path r c fe fromContainer↦
-uneval-eval vpat (k x)            expr r c fe fromContainer↦ = refl
-uneval-eval vpat (child pat)      expr r c fe fromContainer↦ = uneval-eval vpat pat expr r c fe fromContainer↦
-uneval-eval vpat (left  pat)      expr r c fe fromContainer↦ = uneval-eval vpat pat expr r c fe fromContainer↦
-uneval-eval vpat (right pat)      expr r c fe fromContainer↦ = uneval-eval vpat pat expr r c fe fromContainer↦
-uneval-eval vpat (prod lpat rpat) (lexpr , rexpr) (r , r') c (fe , fe') fromContainer↦ =
-  cong₂ _,_ (uneval-eval vpat lpat lexpr r c fe fromContainer↦) (uneval-eval vpat rpat rexpr r' c fe' fromContainer↦)
-uneval-eval vpat (elem hpat tpat) (hexpr , texpr) (r , r') c (fe , fe') fromContainer↦ =
-  cong₂ _,_ (uneval-eval vpat hpat hexpr r c fe fromContainer↦) (uneval-eval vpat tpat texpr r' c fe' fromContainer↦)
+  {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) (expr : Expr pat pat')
+  (r : PatResult pat') {r' : PatResult pat} (c : Container pat) →
+  FullEmbedding pat pat' expr r c → fromContainer pat c ↦ r' → eval pat pat' expr r' ≡ r
+uneval-eval p var              path r c fe fromContainer↦ = uneval-eval-path p path r c fe fromContainer↦
+uneval-eval p (k x)            expr r c fe fromContainer↦ = refl
+uneval-eval p (child pat)      expr r c fe fromContainer↦ = uneval-eval p pat expr r c fe fromContainer↦
+uneval-eval p (left  pat)      expr r c fe fromContainer↦ = uneval-eval p pat expr r c fe fromContainer↦
+uneval-eval p (right pat)      expr r c fe fromContainer↦ = uneval-eval p pat expr r c fe fromContainer↦
+uneval-eval p (prod lpat rpat) (lexpr , rexpr) (r , r') c (fe , fe') fromContainer↦ =
+  cong₂ _,_ (uneval-eval p lpat lexpr r c fe fromContainer↦) (uneval-eval p rpat rexpr r' c fe' fromContainer↦)
+uneval-eval p (elem hpat tpat) (hexpr , texpr) (r , r') c (fe , fe') fromContainer↦ =
+  cong₂ _,_ (uneval-eval p hpat hexpr r c fe fromContainer↦) (uneval-eval p tpat texpr r' c fe' fromContainer↦)
 
-from-view : {G : U n} (vpat : Pattern F G) {H : U n} (spat : Pattern F H) →
-            Expr vpat spat → ⟦ G ⟧ (μ F) → Par (⟦ H ⟧ (μ F))
-from-view vpat spat expr = liftPar (construct spat ∘ eval vpat spat expr) ∘ deconstruct vpat
+private
 
-to-view : {G : U n} (vpat : Pattern F G) {H : U n} (spat : Pattern F H) → Expr vpat spat → ⟦ H ⟧ (μ F) → Par (⟦ G ⟧ (μ F))
-to-view vpat spat expr = liftPar (construct vpat) ∘ fromContainer vpat <=<
-                         flip (uneval vpat spat expr) (empty-container vpat) <=< deconstruct spat
+  to : {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) →
+       Expr pat pat' → ⟦ G ⟧ (μ F) → Par (⟦ H ⟧ (μ F))
+  to pat pat' expr = liftPar (construct pat' ∘ eval pat pat' expr) ∘ deconstruct pat
+  
+  from : {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) → Expr pat pat' → ⟦ H ⟧ (μ F) → Par (⟦ G ⟧ (μ F))
+  from pat pat' expr = liftPar (construct pat) ∘ fromContainer pat <=<
+                        flip (uneval pat pat' expr) (empty-container pat) <=< deconstruct pat'
+  
+  to-from-inverse :
+    {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H)
+    (expr : Expr pat pat') → CompleteExpr pat pat' expr →
+    {x : ⟦ G ⟧ (μ F)} {y : ⟦ H ⟧ (μ F)} → to pat pat' expr x ↦ y → from pat pat' expr y ↦ x
+  to-from-inverse pat pat' expr expr-complete (_>>=_ {x = r} deconstruct-pat-x↦x' (return refl)) =
+    let (c' , comp' , p') = eval-uneval pat pat' expr r (empty-container pat) (empty-container-consistent pat r)
+        (r' , r'-comp) = completeCCT pat c' (runCheckTree pat pat' expr (empty-checkTree pat))
+                           (uneval-AbsInterpCCT pat pat' expr (eval pat pat' expr r)
+                              (empty-container pat) (empty-checkTree pat) (empty-AbsInterpCCT pat) comp') expr-complete
+    in  construct-deconstruct-inverse pat' _ >>= comp' >>= r'-comp >>=
+        return (trans (cong (construct pat) (sym (fromContainer-consistent-complete pat r c' p' r'-comp)))
+                      (deconstruct-construct-inverse pat _ deconstruct-pat-x↦x'))
+  
+  from-to-inverse :
+    {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H)
+    (expr : Expr pat pat') → CompleteExpr pat pat' expr →
+    {x : ⟦ G ⟧ (μ F)} {y : ⟦ H ⟧ (μ F)} → from pat pat' expr y ↦ x → to pat pat' expr x ↦ y
+  from-to-inverse pat pat' expr expr-complete (deconstruct-pat'↦ >>= uneval↦ >>= fromContainer↦ >>= return refl) =
+    construct-deconstruct-inverse pat _ >>=
+    return (trans (cong (construct pat')
+                        (uneval-eval pat pat' expr _ _ (uneval-FullEmbedding pat pat' expr _ _ uneval↦) fromContainer↦))
+                  (deconstruct-construct-inverse pat' _ deconstruct-pat'↦))
 
-to-from-inverse :
-  {G : U n} (vpat : Pattern F G) {H : U n} (spat : Pattern F H)
-  (expr : Expr vpat spat) → CompleteExpr vpat spat expr →
-  {x : ⟦ G ⟧ (μ F)} {y : ⟦ H ⟧ (μ F)} → from-view vpat spat expr x ↦ y → to-view vpat spat expr y ↦ x
-to-from-inverse vpat spat expr expr-complete (_>>=_ {x = r} deconstruct-vpat-x↦x' (return refl)) =
-  let (c' , comp' , p') = eval-uneval vpat spat expr r (empty-container vpat) (empty-container-consistent vpat r)
-      (r' , r'-comp) = completeCCT vpat c' (runCheckTree vpat spat expr (empty-checkTree vpat))
-                         (uneval-AbsInterpCCT vpat spat expr (eval vpat spat expr r)
-                            (empty-container vpat) (empty-checkTree vpat) (empty-AbsInterpCCT vpat) comp') expr-complete
-  in  construct-deconstruct-inverse spat _ >>= comp' >>= r'-comp >>=
-      return (trans (cong (construct vpat) (sym (fromContainer-consistent-complete vpat r c' p' r'-comp)))
-                    (deconstruct-construct-inverse vpat _ deconstruct-vpat-x↦x'))
-
-from-to-inverse :
-  {G : U n} (vpat : Pattern F G) {H : U n} (spat : Pattern F H)
-  (expr : Expr vpat spat) → CompleteExpr vpat spat expr →
-  {x : ⟦ G ⟧ (μ F)} {y : ⟦ H ⟧ (μ F)} → to-view vpat spat expr y ↦ x → from-view vpat spat expr x ↦ y
-from-to-inverse vpat spat expr expr-complete (deconstruct-spat↦ >>= uneval↦ >>= fromContainer↦ >>= return refl) =
-  construct-deconstruct-inverse vpat _ >>=
-  return (trans (cong (construct spat)
-                      (uneval-eval vpat spat expr _ _ (uneval-FullEmbedding vpat spat expr _ _ uneval↦) fromContainer↦))
-                (deconstruct-construct-inverse spat _ deconstruct-spat↦))
-
-view-rearrangement-iso : {G : U n} (vpat : Pattern F G) {H : U n} (spat : Pattern F H) →
-                         (expr : Expr vpat spat) → CompleteExpr vpat spat expr → ⟦ H ⟧ (μ F) ≅ ⟦ G ⟧ (μ F)
-view-rearrangement-iso vpat spat expr expr-complete = record
-  { to   = to-view   vpat spat expr
-  ; from = from-view vpat spat expr
-  ; to-from-inverse = from-to-inverse vpat spat expr expr-complete
-  ; from-to-inverse = to-from-inverse vpat spat expr expr-complete }
+rearrangement-iso : {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) →
+                    (expr : Expr pat pat') → CompleteExpr pat pat' expr → ⟦ G ⟧ (μ F) ≅ ⟦ H ⟧ (μ F)
+rearrangement-iso pat pat' expr expr-complete = record
+  { to   = to   pat pat' expr
+  ; from = from pat pat' expr
+  ; to-from-inverse = to-from-inverse pat pat' expr expr-complete
+  ; from-to-inverse = from-to-inverse pat pat' expr expr-complete }

@@ -369,7 +369,7 @@ Although currently |BiGUL| is specified only in terms of its dependently typed a
 The concrete semantics of |BiGUL|, in contrast, can be faithfully ported to practical programming languages like \Haskell\ without having to fill the gap between abstract mathematics and concrete implementation.
 
 \item Lastly, |BiGUL| and its well-behavedness has been completely formally modelled and verified using the dependently typed programming language \Agda~\cite{Norell-thesis,Nore08}.
-(Full source code is available at \url{http://www.prg.nii.ac.jp/project/bigul}, which is checked by \Agda\ version 2.4.2.3 with standard library version~0.9.)
+(Full source code is available at \url{http://www.prg.nii.ac.jp/project/bigul}, which is checked by \Agda\ version 2.4.2.4 with standard library version~0.11.)
 Since the semantics of |BiGUL| is defined as concrete programs and directly proved correct, we can highly confidently guarantee that these programs, when ported to other languages, are indeed well-behaved.
 The main proof technique is also worth mentioning: we reify computation steps of monadic programs as easily manipulable data, so well-behavedness proofs --- which have to cover all possible execution traces by analysing program structure --- can be carried out just like doing ordinary functional programming.
 \end{itemize}
