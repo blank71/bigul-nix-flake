@@ -90,13 +90,6 @@ data BiGUL :: (* -> *) -> * -> * -> * where
   Compose :: BiGUL m s u
           -> BiGUL m u v
           -> BiGUL m s v
-  Seq     :: (Eq s0) => BiGUL m s0 v0
-          -> BiGUL m s0 v1
-          -> BiGUL m s0 (v0,v1)
-  ConstV   :: BiGUL m s ()  -> v -> BiGUL m s v
-
-constV :: v -> BiGUL m s v
-constV = ConstV Skip
 
 instance Show (BiGUL m s v) where
   show Fail = "Fail"
