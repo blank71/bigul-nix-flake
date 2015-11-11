@@ -89,8 +89,9 @@ putCaseSV :: MonadError' ErrorInfo m => [(s -> v -> m Bool, BiGUL m s v)] -> s -
 putCaseSV [] s v = throwError $ ErrorInfo "caseSV pattern is empty"
 putCaseSV (x@(p , bigul) : xs) s v = p s v >>=
   \b -> if b
-    then put bigul s v
-    else putCaseSV xs s v >>= \s' -> catchBind (getSelected' p bigul s') (\_ -> throwError $ ErrorInfo "get of previous caseSV satisfied") (\_ -> return s')
+    then put bigul s v >>= \s' -> p s' v >>= \b -> if b then return s' else throwError $ ErrorInfo "updated source does not satisfied the condition"
+    else putCaseSV xs s v >>= \s' -> p s' v >>= \b -> if b then throwError $ ErrorInfo "get of previous caseSV satisfied"
+                                                      else catchBind (getSelected' p bigul s') (\_ -> throwError $ ErrorInfo "get of previous caseSV satisfied") (\_ -> return s')
 
 
 putAlign :: MonadError' ErrorInfo m =>
