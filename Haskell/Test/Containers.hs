@@ -93,6 +93,23 @@ mapLEven' s0 u = cond c1 c2 f1 f2 l1 l2
         l1 = $(rearr [| \ [] -> () |]) Skip
         l2 = $(rearr [| \ (x : xs) -> ((), (x, xs)) |]) $ Update (UIn $ URight (UProd (UVar Skip) (UIn $ URight (UProd (UVar u) (UVar (mapLEven' s0 u))))))
 
+-- |Map elements in the source list at even positions to elements of the view.
+--
+-- The behavior of this map, in the put direction is different from the
+-- 'mapLEven' one.
+mapLEven2'
+  :: (MonadError' ErrorInfo m, Eq s, Eq v)
+  => s               -- ^default value
+  -> BiGUL m s v     -- ^BiGUL program to apply to the values
+  -> BiGUL m [s] [v]
+mapLEven2' s0 u = cond c1 c2 f1 f2 l1 l2
+  where c1 = return . null
+        c2 = return . null
+        f1 = \ s _ -> return  []
+        f2 = \ s _ -> return [s0]
+        l1 = $(rearr [| \ [] -> () |]) Skip
+        l2 = $(rearr [| \ (x : xs) -> ((), (x, xs)) |]) $ Update (UIn $ URight (UProd (UVar Skip) (UIn $ URight (UProd (UVar u) (UVar (mapLEven2' s0 u))))))
+
 -- *Tree Lenses
 
 treeSize :: Tree a -> Int
