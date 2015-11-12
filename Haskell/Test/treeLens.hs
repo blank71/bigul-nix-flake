@@ -140,6 +140,70 @@ copy m n = CaseV [ (testSubTreeEq m n , xfork ps pv ($(rearr [| \t -> (Branchs [
                        | otherwise  = return False
 -}
 
+ccond :: MonadError' ErrorInfo m => (s -> m Bool) -> BiGUL m s v -> BiGUL m s v -> BiGUL m s v
+ccond ps bigul1 bigul2 = CaseS [ (ps , Normal bigul1),
+                                 (\s -> ps s >>= return . not , Normal bigul2)
+                               ]
+
+acond :: MonadError' ErrorInfo m => (s -> m Bool) -> (v -> m Bool) -> BiGUL m s v -> BiGUL m s v -> BiGUL m s v
+acond ps pv bigul1 bigul2 = CaseS [ (ps , Normal  (CaseV [(pv , bigul1)]) ),
+                                    (\s -> ps s >>= return . not , Normal (CaseV [(\v -> pv v >>= return . not , bigul2)]) )]
+
+-- Jorge's cond , similar to acond
+jcond
+  :: (MonadError' ErrorInfo m)
+  => (v -> m Bool)   -- ^ c1 - view condition
+  -> (s -> m Bool)   -- ^ c2 - source condition
+  -> (s -> v -> m s) -- ^  c1 & !c2 adaptive function
+  -> (s -> v -> m s) -- ^ !c1 &  c2 adaptive function
+  -> BiGUL m s v     -- ^  c1 &  c2 BiGUL program
+  -> BiGUL m s v     -- ^ !c1 & !c2 BiGUL program
+  -> BiGUL m s v
+jcond c1 c2 f1 f2 l1 l2 =
+  CaseV
+    [ ( c1
+      , CaseS [ (c2, Normal l1) , (return . const True, Adaptive f1) ]
+      )
+    , (return . const True
+      , CaseS [ (\s -> not <$> c2 s, Normal l2) , (return . const True, Adaptive f2) ]
+      )
+    ]
+
+-- acond with default NTree
+acond' :: MonadError' ErrorInfo m => (NTree -> m Bool) -> (NTree -> m Bool) -> BiGUL m NTree NTree -> BiGUL m NTree NTree -> BiGUL m NTree NTree
+acond' ps pv bigul1 bigul2 = jcond pv ps (\_ _ -> return $ Branchs []) (\_ _ -> return $ Branchs []) bigul1 bigul2
+
+
+xcond ::  MonadError' ErrorInfo m =>
+           (s -> m Bool)
+        -> (v -> m Bool)
+        -> (v -> m Bool)
+        -> (s -> v -> m s)
+        -> (s -> v -> m s)
+        -> BiGUL m s v
+        -> BiGUL m s v
+        -> BiGUL m s v
+xcond ps pv1 pv2 f1 f2 bigul1 bigul2 =
+  CaseV [(\v -> pv1 v >>= \b1 -> pv2 v >>= \b2 -> return (b1 && b2),
+         CaseS [ (ps , Normal bigul1),
+                 (\s -> ps s >>= return . not , Normal bigul2) ]),
+         (\v -> pv1 v >>= \b1 -> pv2 v >>= \b2 -> return (b1 && (not b2)),
+         CaseS [ (ps , Normal bigul1),
+                 (\s -> ps s >>= return . not , Adaptive f1) ]),
+         (\v -> pv1 v >>= \b1 -> pv2 v >>= \b2 -> return ((not b1) && b2),
+         CaseS [ (ps , Adaptive f2),
+                 (\s -> ps s >>= return . not , Normal bigul2) ])
+        ]
+
+{-
+Notes:
+ccond , acond and xcond have same get semantics , so user need to figure out their put semantics to distinguish them.
+
+but tree lens like xadd , xfocus ... obviously just provide abstraction in get semantics.
+
+It's difficult to switch between get and put semantics when writing programs.
+-}
+
 
 list2NTree :: [Name] -> NTree
 list2NTree []     = Branchs []
@@ -168,15 +232,36 @@ xrotate = CaseS [$(normal [p| Branchs [] |]) Replace,
                  $(normal [p| Branchs [("hd",_),("tl",Branchs [])]|]) Replace,
                  $(normal [p| _ |]) (Compose (rename "hd" "tmp")
                                              (Compose (hoistNonunique "tl" (fromList ["hd","tl"]))
-                                                      (xfork ps pv Replace
+                                                      (xfork phd phd Replace
                                                         (Compose (rename "tmp" "hd")
                                                                  (Compose xrotate (plunge "tl"))))))]
-          where ps n = return (n == "hd")
-                pv n = return (n == "hd")
+          where phd n = return (n == "hd")
 
 list_reverse :: MonadError' ErrorInfo m => BiGUL m NTree NTree
 list_reverse =  Compose (wmap (CaseV [$(branch [p| ("hd",_) |]) Replace,
                                       $(branch [p| ("tl",_) |]) $(update [p| (tlr,tree) |] [d| tlr = Replace ; tree = list_reverse |])]))
                         xrotate
 
+
+
+
+xrotateAcond :: MonadError' ErrorInfo m => BiGUL m NTree NTree
+xrotateAcond =  acond p p Replace  (Compose (rename "hd" "tmp")
+                                    (Compose (hoistNonunique "tl" (fromList ["hd","tl"]))
+                                            (xfork phd phd Replace
+                                              (Compose (rename "tmp" "hd")
+                                                       (Compose xrotate (plunge "tl"))))))
+                where p (Branchs []) = return True
+                      p (Branchs [("hd",_),("tl",Branchs [])]) = return True
+                      p _ = return False
+                      phd n = return (n == "hd")
+
+{-
+*Main> fmap nTree2List $ testPut xrotateAcond   (list2NTree ["fs","grt","hsd"])  (list2NTree ["aa","bb","cc"])
+Right ["cc","aa","bb"]
+*Main> fmap nTree2List $ testPut xrotateAcond   (list2NTree ["fs","grt"])  (list2NTree ["aa","bb","cc"])
+Left (ErrorInfo "updated source does not satisfy the condition.")
+*Main> fmap nTree2List $ testPut xrotateAcond   (list2NTree ["fs","grt","hsd","ad"])  (list2NTree ["aa","bb","cc"])
+Left (ErrorInfo "updated source does not satisfy the condition.")
+-}
 
