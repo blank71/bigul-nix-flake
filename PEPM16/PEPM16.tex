@@ -258,7 +258,7 @@
                                   % short abstracts)
 
 % \titlebanner{banner above paper title}        % These are ignored unless
-% \preprintfooter{short description of paper}   % 'preprint' option specified.
+\preprintfooter{RC1}   % 'preprint' option specified.
 
 \title{BiGUL: A Formally Verified Core Language for Putback-Based Bidirectional Programming}
 
@@ -628,7 +628,7 @@ And we can do case analyses on either the source~(|caseS|; \autoref{sec:source-c
 \label{fig:bookstore}
 \end{figure*}
 
-\autoref{fig:bookstore} gives a preview of a |BiGUL| program.
+\autoref{fig:bookstore} gives a running example of a |BiGUL| program.
 (A more complex example, in particular involving |caseS| and |caseV|, is given in \autoref{sec:transatlantic-corporation}.)
 The source is a list of book data of type |String × String × ℕ × ℕ × Bool| representing a book's title, author, publication year, price, and whether it is in stock, and we intend to update the price of those books published in 2016 which are still in stock.
 We thus prepare a list of pairs of book title and price of type |String × ℕ| as the view.
@@ -1189,7 +1189,7 @@ align-lens : (HIDE({S V : Set} ->))
   (conceal : S → Par (Maybe S)) →
   Lens (List S) (List V)
 \end{code}
-As a running example, we use the program in \autoref{fig:bookstore} to put the view list
+To explain its |put| and |get| semantics more concretely, below we will use the program in \autoref{fig:bookstore} to put the view list
 \begin{code}
 ("Pottery" , 850) ∷ ("Hiking" , 550) ∷ []
 \end{code}
@@ -1382,7 +1382,7 @@ We believe that the total correctness proved in \Agda\ can be translated into so
 
 \section*{Acknowledgements}
 
-We would like to thank Li Liu, Hugo Pacheco, and the anonymous reviewers of APLAS and PEPM for their valuable comments.
+We would like to thank Li Liu, Hugo Pacheco, and the anonymous reviewers of APLAS\,'15 and PEPM\,'16 for their valuable comments.
 
 %\section{Conclusion}
 %\label{sec:con}

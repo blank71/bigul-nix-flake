@@ -54,30 +54,26 @@ globalCorporation =
   align (const (return true))
         ((String × ℕ × (String ⊎ String) → String × (String ⊎ String) → Par Bool) ∋
            (λ { (sname , _) (vname , _) → return ⌊ sname Data.String.≟ vname ⌋ }))
-        (rearrV (prod var var) (prod var (prod (k tt) var)) (inj₁ refl , tt , inj₂ refl)
-           (update (prod var var)
-              ((, replace) ,
-               (, caseSV ((const inBritain ,
-                             rearrV (prod var (left var)) (prod var var) (inj₁ refl , inj₂ refl)
-                               (caseS ((inBritain ,
-                                          normal (update (prod var (left  var)) ((, skip) , (, replace)))) ∷
-                                       (inAmerica ,
-                                          adaptive (λ s _ → return (⌈ proj₁ s /2⌉ , inj₁ ""))) ∷ []))) ∷
-                          (const inAmerica ,
-                             rearrV (prod var (right var)) (prod var var) (inj₁ refl , inj₂ refl)
-                               (caseS ((inBritain ,
-                                          adaptive (λ s _ → return (2 * proj₁ s , inj₂ ""))) ∷
-                                       (inAmerica ,
-                                          normal (update (prod var (right var)) ((, skip) , (, replace)))) ∷ []))) ∷ [])))))
+        (update (prod var var)
+           ((, replace) ,
+            (, caseSV ((const (return ∘ is-just ∘ isInj₁) ,
+                          rearrV (left var) (prod (k tt) var) (tt , refl)
+                            (caseS ((inBritain ,
+                                       normal (update (prod var (left  var)) ((, skip) , (, replace)))) ∷
+                                    (inAmerica ,
+                                       adaptive (λ s _ → return (⌈ proj₁ s /2⌉ , inj₁ ""))) ∷ []))) ∷
+                       ((λ _ _ → return true) ,
+                          rearrV (right var) (prod (k tt) var) (tt , refl)
+                            (caseS ((inBritain ,
+                                       adaptive (λ s _ → return (2 * proj₁ s , inj₂ ""))) ∷
+                                    (inAmerica ,
+                                       normal (update (prod var (right var)) ((, skip) , (, replace)))) ∷ []))) ∷ []))))
         ((String × (String ⊎ String) → Par (String × ℕ × (String ⊎ String))) ∋
            (λ { (name , location) → return (name , 0 , location) }))
         (const (return nothing))
 
 globalCorporation-CompleteExpr : BiGULCompleteExpr emptyF globalCorporation
-globalCorporation-CompleteExpr = (return refl >>= return refl) ,
-                                   tt ,
-                                   ((return refl >>= return refl) , (tt , tt) , tt) ,
-                                   ((return refl >>= return refl) , (tt , tt) , tt) , tt
+globalCorporation-CompleteExpr = tt , (return refl , (tt , tt) , tt) , (return refl , (tt , tt) , tt) , tt
 
 employees : ⟦ list EmployeeU ⟧ emptyTEnv
 employees = ("Jeremy Gibbons" , 82495 , inj₁ "Oxford University" ) ∷
