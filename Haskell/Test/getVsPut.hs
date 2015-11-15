@@ -142,3 +142,34 @@ It's possible write put-based list_reverse using tree lens , but user have to go
 tree lens' put semantics.
 
 -}
+
+
+-- put-based ==
+plistreverse2 :: (Eq a,MonadError' ErrorInfo m) => BiGUL m (List a) (List a)
+plistreverse2 = CaseV [ $(branch [p| Nil |]) $ CaseS [ $(normal [p| Nil |]) Replace, $(normal [p| _ |]) Fail],
+                        $(branch [p| Con _ _ |]) $ CaseS [ $(normal [p| Nil |]) Fail ,
+                                                           $(normal [p| Con _ _ |])
+                                                 ((flip Compose)
+                                                       ($(rearr [| \(Con a b) -> (a,b) |])  $(update [p| Con a b |] [d| a = Replace ; b = plistreverse2 |]))
+                                                       protate) ]
+                     ]
+
+-- put-based  >=
+plistreverse3 :: (Eq a,MonadError' ErrorInfo m) => BiGUL m (List a) (List a)
+plistreverse3 = CaseV [ $(branch [p| Nil |]) Replace,
+                        $(branch [p| Con _ _ |]) $ CaseS [ $(normal [p| Nil |]) Fail ,
+                                                           $(normal [p| Con _ _ |])
+                                                 ((flip Compose)
+                                                       ($(rearr [| \(Con a b) -> (a,b) |])  $(update [p| Con a b |] [d| a = Replace ; b = plistreverse3 |]))
+                                                       protate) ]
+                     ]
+
+-- put-based  <=
+plistreverse4 :: (Eq a,MonadError' ErrorInfo m) => BiGUL m (List a) (List a)
+plistreverse4 = CaseV [ $(branch [p| Nil |]) $ CaseS [ $(normal [p| Nil |]) Replace, $(normal [p| _ |]) Fail],
+                        $(branch [p| Con _ _ |]) $ CaseS [ $(adaptive [p| Nil |]) (\_ _ -> return (Con undefined Nil))  ,
+                                                           $(normal [p| Con _ _ |])
+                                                 ((flip Compose)
+                                                       ($(rearr [| \(Con a b) -> (a,b) |])  $(update [p| Con a b |] [d| a = Replace ; b = plistreverse4 |]))
+                                                       protate) ]
+                     ]
