@@ -39,6 +39,7 @@
 %format _⊎_ = _ "{" ⊎ "}" _
 %format inj₁ = "\constructor{inj_1}"
 %format inj₂ = "\constructor{inj_2}"
+%format proj₂ = "\constructor{proj_2}"
 %format Maybe = "\constructor{Maybe}"
 %format nothing = "\constructor{nothing}"
 %format just = "\constructor{just}"
@@ -82,8 +83,8 @@
 %format put-r-b↦b' = put - r - b "{\mapsto}" b'
 %format put-l-a-b'↦a' = put - l - a - b' "{\mapsto}" a'
 %format get-r-b↦c = get - r - b "{\mapsto}" c
-%format 2015 = "\mathrm{2015}"
-%format 1954 = "\mathrm{1954}"
+%format 2016 = "\mathrm{2016}"
+%format 1937 = "\mathrm{1937}"
 %format 850 = "\mathrm{850}"
 %format 550 = "\mathrm{550}"
 %format 950 = "\mathrm{950}"
@@ -127,13 +128,17 @@
 %format adaptive = "\constructor{adaptive}"
 %format normal' = "\constructor{normal}"
 %format adaptive' = "\constructor{adaptive}"
-%format Int = "\constructor{Int}"
+%format 2 = "\mathrm{2}"
+%format MINUS = "{-}"
 %format interp-caseS = "\mathit{interp}" - "\mathit{caseS}"
 %format PutGet-with-adaptation = "\mathit{PutGet}" - "\mathit{with}" - adaptation
 %format GetPut-with-adaptation = "\mathit{GetPut}" - "\mathit{with}" - adaptation
 %format CaseVBranch = "\constructor{CaseVBranch}"
 %format CaseVBranch' = "\constructor{CaseVBranch^B}" 
 %format get-with-check = "\mathit{get}" - "\mathit{with}" - check
+%format isInj₁ = "\mathit{isInj}_1"
+%format isInj₂ = "\mathit{isInj}_2"
+%format 1 = "\mathrm{1}"
 %format replace-lens = "\mathit{replace}" - lens
 %format fail-lens = "\mathit{fail}" - lens
 %format skip-lens = "\mathit{skip}" - lens
@@ -161,8 +166,11 @@
 %format pat-iso = pat - iso
 %format Path = "\constructor{Path}"
 %format eval-path = eval - path
-%format view-rearr-iso = view - "\mathit{rearr}" - iso
+%format rearr-iso = "\mathit{rearr}" - iso
 %format Invertible = "\constructor{Invertible}"
+%format _◁_ = _ "{\lhd}" _
+%format ◁ = "{\lhd}"
+%link ◁ _◁_
 %format bind-computes = bind - computes
 %format relocate-employees = "\mathit{relocate}" - employees
 %format relocate-employee = "\mathit{relocate}" - employee
@@ -188,6 +196,8 @@
 \newlength{\binderskip}
 \setlength{\binderskip}{.8pt}
 
+\usepackage{microtype}
+
 \newcommand{\keyword}[1]{\mathbf{#1}}
 \newcommand{\identifier}[1]{\mathit{#1}}
 \newcommand{\constructor}[1]{\mathsf{#1}}
@@ -196,10 +206,13 @@
 \renewcommand{\chapterautorefname}{Chapter}
 \renewcommand{\sectionautorefname}{Section}
 \renewcommand{\subsectionautorefname}{Section}
+\renewcommand{\subsubsectionautorefname}{Section}
 \renewcommand{\figureautorefname}{Figure}
 \def\equationautorefname~#1\null{(#1)\null}
 
 \usepackage[color=yellow,textsize=footnotesize]{todonotes}
+
+\usepackage{enumitem}
 
 \usepackage{mathptmx}
 \usepackage{amsmath}
@@ -358,7 +371,7 @@ While both languages are carefully designed, the intricate nature of these dynam
 
 In this paper, we aim to build a clean and solid foundation for higher-level putback-based languages (e.g., \BiFluX) by focusing on a small yet sufficiently powerful putback-based core language |BiGUL| (for \emph{Bidirectional Generic Update Language}), which is completely formally verified to guarantee that any |put| specified in the language is well-behaved.
 In more detail:
-\begin{itemize}
+\begin{itemize}[leftmargin=*]
 \item Firstly, |BiGUL| is a clean revision of the core of \BiFluX, and is designed to be closer to practical programming languages (than, e.g., \Putlenses).
 It consists of a set of essential and orthogonal bidirectional statements, such as alignment of source and view lists, pattern matching--based independent source updates and invertible view computation, and case analyses on either source or view.
 Although currently |BiGUL| only has a dependently typed abstract syntax, which is not intended to be programmer-friendly, |BiGUL| programs are pretty straightforward to write (or compile to), thanks to its native support of familiar programming constructs like pattern matching and case statements.
@@ -373,7 +386,7 @@ Although currently |BiGUL| only has a dependently typed abstract syntax, which i
 |BiGUL| is thus differentiated from the more abstract treatment by, e.g., Foster~et~al~\cite{Foster-lenses}, in which partiality is dealt with implicitly and various well-behavedness conditions are specified set-theoretically, creating a gap between the definitions and their implementations.
 The concrete semantics of |BiGUL|, in contrast, can be faithfully ported to practical programming languages like \Haskell\ without having to fill the gap between abstract mathematics and concrete implementation.
 
-\item Most importantly, |BiGUL| and its well-behavedness has been completely formally modelled and verified using the dependently typed programming language \Agda~\cite{Norell-thesis,Nore08}.
+\item Most importantly, |BiGUL| and its well-behavedness have been completely formally modelled and verified using the dependently typed programming language \Agda~\cite{Norell-thesis,Nore08}.
 (Full source code is available at \url{http://www.prg.nii.ac.jp/project/bigul}, which is checked by \Agda\ version 2.4.2.4 with standard library version~0.11.)
 Since |BiGUL|'s semantics are concrete programs and directly proved correct, we can highly confidently guarantee that these programs, when ported to other languages, are indeed well-behaved.
 
@@ -404,7 +417,7 @@ The key to the formalisation is the reification of computation steps of monadic 
 
 We follow Foster~et~al's classic \emph{lens} approach~\cite{Foster-lenses}, but for the |PutGet| and |GetPut| laws we adopt the variant used by Pacheco et~al~\cite{Pacheco-putlenses}.
 A lens between a \emph{source} type~|S| and a \emph{view} type~|V| is defined in \Agda\ as the following record type:%
-\footnote{Arguments wrapped in curly braces are \emph{implicit}, and are typeset in a less obtrusive style in this paper most of the time.
+\footnote{Arguments wrapped in curly braces are \emph{implicit}, and are typeset in a less obtrusive style in this paper.
 We do not need to supply the implicit arguments when applying a function if \Agda\ can infer what those arguments should be.}
 \begin{code}
 record ^^^Lens (S V : Set) : Set₁ where
@@ -419,8 +432,8 @@ The two laws are referred to as the \emph{well-behavedness} properties.
 Precise definitions of |Par| and~|_↦_| will be presented later in \autoref{sec:reification}.
 Here we offer an informal explanation first:
 Both |put| and |get| are partial functions that may or may not successfully produce a result.
-Execution of |put s v|, if successful, produces an updated version of the source~|s| by properly embedding all information of the view~|v| into~|s|, while |get s| extracts the view embedded in~|s|.
-The |PutGet| law states that, for all |s|,~|s' : S| and |v : V|, if |put s v| successfully computes to~|s'|, then subsequently |get s'| should successfully compute to~|v|; this ensures that |put| does its job properly --- after |put| updates a source with a view, |get| can completely recover the view from the updated source.
+Execution of |put s v|, if successful, produces an updated version of the source~|s| by embedding all information of the view~|v| into~|s|, while |get s| extracts the view embedded in~|s|.
+The |PutGet| law states that, for all |s|,~|s' : S| and |v : V|, if |put s v| successfully computes to~|s'|, then subsequently |get s'| should successfully compute to~|v|; this ensures that |put| does the embedding properly --- after |put| updates a source with a view, |get| can completely recover the view from the updated source.
 On the other hand, the |GetPut| law states that, for all |s : S| and |v : V|, if |get s| successfully computes to~|v|, then subsequently |put s v| should successfully compute to~|s|; this ensures that |put| does not perform excessive updates --- if the view used to update the source is directly extracted from the source by |get|, then the source will remain unchanged after the update.
 
 Note that our definition of lenses is stronger than the definition of well-behaved lenses given by Foster~et~al~\cite[Definition~3.2]{Foster-lenses}: our |PutGet| law says that successful computation of |put| guarantees success of the subsequent computation of |get|, whereas in Foster~et~al's definition there is no such guarantee; the |GetPut| law is similar.
@@ -436,7 +449,7 @@ when defining the semantics of |BiGUL| (more specifically, for view case analysi
 
 We can choose to write our transformations directly as |Maybe|-programs, usually structured with monadic combinators~\cite{Moggi-monads,Wadler-essence} like ``return'' and ``bind''.
 This approach does not work too satisfactorily, though (see the second half of \autoref{sec:sample-well-behavedness-proof} for an example), when we consider the kind of proofs we need to construct for these programs:
-When proving |PutGet| and |GetPut|, the antecedent is a proof that a program --- consisting of sub-programs bound together by the combinators --- computes successfully, and we need to analyse it to obtain proofs saying that each of the sub-programs computes successfully, and then reassemble these proofs to show that a related composite program also computes successfully.
+When proving |PutGet| and |GetPut|, given is a proof that a program --- consisting of sub-programs bound together by the combinators --- computes successfully, and we need to analyse it to obtain proofs saying that each of the sub-programs computes successfully, and then reassemble these proofs to show that a related composite program also computes successfully.
 This task would be much easier if a proof of a successful composite computation is exactly a bunch of proofs that all its sub-computations succeed.
 To achieve this, we can reify the monadic binding structure of |Maybe|-programs by deeply embedding the monadic combinators as the constructors of a datatype, so later we can define types of proofs of successful computation by induction on the binding structure.
 
@@ -520,6 +533,7 @@ completing the definition of~|_↔_|\uperiod
 
 For the rest of this paper we will omit the well-behavedness proofs, but a majority of these proofs --- while requiring more complicated case analyses --- are technically as simple as the above proofs for lens composition.
 
+\paragraph{Working directly with equality proofs.}
 To emphasise the advantage of reasoning with |Par| and |_↦_|\ucomma let us consider how the well-behavedness proofs for~|_↔_| would be constructed if we wrote partial transformations simply as |Maybe|-programs and stated well-behavedness in terms of \Agda's equality type~|_≡_|\uperiod
 The |put| and |get| functions would be defined in exactly the same way except that the bind operator used is the |Maybe| version.
 The |PutGet| law now reads
@@ -546,7 +560,7 @@ pg {c  = c  }  p | b , x , q with bind-computes (Lens.put r b c) q
 pg             p | b , x , q | b' , y , z rewrite Lens.PutGet l z
 {-"\hfill"-} = Lens.PutGet r y
 \end{code}
-which is apparently more heavyweight than the $\lambda$-expression~\autoref{lambda-expression}, even for this small lens composition example.
+which is apparently more heavyweight than the $\lambda$-expression~\autoref{lambda-expression}.
 For more complicated well-behavedness proofs, the above approach quickly becomes unmanageable, whereas our approach scales nicely.
 
 \section{BiGUL and its formally verified lens semantics}
@@ -600,28 +614,28 @@ And we can do case analyses on either the source~(|caseS|; \autoref{sec:source-c
 \begin{figure*}
 \beforefigure
 \begin{code}
-{-"\lno1"-}  align  (λ { (_ , _ , year , _ , instock) → year == 2015 && instock })
-{-"\lno2"-}         (λ { (stitle , _) (vtitle , _) → stitle == vtitle })
+{-"\lno1"-}  align  (λ { (_ , _ , year , _ , instock) → return (year == 2016 && instock) })
+{-"\lno2"-}         (λ { (stitle , _) (vtitle , _) → return (stitle == vtitle) })
 {-"\lno3"-}         (rearr  (prod var var)  (prod  var (prod    unit (prod   unit (prod  var          unit))))
 {-"\lno4"-}         {-""-}                  (      inj₁ refl ,  tt ,         tt ,        inj₂ refl ,  tt)
                     {-""-}  -- the two lines above are a deeply embedded representation of the function |λ { (title , price) -> (title , tt , tt , price , tt) }|
 {-"\lno5"-}                 (update  (prod  var (prod        var (prod     var (prod      var              var))))
 {-"\lno6"-}                          ((_ ,  replace) , (_ ,  skip) , (_ ,  skip) , (_ ,   replace) , (_ ,  skip))))
-{-"\lno7"-}         (λ _ -> return ("" , "(to be updated)" , 2015 , 0 , true))
+{-"\lno7"-}         (λ _ -> return ("" , "(to be updated)" , 2016 , 0 , true))
 {-"\lno8"-}         (λ { (title , author , year , price , instock) -> return (just (title , author , year , price , false)) })
 \end{code}
-\caption{Updating the prices of the books published in 2015}
+\caption{Updating the prices of the books published in 2016}
 \label{fig:bookstore}
 \end{figure*}
 
 \autoref{fig:bookstore} gives a preview of a |BiGUL| program.
 (A more complex example, in particular involving |caseS| and |caseV|, is given in \autoref{sec:transatlantic-corporation}.)
-The source is a list of book data of type |String × String × ℕ × ℕ × Bool| representing a book's title, author, publication year, price, and whether it is in stock, and we intend to update the price of those books published in 2015 which are still in stock.
+The source is a list of book data of type |String × String × ℕ × ℕ × Bool| representing a book's title, author, publication year, price, and whether it is in stock, and we intend to update the price of those books published in 2016 which are still in stock.
 We thus prepare a list of pairs of book title and price of type |String × ℕ| as the view.
 The |BiGUL| program then describes how to update the source with the view:
-we focus on those books in the source list which are published in 2015 and still in stock~(line~1) and align them with the view list by title~(line~2);
+we focus on those books in the source list which are published in 2016 and still in stock~(line~1) and align them with the view list by title~(line~2);
 for every matched pair of source and view books, we rearrange the view~(lines 3--4) to match with the shape of the source, decompose the source by pattern matching (line~5), and replace the title and price of the source with those from the view~(line~6);
-for every unmatched view book, we create a source book with default author information and publication year 2015 and mark it as in stock~(line~7), and its title and price will later be updated by the action for matched pairs (i.e., lines 3--6);
+for every unmatched view book, we create a source book with default author information and publication year 2016 and mark it as in stock~(line~7), and its title and price will later be updated by the action for matched pairs (i.e., lines 3--6);
 finally, for every unmatched source book, we keep it in the source list but mark it as out of stock~(line~8).
 
 The types of the |BiGUL| constructors are indexed by the source and view types of the operations represented by the constructors, and ultimately we can write a well-typed interpreter to |Lens|:
@@ -630,11 +644,15 @@ The types of the |BiGUL| constructors are indexed by the source and view types o
 \end{code}
 (|U|~and~|⟦_⟧| are defined in \autoref{sec:source-update}.)
 Since well-behavedness is built into the definition of |Lens|, being able to construct |interp| means that we have not only translated |BiGUL| to |put| and |get| functions, but also proved formally that |PutGet| and |GetPut| are satisfied, in the way explained in \autoref{sec:sample-well-behavedness-proof}.
-For each operation we will start from a natural putback semantics, then add necessary checks so a corresponding |get| can exist, arriving at the lens semantics for the operation (including well-behavedness proofs), and finally deeply embed the lens as a constructor of |BiGUL|.
-(An exception is |update|, the development for which deviates slightly from the general process to avoid some typing problem.)
-We will go through the whole process for the three basic operations in \autoref{sec:basic-lenses} and source case analysis in \autoref{sec:source-case}.
-For the rest of the operations we will only give a sketch for brevity.
 
+Below we will go through each of the |BiGUL| operations, starting with the three most basic ones in \autoref{sec:basic-lenses}.
+We should warn the reader that the subsequent \autoref{sec:source-update} is more about the datatype-generic mechanism underlying a major part of |BiGUL| and less about BXs, and we choose to present it earlier because it will be used in later sections, and also help to clarify most of \autoref{fig:bookstore} sooner.
+\autoref{sec:source-case} will be the first section that presents the development of a nontrivial bidirectional operation in detail.
+
+%For each operation we will start from a natural putback semantics, then add necessary checks so a corresponding |get| can exist, arriving at the lens semantics for the operation (including well-behavedness proofs), and finally deeply embed the lens as a constructor of |BiGUL|.
+%(An exception is |update|, the development for which deviates slightly from the general process to avoid some typing problem.)
+%We will go through the whole process for the three basic operations in \autoref{sec:basic-lenses} and source case analysis in \autoref{sec:source-case}.
+%For the rest of the operations we will only give a sketch for brevity.
 
 \subsection{Replacing, failure, and skipping}
 \label{sec:basic-lenses}
@@ -668,7 +686,7 @@ id-iso = record  { to = return SEP from = return SEP ABBRV }
 
 interp replace = iso-lens id-iso
 \end{code}
-We can also derive the lens semantics for |failB| --- whose |get| and |put| simply fail to compute for any input --- from the empty isomorphism in the same way:
+We can also derive the lens semantics for |failB| --- whose |put| and |get| simply fail to compute for any input --- from the empty isomorphism in the same way:
 \begin{code}
 ^^^empty-iso : (HIDE({S V : Set} ->)) Iso S V
 empty-iso = record  {    to    = \ _ -> fail
@@ -686,323 +704,16 @@ interp skip = skip-lens
 \end{code}
 Note that the view type is specified as the unit type~|^^^⊤| (whose only inhabitant is~|^^^tt : ⊤|) --- if the view type were more complex, there would be no way for |get| to decide what to return.
 In general, |put| must embed all view information into the updated source so |get| can recover the entire view from the updated source, establishing |PutGet|.
-|⊤|~is a type with no information, and hence |Lens.put skip-lens| can safely ignore its view argument of type~|⊤|.
-
-\begin{code}
-\end{code}
-
-\subsection{Case analysis on source}
-\label{sec:source-case}
-
-\begin{figure*}
-\beforefigure
-\begin{code}
-^^^caseS-lens : (S V : Set) -> List (CaseSBranch S V) -> Lens S V
-caseS-lens S V bs = record  {    put  = \ s v -> put-with-adaptation bs [] s v (λ s' → put-with-adaptation bs [] s' v (\ _ -> fail))
-                            SEP  get  = get' bs SEP ABBRV }
-  where
-    ^^^branch : (HIDE'({l : Level})) {X : Set (HIDE'(l))} → (Lens S V → X) → ((S → Par S) → X) → CaseSBranchType → X
-    branch f g (normal    l  ) = f  l
-    branch f g (adaptive  u  ) = g  u
-
-    ^^^check-diversion : List (CaseSBranch S V) → S → Par ⊤
-    check-diversion  []              s = return tt
-    check-diversion  ((p , _) ∷ bs)  s = p s >>= λ matched → if matched then' fail else check-diversion bs s
-
-    ^^^put-with-adaptation : List (CaseSBranch S V) → List (CaseSBranch S V) → S → V → (S → Par S) → Par S
-    put-with-adaptation []              bs' s v cont = fail
-    put-with-adaptation ((p , b) ∷ bs)  bs' s v cont =
-      p s >>= λ matched → if matched   then'  branch  (λ l →  Lens.put l s v >>= λ s' → p s' >>= λ matched' →
-                                                              if matched' then' check-diversion bs' s' >>= (\ _ → return s') else fail)
-                                                      (λ u → u s >>= cont) b
-                                       else   put-with-adaptation bs ((p , b) ∷ bs') s v cont
-
-    get' : List (CaseSBranch S V) → S → Par V
-    get' []              s = fail
-    get' ((p , b) ∷ bs)  s = p s >>= λ matched → if matched then' branch (λ l → Lens.get l s) (\ _ -> fail) b else get' bs s
-    
-    ABBRV
-\end{code}
-\caption{Definitions of |put| and |get| for source case analysis}
-\label{fig:caseS}
-\end{figure*}
-
-The next construct |caseS| is for doing case analysis on the source.
-The basic idea of |caseS|'s semantics is to choose from a list of branches the first one that matches the source, and then execute the |BiGUL| statement of that branch.
-
-It is, however, difficult to find a |get| to pair with this |put| semantics: the obvious |get| which selects the first branch that matches its source argument does not work, because, when we consider |PutGet|, it may well happen that the updated source produced by |put| matches a different branch from the one matching the original source, and hence in general we would have to guarantee |PutGet| for |put| and |get| coming respectively from any two branches, which is unmanageable.
-A more manageable solution is to insert a dynamic check at the end of |put| to ensure that the updated source must match the same branch as the original source, which is the solution adopted by Foster~et~al's concrete conditional lens~\cite[Section~6.1]{Foster-lenses}.
-
-\subsubsection{Enriching source case analysis with adaptive branches}
-
-The above solution, however, is sometimes too restrictive in practice.
-For example, in our putback-based language \BiYacc~\cite{Zhu-BiYacc} for generating well-behaved pairs of parsers and ``reflective'' printers, a program specifies how a printer \emph{updates} a concrete syntax tree (the source) to become consistent with an abstract syntax tree (the view).
-The printer tries to retain the structure of a source wherever possible, but when the structure of the source is radically different from that of the view, we need to change the source completely, and this change of source structure would fail the aforementioned dynamic check that prevents branch switching.
-We therefore need a more flexible case analysis on source.
-(See \autoref{sec:transatlantic-corporation} for a simpler scenario where we also need this increased flexibility.)
-
-Our solution is to add a special kind of branches called \emph{adaptive} branches to source case analysis, in addition to \emph{normal} branches.
-(See \autoref{sec:concluding-remarks} for a comparison with Foster~et~al's general conditional lens~\cite[Section~6.3]{Foster-lenses}.)
-The semantics of the two kinds of branches are defined by the following datatype:
-\begin{code}
-data ^^^CaseSBranchType (S V : Set) : Set1 where
-  ^^^normal    : Lens S V      -> CaseSBranchType S V
-  ^^^adaptive  : (S -> Par S)  -> CaseSBranchType S V
-\end{code}
-The semantics of a |normal| branch is just a lens, while for an |adaptive| branch it is a source transformation.
-With each branch we also need to associate a decidable predicate on the source type specifying when a source matches the branch, so the complete definition of the type of branches is
-\begin{code}
-^^^CaseSBranch : Set -> Set -> Set1
-CaseSBranch S V = (S -> Par Bool) × CaseSBranchType S V
-\end{code}
-The lens semantics of |caseS| is then given by
-\begin{code}
-caseS-lens : (S V : Set) -> List (CaseSBranch S V) -> Lens S V
-\end{code}
-which is built from a list of branches.
-
-\todo[inline]{a small example}
-
-\subsubsection{The \textit{put} and \textit{get} semantics}
-
-The |put| and |get| components of |caseS-lens| are shown in \autoref{fig:caseS}.
-For the |put| semantics, we might think of a source case analysis as still consisting mainly of normal branches, but we can now specify additional cases such that when a source matches none of the normal branches, the source can still be accepted, which is then transformed --- or adapted --- to one that will match a normal branch.
-More explicitly, the case analysis may be run twice: if a normal branch is chosen the first time, then the case analysis succeeds and we execute the branch; otherwise, we adapt the source and rerun the case analysis, and must match a normal branch this time.
-A single round of the case analysis is performed by the function |put-with-adaptation|, which takes a continuation of type |S -> Par S| that, when an adaptive branch is matched, is invoked on the adapted source.
-The |put| semantics, which consists of up to two rounds of the case analysis, is |put-with-adaptation| with a second instance of |put-with-adaptation| as the continuation, and the continuation for the latter is the computation that always fails --- that is, the second round cannot fall into an adaptive branch.
-In either round, if a normal branch is matched and executed, we must ensure that the updated source satisfies the predicate of the branch and also none of the predicates of the previous branches, so a subsequent execution of |get| on the updated source --- which chooses a branch in the same way as |put| --- will go through the same branch as |put|, establishing |PutGet|.
-In |put-with-adaptation|, there is an accumulating parameter~|bs'| keeping hold of the mismatched branches; if a normal branch is matched and executed, the function |check-diversion| will be invoked to ensure that the updated source matches none of the branches in~|bs'|.
-
-The |get| semantics, on the other hand, simply tries to match the source with each of the branches and execute the first matched branch if the branch is normal, or fail if the branch is adaptive.
-A quick reasoning for the behaviour about adaptive branches is as follows:
-An abstract reading of the well-behavedness laws says that the domain of |get| must coincide with the range of updated sources produced by |put|.
-Since a successfully updated source necessarily comes out from, and will again match, a normal branch, |get| must fail for any source matching an adaptive branch.
-Of course, we still need to prove the well-behavedness properties to actually say that the |put| and |get| functions are defined correctly.
-
-\subsubsection{Sketch of the well-behavedness proofs}
-
-As explained in \autoref{sec:sample-well-behavedness-proof}, the well-behavedness proofs for |caseS-lens| proceed by analysing all possible ways for |put| or |get| to compute successfully, and then showing how their successful computation guarantees successful computation of the corresponding |get| or |put|.
-The only slight complication about |caseS-lens| is that |put-with-adaptation| has an accumulating parameter, which implies that we need to prove generalised versions of the well-behavedness statements.
-For |PutGet|, the main statement we prove is
-\begin{code}
-PutGet-with-adaptation :
-  (bs bs' : List (CaseSBranch S V))
-  {s s' : S} {v : V} {cont : S → Par S} →
-  ({s : S} →  (cont s ↦ s') → (get' (revcat bs' bs) s' ↦ v)) →
-  (put-with-adaptation bs bs' s v cont ↦ s') →
-  (get' (revcat bs' bs) s' ↦ v)
-\end{code}
-where |revcat| is defined by
-\begin{code}
-^^^revcat : (HIDE'({l : Level})) {A : Set (HIDE'(l))} → List A → List A → List A
-revcat []        ys = ys
-revcat (x ∷ xs)  ys = revcat xs (x ∷ ys)
-\end{code}
-which is the usual way of implementing linear-time list reversal, and coincides with how branches are moved from |bs| to |bs'| in |put-with-adaptation|.
-%Here is one way of thinking about this generalised statement:
-%During execution of |put|, the list of branches is divided into |bs| and~|bs'|, respectively containing those branches yet to be matched and those mismatched with the source, and there is an invariant that the original list of branches is always |revcat bs' bs|.
-%|PutGet-with-adaptation| then guarantees that |get| using the original list of branches will succeed if |put-with-adaptation| succeeds and the continuation satisfies a |PutGet|-like property (so the responsibility of establishing |PutGet| can be delegated to this proof if the continuation is invoked), and can be proved by induction on~|bs|.
-|PutGet| is then proved by setting |bs'| to~|[]| and applying |PutGet-with-adaptation| to itself in a way similar to how we define |put| in terms of |put-with-adaptation|.
-For |GetPut|, the generalisation we need is relatively simpler:
-\begin{code}
-GetPut-with-adaptation :
-  (bs bs' : List (CaseSBranch S V))
-  {cont : S → Par S} {s : S} {v : V} →
-  (check-diversion bs' s ↦ tt) →
-  (get' bs s ↦ v) → (put-with-adaptation bs bs' s v cont ↦ s)
-\end{code}
-%It states that if |get| using the list~|bs| of branches succeeds, then |put-with-adaptation| will also succeed as long as all branches in~|bs'| indeed are mismatched branches, i.e., |check-diversion| is successful.
-|GetPut| is then proved by setting |bs'| to |[]|, in which case the premise about |check-diversion| becomes trivially true.
-
-\subsubsection{Fitting the lens to the interpreter}
-
-The final step is to deeply embed |caseS-lens| as a constructor of the |BiGUL| datatype.
-We start with defining a variant of |CaseSBranchType| whose source and view type parameters are codes from the universe~|U| (\autoref{sec:source-update}) and whose |normal'| constructor takes a |BiGUL| statement instead of a |Lens|:
-\begin{code}
-data ^^^CaseSBranchType' (S V : U) : Set1 where
-  ^^^normal'    : BiGUL S V             → CaseSBranchType' S V
-  ^^^adaptive'  : (⟦ S ⟧ -> Par ⟦ S ⟧)  → CaseSBranchType' S V
-\end{code}
-and also a variant of |CaseSBranch|:
-\begin{code}
-^^^CaseSBranch' : U -> U -> Set1
-CaseSBranch' S V =
-  (⟦ S ⟧ -> Par Bool) × CaseSBranchType' S V
-\end{code}
-As shown in \autoref{fig:BiGUL}, the |caseS| constructor of |BiGUL| takes a list of |CaseSBranch'|s.
-Its interpretation is, unsurprisingly, |caseS-lens|:
-\begin{code}
-mutual
-  ABBRV
-  interp (caseS {S} {V} bs) =
-    caseS-lens ⟦ S ⟧ ⟦ V ⟧ (interp-caseS bs)
-  ABBRV
-  
-  ^^^interp-caseS : (HIDE({S V : U} →))  List (CaseSBranch'   S      V    ) →
-                                         List (CaseSBranch ⟦  S ⟧ ⟦  V ⟧  )
-  interp-caseS []                                    = []
-  interp-caseS (  (p , normal'  b           ) ∷ bs)  =
-                  (p , normal   (interp b)  ) ∷ interp-caseS bs
-  interp-caseS (  (p , adaptive'  u         ) ∷ bs)  =
-                  (p , adaptive   u         ) ∷ interp-caseS bs
-\end{code}
-The helper function |interp-caseS| simply maps |interp| into the normal branches.
-To help \Agda\ see that |interp| is terminating, though, we need to define |interp-caseS| explicitly (instead of using the standard |map| function on lists) and put the definition along with |interp| in a |mutual| block.
-
-\subsection{Case analysis on view}
-\label{sec:view-case}
-
-\todo[inline]{revise to correspond to caseS}
-
-For |caseV|, basically we still try to match the view with a list of branches, and execute the first branch that matched.
-We must be more careful when it comes to the view, though:
-As mentioned at the end of \autoref{sec:basic-lenses}, we must ensure that view information is completely embedded into the source, and that requires conscious management of view information.
-When the view matches a branch, the amount of view information that remains to be embedded into the source may actually be reduced.
-For example, if there is a branch that matches an integer view which equals zero, then for this branch we may even perform no update on the source as long as we can guarantee that the subsequent |get| will choose this branch, in which case |get| can simply return zero --- the information that the view is zero is embedded implicitly in the control flow rather than explicitly in the updated source.
-Thus, in the definition of |CaseVBranch| below, we use a partial isomorphism on the view type which converts it to a possibly less informative type, instead of just a decidable predicate as in |CaseSBranch|:
-\begin{code}
-^^^CaseVBranch : Set -> Set -> Set₁
-CaseVBranch S V = (V -> Par Bool) × Lens S V
-\end{code}
-For the comparison-with-zero example above, we would set~|V'| to~|⊤|, indicating that there is no more information to be embedded into the source after a successful matching, and set the |to| and |from| components of the isomorphism to |\ _ -> return 0| and |\ n -> if n == 0 then' return tt else fail|.
-A branch is considered matched with a view when the |from| conversion of the associated isomorphism succeeds on the view.
-(The deep embedding as |BiGUL|'s |caseV| constructor restricts the isomorphisms to those induced by pattern matching (to be introduced in \autoref{sec:source-update}) --- a deeply embedded branch of type |^^^CaseVBranch' S V| is a pair of a pattern and a |BiGUL| statement that updates a source of type~|S| with the result of decomposing a view of type~|V| using the pattern.)
-
-\begin{figure}[t]
-\begin{code}
--- Assume |S : Set| and |V : Set|
-
-get-with-check : (V → Par Bool) → Lens S V → S → Par V
-get-with-check p l s =  Lens.get l s >>= λ v →
-                        p v >>= λ matched →
-                        if matched then' return v else fail
-
-put' : (bs : List (CaseVBranch S V)) → S → V → Par S
-put' []              s v = fail
-put' ((p , l) ∷ bs)  s v =
-  p v >>= λ matched →
-  if matched  then'   Lens.put l s v
-              else    put' bs s v >>= λ s' →
-                      catch  (get-with-check p l s') (\ _ -> fail)
-                             (return s')
-
-get' : (bs : List (CaseVBranch S V)) → S → Par V
-get' []              s = fail
-get' ((p , l) ∷ bs)  s =
-  catch  (get-with-check p l s) return
-         (  get' bs s >>= λ v → p v >>= λ matched →
-            if matched then' fail else return v)
-\end{code}
-\caption{Definitions of |put| and |get| for view case analysis}
-\label{fig:caseV}
-\end{figure}
-
-The lens semantics we assign to |caseV| has type
-\begin{code}
-caseV-lens :  (S V : Set) -> List (CaseVBranch S V) -> Lens S V
-\end{code}
-The definitions of its |put| and |get| are shown in \autoref{fig:caseV}.
-They require |Par| to be extended with one more constructor\todo{Hugo: perhaps make a reference to monadic exceptions or MonadPlus to explain the intuition of catch}
-\begin{code}
-^^^catch : (HIDE({A B : Set} →)) Par A → (A → Par B) → Par B → Par B
-\end{code}
-interpreted by
-\begin{code}
-runPar (catch mx f my) with runPar mx
-runPar (catch mx f my) | just x   = runPar (f x)
-runPar (catch mx f my) | nothing  = runPar my
-\end{code}
-That is, |catch mx f my| behaves like |mx >>= f| when |mx| computes successfully, or becomes |my| when |mx|~fails.
-For |put|, then, we can choose to execute the current branch or try the rest of the branches based on whether |Iso.from iso| computes successfully.
-
-For |get|, there is no obvious way to decide which branch to go --- unlike |put|, we are not given a view to match with the branches.
-Here we try to execute each of the branches until we reach one that computes a view successfully, which is the approach taken by Pacheco~et~al~\cite{Pacheco-putlenses}.
-This makes guaranteeing |PutGet| difficult, as we cannot easily guarantee that executing |put| followed by |get| will go through the same branch.
-Our compromised solution is to make |put| do an expensive check after a branch is matched and executed, requiring that the |get| for each of the previous branches must fail.
-To pass this check, the ranges of the |put| semantics of the branches (which coincide with the domains of |get|) have to be disjoint in order for |put| to compute successfully.
-
-\subsection{List alignment}
-\label{sec:list-alignment}
-
-For the semantics of |align|, which is the key operation used in \autoref{fig:bookstore} (and in the \BiFluX\ language~\cite{Pacheco-BiFluX}), we employ a particular parametrised strategy for updating a list of sources of type~|S| with a list of views of type~|V|, which tries to align/match the sources with the views, synchronise the matched pairs of sources and views by an inner lens, and process the unmatched sources and views in some programmer-specified ways.
-The purpose of |align| is similar to Barbosa~et~al's matching lenses~\cite{Barbosa:2010}, but we do not intend |align| to be as expressive as matching lenses yet --- a few of the design choices made below will appear somewhat arbitrary and inflexible, but the semantics is already interesting enough such that formal verification is desirable.
-
-The lens semantics of |align| has type
-\begin{code}
-align-lens : (HIDE({S V : Set} ->))
-  (source-condition : S → Par Bool)
-  (matching-condition : S → V → Par Bool)
-  (l : Lens S V)
-  (create : V → Par S)
-  (conceal : S → Par (Maybe S)) →
-  Lens (List S) (List V)
-\end{code}
-As an example, we use the program in \autoref{fig:bookstore} to put the view list
-\begin{code}
-("Pottery" , 850) ∷ ("Hiking" , 550) ∷ []
-\end{code}
-into the source list
-\begin{code}
-("Pottery"  , "Rowling"  , 2015  , 950  , true  ) ∷
-("Habits"   , "Tolkien"  , 1954  , 450  , true  ) ∷
-("Nanny"    , "Lewis"    , 2015  , 650  , true  ) ∷ []
-\end{code}
-The |put| semantics is as follows:
-\begin{itemize}
-\item
-First, from the source list we can select a sub-list that we intend to align with the views by specifying a decidable predicate 
-|source-condition : S -> Par Bool|.
-For our example, the sub-list consists of the entries for the books \textsl{Pottery} and \textsl{Nanny}.
-\item
-The sub-list of sources satisfying |source-condition| are then aligned with the list of views by finding pairs of source and view satisfying a given binary predicate |matching-condition :| |S -> V -> Par Bool|.
-The matching order is fixed in our strategy: for each view we find the first matching source that has not been matched with a previous view.
-For our example, there is one matching pair, namely the source and view entries for \textsl{Pottery}.
-\item
-On each matched pair of source and view we execute an inner lens |l : Lens S V| to update the source with the view.
-For our example, |l|~updates the title and price, so the price of \textsl{Pottery} is set to 850 in the updated source.
-\item
-For unmatched views, we should create corresponding sources in the source list (so a subsequent |get| can produce these views).
-This is done by first applying a programmer-specified function |create : V → Par S| to the view to create a temporary source, and then updating this source with the view by~|l|.
-For our example, \textsl{Hiking} in an unmatched view, so we create a temporary source and update its title and price to |"Hiking"| and 550 respectively, producing an entry
-\begin{code}
-("Hiking" , "(to be updated)" , 2015 , 550 , true)
-\end{code}
-in the updated source list.
-\item
-For unmatched sources, we can choose to simply delete them or transform them such that they do not satisfy |source-condition|.
-This is specified by a function |conceal : S → Par (Maybe S)|: an unmatched source is deleted if applying |conceal| to it produces |nothing|, or transformed if |conceal| produces a new source wrapped in |just|.
-For our example, \textsl{Nanny} is an unmatched source, and we conceal the entry by setting its |instock| flag to |false|.
-These transformed sources can be placed anywhere in the source list; currently we simply place all of them towards the front of the list.
-\item
-Finally, the list of updated sources is merged with those not satisfying |source-condition| in the beginning.
-The merging order is chosen such that |GetPut| can be established automatically.
-For our example, the resulting list is
-\begin{code}
-("Nanny"    , "Lewis"            , 2015  , 650  , false  ) ∷
-("Habits"   , "Tolkien"          , 1954  , 450  , true   ) ∷
-("Pottery"  , "Rowling"          , 2015  , 850  , true   ) ∷
-("Hiking"   , "(to be updated)"  , 2015  , 550  , true   ) ∷ []
-\end{code}
-\end{itemize}
-
-The corresponding |get| semantics extracts from the input source list all the sources satisfying |source-condition| and then uses |Lens.get l| to get a list of views from these sources.
-For example, running the |get| direction of \autoref{fig:bookstore} on the updated source above will first extract the entries for \textsl{Pottery} and \textsl{Hiking}, and then get their title and price, producing the view list we started with (and thus conforming to the |PutGet| law).
-
-To guarantee well-behavedness, a few checks about |l|~and |conceal| need to be inserted:
-After a pair of source and view are synchronised by~|l|, the updated pair should again satisfy |matching-condition|, and also the updated source should still satisfy |source-condition|.
-And a source produced by |conceal| must not satisfy |source-condition|.
-The program in \autoref{fig:bookstore} is written such that these checks will be successful:
-Since the lens~|l| updates the title, the |matching-condition| --- which compares the titles --- will definitely hold for the updated source and view.
-Also, the updated source will continue to satisfy |source-condition| because the publication year and |instock| flag are not changed by~|l|.
-Finally, |conceal| sets the |instock| flag to false, necessarily invalidating |source-condition|.
+|⊤|~is a type with no information, and hence |Lens.put skip-lens| can safely ignore its view argument of type~|⊤|, while |Lens.get skip-lens| can simply return~|tt|.
 
 \subsection{Source update}
 \label{sec:source-update}
 
-An indispensable operation is decomposing a source and updating its parts, represented by the |update| constructor of |BiGUL|.
-We follow the approach taken by \textsc{Flux}~\cite{Cheney-FLUX}, which requires that updates must be independent --- that is, the same part of a source cannot be updated more than once --- to avoid the problem of sequencing updates.
+A fundamental operation is decomposing a source and updating its parts, represented by the |update| constructor of |BiGUL|.
+We follow the approach taken by \textsc{Flux}~\cite{Cheney-FLUX}, which requires that updates must be independent --- that is, the same part of a source cannot be updated more than once.
+(This is for ensuring |PutGet|: consider, for example, the scenario in which the view is a pair |(v , v')|, whose components have the same type as the source; if we allowed the source to be replaced twice, first with~|v| and second with~|v'|, then |v|~would be overwritten by the second replacing and could not be retrieved by a subsequent invocation of |get|.)
 It turns out that a pattern matching notation suits this task perfectly: pattern matching is arguably the most intuitive way to decompose a source, and we can specify apparently independent updates by writing them at the variable positions in a pattern.
-For example, in \autoref{fig:bookstore} we use |update| to match a source book of type |String × String × ℕ × ℕ × Bool| with a five-variable pattern and update its five components respectively by |replace|, |skip|, |skip|, |replace|, and |skip|.
+For example, at lines 5--6 of \autoref{fig:bookstore} we use |update| to match a source book of type |String × String × ℕ × ℕ × Bool| with a five-variable pattern and update its five components respectively by |replace|, |skip|, |skip|, |replace|, and |skip|.
 The idea itself is straightforward; what follows, despite its slight complexity (especially if the reader is not familiar with dependently typed programming), is merely our datatype-generic and strongly typed implementation of the idea in \Agda~\cite{Gibbons-DGP,Altenkirch-GP-within-DTP}.
 The definitions for |update| will be laid out in three levels:
 we first define the class of datatypes that we wish to process with |BiGUL|; for every datatype, we define the patterns applicable to the inhabitants of the datatype; finally, every pattern induces a ``container'' type, whose inhabitants can be used to store inner |BiGUL| statements at the variable positions of the pattern.
@@ -1010,7 +721,7 @@ we first define the class of datatypes that we wish to process with |BiGUL|; for
 Since \Agda\ is fully dependently typed, we can naturally define patterns in a type-directed way such that nonsensical patterns are syntactically ruled out.
 This task starts from the construction of a \emph{universe}~|U|, i.e., a datatype whose inhabitants are interpreted as types.
 |U| has appeared in the definition of |BiGUL| in \autoref{fig:BiGUL}, where it is used as the type of the indices representing the source and view types of the operations.
-The actual \Agda\ implementation of |BiGUL| uses a universe capable of expressing mutually inductive datatypes, but, to make the presentation easier to follow, the universe~|^^^U| that we define below --- along with its interpreter~|^^^⟦_⟧| --- is only a much simplified version:
+The actual \Agda\ implementation of |BiGUL| uses a universe capable of expressing mutually inductive datatypes, but, to make the presentation easier to follow, the universe~|^^^U| that we define below --- along with its interpretation~|^^^⟦_⟧| --- is only a much simplified version:
 \begin{code}
 data U : Set₁ where             ⟦_⟧ : U → Set
   ^^^k     : Set → U    COLSEP  ⟦ k A     ⟧ = A
@@ -1098,8 +809,8 @@ The |to| component of the isomorphism performs pattern matching, and the |from| 
 %Thus |Iso.to (pat-iso pat)| matches any non-empty list and returns its head and tail as a pair.
 %The pattern can also be viewed as an expression denoting a non-empty list; it is evaluated by applying |Iso.from (pat-iso pat)| to an environment of type |⟦ A ⟧ × List ⟦ A ⟧| supplying values for the head and the tail.}
 
-For the source updating operation, we bypass formulation of a lens and directly define the semantics in terms of |interp| (due to some typing problem).
-By specialising |VarPositions| we can place |BiGUL| statements --- along with their view types --- at the variable positions of a pattern:
+Now we can explain the syntax of the source updating operation, i.e., the |update| constructor of the |BiGUL| datatype, and define how it is interpreted, i.e., the |update| case of |interp|.
+By specialising |VarPositions|, we can place |BiGUL| statements --- along with their view types --- at the variable positions of a pattern:
 \begin{code}
 ^^^BiGULs : (HIDE({D : U} ->)) Pattern D -> Set1
 BiGULs p = VarPositions p (\ D -> (E : U) × BiGUL D E)
@@ -1131,7 +842,7 @@ In prose, the |put| semantics of |update| decomposes the source by matching it w
 \label{sec:view-rearrangement}
 
 The operation |rearr| is for rearranging the view to a specific shape suitable for subsequent updates.
-For example, the |update| operation in \autoref{sec:source-update} demands that the view must be in a shape that matches the source pattern (as computed by |Views|), and this is usually achieved by an outer |rearr|, as is the case in lines 3--4 of \autoref{fig:bookstore}.
+For example, the |update| operation in \autoref{sec:source-update} demands that the view must be in a shape that matches the source pattern (as computed by |Views|), and this is usually achieved by an outer |rearr|, as is the case at lines 3--4 of \autoref{fig:bookstore}.
 In essence, |rearr| performs an invertible computation, while its |get| semantics performs the inverse of the computation.
 The invertible computation used is usually just moving things around and not complicated (hence the name ``rearrangement''), so instead of letting the programmer write general invertible functions (probably along with their inverses), we ask instead for syntactic descriptions of simple invertible computations, which are more restrictive but allow automatic inversion.
 
@@ -1164,7 +875,7 @@ If a given bunch of |paths : Paths p q| use up all components of the old view, i
 
 In more detail, we can construct an isomorphism:
 \begin{code}
-^^^view-rearr-iso : (HIDE({D E : U} ->))
+^^^rearr-iso : (HIDE({D E : U} ->))
   (p : Pattern D) (q : Pattern E) (paths : Paths p q) →
   Invertible p q paths → Iso ⟦ E ⟧ ⟦ D ⟧
 \end{code}
@@ -1174,19 +885,370 @@ The |to| direction is more delicate:
 It creates an empty container of type |VarPositions p (Maybe ∘ ⟦_⟧)| (all of whose variable positions are |nothing|) and fills it with components obtained by matching the input |⟦ E ⟧| with~|q|.
 If the container can be completely and consistently filled up --- that is, every position in the container is filled with one and only one value --- then we turn the container into a ``necessarily full'' container of type |VarPositions p ⟦_⟧| --- i.e., |PatResult p| --- by stripping all the |just| tags, and use it as an environment for evaluating~|p| to an inhabitant of |⟦ D ⟧|.
 
-Finally, the lens semantics we assign to |rearr| is\todo{composition with iso}
+We can now define the semantics of |rearr|.
+A natural choice is to use lens composition defined in \autoref{sec:sample-well-behavedness-proof}:
 \begin{code}
 interp (rearr p q paths b) =
-  interp b ↔ iso-lens (view-rearr-iso p q paths ABBRV)
+  interp b ↔ iso-lens (rearr-iso p q paths ABBRV)
 \end{code}
-This is not the actual definition, in fact --- note that the invertibility proof is not specified above.
-To do that, we need to extend |interp| with an additional argument consisting of invertibility proofs for all |rearr| operations appearing in the program being interpreted.
-This extension is omitted from the presentation for clarity.
+This definition is not good enough, however.
+The reason is subtle:
+The intended |put| semantics of |rearr| is to transform the view and then use~|b| with the new view, but the above semantics performs one extra step that uses the |get| semantics of~|b| to compute an intermediate source, which is then ignored according to the definition of |iso-lens|.
+This extra step turns out to be not only redundant but also detrimental: it is possible that the |put| semantics of~|b| can accept sources that are not in the domain of its |get| semantics (for example, when |b|~is a |caseS| with adaptive branches (\autoref{sec:source-case})), and when that is the case, the intended |put| semantics of |rearr| should compute successfully, while the above semantics will fail to compute due to the extra invocation of |get|.
+We hence need to introduce a more specialised operator for composing a lens with an isomorphism:
+\begin{code}
+^^^_◁_ : (HIDE({A B C : Set} ->)) Lens A B -> Iso B C -> Lens A C
+l ◁ iso = record
+  {    put  = λ a c → Iso.from iso c >>= Lens.put l a
+  SEP  get  = λ a → Lens.get l a >>= Iso.to iso SEP ABBRV }
+\end{code}
+Note that its |put| does not invoke |Lens.get l| on~|a|.
+The semantics of |rearr| can then be defined by
+\begin{code}
+interp (rearr p q paths b) = interp b ◁ rearr-iso p q paths ABBRV
+\end{code}
+This is still not the actual definition, in fact --- note that the invertibility proof is omitted.
+To be able to supply the invertibility proof, |interp| needs an additional argument consisting of invertibility proofs for all |rearr| operations appearing in the program being interpreted.
+This additional argument is omitted from the presentation for clarity.
+
+\subsection{Case analysis on source}
+\label{sec:source-case}
+
+\begin{figure*}
+%:
+\beforefigure
+\begin{code}
+^^^caseS-lens : (S V : Set) -> List (CaseSBranch S V) -> Lens S V
+caseS-lens S V bs = record  {    put  = \ s v -> put-with-adaptation bs [] s v (λ s' → put-with-adaptation bs [] s' v (\ _ -> fail))
+                            SEP  get  = get' bs SEP ABBRV }
+  where
+    ^^^branch : (HIDE'({l : Level})) {X : Set (HIDE'(l))} → (Lens S V → X) → ((S → Par S) → X) → CaseSBranchType → X
+    branch f g (normal    l  ) = f  l
+    branch f g (adaptive  u  ) = g  u
+
+    ^^^check-diversion : List (CaseSBranch S V) → S → Par ⊤
+    check-diversion  []              s = return tt
+    check-diversion  ((p , _) ∷ bs)  s = p s >>= λ matched → if matched then' fail else check-diversion bs s
+
+    ^^^put-with-adaptation : List (CaseSBranch S V) → List (CaseSBranch S V) → S → V → (S → Par S) → Par S
+    put-with-adaptation []              bs' s v cont = fail
+    put-with-adaptation ((p , b) ∷ bs)  bs' s v cont =
+      p s >>= λ matched → if matched   then'  branch  (λ l →  Lens.put l s v >>= λ s' → p s' >>= λ matched' →
+                                                              if matched' then' check-diversion bs' s' >>= (\ _ → return s') else fail)
+                                                      (λ u → u s >>= cont) b
+                                       else   put-with-adaptation bs ((p , b) ∷ bs') s v cont
+
+    get' : List (CaseSBranch S V) → S → Par V
+    get' []              s = fail
+    get' ((p , b) ∷ bs)  s = p s >>= λ matched → if matched then' branch (λ l → Lens.get l s) (\ _ -> fail) b else get' bs s
+    
+    ABBRV
+\end{code}
+\caption{Definitions of |put| and |get| for source case analysis}
+\label{fig:caseS}
+\end{figure*}
+
+The next construct |caseS| is for doing case analysis on the source.
+The basic idea of |caseS|'s semantics is to choose from a list of branches the first one that matches the source, and then execute the |BiGUL| statement of that branch.
+
+It is, however, difficult to find a |get| to pair with this |put| semantics: the obvious |get| which selects the first branch that matches its source argument does not work, because, when we consider |PutGet|, it may well happen that the updated source produced by |put| matches a different branch from the one matching the original source, and hence in general we would have to guarantee |PutGet| for |put| and |get| coming respectively from any two branches, which is unmanageable.
+A more manageable solution is to insert a dynamic check at the end of |put| to ensure that the updated source must match the same branch as the original source, which is the solution adopted by Foster~et~al's concrete conditional lens~\cite[Section~6.1]{Foster-lenses}.
+
+\subsubsection{Enriching source case analysis with adaptive branches}
+
+The above solution, however, is sometimes too restrictive in practice.
+For example, in our putback-based language \BiYacc~\cite{Zhu-BiYacc} for generating well-behaved pairs of parsers and ``reflective'' printers, a program specifies how a printer \emph{updates} a concrete syntax tree (the source) to become consistent with an abstract syntax tree (the view).
+The printer tries to retain the structure of a source wherever possible, but when the structure of the source is radically different from that of the view, we need to change the source completely, and this change of source structure would fail the aforementioned dynamic check that prevents branch switching.
+We therefore need a more flexible case analysis on source.
+(See \autoref{sec:transatlantic-corporation} for a simpler scenario where we also need this increased flexibility.)
+
+Our solution is to add a special kind of branches called \emph{adaptive} branches to source case analysis, in addition to \emph{normal} branches.
+The two kinds of branches are defined by the following datatype:
+\begin{code}
+data ^^^CaseSBranchType (S V : Set) : Set1 where
+  ^^^normal    : Lens S V      -> CaseSBranchType S V
+  ^^^adaptive  : (S -> Par S)  -> CaseSBranchType S V
+\end{code}
+A |normal| branch is just a lens, while an |adaptive| branch is a source transformation.
+With each branch we also need to associate a decidable predicate on the source type specifying when a source matches the branch, so the complete definition of the type of branches is
+\begin{code}
+^^^CaseSBranch : Set -> Set -> Set1
+CaseSBranch S V = (S -> Par Bool) × CaseSBranchType S V
+\end{code}
+The lens semantics of |caseS| is then given by
+\begin{code}
+caseS-lens : (S V : Set) -> List (CaseSBranch S V) -> Lens S V
+\end{code}
+which is built from a list of branches.
+
+\subsubsection{The \textit{put} and \textit{get} semantics}
+\label{sec:caseS-put-and-get}
+
+The |put| and |get| components of |caseS-lens| are shown in \autoref{fig:caseS}.
+For the |put| semantics, we might think of a source case analysis as still consisting mainly of normal branches, but we can now specify additional cases such that when a source matches none of the normal branches, the source can still be accepted, which is then transformed --- or adapted --- to one that will match a normal branch.
+More explicitly, the case analysis may be run twice: if a normal branch is chosen the first time, then the case analysis succeeds and we execute the branch; otherwise, we adapt the source and rerun the case analysis, and must match a normal branch this time.
+A single round of the case analysis is performed by the function |put-with-adaptation|, which takes a continuation of type |S -> Par S| that, when an adaptive branch is matched, is invoked on the adapted source.
+The |put| semantics, which consists of up to two rounds of the case analysis, is |put-with-adaptation| with a second instance of |put-with-adaptation| as the continuation, and the continuation for the latter is the computation that always fails --- that is, the second round cannot fall into an adaptive branch.
+In either round, if a normal branch is matched and executed, we must ensure that the updated source satisfies the predicate of the branch and also none of the predicates of the previous branches, so a subsequent execution of |get| on the updated source --- which chooses a branch in the same way as |put| --- will go through the same branch as |put|, establishing |PutGet|.
+In |put-with-adaptation|, there is an accumulating parameter~|bs'| keeping hold of the mismatched branches; if a normal branch is matched and executed, the function |check-diversion| will be invoked to ensure that the updated source matches none of the branches in~|bs'|.
+
+The |get| semantics, on the other hand, simply tries to match the source with each of the branches and execute the first matched branch if the branch is normal, or fail if the branch is adaptive.
+A quick reasoning for the behaviour about adaptive branches is as follows:
+An abstract reading of the well-behavedness laws says that the domain of |get| must coincide with the range of updated sources produced by |put|.
+Since a successfully updated source necessarily comes out from, and will again match, a normal branch, |get| must fail for any source matching an adaptive branch.
+
+\paragraph{Example.}
+Of course, we still need to prove the well-behavedness properties to actually say that the |put| and |get| functions are defined correctly.
+But before doing so, let us look at a minimal example that uses adaptation.
+Suppose that the source is a natural number and the view has type~|⊤|.
+That is, there is no information in the view to be put back.
+There is, however, a requirement that the source should be ``normalised'' to an even number.
+We can turn this requirement into a dynamic check by wrapping |skip| in a |caseS|:
+\begin{code}
+caseS ((return ∘ isEven , normal skip) ∷ [])
+  -- |^^^isEven : ℕ -> Bool|
+\end{code}
+Both the |put| and |get| semantics of this |BiGUL| program compute successfully if and only if the input source is even.
+However, we can make |put| also accept odd sources by adding an adaptive branch:
+\begin{code}
+^^^toEven : BiGUL (k ℕ) one
+toEven = caseS
+  {-"\!\!"-} (  (return ∘ isEven                , normal    skip) ∷
+                ((\ {-"\!"-} _ -> return true)  , adaptive  (\ n -> return (n MINUS 1))) ∷ [])
+\end{code}
+That is, normally we expect the source to be an even number, but if an odd source does show up, |put| will be capable of ``normalising'' it: the odd source will fall into the second |adaptive'| branch and get transformed into an even number, which will then match the first |normal'| branch, and be returned as the updated source.
+
+\subsubsection{Sketch of the well-behavedness proofs}
+
+As explained in \autoref{sec:sample-well-behavedness-proof}, the well-behavedness proofs for |caseS-lens| proceed by analysing all possible ways for |put| or |get| to compute successfully, and then showing how their successful computation guarantees successful computation of the corresponding |get| or |put|.
+The only slight complication about |caseS-lens| is that |put-with-adaptation| has an accumulating parameter, which implies that we need to prove generalised versions of the well-behavedness statements.
+For |PutGet|, the main statement we prove is
+\begin{code}
+PutGet-with-adaptation :
+  (bs bs' : List (CaseSBranch S V))
+  {s s' : S} {v : V} {cont : S → Par S} →
+  ({s : S} →  (cont s ↦ s') → (get' (revcat bs' bs) s' ↦ v)) →
+  (put-with-adaptation bs bs' s v cont ↦ s') →
+  (get' (revcat bs' bs) s' ↦ v)
+\end{code}
+where |revcat| is defined by
+\begin{code}
+^^^revcat : (HIDE'({l : Level})) {A : Set (HIDE'(l))} → List A → List A → List A
+revcat []        ys = ys
+revcat (x ∷ xs)  ys = revcat xs (x ∷ ys)
+\end{code}
+which is the usual way of implementing linear-time list reversal, and coincides with how branches are moved from |bs| to |bs'| in |put-with-adaptation|.
+%Here is one way of thinking about this generalised statement:
+%During execution of |put|, the list of branches is divided into |bs| and~|bs'|, respectively containing those branches yet to be matched and those mismatched with the source, and there is an invariant that the original list of branches is always |revcat bs' bs|.
+%|PutGet-with-adaptation| then guarantees that |get| using the original list of branches will succeed if |put-with-adaptation| succeeds and the continuation satisfies a |PutGet|-like property (so the responsibility of establishing |PutGet| can be delegated to this proof if the continuation is invoked), and can be proved by induction on~|bs|.
+|PutGet| is then proved by setting |bs'| to~|[]| and applying |PutGet-with-adaptation| to itself in a way similar to how we define |put| in terms of |put-with-adaptation|.
+For |GetPut|, the generalisation we need is relatively simpler:
+\begin{code}
+GetPut-with-adaptation :
+  (bs bs' : List (CaseSBranch S V))
+  {cont : S → Par S} {s : S} {v : V} →
+  (check-diversion bs' s ↦ tt) →
+  (get' bs s ↦ v) → (put-with-adaptation bs bs' s v cont ↦ s)
+\end{code}
+%It states that if |get| using the list~|bs| of branches succeeds, then |put-with-adaptation| will also succeed as long as all branches in~|bs'| indeed are mismatched branches, i.e., |check-diversion| is successful.
+|GetPut| is then proved by setting |bs'| to |[]|, in which case the premise about |check-diversion| becomes trivially true.
+
+\subsubsection{Fitting the lens to the interpreter}
+
+The final step is to define a corresponding constructor, |caseS|, in the |BiGUL| datatype.
+We start with defining a variant of |CaseSBranchType| whose source and view type parameters are codes from the universe~|U| (\autoref{sec:source-update}) and whose |normal'| constructor takes a |BiGUL| statement instead of a |Lens|:
+\begin{code}
+data ^^^CaseSBranchType' (S V : U) : Set1 where
+  ^^^normal'    : BiGUL S V             → CaseSBranchType' S V
+  ^^^adaptive'  : (⟦ S ⟧ -> Par ⟦ S ⟧)  → CaseSBranchType' S V
+\end{code}
+and also a variant of |CaseSBranch|:
+\begin{code}
+^^^CaseSBranch' : U -> U -> Set1
+CaseSBranch' S V =
+  (⟦ S ⟧ -> Par Bool) × CaseSBranchType' S V
+\end{code}
+As shown in \autoref{fig:BiGUL}, the |caseS| constructor of |BiGUL| takes a list of |CaseSBranch'|s.
+Its interpretation is, unsurprisingly, |caseS-lens|:
+\begin{code}
+mutual
+  ABBRV
+  interp (caseS {S} {V} bs) =
+    caseS-lens ⟦ S ⟧ ⟦ V ⟧ (interp-caseS bs)
+  ABBRV
+  
+  ^^^interp-caseS : (HIDE({S V : U} →))  List (CaseSBranch'   S      V    ) →
+                                         List (CaseSBranch ⟦  S ⟧ ⟦  V ⟧  )
+  interp-caseS []                                    = []
+  interp-caseS (  (p , normal'  b           ) ∷ bs)  =
+                  (p , normal   (interp b)  ) ∷ interp-caseS bs
+  interp-caseS (  (p , adaptive'  u         ) ∷ bs)  =
+                  (p , adaptive   u         ) ∷ interp-caseS bs
+\end{code}
+The helper function |interp-caseS| simply maps |interp| into the normal branches.
+To help \Agda\ see that |interp| is terminating, though, we need to define |interp-caseS| explicitly (instead of using the standard |map| function on lists) and put the definition along with |interp| in a |mutual| block.
+
+\subsection{Case analysis on view}
+\label{sec:view-case}
+
+\begin{figure}[t]
+\begin{code}
+-- Assume |S : Set| and |V : Set|
+
+^^^get-with-check : (V → Par Bool) → Lens S V → S → Par V
+get-with-check p l s =  Lens.get l s >>= λ v →
+                        p v >>= λ matched →
+                        if matched then' return v else fail
+
+put' : (bs : List (CaseVBranch S V)) → S → V → Par S
+put' []              s v = fail
+put' ((p , l) ∷ bs)  s v =
+  p v >>= λ matched →
+  if matched  then'   Lens.put l s v
+              else    put' bs s v >>= λ s' →
+                      catch  (get-with-check p l s') (\ _ -> fail)
+                             (return s')
+
+get' : (bs : List (CaseVBranch S V)) → S → Par V
+get' []              s = fail
+get' ((p , l) ∷ bs)  s =
+  catch  (get-with-check p l s) return
+         (  get' bs s >>= λ v → p v >>= λ matched →
+            if matched then' fail else return v)
+\end{code}
+\caption{Definitions of |put| and |get| for view case analysis}
+\label{fig:caseV}
+\end{figure}
+
+For |caseV|, we still try to match the view with a list of branches, and execute the first branch that matched, like for |caseS|.
+%We must be more careful when it comes to the view, though:
+%As mentioned at the end of \autoref{sec:basic-lenses}, we must ensure that view information is completely embedded into the source, and that requires conscious management of view information.
+%When the view matches a branch, the amount of view information that remains to be embedded into the source may actually be reduced.
+%For example, if there is a branch that matches an integer view which equals zero, then for this branch we may even perform no update on the source as long as we can guarantee that the subsequent |get| will choose this branch, in which case |get| can simply return zero --- the information that the view is zero is embedded implicitly in the control flow rather than explicitly in the updated source.
+%Thus, in the definition of |CaseVBranch| below, we use a partial isomorphism on the view type which converts it to a possibly less informative type, instead of just a decidable predicate as in |CaseSBranch|:
+Unlike |caseS|, though, there are no adaptive branches for |caseV|, so the definition of branches is more straightforward:
+\begin{code}
+^^^CaseVBranch : Set -> Set -> Set₁
+CaseVBranch S V = (V -> Par Bool) × Lens S V
+\end{code}
+%For the comparison-with-zero example above, we would set~|V'| to~|⊤|, indicating that there is no more information to be embedded into the source after a successful matching, and set the |to| and |from| components of the isomorphism to |\ _ -> return 0| and |\ n -> if n == 0 then' return tt else fail|.
+%A branch is considered matched with a view when the |from| conversion of the associated isomorphism succeeds on the view.
+%(The deep embedding as |BiGUL|'s |caseV| constructor restricts the isomorphisms to those induced by pattern matching (to be introduced in \autoref{sec:source-update}) --- a deeply embedded branch of type |^^^CaseVBranch' S V| is a pair of a pattern and a |BiGUL| statement that updates a source of type~|S| with the result of decomposing a view of type~|V| using the pattern.)
+The lens semantics we assign to |caseV| then has type
+\begin{code}
+caseV-lens : (S V : Set) -> List (CaseVBranch S V) -> Lens S V
+\end{code}
+Its |put| and |get| are shown in \autoref{fig:caseV}.
+The definition of |put| is basically what one would expect.
+As for |get|, there is no obvious way to decide which branch to go --- unlike |put|, we are not given a view to match with the branches.
+Here we try to execute each of the branches until we reach one that computes a view successfully, which is the approach taken by Pacheco~et~al~\cite{Pacheco-putlenses}.
+This requires |Par| to be extended with one more constructor:%\todo{Hugo: perhaps make a reference to monadic exceptions or MonadPlus to explain the intuition of catch}
+\begin{code}
+^^^catch : (HIDE({A B : Set} →)) Par A → (A → Par B) → Par B → Par B
+\end{code}
+interpreted by
+\begin{code}
+runPar (catch mx f my) with runPar mx
+runPar (catch mx f my) | just x   = runPar (f x)
+runPar (catch mx f my) | nothing  = runPar my
+\end{code}
+That is, |catch mx f my| behaves like |mx >>= f| when |mx| computes successfully, or becomes |my| when |mx|~fails.
+Execution of |get| can then be specified to try subsequent branches if the current branch fails to compute.
+
+\paragraph{Example.}
+Suppose that the source is a natural number and the view is |⊤ ⊎ ⊤|, and the source should be even if the view is |inj₁ tt|, or odd if the view is |inj₂ tt|.
+To establish this relationship, we can use the |toEven| program presented at the end of \autoref{sec:caseS-put-and-get} and an analogous program |^^^toOdd| inside a |caseV|:
+\begin{code}
+caseV (  (return ∘ isInj₁ ,  -- |^^^isInj₁ : (HIDE({A B : Set} ->)) A ⊎ B -> Bool|
+           rearr (left   unit) unit tt toEven  ) ∷
+         ((\ _ -> return true) ,
+           rearr (right  unit) unit tt toOdd   ) ∷ [])
+\end{code}
+If the view is |inj₁ tt|, we rearrange it to~|tt| and invoke |toEven| to update the source to an even number; the case where the view is |inj₂ tt| is analogous.
+This is a common pattern for |caseV| (which will appear again in \autoref{sec:transatlantic-corporation}): each branch begins with a view rearrangement which gets rid of some information that has been used to choose this branch, and then uses a |caseS| to update the source to correspond to the view.
+As for the |get| semantics, an even source will successfully compute to |tt| through |toEven| and then to |inj₁ tt| by the rearrangement, while an odd source will fail to compute through |toEven| and fall to the second branch, eventually producing |inj₂ tt|.
+
+\paragraph{Well-behavedness.}
+For the well-behavedness properties, |PutGet| is the more difficult one to establish, as we cannot easily guarantee that executing |put| followed by |get| will both go through the same branch.
+Our compromised solution is to make |put| do an expensive check after a branch is matched and executed, requiring that the |get| for each of the previous branches must fail.
+For the programmer, this means that, in order for a |caseV| to be able to pass this check, the ranges of the |put| semantics of the branches (which coincide with the domains of |get|) should be disjoint.
+
+\subsection{List alignment}
+\label{sec:list-alignment}
+
+For the semantics of |align|, which is the key operation used in \autoref{fig:bookstore} (and in the \BiFluX\ language~\cite{Pacheco-BiFluX}), we employ a particular parametrised strategy for updating a list of sources of type~|S| with a list of views of type~|V|, which tries to align/match the sources with the views, synchronise the matched pairs of sources and views by an inner lens, and process the unmatched sources and views in some programmer-specified ways.
+The purpose of |align| is similar to Barbosa~et~al's matching lenses~\cite{Barbosa:2010}, but we do not intend |align| to be as expressive as matching lenses yet --- a few of the design choices made below will appear somewhat arbitrary and inflexible, but the semantics is already interesting enough such that formal verification is desirable.
+
+The lens semantics of |align| has type
+\begin{code}
+align-lens : (HIDE({S V : Set} ->))
+  (source-condition : S → Par Bool)
+  (matching-condition : S → V → Par Bool)
+  (l : Lens S V)
+  (create : V → Par S)
+  (conceal : S → Par (Maybe S)) →
+  Lens (List S) (List V)
+\end{code}
+As a running example, we use the program in \autoref{fig:bookstore} to put the view list
+\begin{code}
+("Pottery" , 850) ∷ ("Hiking" , 550) ∷ []
+\end{code}
+into the source list
+\begin{code}
+("Pottery"  , "Rowling"  , 2016  , 950  , true  ) ∷
+("Habits"   , "Tolkien"  , 1937  , 450  , true  ) ∷
+("Nanny"    , "Lewis"    , 2016  , 650  , true  ) ∷ []
+\end{code}
+The |put| semantics of |align-lens| is as follows:
+\begin{itemize}[leftmargin=*]
+\item
+First, from the source list we can select a sub-list that we intend to align with the views by specifying a decidable predicate 
+|source-condition : S -> Par Bool|.
+For our example, the sub-list consists of the entries for the books \textsl{Pottery} and \textsl{Nanny}.
+\item
+The sub-list of sources satisfying |source-condition| are then aligned with the list of views by finding pairs of source and view satisfying a given binary predicate |matching-condition :| |S -> V -> Par Bool|.
+The matching order is fixed in our strategy: for each view we find the first matching source that has not been matched with a previous view.
+For our example, there is one matching pair, namely the source and view entries for \textsl{Pottery}.
+\item
+On each matched pair of source and view we execute an inner lens |l : Lens S V| to update the source with the view.
+For our example, |l|~updates the title and price, so the price of \textsl{Pottery} is set to 850 in the updated source.
+\item
+For unmatched views, we should create corresponding sources in the source list (so a subsequent |get| can produce these views).
+This is done by first applying a programmer-specified function |create : V → Par S| to the view to create a temporary source, and then updating this source with the view by~|l|.
+For our example, \textsl{Hiking} in an unmatched view, so we create a temporary source and update its title and price to |"Hiking"| and 550 respectively, producing an entry
+\begin{code}
+("Hiking" , "(to be updated)" , 2016 , 550 , true)
+\end{code}
+\item
+For unmatched sources, we can choose to simply delete them or transform them such that they do not satisfy |source-condition|.
+This is specified by a function |conceal : S → Par (Maybe S)|: an unmatched source is deleted if applying |conceal| to it produces |nothing|, or transformed if |conceal| produces a new source wrapped in |just|.
+For our example, \textsl{Nanny} is an unmatched source, and we conceal the entry by setting its |instock| flag to |false|.
+These transformed sources can be placed anywhere in the source list; currently we simply place all of them towards the front of the list.
+\item
+Finally, the list of updated sources is merged with those not satisfying |source-condition| in the beginning.
+The merging order is chosen such that |GetPut| can be established automatically.
+For our example, the resulting list is
+\begin{code}
+("Nanny"    , "Lewis"            , 2016  , 650  , false  ) ∷
+("Habits"   , "Tolkien"          , 1937  , 450  , true   ) ∷
+("Pottery"  , "Rowling"          , 2016  , 850  , true   ) ∷
+("Hiking"   , "(to be updated)"  , 2016  , 550  , true   ) ∷ []
+\end{code}
+\end{itemize}
+
+The corresponding |get| semantics extracts from the input source list all the sources satisfying |source-condition| and then uses |Lens.get l| to get a list of views from these sources.
+For example, running the |get| direction of \autoref{fig:bookstore} on the updated source above will first extract the entries for \textsl{Pottery} and \textsl{Hiking}, and then get their title and price, producing the view list we started with (and thus conforming to the |PutGet| law).
+
+To guarantee well-behavedness, a few checks about |l|~and |conceal| need to be inserted:
+After a pair of source and view are synchronised by~|l|, the updated pair should again satisfy |matching-condition|, and also the updated source should still satisfy |source-condition|.
+And a source produced by |conceal| must not satisfy |source-condition|.
+The program in \autoref{fig:bookstore} is written such that these checks will always be successful:
+Since the lens~|l| updates the title, the |matching-condition| --- which compares the titles --- will definitely hold for the updated source and view.
+Also, the updated source will continue to satisfy |source-condition| because the publication year and |instock| flag are not changed by~|l|.
+Finally, |conceal| sets the |instock| flag to false, necessarily invalidating |source-condition|.
 
 \subsection{A showcase example: transatlantic corporation}
 \label{sec:transatlantic-corporation}
-
-\todo[inline]{add view rearrangement}
 
 We end this section by looking at an example in detail, which requires nontrivial putback logic, in particular involving |caseS| and |caseV|.
 Suppose that a transatlantic corporation regularly relocates employees between its UK and US offices, and pay them in the local currency.
@@ -1219,71 +1281,52 @@ relocate-employees = align
   (\ _ -> return nothing)
 \end{code}
 We are considering all |Employee|s in the list, so the source condition is always true.
-Items from the two lists are matched by employee name.
+Entries from the two lists are matched by employee name.
 Pairs of matched |Employee| and |Office| are synchronised by an inner |BiGUL| statement |relocate-employee|, to be defined later.
 An unmatched |Office| means that a new employee is inserted, so we create a temporary |Employee| in the source list, which is then updated by |relocate-employee| using the unmatched |Office|.
 (We put the view location in the temporary |Employee| merely for efficiency, as |relocate-employee| would not have to deal with mismatching source and view locations.)
-An unmatched |Employee| means that the employee is removed from the view, so we conceal the item by deleting it from the source.
+An unmatched |Employee| means that the employee is removed from the view, so we conceal the entry by deleting it from the source.
 
 Matched pairs of |Employee| and |Office| are synchronised by
 \begin{code}
 ^^^relocate-employee : BiGUL Employee Office
 relocate-employee =
-  rearr  (prod var var)  (prod  var (prod    unit  var))
-                         (      inj₁ refl ,  tt ,  inj₂ refl)
-         -- representing |\ { (name , loc) -> (name , tt , loc) }|
-         (update  (prod   var              var)
-                  ((_ ,   replace) , (_ ,  adjust-salary-and-office)))
+  update  (prod   var              var)
+          ((_ ,   replace) , (_ ,  adjust-salary-and-office)))
 \end{code}
-First we rearrange the view to the same shape as the source --- specifically, we insert |tt| between the name and location, to pair with the salary in the source later.
-Next we decompose the source by pattern matching to replace the name in the source with the name in the view --- this looks like a redundant step but is required because |BiGUL| enforces that all view information, in particular the name, must be put into the source.
-
+We decompose the source by pattern matching to replace the name in the source with the name in the view --- this looks like a redundant step but is required because |BiGUL| enforces that all view information, in particular the name, must be put into the source.
 The rest of the source, i.e., salary and location, is further synchronised with the remaining view by
 \begin{code}
-^^^adjust-salary-and-office : BiGUL  (Salary  ⊗ Location)
-                                     (one     ⊗ Location)
-adjust-salary-and-office = caseV
-  (  (prod var (left   var) , relocate-to-UK  ) ∷
-     (prod var (right  var) , relocate-to-US  ) ∷ [])
+^^^adjust-salary-and-office : BiGUL (Salary  ⊗ Location) Location
+adjust-salary-and-office =
+  caseV (  (return ∘ isInj₁ ,
+             rearr  (left   var) (prod unit var) (tt , refl)
+                      -- |λ { (inj₁ loc) -> (tt , loc) }|
+                    relocate-to-UK  ) ∷
+           ((\ _ -> return true) ,
+             rearr  (right  var) (prod unit var) (tt , refl)
+                      -- |λ { (inj₂ loc) -> (tt , loc) }|
+                    relocate-to-US  ) ∷ [])
 \end{code}
-We match the view location with either the |left| or |right| pattern to know which country the employee will work in.
+In |adjust-salary-and-office|, we use |caseV| to distinguish which country the employee will work in, and use |rearr| to get rid of the |inj₁| or |inj₂| tag and also insert a |tt| as the view to be used to update the |Salary| in the source later.
 If the employee will work in the UK, the update to the source is
 \begin{code}
 ^^^relocate-to-UK : BiGUL  (Salary  ⊗ Location    )
                            (one     ⊗ UKLocation  )
 relocate-to-UK = caseS
-  (  (inUK  , normal'    (update  (prod  var (left     var))
-                                  ((_ ,  skip) , (_ ,  replace)))) ∷
-     (inUS  , adaptive'  (λ {  (salary , _) →
-                               {-"~"-} return (toPounds salary , inj₁ "") })) ∷ [])
+  (  (return ∘ isInj₁ ∘ proj₂ ,  -- |^^^proj₂ : (HIDE({A B : Set} ->)) A × B -> B|
+       normal'    (update  (prod  var (left     var))
+                           ((_ ,  skip) , (_ ,  replace)))) ∷
+     ((\ _ -> return true) ,
+       adaptive'  (λ {  (salary , _) →
+                        {-"~"-} return (toPounds salary , inj₁ "") })) ∷ [])
 \end{code}
 We probe which country the employee is in originally with a |caseS|.
-The predicates |^^^inUK| and |^^^inUS| have type
-\begin{code}
-⟦ Salary ⟧ × (⟦ UKLocation ⟧ ⊎ ⟦ USLocation ⟧) → Par Bool
-\end{code}
-and are simply defined as
-\begin{code}
-inUK  (_ , inj₁  _) = return true
-inUK  (_ , inj₂  _) = return false
-
-inUS  (_ , inj₁  _) = return false
-inUS  (_ , inj₂  _) = return true
-\end{code}
 If the original country is the UK, the employee is not being relocated to a different country, so we can skip updating the salary and just replace the location.
 If it is the US, we adapt the source by changing the salary from dollars to pounds (by a function |^^^toPounds : Salary -> Salary| defined elsewhere) and change the location to an empty one in the UK, which will be replaced by the view location in the second round of the source case analysis following the adaptation.
-The other branch |relocate-to-US| is defined symmetrically:
-\begin{code}
-^^^relocate-to-US : BiGUL  (Salary  ⊗ Location    )
-                           (one     ⊗ USLocation  )
-relocate-to-US = caseS
-  (  (inUS  , normal'    (update  (prod  var (right    var))
-                                  ((_ ,  skip) , (_ ,  replace)))) ∷
-     (inUK  , adaptive'  (λ {  (salary , _) →
-                               {-"~"-} return (£⇒$ salary , inj₂ "") })) ∷ [])
-\end{code}
+The other branch |relocate-to-US| is defined symmetrically.
 
-We should now check\todo{Hugo: why do we need to check? Only for the purpose of ensuring totality, I suppose.}\ whether all constraints for passing dynamic checking are met, working from the inner statements towards the outer ones.
+To ensure totality of |put|, we should now check whether all constraints for passing dynamic checking are met, working from the inner statements towards the outer ones.
 For the |caseS| statements in |relocate-to-UK| and |relocate-to-US|, the normal branches do not change the source country and thus do not switch branch, and the adaptive branches do change the source so it matches a normal branch.
 For the |caseV| in |adjust-salary-and-office|, the ranges of |relocate-to-UK| and |relocate-to-US| are disjoint since they respectively produce UK and US locations.
 For the |align| in |relocate-employees|, since the source condition is always true, whatever |relocate-employee| produces necessarily satisfies the source condition, and we must conceal unmatched sources by deleting them, which is indeed what we specify; finally, we must guarantee that the updated source produced by |relocate-employee| and the view again satisfy the matching condition, even when the view is an unmatched one and the original source is a temporary one created from the view, and this is indeed guaranteed because |relocate-employee| puts the name in the view into the source.
@@ -1293,25 +1336,30 @@ For the |align| in |relocate-employees|, since the source condition is always tr
 \label{sec:concluding-remarks}
 
 We have given an account of the design and semantics of |BiGUL| and also how the language and its well-behavedness are formalised and proved in \Agda.
-Below we conclude this paper by commenting on the putback-based approach to bidirectional transformations, emphasising our formal development, discussing issues about dynamic checking, comparing |BiGUL| with its closest relative \Putlenses, and talking briefly about porting |BiGUL| to \Haskell.
+Below we conclude this paper by commenting on the putback-based approach to bidirectional transformations, emphasising our formal development and the monad reification trick, discussing issues about dynamic checking, comparing |BiGUL| with its closest relative \Putlenses, and talking briefly about porting |BiGUL| to \Haskell.
 
 One might wonder how |BiGUL|, being described as a putback-based language, stands out from existing work on lenses ---
-after all, the fundamental definition of |Lens| is exactly the classic symmetric definition.\todo{Hugo: classical lenses are asymmetric}\
+after all, the fundamental definition of |Lens| is exactly the classic definition which does not emphasise either the |put| or |get| side.
 We designed |BiGUL| such that the natural way to understand a |BiGUL| program is to read it as a description of putback logic, and, more importantly, a |BiGUL| program can be written by thinking solely in the putback direction (as opposed to programming the |get| direction or, worse, switching between |get| and |put|).
 (It may appear that the programmer needs to devise a |get| before programming a corresponding |put|, but that impression most likely stems from the confusion between general BX specifications --- e.g., consistency \emph{relations} between sources and views --- and |get| \emph{functions} as a much more specialised form of BX specifications.
 The programmer should of course have a specification in mind before programming |put|, but that specification is not necessarily a |get| function.)
 
-We admit, though, that the expressive power of the current |BiGUL| is not obviously stronger than existing lenses\todo{``hard to understand as a scientific argument'' we can now say more explicitly that |BiGUL| does not offer additional power\ldots}\ (although the adaptive |put| semantics of |caseS| has shown some potential of putback-based design), and it might be hard to find some formal properties to differentiate the putback-based approach in this paper from other approaches to lenses.
+We have to admit, though, that the expressive power of the current |BiGUL| is not stronger than existing work on lenses.
+In particular, we came up with the adaptive |caseS| to solve a practical problem we encountered~\cite{Zhu-BiYacc}, but realised only later that the idea already existed as Foster~et~al's ``fixup functions''; the common pattern using adaptive |caseS| inside |caseV|, which appears in the examples in Sections \ref{sec:view-case}~and~\ref{sec:transatlantic-corporation}, is essentially their general conditional lens~\cite[Section~6.3]{Foster-lenses}.
+(Foster~et~al did not give an example using their general conditional lens, though, possibly due to the complexity of its putback semantics.
+It might be argued that, without switching to the putback-based perspective, it is hard to use this kind of more complex lenses.
+This is only an indirect support of the putback-based approach, though.)
 We thus believe that the main contribution of this paper should be its completely formal development:
 Grohne~et~al~\cite{Grohne-formalizing-semantic-bidirectionalization} have also worked on formal verification about BXs (in \Agda), but their work was about semantic bidirectionalisation based on parametric polymorphism~\cite{Voigtlander-BX-for-free}.
 Our work is the first to formally describe and verify a collection of nontrivial and practically implemented lenses in a dependently typed language, in particular utilising the power of dependent types to design a logically clean abstract syntax and make well-behavedness proofs much easier to handle.
 
-\todo[inline]{more primitive constructs (especially alignment); |caseS| and |caseV| vs Foster~et~al's general conditional lens}
-
 %\todo[inline]{It is probably worth noting that the well-behavedness proofs in |align-lens| are more difficult, but it is mostly due to the inherent difficulty of the proofs --- there is little overhead regarding the formalisation per~se, due to the nice structure of the definition of well-behavedness (in terms of~|_↦_|).
 %The exact details of the aligning algorithm are pretty delicate (especially the last part for merging the sources that satisfy |source-condition| with those that do not), and these details being formally verified makes us absolutely confident that the algorithm is correct.}
 
-\todo[inline]{Deep embedding because we need to interpret programs in two different ways (Hugo: In my understanding, you are advocating that a deep embedding of the proofs in Agda is more manageable than a shallow embedding? If so, this is standard nomenclature for PEPM, and deep embeddings are known for being more flexible.)}
+As explained in \autoref{sec:BX}, crucial to the ease of our formal development is the monad reification trick.
+Essentially, this is another demonstration of the flexibility of deep embedding (see, e.g.,~\cite{Gibbons-DSL}).
+By deeply embedding the monadic program structure, we are able to interpret it in two different but related ways, either as a |Maybe|-program or as a proposition stating that the |Maybe|-program computes successfully.
+We believe that the trick is generally applicable, and may well have been applied elsewhere.
 
 One might be sceptical about the use of dynamic checks to guarantee the well-behavedness of |BiGUL|, as the programmer can write programs that fail inadvertently and only realise that at runtime.
 We currently deal with this problem by informally stating the constraints that should be satisfied by the programmer-supplied actions in order to pass the dynamic checks.
@@ -1324,7 +1372,7 @@ Both |BiGUL| and \Putlenses\ are datatype-generic and describe partial putback t
 |BiGUL| does not strive for maximal expressiveness like \Putlenses\ (in particular, |BiGUL| does not consider effectful computations in |put|), but instead takes a more cautious approach by focusing on a smaller set of essential features and formally proving their well-behavedness.
 The dynamic checks are sometimes tricky to get right, and proofs about them can require detailed case analyses that are not so easy to manage.
 (Indeed, during the formalisation we did not get everything right the first time and had to make corrections after failing to complete the proofs.)
-Thus the fact that the whole |BiGUL| language is formally verified is a firm step towards reliable putback-based bidirectional programming: as |BiGUL| is intended to serve as the (new) core of higher-level putback-based languages like \BiFluX~\cite{Pacheco-BiFluX} and \BiYacc~\cite{Zhu-BiYacc}, the well-behavedness of the latter languages will be established beyond doubt.\todo{Even in the conclusion the last but one paragraph raises a problem which the last paragraph answers.}
+Thus the fact that the whole |BiGUL| language is formally verified is a firm step towards reliable putback-based bidirectional programming: as |BiGUL| is intended to serve as the (new) core of higher-level putback-based languages like \BiFluX~\cite{Pacheco-BiFluX} and \BiYacc~\cite{Zhu-BiYacc}, the well-behavedness of the latter languages will be established beyond doubt.
 
 To (re-)implement \BiFluX\ and \BiYacc, we have ported |BiGUL| to \Haskell.
 The types need some adaptation because \Haskell\ is not fully dependently typed (but close enough; see, e.g., Lindley and McBride~\cite{Lindley-Hasochism}), while the transformations can be more or less faithfully transcribed.
