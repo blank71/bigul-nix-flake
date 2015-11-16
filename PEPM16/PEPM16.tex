@@ -258,7 +258,7 @@
                                   % short abstracts)
 
 % \titlebanner{banner above paper title}        % These are ignored unless
-\preprintfooter{RC1}   % 'preprint' option specified.
+\preprintfooter{RC2}   % 'preprint' option specified.
 
 \title{BiGUL: A Formally Verified Core Language for Putback-Based Bidirectional Programming}
 
@@ -1189,7 +1189,7 @@ align-lens : (HIDE({S V : Set} ->))
   (conceal : S → Par (Maybe S)) →
   Lens (List S) (List V)
 \end{code}
-To explain its |put| and |get| semantics more concretely, below we will use the program in \autoref{fig:bookstore} to put the view list
+To explain its |put| semantics more concretely, below we will use the program in \autoref{fig:bookstore} to put the view list
 \begin{code}
 ("Pottery" , 850) ∷ ("Hiking" , 550) ∷ []
 \end{code}
@@ -1199,7 +1199,7 @@ into the source list
 ("Habits"   , "Tolkien"  , 1937  , 450  , true  ) ∷
 ("Nanny"    , "Lewis"    , 2016  , 650  , true  ) ∷ []
 \end{code}
-The |put| semantics of |align-lens| is as follows:
+step by step.
 \begin{itemize}[leftmargin=*]
 \item
 First, from the source list we can select a sub-list that we intend to align with the views by specifying a decidable predicate 
