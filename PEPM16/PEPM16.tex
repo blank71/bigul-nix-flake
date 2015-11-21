@@ -1,6 +1,5 @@
 \documentclass[preprint]{sigplanconf}
 
-
 %include agda.fmt
 
 %subst keyword a = "\keyword{" a "}"
@@ -196,7 +195,13 @@
 \newlength{\binderskip}
 \setlength{\binderskip}{.8pt}
 
+\usepackage[T1]{fontenc}
 \usepackage{microtype}
+\usepackage{flushend}
+
+\clubpenalty = 10000
+\widowpenalty = 10000
+\displaywidowpenalty = 10000
 
 \newcommand{\keyword}[1]{\mathbf{#1}}
 \newcommand{\identifier}[1]{\mathit{#1}}
@@ -257,8 +262,8 @@
                                   % (paid open-access papers, 
                                   % short abstracts)
 
-% \titlebanner{banner above paper title}        % These are ignored unless
-\preprintfooter{RC2}   % 'preprint' option specified.
+\titlebanner{DRAFT}               % These are ignored unless
+\preprintfooter{RC3}              % 'preprint' option specified.
 
 \title{BiGUL: A Formally Verified Core Language for Putback-Based Bidirectional Programming}
 
@@ -280,15 +285,15 @@ In this paper, we design and implement a concise core language |BiGUL| for putba
 
 \end{abstract}
 
-%\category{CR-number}{subcategory}{third-level}
+\category{D.3.2}{Programming Languages}{Language Classifications}[Specialized Application Languages]
 
 % general terms are not compulsory anymore, 
 % you may leave them out
 %\terms
-%term1, term2
+%Language, Theory
 
 \keywords
-putback-based bidirectional transformations,
+Putback-based bidirectional transformations,
 dependent types,
 formal verification
 
@@ -387,7 +392,7 @@ Although currently |BiGUL| only has a dependently typed abstract syntax, which i
 The concrete semantics of |BiGUL|, in contrast, can be faithfully ported to practical programming languages like \Haskell\ without having to fill the gap between abstract mathematics and concrete implementation.
 
 \item Most importantly, |BiGUL| and its well-behavedness have been completely formally modelled and verified using the dependently typed programming language \Agda~\cite{Norell-thesis,Nore08}.
-(Full source code is available at \url{http://www.prg.nii.ac.jp/project/bigul}, which is checked by \Agda\ version 2.4.2.4 with standard library version~0.11.)
+(Full source code is available at \url{http://www.prg.nii.ac.jp/project/bigul}, and has been checked by \Agda\ version 2.4.2.4 with standard library version~0.11.)
 Since |BiGUL|'s semantics are concrete programs and directly proved correct, we can highly confidently guarantee that these programs, when ported to other languages, are indeed well-behaved.
 
 \item The main technique for facilitating the construction of well-behavedness proofs is worth mentioning: we reify computation steps of monadic programs as easily manipulable data, so well-behavedness proofs --- which have to cover all possible execution traces by analysing program structure --- can be carried out just like doing ordinary functional programming.
@@ -405,8 +410,8 @@ Since |BiGUL|'s semantics are concrete programs and directly proved correct, we 
 %  \item we propose a minimalist putback-based bidirectional language \BiGUL\ as a core language which is fully certified to guarantee the correctness, and served as a base for other putback-based bidirectional languages.
 %  \item A correct forward transformation $get$ is automatically constructed through \BiGUL\ programs. User concentrates on specifying $put$, our system guarantees the derived $get$ together with the $put$ is well-behaved.
 
-For the rest of the paper, after explaining how to formalise and prove well-behavedness of BXs in \Agda\ in \autoref{sec:BX}, we present |BiGUL|, its proof-carrying bidirectional semantics, and some examples in \autoref{sec:BiGUL}, and conclude with a few remarks in \autoref{sec:concluding-remarks}.
-This paper is typeset with a modified version of lhs2\TeX\ such that all global \Agda\ identifiers are hyperlinked to their definitions, which should be helpful to those who read this paper electronically.
+For the rest of the paper, after explaining how to formalise and prove well-behavedness of BXs in \Agda\ in \autoref{sec:BX}, we present |BiGUL|'s dependently typed syntax and proof-carrying bidirectional semantics in \autoref{sec:BiGUL} and a showcase example in \autoref{sec:transatlantic-corporation}, and conclude with a few remarks in \autoref{sec:concluding-remarks}.
+This paper is typeset with a modified version of lhs2\TeX\ such that all global \Agda\ identifiers are hyperlinked to their definitions, as an aid to those who read this paper electronically.
 
 
 \section{Formalisation of well-behaved BXs in \Agda}
@@ -434,7 +439,7 @@ Here we offer an informal explanation first:
 Both |put| and |get| are partial functions that may or may not successfully produce a result.
 Execution of |put s v|, if successful, produces an updated version of the source~|s| by embedding all information of the view~|v| into~|s|, while |get s| extracts the view embedded in~|s|.
 The |PutGet| law states that, for all |s|,~|s' : S| and |v : V|, if |put s v| successfully computes to~|s'|, then subsequently |get s'| should successfully compute to~|v|; this ensures that |put| does the embedding properly --- after |put| updates a source with a view, |get| can completely recover the view from the updated source.
-On the other hand, the |GetPut| law states that, for all |s : S| and |v : V|, if |get s| successfully computes to~|v|, then subsequently |put s v| should successfully compute to~|s|; this ensures that |put| does not perform excessive updates --- if the view used to update the source is directly extracted from the source by |get|, then the source will remain unchanged after the update.
+Conversely, the |GetPut| law states that, for all |s : S| and |v : V|, if |get s| successfully computes to~|v|, then subsequently |put s v| should successfully compute to~|s|; this ensures that |put| does not perform excessive updates --- if the view used to update the source is directly extracted from the source by |get|, then the source will remain unchanged after the update.
 
 Note that our definition of lenses is stronger than the definition of well-behaved lenses given by Foster~et~al~\cite[Definition~3.2]{Foster-lenses}: our |PutGet| law says that successful computation of |put| guarantees success of the subsequent computation of |get|, whereas in Foster~et~al's definition there is no such guarantee; the |GetPut| law is similar.
 
@@ -443,7 +448,7 @@ Note that our definition of lenses is stronger than the definition of well-behav
 
 The kind of partial transformations we need are actually total functions which wrap their results in the standard |^^^Maybe| datatype with two constructors |^^^just : A -> Maybe A| and |^^^nothing  : Maybe A| --- the result of a successful computation is wrapped in the |just| constructor, while failed computation is represented by |nothing|.
 It is thus always possible to know whether a computation succeeds or not in a finite amount of time.
-This notion of ``decidable partiality'' should be distinguished from the usual partiality as formalised in terms of complete partial orders and continuous functions between them:
+This notion of ``decidable partiality'' should be distinguished from the usual partiality as formalised in terms of continuous functions between complete partial orders:
 when defining the semantics of |BiGUL| (more specifically, for view case analysis in \autoref{sec:view-case}), we need to write programs that produce some result or fail respectively when a sub-program fails or produces some result, but this is not possible if failed computation is represented as a least element of a complete partial order.
 %(since such functions violate monotonicity, a necessary condition for computability).
 
@@ -630,7 +635,7 @@ And we can do case analyses on either the source~(|caseS|; \autoref{sec:source-c
 
 \autoref{fig:bookstore} gives a running example of a |BiGUL| program.
 (A more complex example, in particular involving |caseS| and |caseV|, is given in \autoref{sec:transatlantic-corporation}.)
-The source is a list of book data of type |String × String × ℕ × ℕ × Bool| representing a book's title, author, publication year, price, and whether it is in stock, and we intend to update the price of those books published in 2016 which are still in stock.
+The source is a list of book data of type |String × String × ℕ × ℕ × Bool| representing a book's title, author, publication year, price, and whether it is in stock, and we intend to update the price of those books published in 2016 that are still in stock.
 We thus prepare a list of pairs of book title and price of type |String × ℕ| as the view.
 The |BiGUL| program then describes how to update the source with the view:
 we focus on those books in the source list which are published in 2016 and still in stock~(line~1) and align them with the view list by title~(line~2);
@@ -643,7 +648,7 @@ The types of the |BiGUL| constructors are indexed by the source and view types o
 ^^^interp : (HIDE({S V : U} ->)) BiGUL S V -> Lens ⟦ S ⟧ ⟦ V ⟧
 \end{code}
 (|U|~and~|⟦_⟧| are defined in \autoref{sec:source-update}.)
-Since well-behavedness is built into the definition of |Lens|, being able to construct |interp| means that we have not only translated |BiGUL| to |put| and |get| functions, but also proved formally that |PutGet| and |GetPut| are satisfied, in the way explained in \autoref{sec:sample-well-behavedness-proof}.
+Since well-behavedness is built into the definition of |Lens|, being able to construct |interp| means that we have not only translated |BiGUL| to |put| and |get| functions, but also proved formally that |PutGet| and |GetPut| are satisfied, in the manner explained in \autoref{sec:sample-well-behavedness-proof}.
 
 Below we will go through each of the |BiGUL| operations, starting with the three most basic ones in \autoref{sec:basic-lenses}.
 We should warn the reader that the subsequent \autoref{sec:source-update} is more about the datatype-generic mechanism underlying a major part of |BiGUL| and less about BXs, and we choose to present it earlier because it will be used in later sections, and also help to clarify most of \autoref{fig:bookstore} sooner.
@@ -712,13 +717,13 @@ In general, |put| must embed all view information into the updated source so |ge
 A fundamental operation is decomposing a source and updating its parts, represented by the |update| constructor of |BiGUL|.
 We follow the approach taken by \textsc{Flux}~\cite{Cheney-FLUX}, which requires that updates must be independent --- that is, the same part of a source cannot be updated more than once.
 (This is for ensuring |PutGet|: consider, for example, the scenario in which the view is a pair |(v , v')|, whose components have the same type as the source; if we allowed the source to be replaced twice, first with~|v| and second with~|v'|, then |v|~would be overwritten by the second replacing and could not be retrieved by a subsequent invocation of |get|.)
-It turns out that a pattern matching notation suits this task perfectly: pattern matching is arguably the most intuitive way to decompose a source, and we can specify apparently independent updates by writing them at the variable positions in a pattern.
+It turns out that a pattern matching notation suits this task perfectly: pattern matching is arguably the most intuitive way to decompose a source, and we can specify manifestly independent updates by writing them at the variable positions in a pattern.
 For example, at lines 5--6 of \autoref{fig:bookstore} we use |update| to match a source book of type |String × String × ℕ × ℕ × Bool| with a five-variable pattern and update its five components respectively by |replace|, |skip|, |skip|, |replace|, and |skip|.
 The idea itself is straightforward; what follows, despite its slight complexity (especially if the reader is not familiar with dependently typed programming), is merely our datatype-generic and strongly typed implementation of the idea in \Agda~\cite{Gibbons-DGP,Altenkirch-GP-within-DTP}.
 The definitions for |update| will be laid out in three levels:
 we first define the class of datatypes that we wish to process with |BiGUL|; for every datatype, we define the patterns applicable to the inhabitants of the datatype; finally, every pattern induces a ``container'' type, whose inhabitants can be used to store inner |BiGUL| statements at the variable positions of the pattern.
 
-Since \Agda\ is fully dependently typed, we can naturally define patterns in a type-directed way such that nonsensical patterns are syntactically ruled out.
+Since \Agda\ is fully dependently typed, we can naturally define patterns in a type-directed way such that nonsensical patterns are ruled out by construction.
 This task starts from the construction of a \emph{universe}~|U|, i.e., a datatype whose inhabitants are interpreted as types.
 |U| has appeared in the definition of |BiGUL| in \autoref{fig:BiGUL}, where it is used as the type of the indices representing the source and view types of the operations.
 The actual \Agda\ implementation of |BiGUL| uses a universe capable of expressing mutually inductive datatypes, but, to make the presentation easier to follow, the universe~|^^^U| that we define below --- along with its interpretation~|^^^⟦_⟧| --- is only a much simplified version:
@@ -745,6 +750,37 @@ data ^^^Pattern : U → Set₁ where
 %   ^^^cons   : (HIDE({D : U} →)) Pattern D → Pattern (list D) → Pattern (list D)
 On all types we can use the |var| pattern which matches anything, while on sum types we can use the |left| and |right| patterns matching |inj₁| and |inj₂| constructors but not the |prod| pattern, which only makes sense for product types.
 Also we have the |unit| pattern for matching |tt : ⊤|.
+
+Next, patterns are given a different interpretation as ``containers'' for storing values --- whose types depend on the types of the variable sub-patterns --- at their variable positions.
+For example, a pair pattern |prod var var : Pattern (D ⊗ E)| can be interpreted as a container storing a pair of type |f D × f E| for any given type-computing function |f : U -> Set|.
+The types of such containers can be defined by induction on |Pattern|:
+\begin{code}
+^^^VarPositions :
+  (HIDE({l : Level} {D : U} ->)) Pattern D -> (U -> Set (HIDE'(l))) -> Set (HIDE'(l))
+VarPositions (var {D})   f {-"\kern-1pt"-}={-"\kern-1pt"-} f D
+VarPositions unit        f {-"\kern-1pt"-}={-"\kern-1pt"-} ⊤
+VarPositions (left   p)  f {-"\kern-1pt"-}={-"\kern-1pt"-} VarPositions p f
+VarPositions (right  p)  f {-"\kern-1pt"-}={-"\kern-1pt"-} VarPositions p f
+VarPositions (prod p q)  f {-"\kern-1pt"-}={-"\kern-1pt"-} VarPositions p f {-"\kern-1pt"-}×{-"\kern-1pt"-} VarPositions q f
+\end{code}
+A first situation where the notion of pattern-induced containers is helpful is when formalising pattern matching:
+the result of a successful pattern matching can be filled into such a container, by putting the resulting components at their respective variable positions.
+Defining the types of pattern matching results as an instance of |VarPositions|:
+\begin{code}
+^^^PatResult : (HIDE({D : U} ->)) Pattern D -> Set
+PatResult p = VarPositions p ⟦_⟧
+\end{code}
+we can formulate pattern matching as a partial isomorphism:
+\begin{code}
+pat-iso : (HIDE({D : U} ->)) (p : Pattern D) -> Iso ⟦ D ⟧ (PatResult p)
+\end{code}
+whose definition is shown in \autoref{fig:pat-iso}.
+The |to| component of the isomorphism performs pattern matching, and the |from| component reverses pattern matching by evaluating a pattern as if it is an expression, using the input of type |PatResult p| as an environment for values at variable positions.
+(This pattern matching isomorphism will also play an important role in \autoref{sec:view-rearrangement}.)
+%\footnote{
+%For a concrete example: The pattern |pat = cons var var : Pattern (list A)| has two variable positions of types |⟦ A ⟧| and |List ⟦ A ⟧|, and indeed |PatResult pat| computes to |⟦ A ⟧ × List ⟦ A ⟧|.
+%Thus |Iso.to (pat-iso pat)| matches any non-empty list and returns its head and tail as a pair.
+%The pattern can also be viewed as an expression denoting a non-empty list; it is evaluated by applying |Iso.from (pat-iso pat)| to an environment of type |⟦ A ⟧ × List ⟦ A ⟧| supplying values for the head and the tail.}
 
 \begin{figure}
 \beforefigure
@@ -777,37 +813,6 @@ pat-iso p = record  {    to    = deconstruct p
 \caption{Definition of the pattern matching isomorphism}
 \label{fig:pat-iso}
 \end{figure}
-
-Next, patterns are given a different interpretation as ``containers'' for storing values --- whose types depend on the types of the variable sub-patterns --- at their variable positions.
-For example, a pair pattern |prod var var : Pattern (D ⊗ E)| can be interpreted as a container storing a pair of type |f D × f E| for any given type-computing function |f : U -> Set|.
-The types of such containers can be defined by induction on |Pattern|:
-\begin{code}
-^^^VarPositions :
-  (HIDE({l : Level} {D : U} ->)) Pattern D -> (U -> Set (HIDE'(l))) -> Set (HIDE'(l))
-VarPositions (var {D})   f {-"\kern-1pt"-}={-"\kern-1pt"-} f D
-VarPositions unit        f {-"\kern-1pt"-}={-"\kern-1pt"-} ⊤
-VarPositions (left   p)  f {-"\kern-1pt"-}={-"\kern-1pt"-} VarPositions p f
-VarPositions (right  p)  f {-"\kern-1pt"-}={-"\kern-1pt"-} VarPositions p f
-VarPositions (prod p q)  f {-"\kern-1pt"-}={-"\kern-1pt"-} VarPositions p f {-"\kern-1pt"-}×{-"\kern-1pt"-} VarPositions q f
-\end{code}
-A first situation where the notion of pattern-induced containers is helpful is when formalising pattern matching:
-the result of a successful pattern matching can be filled into such a container, by putting the resulting components at their respective variable positions.
-Defining the types of pattern matching results as an instance of |VarPositions|:
-\begin{code}
-^^^PatResult : (HIDE({D : U} ->)) Pattern D -> Set
-PatResult p = VarPositions p ⟦_⟧
-\end{code}
-we can formulate pattern matching as a partial isomorphism:
-\begin{code}
-pat-iso : (HIDE({D : U} ->)) (p : Pattern D) -> Iso ⟦ D ⟧ (PatResult p)
-\end{code}
-whose definition is shown in \autoref{fig:pat-iso}.
-The |to| component of the isomorphism performs pattern matching, and the |from| component reverses pattern matching by evaluating a pattern as if it is an expression, using the input of type |PatResult p| as an environment for values at variable positions.
-(This pattern matching isomorphism will also play an important role in \autoref{sec:view-rearrangement}.)
-%\footnote{
-%For a concrete example: The pattern |pat = cons var var : Pattern (list A)| has two variable positions of types |⟦ A ⟧| and |List ⟦ A ⟧|, and indeed |PatResult pat| computes to |⟦ A ⟧ × List ⟦ A ⟧|.
-%Thus |Iso.to (pat-iso pat)| matches any non-empty list and returns its head and tail as a pair.
-%The pattern can also be viewed as an expression denoting a non-empty list; it is evaluated by applying |Iso.from (pat-iso pat)| to an environment of type |⟦ A ⟧ × List ⟦ A ⟧| supplying values for the head and the tail.}
 
 Now we can explain the syntax of the source updating operation, i.e., the |update| constructor of the |BiGUL| datatype, and define how it is interpreted, i.e., the |update| case of |interp|.
 By specialising |VarPositions|, we can place |BiGUL| statements --- along with their view types --- at the variable positions of a pattern:
@@ -909,7 +914,7 @@ interp (rearr p q paths b) = interp b ◁ rearr-iso p q paths ABBRV
 \end{code}
 This is still not the actual definition, in fact --- note that the invertibility proof is omitted.
 To be able to supply the invertibility proof, |interp| needs an additional argument consisting of invertibility proofs for all |rearr| operations appearing in the program being interpreted.
-This additional argument is omitted from the presentation for clarity.
+This additional argument is omitted from the presentation for brevity.
 
 \subsection{Case analysis on source}
 \label{sec:source-case}
@@ -1247,11 +1252,11 @@ Since the lens~|l| updates the title, the |matching-condition| --- which compare
 Also, the updated source will continue to satisfy |source-condition| because the publication year and |instock| flag are not changed by~|l|.
 Finally, |conceal| sets the |instock| flag to false, necessarily invalidating |source-condition|.
 
-\subsection{A showcase example: transatlantic corporation}
+\section{A showcase example: transatlantic corporation}
 \label{sec:transatlantic-corporation}
 
-We end this section by looking at an example in detail, which requires nontrivial putback logic, in particular involving |caseS| and |caseV|.
-Suppose that a transatlantic corporation regularly relocates employees between its UK and US offices, and pay them in the local currency.
+In this section we look at an example in detail, which requires nontrivial putback logic, in particular involving |caseS| and |caseV|.
+Suppose that a transatlantic corporation regularly relocates employees between its UK and US offices, and pays them in the local currency.
 The payroll database stores for each employee their name, salary (a number interpreted as pounds or dollars depending on which country the employee works in), and current office location:
 \begin{code}
 ^^^Employee = Name ⊗ (Salary ⊗ Location) : U
@@ -1382,7 +1387,7 @@ We believe that the total correctness proved in \Agda\ can be translated into so
 
 \section*{Acknowledgements}
 
-We would like to thank Li Liu, Hugo Pacheco, and the anonymous reviewers of APLAS\,'15 and PEPM\,'16 for their valuable comments.
+We would like to thank Li Liu, Hugo Pacheco, Jeremy Gibbons, and the anonymous reviewers of APLAS\,'15 and PEPM\,'16 for their valuable comments.
 
 %\section{Conclusion}
 %\label{sec:con}
