@@ -65,7 +65,8 @@
 %format Lens.GetPut = Lens . GetPut
 %format put' = "\mathit{put}"
 %format get' = "\mathit{get}"
-%format ↔ = "\scalebox{.75}[1]{$\leftrightarrow$}"
+%format ↔ = "\diamond"
+%"\scalebox{.75}[1]{$\leftrightarrow$}"
 %format _↔_ = _ "{" ↔ "}\kern-\underscorespace" _
 %link ↔ _↔_
 %format Iso = "\constructor{Iso}"
@@ -167,8 +168,8 @@
 %format eval-path = eval - path
 %format rearr-iso = "\mathit{rearr}" - iso
 %format Invertible = "\constructor{Invertible}"
-%format _◁_ = _ "{\lhd}" _
-%format ◁ = "{\lhd}"
+%format _◁_ = _ "{\triangleleft}" _
+%format ◁ = "{\triangleleft}"
 %link ◁ _◁_
 %format bind-computes = bind - computes
 %format relocate-employees = "\mathit{relocate}" - employees
@@ -252,10 +253,16 @@
 %\copyrightdata{978-1-nnnn-nnnn-n/yy/mm} 
 %\doi{nnnnnnn.nnnnnnn}
 
+\CopyrightYear{2016} 
+%\setcopyright{acmlicensed}
+\conferenceinfo{PEPM'16}{January 18-19 2016, St. Petersburg, FL, USA}
+\copyrightdata{978-1-4503-4097-7/16/01}%\acmPrice{\$15.00}
+\doi{2847538.2847544}
+
 % Uncomment one of the following two, if you are not going for the 
 % traditional copyright transfer agreement.
 
-%\exclusivelicense                % ACM gets exclusive license to publish, 
+\exclusivelicense                 % ACM gets exclusive license to publish, 
                                   % you retain copyright
 
 %\permissiontopublish             % ACM gets nonexclusive license to publish
@@ -263,7 +270,7 @@
                                   % short abstracts)
 
 \titlebanner{DRAFT}               % These are ignored unless
-\preprintfooter{RC3}              % 'preprint' option specified.
+\preprintfooter{RC4}              % 'preprint' option specified.
 
 \title{BiGUL: A Formally Verified Core Language for Putback-Based Bidirectional Programming}
 
@@ -388,14 +395,14 @@ Although currently |BiGUL| only has a dependently typed abstract syntax, which i
 % show more !
 
 \item Secondly, the semantics of |BiGUL| is concretely defined in terms of monadic programs, and all dynamic checks for guaranteeing well-behavedness appear explicitly in the programs.
-|BiGUL| is thus differentiated from the more abstract treatment by, e.g., Foster~et~al~\cite{Foster-lenses}, in which partiality is dealt with implicitly and various well-behavedness conditions are specified set-theoretically, creating a gap between the definitions and their implementations.
+|BiGUL| is thus differentiated from the more abstract treatment by, e.g., Foster~et~al.~\cite{Foster-lenses}, in which partiality is dealt with implicitly and various well-behavedness conditions are specified set-theoretically, creating a gap between the definitions and their implementations.
 The concrete semantics of |BiGUL|, in contrast, can be faithfully ported to practical programming languages like \Haskell\ without having to fill the gap between abstract mathematics and concrete implementation.
 
 \item Most importantly, |BiGUL| and its well-behavedness have been completely formally modelled and verified using the dependently typed programming language \Agda~\cite{Norell-thesis,Nore08}.
 (Full source code is available at \url{http://www.prg.nii.ac.jp/project/bigul}, and has been checked by \Agda\ version 2.4.2.4 with standard library version~0.11.)
 Since |BiGUL|'s semantics are concrete programs and directly proved correct, we can highly confidently guarantee that these programs, when ported to other languages, are indeed well-behaved.
 
-\item The main technique for facilitating the construction of well-behavedness proofs is worth mentioning: we reify computation steps of monadic programs as easily manipulable data, so well-behavedness proofs --- which have to cover all possible execution traces by analysing program structure --- can be carried out just like doing ordinary functional programming.
+\item The main technique for facilitating the construction of well-behavedness proofs is worth mentioning: We reify computation steps of monadic programs as easily manipulable data, so well-behavedness proofs --- which have to cover all possible execution traces by analysing program structure --- can be carried out just like doing ordinary functional programming.
 \end{itemize}
 % finally prove our language is well-behaved.
 %
@@ -420,7 +427,7 @@ This paper is typeset with a modified version of lhs2\TeX\ such that all global 
 Before presenting the |BiGUL| language in \autoref{sec:BiGUL}, we first give an account of our \Agda\ formalisation of the underlying notion of well-behaved partial bidirectional transformations, and also demonstrate by a simple example how well-behavedness proofs are constructed in our setting (\autoref{sec:sample-well-behavedness-proof}).
 The key to the formalisation is the reification of computation steps of monadic programs as a type family~|_↦_| (\autoref{sec:reification}), which makes the construction of the proofs as easy as ordinary functional programming.
 
-We follow Foster~et~al's classic \emph{lens} approach~\cite{Foster-lenses}, but for the |PutGet| and |GetPut| laws we adopt the variant used by Pacheco et~al~\cite{Pacheco-putlenses}.
+We follow Foster~et~al.'s classic \emph{lens} approach~\cite{Foster-lenses}, but for the |PutGet| and |GetPut| laws we adopt the variant used by Pacheco et~al.~\cite{Pacheco-putlenses}.
 A lens between a \emph{source} type~|S| and a \emph{view} type~|V| is defined in \Agda\ as the following record type:%
 \footnote{Arguments wrapped in curly braces are \emph{implicit}, and are typeset in a less obtrusive style in this paper.
 We do not need to supply the implicit arguments when applying a function if \Agda\ can infer what those arguments should be.}
@@ -441,7 +448,7 @@ Execution of |put s v|, if successful, produces an updated version of the source
 The |PutGet| law states that, for all |s|,~|s' : S| and |v : V|, if |put s v| successfully computes to~|s'|, then subsequently |get s'| should successfully compute to~|v|; this ensures that |put| does the embedding properly --- after |put| updates a source with a view, |get| can completely recover the view from the updated source.
 Conversely, the |GetPut| law states that, for all |s : S| and |v : V|, if |get s| successfully computes to~|v|, then subsequently |put s v| should successfully compute to~|s|; this ensures that |put| does not perform excessive updates --- if the view used to update the source is directly extracted from the source by |get|, then the source will remain unchanged after the update.
 
-Note that our definition of lenses is stronger than the definition of well-behaved lenses given by Foster~et~al~\cite[Definition~3.2]{Foster-lenses}: our |PutGet| law says that successful computation of |put| guarantees success of the subsequent computation of |get|, whereas in Foster~et~al's definition there is no such guarantee; the |GetPut| law is similar.
+Note that our definition of lenses is stronger than the definition of well-behaved lenses given by Foster~et~al.~\cite[Definition~3.2]{Foster-lenses}: Our |PutGet| law says that successful computation of |put| guarantees success of the subsequent computation of |get|, whereas in Foster~et~al.'s definition there is no such guarantee; the |GetPut| law is similar.
 
 \subsection{Reification of monadic combinators and computation steps}
 \label{sec:reification}
@@ -456,7 +463,7 @@ We can choose to write our transformations directly as |Maybe|-programs, usually
 This approach does not work too satisfactorily, though (see the second half of \autoref{sec:sample-well-behavedness-proof} for an example), when we consider the kind of proofs we need to construct for these programs:
 When proving |PutGet| and |GetPut|, given is a proof that a program --- consisting of sub-programs bound together by the combinators --- computes successfully, and we need to analyse it to obtain proofs saying that each of the sub-programs computes successfully, and then reassemble these proofs to show that a related composite program also computes successfully.
 This task would be much easier if a proof of a successful composite computation is exactly a bunch of proofs that all its sub-computations succeed.
-To achieve this, we can reify the monadic binding structure of |Maybe|-programs by deeply embedding the monadic combinators as the constructors of a datatype, so later we can define types of proofs of successful computation by induction on the binding structure.
+To achieve this, we can reify the monadic binding structure of |Maybe|-programs by deeply embedding the monadic combinators as the constructors of a datatype, so that we can define types of proofs of successful computation by induction on the binding structure.
 
 We thus define a datatype |Par|, which is a deep embedding of the operators that we use to write partial transformations:%
 \footnote{Identifiers with underscores can be used either in prefix or infix form.
@@ -716,8 +723,8 @@ In general, |put| must embed all view information into the updated source so |ge
 
 A fundamental operation is decomposing a source and updating its parts, represented by the |update| constructor of |BiGUL|.
 We follow the approach taken by \textsc{Flux}~\cite{Cheney-FLUX}, which requires that updates must be independent --- that is, the same part of a source cannot be updated more than once.
-(This is for ensuring |PutGet|: consider, for example, the scenario in which the view is a pair |(v , v')|, whose components have the same type as the source; if we allowed the source to be replaced twice, first with~|v| and second with~|v'|, then |v|~would be overwritten by the second replacing and could not be retrieved by a subsequent invocation of |get|.)
-It turns out that a pattern matching notation suits this task perfectly: pattern matching is arguably the most intuitive way to decompose a source, and we can specify manifestly independent updates by writing them at the variable positions in a pattern.
+(This is for ensuring |PutGet|: Consider, for example, the scenario in which the view is a pair |(v , v')|, whose components have the same type as the source; if we allowed the source to be replaced twice, first with~|v| and second with~|v'|, then |v|~would be overwritten by the second replacing and could not be retrieved by a subsequent invocation of |get|.)
+It turns out that a pattern matching notation suits this task perfectly: Pattern matching is arguably the most intuitive way to decompose a source, and we can specify manifestly independent updates by writing them at the variable positions in a pattern.
 For example, at lines 5--6 of \autoref{fig:bookstore} we use |update| to match a source book of type |String × String × ℕ × ℕ × Bool| with a five-variable pattern and update its five components respectively by |replace|, |skip|, |skip|, |replace|, and |skip|.
 The idea itself is straightforward; what follows, despite its slight complexity (especially if the reader is not familiar with dependently typed programming), is merely our datatype-generic and strongly typed implementation of the idea in \Agda~\cite{Gibbons-DGP,Altenkirch-GP-within-DTP}.
 The definitions for |update| will be laid out in three levels:
@@ -899,7 +906,7 @@ interp (rearr p q paths b) =
 This definition is not good enough, however.
 The reason is subtle:
 The intended |put| semantics of |rearr| is to transform the view and then use~|b| with the new view, but the above semantics performs one extra step that uses the |get| semantics of~|b| to compute an intermediate source, which is then ignored according to the definition of |iso-lens|.
-This extra step turns out to be not only redundant but also detrimental: it is possible that the |put| semantics of~|b| can accept sources that are not in the domain of its |get| semantics (for example, when |b|~is a |caseS| with adaptive branches (\autoref{sec:source-case})), and when that is the case, the intended |put| semantics of |rearr| should compute successfully, while the above semantics will fail to compute due to the extra invocation of |get|.
+This extra step turns out to be not only redundant but also detrimental: It is possible that the |put| semantics of~|b| can accept sources that are not in the domain of its |get| semantics (for example, when |b|~is a |caseS| with adaptive branches (\autoref{sec:source-case})), and when that is the case, the intended |put| semantics of |rearr| should compute successfully, while the above semantics will fail to compute due to the extra invocation of |get|.
 We hence need to introduce a more specialised operator for composing a lens with an isomorphism:
 \begin{code}
 ^^^_◁_ : (HIDE({A B C : Set} ->)) Lens A B -> Iso B C -> Lens A C
@@ -956,8 +963,8 @@ caseS-lens S V bs = record  {    put  = \ s v -> put-with-adaptation bs [] s v (
 The next construct |caseS| is for doing case analysis on the source.
 The basic idea of |caseS|'s semantics is to choose from a list of branches the first one that matches the source, and then execute the |BiGUL| statement of that branch.
 
-It is, however, difficult to find a |get| to pair with this |put| semantics: the obvious |get| which selects the first branch that matches its source argument does not work, because, when we consider |PutGet|, it may well happen that the updated source produced by |put| matches a different branch from the one matching the original source, and hence in general we would have to guarantee |PutGet| for |put| and |get| coming respectively from any two branches, which is unmanageable.
-A more manageable solution is to insert a dynamic check at the end of |put| to ensure that the updated source must match the same branch as the original source, which is the solution adopted by Foster~et~al's concrete conditional lens~\cite[Section~6.1]{Foster-lenses}.
+It is, however, difficult to find a |get| to pair with this |put| semantics: The obvious |get| which selects the first branch that matches its source argument does not work, because, when we consider |PutGet|, it may well happen that the updated source produced by |put| matches a different branch from the one matching the original source, and hence in general we would have to guarantee |PutGet| for |put| and |get| coming respectively from any two branches, which is unmanageable.
+A more manageable solution is to insert a dynamic check at the end of |put| to ensure that the updated source must match the same branch as the original source, which is the solution adopted by Foster~et~al.'s concrete conditional lens~\cite[Section~6.1]{Foster-lenses}.
 
 \subsubsection{Enriching source case analysis with adaptive branches}
 
@@ -991,7 +998,7 @@ which is built from a list of branches.
 
 The |put| and |get| components of |caseS-lens| are shown in \autoref{fig:caseS}.
 For the |put| semantics, we might think of a source case analysis as still consisting mainly of normal branches, but we can now specify additional cases such that when a source matches none of the normal branches, the source can still be accepted, which is then transformed --- or adapted --- to one that will match a normal branch.
-More explicitly, the case analysis may be run twice: if a normal branch is chosen the first time, then the case analysis succeeds and we execute the branch; otherwise, we adapt the source and rerun the case analysis, and must match a normal branch this time.
+More explicitly, the case analysis may be run twice: If a normal branch is chosen the first time, then the case analysis succeeds and we execute the branch; otherwise, we adapt the source and rerun the case analysis, and must match a normal branch this time.
 A single round of the case analysis is performed by the function |put-with-adaptation|, which takes a continuation of type |S -> Par S| that, when an adaptive branch is matched, is invoked on the adapted source.
 The |put| semantics, which consists of up to two rounds of the case analysis, is |put-with-adaptation| with a second instance of |put-with-adaptation| as the continuation, and the continuation for the latter is the computation that always fails --- that is, the second round cannot fall into an adaptive branch.
 In either round, if a normal branch is matched and executed, we must ensure that the updated source satisfies the predicate of the branch and also none of the predicates of the previous branches, so a subsequent execution of |get| on the updated source --- which chooses a branch in the same way as |put| --- will go through the same branch as |put|, establishing |PutGet|.
@@ -1021,7 +1028,7 @@ toEven = caseS
   {-"\!\!"-} (  (return ∘ isEven                , normal    skip) ∷
                 ((\ {-"\!"-} _ -> return true)  , adaptive  (\ n -> return (n MINUS 1))) ∷ [])
 \end{code}
-That is, normally we expect the source to be an even number, but if an odd source does show up, |put| will be capable of ``normalising'' it: the odd source will fall into the second |adaptive'| branch and get transformed into an even number, which will then match the first |normal'| branch, and be returned as the updated source.
+That is, normally we expect the source to be an even number, but if an odd source does show up, |put| will be capable of ``normalising'' it: The odd source will fall into the second |adaptive'| branch and get transformed into an even number, which will then match the first |normal'| branch, and be returned as the updated source.
 
 \subsubsection{Sketch of the well-behavedness proofs}
 
@@ -1146,7 +1153,7 @@ caseV-lens : (S V : Set) -> List (CaseVBranch S V) -> Lens S V
 Its |put| and |get| are shown in \autoref{fig:caseV}.
 The definition of |put| is basically what one would expect.
 As for |get|, there is no obvious way to decide which branch to go --- unlike |put|, we are not given a view to match with the branches.
-Here we try to execute each of the branches until we reach one that computes a view successfully, which is the approach taken by Pacheco~et~al~\cite{Pacheco-putlenses}.
+Here we try to execute each of the branches until we reach one that computes a view successfully, which is the approach taken by Pacheco~et~al.~\cite{Pacheco-putlenses}.
 This requires |Par| to be extended with one more constructor:%\todo{Hugo: perhaps make a reference to monadic exceptions or MonadPlus to explain the intuition of catch}
 \begin{code}
 ^^^catch : (HIDE({A B : Set} →)) Par A → (A → Par B) → Par B → Par B
@@ -1170,7 +1177,7 @@ caseV (  (return ∘ isInj₁ ,  -- |^^^isInj₁ : (HIDE({A B : Set} ->)) A ⊎ 
            rearr (right  unit) unit tt toOdd   ) ∷ [])
 \end{code}
 If the view is |inj₁ tt|, we rearrange it to~|tt| and invoke |toEven| to update the source to an even number; the case where the view is |inj₂ tt| is analogous.
-This is a common pattern for |caseV| (which will appear again in \autoref{sec:transatlantic-corporation}): each branch begins with a view rearrangement which gets rid of some information that has been used to choose this branch, and then uses a |caseS| to update the source to correspond to the view.
+This is a common pattern for |caseV| (which will appear again in \autoref{sec:transatlantic-corporation}): Each branch begins with a view rearrangement which gets rid of some information that has been used to choose this branch, and then uses a |caseS| to update the source to correspond to the view.
 As for the |get| semantics, an even source will successfully compute to |tt| through |toEven| and then to |inj₁ tt| by the rearrangement, while an odd source will fail to compute through |toEven| and fall to the second branch, eventually producing |inj₂ tt|.
 
 \paragraph{Well-behavedness.}
@@ -1182,7 +1189,7 @@ For the programmer, this means that, in order for a |caseV| to be able to pass t
 \label{sec:list-alignment}
 
 For the semantics of |align|, which is the key operation used in \autoref{fig:bookstore} (and in the \BiFluX\ language~\cite{Pacheco-BiFluX}), we employ a particular parametrised strategy for updating a list of sources of type~|S| with a list of views of type~|V|, which tries to align/match the sources with the views, synchronise the matched pairs of sources and views by an inner lens, and process the unmatched sources and views in some programmer-specified ways.
-The purpose of |align| is similar to Barbosa~et~al's matching lenses~\cite{Barbosa:2010}, but we do not intend |align| to be as expressive as matching lenses yet --- a few of the design choices made below will appear somewhat arbitrary and inflexible, but the semantics is already interesting enough such that formal verification is desirable.
+The purpose of |align| is similar to Barbosa~et~al.'s matching lenses~\cite{Barbosa:2010}, but we do not intend |align| to be as expressive as matching lenses yet --- a few of the design choices made below will appear somewhat arbitrary and inflexible, but the semantics is already interesting enough such that formal verification is desirable.
 
 The lens semantics of |align| has type
 \begin{code}
@@ -1212,7 +1219,7 @@ First, from the source list we can select a sub-list that we intend to align wit
 For our example, the sub-list consists of the entries for the books \textsl{Pottery} and \textsl{Nanny}.
 \item
 The sub-list of sources satisfying |source-condition| are then aligned with the list of views by finding pairs of source and view satisfying a given binary predicate |matching-condition :| |S -> V -> Par Bool|.
-The matching order is fixed in our strategy: for each view we find the first matching source that has not been matched with a previous view.
+The matching order is fixed in our strategy: For each view we find the first matching source that has not been matched with a previous view.
 For our example, there is one matching pair, namely the source and view entries for \textsl{Pottery}.
 \item
 On each matched pair of source and view we execute an inner lens |l : Lens S V| to update the source with the view.
@@ -1226,7 +1233,7 @@ For our example, \textsl{Hiking} in an unmatched view, so we create a temporary 
 \end{code}
 \item
 For unmatched sources, we can choose to simply delete them or transform them such that they do not satisfy |source-condition|.
-This is specified by a function |conceal : S → Par (Maybe S)|: an unmatched source is deleted if applying |conceal| to it produces |nothing|, or transformed if |conceal| produces a new source wrapped in |just|.
+This is specified by a function |conceal : S → Par (Maybe S)|: An unmatched source is deleted if applying |conceal| to it produces |nothing|, or transformed if |conceal| produces a new source wrapped in |just|.
 For our example, \textsl{Nanny} is an unmatched source, and we conceal the entry by setting its |instock| flag to |false|.
 These transformed sources can be placed anywhere in the source list; currently we simply place all of them towards the front of the list.
 \item
@@ -1350,12 +1357,12 @@ We designed |BiGUL| such that the natural way to understand a |BiGUL| program is
 The programmer should of course have a specification in mind before programming |put|, but that specification is not necessarily a |get| function.)
 
 We have to admit, though, that the expressive power of the current |BiGUL| is not stronger than existing work on lenses.
-In particular, we came up with the adaptive |caseS| to solve a practical problem we encountered~\cite{Zhu-BiYacc}, but realised only later that the idea already existed as Foster~et~al's ``fixup functions''; the common pattern using adaptive |caseS| inside |caseV|, which appears in the examples in Sections \ref{sec:view-case}~and~\ref{sec:transatlantic-corporation}, is essentially their general conditional lens~\cite[Section~6.3]{Foster-lenses}.
-(Foster~et~al did not give an example using their general conditional lens, though, possibly due to the complexity of its putback semantics.
+In particular, we came up with the adaptive |caseS| to solve a practical problem we encountered~\cite{Zhu-BiYacc}, but realised only later that the idea already existed as Foster~et~al.'s ``fixup functions''; the common pattern using adaptive |caseS| inside |caseV|, which appears in the examples in Sections \ref{sec:view-case}~and~\ref{sec:transatlantic-corporation}, is essentially their general conditional lens~\cite[Section~6.3]{Foster-lenses}.
+(Foster~et~al{.} did not give an example using their general conditional lens, though, possibly due to the complexity of its putback semantics.
 It might be argued that, without switching to the putback-based perspective, it is hard to use this kind of more complex lenses.
 This is only an indirect support of the putback-based approach, though.)
 We thus believe that the main contribution of this paper should be its completely formal development:
-Grohne~et~al~\cite{Grohne-formalizing-semantic-bidirectionalization} have also worked on formal verification about BXs (in \Agda), but their work was about semantic bidirectionalisation based on parametric polymorphism~\cite{Voigtlander-BX-for-free}.
+Grohne~et~al.~\cite{Grohne-formalizing-semantic-bidirectionalization} have also worked on formal verification about BXs (in \Agda), but their work was about semantic bidirectionalisation based on parametric polymorphism~\cite{Voigtlander-BX-for-free}.
 Our work is the first to formally describe and verify a collection of nontrivial and practically implemented lenses in a dependently typed language, in particular utilising the power of dependent types to design a logically clean abstract syntax and make well-behavedness proofs much easier to handle.
 
 %\todo[inline]{It is probably worth noting that the well-behavedness proofs in |align-lens| are more difficult, but it is mostly due to the inherent difficulty of the proofs --- there is little overhead regarding the formalisation per~se, due to the nice structure of the definition of well-behavedness (in terms of~|_↦_|).
@@ -1377,17 +1384,18 @@ Both |BiGUL| and \Putlenses\ are datatype-generic and describe partial putback t
 |BiGUL| does not strive for maximal expressiveness like \Putlenses\ (in particular, |BiGUL| does not consider effectful computations in |put|), but instead takes a more cautious approach by focusing on a smaller set of essential features and formally proving their well-behavedness.
 The dynamic checks are sometimes tricky to get right, and proofs about them can require detailed case analyses that are not so easy to manage.
 (Indeed, during the formalisation we did not get everything right the first time and had to make corrections after failing to complete the proofs.)
-Thus the fact that the whole |BiGUL| language is formally verified is a firm step towards reliable putback-based bidirectional programming: as |BiGUL| is intended to serve as the (new) core of higher-level putback-based languages like \BiFluX~\cite{Pacheco-BiFluX} and \BiYacc~\cite{Zhu-BiYacc}, the well-behavedness of the latter languages will be established beyond doubt.
+Thus the fact that the whole |BiGUL| language is formally verified is a firm step towards reliable putback-based bidirectional programming: As |BiGUL| is intended to serve as the (new) core of higher-level putback-based languages like \BiFluX~\cite{Pacheco-BiFluX} and \BiYacc~\cite{Zhu-BiYacc}, the well-behavedness of the latter languages will be established beyond doubt.
 
 To (re-)implement \BiFluX\ and \BiYacc, we have ported |BiGUL| to \Haskell.
 The types need some adaptation because \Haskell\ is not fully dependently typed (but close enough; see, e.g., Lindley and McBride~\cite{Lindley-Hasochism}), while the transformations can be more or less faithfully transcribed.
 A significant difference between \Agda\ and \Haskell\ is that \Haskell\ freely allows general recursion, whereas \Agda\ requires every recursive program to be evidently well-founded.
 We do not consider recursion in the \Agda\ formalisation, but we need general recursion in \BiFluX\ and \BiYacc, which is a major reason for porting |BiGUL| to \Haskell.
-We believe that the total correctness proved in \Agda\ can be translated into some sort of partial correctness in \Haskell\ (perhaps along the line of Danielsson~et~al~\cite{Danielsson-fast-and-loose-reasoning}); that is, a |BiGUL| program in \Haskell\ may not terminate, but when it does, it is guaranteed to be well-behaved.
+We believe that the total correctness proved in \Agda\ can be translated into some sort of partial correctness in \Haskell\ (perhaps along the line of Danielsson~et~al.~\cite{Danielsson-fast-and-loose-reasoning}); that is, a |BiGUL| program in \Haskell\ may not terminate, but when it does, it is guaranteed to be well-behaved.
 
 \section*{Acknowledgements}
 
 We would like to thank Li Liu, Hugo Pacheco, Jeremy Gibbons, and the anonymous reviewers of APLAS\,'15 and PEPM\,'16 for their valuable comments.
+This work is partially supported by JSPS Grant-in-Aid for Scientific Research (A) No. 25240009 in Japan.
 
 %\section{Conclusion}
 %\label{sec:con}
