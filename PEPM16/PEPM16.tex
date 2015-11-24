@@ -1,4 +1,4 @@
-\documentclass[preprint]{sigplanconf}
+\documentclass{sigplanconf}
 
 %include agda.fmt
 
@@ -169,7 +169,7 @@
 %format rearr-iso = "\mathit{rearr}" - iso
 %format Invertible = "\constructor{Invertible}"
 %format _◁_ = _ "{\triangleleft}" _
-%format ◁ = "{\triangleleft}"
+%format ◁ = "\triangleleft"
 %link ◁ _◁_
 %format bind-computes = bind - computes
 %format relocate-employees = "\mathit{relocate}" - employees
@@ -456,7 +456,7 @@ Note that our definition of lenses is stronger than the definition of well-behav
 The kind of partial transformations we need are actually total functions which wrap their results in the standard |^^^Maybe| datatype with two constructors |^^^just : A -> Maybe A| and |^^^nothing  : Maybe A| --- the result of a successful computation is wrapped in the |just| constructor, while failed computation is represented by |nothing|.
 It is thus always possible to know whether a computation succeeds or not in a finite amount of time.
 This notion of ``decidable partiality'' should be distinguished from the usual partiality as formalised in terms of continuous functions between complete partial orders:
-when defining the semantics of |BiGUL| (more specifically, for view case analysis in \autoref{sec:view-case}), we need to write programs that produce some result or fail respectively when a sub-program fails or produces some result, but this is not possible if failed computation is represented as a least element of a complete partial order.
+When defining the semantics of |BiGUL| (more specifically, for view case analysis in \autoref{sec:view-case}), we need to write programs that produce some result or fail respectively when a sub-program fails or produces some result, but this is not possible if failed computation is represented as a least element of a complete partial order.
 %(since such functions violate monotonicity, a necessary condition for computability).
 
 We can choose to write our transformations directly as |Maybe|-programs, usually structured with monadic combinators~\cite{Moggi-monads,Wadler-essence} like ``return'' and ``bind''.
@@ -645,7 +645,7 @@ And we can do case analyses on either the source~(|caseS|; \autoref{sec:source-c
 The source is a list of book data of type |String × String × ℕ × ℕ × Bool| representing a book's title, author, publication year, price, and whether it is in stock, and we intend to update the price of those books published in 2016 that are still in stock.
 We thus prepare a list of pairs of book title and price of type |String × ℕ| as the view.
 The |BiGUL| program then describes how to update the source with the view:
-we focus on those books in the source list which are published in 2016 and still in stock~(line~1) and align them with the view list by title~(line~2);
+We focus on those books in the source list which are published in 2016 and still in stock~(line~1) and align them with the view list by title~(line~2);
 for every matched pair of source and view books, we rearrange the view~(lines 3--4) to match with the shape of the source, decompose the source by pattern matching (line~5), and replace the title and price of the source with those from the view~(line~6);
 for every unmatched view book, we create a source book with default author information and publication year 2016 and mark it as in stock~(line~7), and its title and price will later be updated by the action for matched pairs (i.e., lines 3--6);
 finally, for every unmatched source book, we keep it in the source list but mark it as out of stock~(line~8).
@@ -728,7 +728,7 @@ It turns out that a pattern matching notation suits this task perfectly: Pattern
 For example, at lines 5--6 of \autoref{fig:bookstore} we use |update| to match a source book of type |String × String × ℕ × ℕ × Bool| with a five-variable pattern and update its five components respectively by |replace|, |skip|, |skip|, |replace|, and |skip|.
 The idea itself is straightforward; what follows, despite its slight complexity (especially if the reader is not familiar with dependently typed programming), is merely our datatype-generic and strongly typed implementation of the idea in \Agda~\cite{Gibbons-DGP,Altenkirch-GP-within-DTP}.
 The definitions for |update| will be laid out in three levels:
-we first define the class of datatypes that we wish to process with |BiGUL|; for every datatype, we define the patterns applicable to the inhabitants of the datatype; finally, every pattern induces a ``container'' type, whose inhabitants can be used to store inner |BiGUL| statements at the variable positions of the pattern.
+We first define the class of datatypes that we wish to process with |BiGUL|; for every datatype, we define the patterns applicable to the inhabitants of the datatype; finally, every pattern induces a ``container'' type, whose inhabitants can be used to store inner |BiGUL| statements at the variable positions of the pattern.
 
 Since \Agda\ is fully dependently typed, we can naturally define patterns in a type-directed way such that nonsensical patterns are ruled out by construction.
 This task starts from the construction of a \emph{universe}~|U|, i.e., a datatype whose inhabitants are interpreted as types.
@@ -771,7 +771,7 @@ VarPositions (right  p)  f {-"\kern-1pt"-}={-"\kern-1pt"-} VarPositions p f
 VarPositions (prod p q)  f {-"\kern-1pt"-}={-"\kern-1pt"-} VarPositions p f {-"\kern-1pt"-}×{-"\kern-1pt"-} VarPositions q f
 \end{code}
 A first situation where the notion of pattern-induced containers is helpful is when formalising pattern matching:
-the result of a successful pattern matching can be filled into such a container, by putting the resulting components at their respective variable positions.
+The result of a successful pattern matching can be filled into such a container, by putting the resulting components at their respective variable positions.
 Defining the types of pattern matching results as an instance of |VarPositions|:
 \begin{code}
 ^^^PatResult : (HIDE({D : U} ->)) Pattern D -> Set
@@ -962,7 +962,6 @@ caseS-lens S V bs = record  {    put  = \ s v -> put-with-adaptation bs [] s v (
 
 The next construct |caseS| is for doing case analysis on the source.
 The basic idea of |caseS|'s semantics is to choose from a list of branches the first one that matches the source, and then execute the |BiGUL| statement of that branch.
-
 It is, however, difficult to find a |get| to pair with this |put| semantics: The obvious |get| which selects the first branch that matches its source argument does not work, because, when we consider |PutGet|, it may well happen that the updated source produced by |put| matches a different branch from the one matching the original source, and hence in general we would have to guarantee |PutGet| for |put| and |get| coming respectively from any two branches, which is unmanageable.
 A more manageable solution is to insert a dynamic check at the end of |put| to ensure that the updated source must match the same branch as the original source, which is the solution adopted by Foster~et~al.'s concrete conditional lens~\cite[Section~6.1]{Foster-lenses}.
 
