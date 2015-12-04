@@ -225,3 +225,9 @@ employeeView' = [
 putEmployee :: Either ErrorInfo String
 putEmployee =liftM (show) (put u employeeS employeeView')
 
+dep_pair :: BiGUL (Either ErrorInfo) (Int, Int) (Int, Int)
+dep_pair = CaseV [ ((return . uncurry (==)) ,
+                     (CaseS [ $(normal' [| (/= 0) . snd |]) Replace ,
+                              $(normal [p| _ |]) $ Dep id $ $(rearr [| \x -> (x, 0) |]) Replace ])) ,
+                   ((return . (/= 0) . snd) ,
+                      Replace) ]
