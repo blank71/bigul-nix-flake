@@ -421,7 +421,7 @@ For the rest of the paper, after explaining how to formalise and prove well-beha
 This paper is typeset with a modified version of lhs2\TeX\ such that all global \Agda\ identifiers are hyperlinked to their definitions, as an aid to those who read this paper electronically.
 
 
-\section{Formalisation of well-behaved BXs in \Agda}
+\section{Formalisation of Well-Behaved BXs in \Agda}
 \label{sec:BX}
 
 Before presenting the |BiGUL| language in \autoref{sec:BiGUL}, we first give an account of our \Agda\ formalisation of the underlying notion of well-behaved partial bidirectional transformations, and also demonstrate by a simple example how well-behavedness proofs are constructed in our setting (\autoref{sec:sample-well-behavedness-proof}).
@@ -450,7 +450,7 @@ Conversely, the |GetPut| law states that, for all |s : S| and |v : V|, if |get s
 
 Note that our definition of lenses is stronger than the definition of well-behaved lenses given by Foster~et~al.~\cite[Definition~3.2]{Foster-lenses}: Our |PutGet| law says that successful computation of |put| guarantees success of the subsequent computation of |get|, whereas in Foster~et~al.'s definition there is no such guarantee; the |GetPut| law is similar.
 
-\subsection{Reification of monadic combinators and computation steps}
+\subsection{Reification of Monadic Combinators and Computation Steps}
 \label{sec:reification}
 
 The kind of partial transformations we need are actually total functions which wrap their results in the standard |^^^Maybe| datatype with two constructors |^^^just : A -> Maybe A| and |^^^nothing  : Maybe A| --- the result of a successful computation is wrapped in the |just| constructor, while failed computation is represented by |nothing|.
@@ -502,7 +502,7 @@ In prose: |return x| computes to~|x'| when |x|~is exactly~|x'|; |mx >>= f| compu
 Here our use of the term ``computes to'' is justified, since we can prove that a term of type |mx ↦ x| can be constructed if and only if |runPar mx ≡ just x|, meaning that our reification of |runPar mx ≡ just x| as |mx ↦ x| is accurate.
 We are thus entitled to use~|_↦_| in the statements of |PutGet| and |GetPut|.
 
-\subsection{A sample well-behavedness proof}
+\subsection{A Sample Well-Behavedness Proof}
 \label{sec:sample-well-behavedness-proof}
 
 To give the reader a taste of how well-behavedness proofs are constructed in our \Agda\ setting, let us try to define an operator~|_↔_| for lens composition:%
@@ -575,7 +575,7 @@ pg             p | b , x , q | b' , y , z rewrite Lens.PutGet l z
 which is apparently more heavyweight than the $\lambda$-expression~\autoref{lambda-expression}.
 For more complicated well-behavedness proofs, the above approach quickly becomes unmanageable, whereas our approach scales nicely.
 
-\section{BiGUL and its formally verified lens semantics}
+\section{BiGUL and Its Formally Verified Lens Semantics}
 \label{sec:BiGUL}
 
 %Various bidirectional programming languages have been built based on the idea of lenses.
@@ -666,7 +666,7 @@ We should warn the reader that the subsequent \autoref{sec:source-update} is mor
 %We will go through the whole process for the three basic operations in \autoref{sec:basic-lenses} and source case analysis in \autoref{sec:source-case}.
 %For the rest of the operations we will only give a sketch for brevity.
 
-\subsection{Replacing, failure, and skipping}
+\subsection{Replacing, Failure, and Skipping}
 \label{sec:basic-lenses}
 
 The three most basic operations are |replace|, |failB|, and |skip|.
@@ -718,7 +718,7 @@ Note that the view type is specified as the unit type~|^^^⊤| (whose only inhab
 In general, |put| must embed all view information into the updated source so |get| can recover the entire view from the updated source, establishing |PutGet|.
 |⊤|~is a type with no information, and hence |Lens.put skip-lens| can safely ignore its view argument of type~|⊤|, while |Lens.get skip-lens| can simply return~|tt|.
 
-\subsection{Source update}
+\subsection{Source Update}
 \label{sec:source-update}
 
 A fundamental operation is decomposing a source and updating its parts, represented by the |update| constructor of |BiGUL|.
@@ -850,7 +850,7 @@ where |interp-update| has type
 which inductively interprets and composes the |BiGUL| statements in~|bs| into one lens.
 In prose, the |put| semantics of |update| decomposes the source by matching it with the pattern~|p|, updates its components at the variable positions using the |BiGUL| statements in~|bs|, and reassembles the updated components, while its |get| semantics again decomposes the source by matching it with~|p| and extracts views from its components using~|bs|.
 
-\subsection{View rearrangement}
+\subsection{View Rearrangement}
 \label{sec:view-rearrangement}
 
 The operation |rearr| is for rearranging the view to a specific shape suitable for subsequent updates.
@@ -923,7 +923,7 @@ This is still not the actual definition, in fact --- note that the invertibility
 To be able to supply the invertibility proof, |interp| needs an additional argument consisting of invertibility proofs for all |rearr| operations appearing in the program being interpreted.
 This additional argument is omitted from the presentation for brevity.
 
-\subsection{Case analysis on source}
+\subsection{Case Analysis on Source}
 \label{sec:source-case}
 
 \begin{figure*}
@@ -965,7 +965,7 @@ The basic idea of |caseS|'s semantics is to choose from a list of branches the f
 It is, however, difficult to find a |get| to pair with this |put| semantics: The obvious |get| which selects the first branch that matches its source argument does not work, because, when we consider |PutGet|, it may well happen that the updated source produced by |put| matches a different branch from the one matching the original source, and hence in general we would have to guarantee |PutGet| for |put| and |get| coming respectively from any two branches, which is unmanageable.
 A more manageable solution is to insert a dynamic check at the end of |put| to ensure that the updated source must match the same branch as the original source, which is the solution adopted by Foster~et~al.'s concrete conditional lens~\cite[Section~6.1]{Foster-lenses}.
 
-\subsubsection{Enriching source case analysis with adaptive branches}
+\subsubsection{Enriching Source Case Analysis with Adaptive Branches}
 
 The above solution, however, is sometimes too restrictive in practice.
 For example, in our putback-based language \BiYacc~\cite{Zhu-BiYacc} for generating well-behaved pairs of parsers and ``reflective'' printers, a program specifies how a printer \emph{updates} a concrete syntax tree (the source) to become consistent with an abstract syntax tree (the view).
@@ -992,7 +992,7 @@ caseS-lens : (S V : Set) -> List (CaseSBranch S V) -> Lens S V
 \end{code}
 which is built from a list of branches.
 
-\subsubsection{The \textit{put} and \textit{get} semantics}
+\subsubsection{The \textit{put} and \textit{get} Semantics}
 \label{sec:caseS-put-and-get}
 
 The |put| and |get| components of |caseS-lens| are shown in \autoref{fig:caseS}.
@@ -1029,7 +1029,7 @@ toEven = caseS
 \end{code}
 That is, normally we expect the source to be an even number, but if an odd source does show up, |put| will be capable of ``normalising'' it: The odd source will fall into the second |adaptive'| branch and get transformed into an even number, which will then match the first |normal'| branch, and be returned as the updated source.
 
-\subsubsection{Sketch of the well-behavedness proofs}
+\subsubsection{Sketch of the Well-Behavedness Proofs}
 
 As explained in \autoref{sec:sample-well-behavedness-proof}, the well-behavedness proofs for |caseS-lens| proceed by analysing all possible ways for |put| or |get| to compute successfully, and then showing how their successful computation guarantees successful computation of the corresponding |get| or |put|.
 The only slight complication about |caseS-lens| is that |put-with-adaptation| has an accumulating parameter, which implies that we need to prove generalised versions of the well-behavedness statements.
@@ -1064,7 +1064,7 @@ GetPut-with-adaptation :
 %It states that if |get| using the list~|bs| of branches succeeds, then |put-with-adaptation| will also succeed as long as all branches in~|bs'| indeed are mismatched branches, i.e., |check-diversion| is successful.
 |GetPut| is then proved by setting |bs'| to |[]|, in which case the premise about |check-diversion| becomes trivially true.
 
-\subsubsection{Fitting the lens to the interpreter}
+\subsubsection{Fitting the Lens to the Interpreter}
 
 The final step is to define a corresponding constructor, |caseS|, in the |BiGUL| datatype.
 We start with defining a variant of |CaseSBranchType| whose source and view type parameters are codes from the universe~|U| (\autoref{sec:source-update}) and whose |normal'| constructor takes a |BiGUL| statement instead of a |Lens|:
@@ -1099,7 +1099,7 @@ mutual
 The helper function |interp-caseS| simply maps |interp| into the normal branches.
 To help \Agda\ see that |interp| is terminating, though, we need to define |interp-caseS| explicitly (instead of using the standard |map| function on lists) and put the definition along with |interp| in a |mutual| block.
 
-\subsection{Case analysis on view}
+\subsection{Case Analysis on View}
 \label{sec:view-case}
 
 \begin{figure}[t]
@@ -1184,7 +1184,7 @@ For the well-behavedness properties, |PutGet| is the more difficult one to estab
 Our compromised solution is to make |put| do an expensive check after a branch is matched and executed, requiring that the |get| for each of the previous branches must fail.
 For the programmer, this means that, in order for a |caseV| to be able to pass this check, the ranges of the |put| semantics of the branches (which coincide with the domains of |get|) should be disjoint.
 
-\subsection{List alignment}
+\subsection{List Alignment}
 \label{sec:list-alignment}
 
 For the semantics of |align|, which is the key operation used in \autoref{fig:bookstore} (and in the \BiFluX\ language~\cite{Pacheco-BiFluX}), we employ a particular parametrised strategy for updating a list of sources of type~|S| with a list of views of type~|V|, which tries to align/match the sources with the views, synchronise the matched pairs of sources and views by an inner lens, and process the unmatched sources and views in some programmer-specified ways.
@@ -1258,7 +1258,7 @@ Since the lens~|l| updates the title, the |matching-condition| --- which compare
 Also, the updated source will continue to satisfy |source-condition| because the publication year and |instock| flag are not changed by~|l|.
 Finally, |conceal| sets the |instock| flag to false, necessarily invalidating |source-condition|.
 
-\section{A showcase example: transatlantic corporation}
+\section{A Showcase Example: Transatlantic Corporation}
 \label{sec:transatlantic-corporation}
 
 In this section we look at an example in detail, which requires nontrivial putback logic, in particular involving |caseS| and |caseV|.
@@ -1343,7 +1343,7 @@ For the |caseV| in |adjust-salary-and-office|, the ranges of |relocate-to-UK| an
 For the |align| in |relocate-employees|, since the source condition is always true, whatever |relocate-employee| produces necessarily satisfies the source condition, and we must conceal unmatched sources by deleting them, which is indeed what we specify; finally, we must guarantee that the updated source produced by |relocate-employee| and the view again satisfy the matching condition, even when the view is an unmatched one and the original source is a temporary one created from the view, and this is indeed guaranteed because |relocate-employee| puts the name in the view into the source.
 
 
-\section{Concluding remarks}
+\section{Concluding Remarks}
 \label{sec:concluding-remarks}
 
 We have given an account of the design and semantics of |BiGUL| and also how the language and its well-behavedness are formalised and proved in \Agda.
