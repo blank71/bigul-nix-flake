@@ -4,6 +4,9 @@ import Generics.BiGUL
 import Generics.BiGUL.AST
 import Generics.BiGUL.TH
 import Control.Monad
+import Data.Char
+import Data.Maybe
+import Data.List
 import GHC.Generics
 --import qualified Netscape
 --import qualified Xbel
@@ -231,3 +234,30 @@ dep_pair = CaseV [ ((return . uncurry (==)) ,
                               $(normal [p| _ |]) $ Dep id $ $(rearr [| \x -> (x, 0) |]) Replace ])) ,
                    ((return . (/= 0) . snd) ,
                       Replace) ]
+
+align :: (Eq k, Eq a, Eq b)
+      => ((k, a) -> Bool)
+      -> BiGUL (Either ErrorInfo) a b
+      -> (b -> a)
+      -> ((k, a) -> Maybe (k, a))
+      -> BiGUL (Either ErrorInfo) [(k, a)] [(k, b)]
+align p b create conceal =
+  CaseSV [ ((\ss vs -> return (null (filter p ss) && null vs)),
+            NormalSV ($(rearr [| \ [] -> () |]) Skip))
+         , ((\ss vs -> return (not (null (filter p ss)) && not (null vs) &&
+                               p (head ss) && fst (head ss) == fst (head vs))) ,
+            NormalSV $ $(rearrAndUpdate [p| (vk, v) : vs |]
+                                        [p| (vk, v) : vs |]
+                                        [d| vk = Replace
+                                            v  = b
+                                            vs = align p b create conceal |]))
+         , ((\ss vs -> return (not (null (filter p ss)) && null vs)),
+            AdaptiveSV (\ss _ -> return (catMaybes (map conceal ss))))
+         , ((\_ vs -> return (not (null vs))),
+            AdaptiveSV (\ss ((k, v):vs) ->
+                          case lookup k (filter p ss) of
+                            Nothing -> return ((k, create v):ss)
+                            Just s  -> return ((k, s):delete (k, s) ss))) ]
+
+testAlign :: BiGUL (Either ErrorInfo) [(Int, Char)] [(Int, ())]
+testAlign = align (isLower . snd) Skip (const 'x') (\(k, c) -> return (k, toUpper c))
