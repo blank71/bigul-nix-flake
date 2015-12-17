@@ -235,32 +235,39 @@ dep_pair = CaseV [ ((return . uncurry (==)) ,
                    ((return . (/= 0) . snd) ,
                       Replace) ]
 
-align :: (Eq k, Eq a, Eq b)
-      => ((k, a) -> Bool)
+align :: (Eq a, Eq b)
+      => (a -> Bool)
+      -> (a -> b -> Bool)
       -> BiGUL (Either ErrorInfo) a b
       -> (b -> a)
-      -> ((k, a) -> Maybe (k, a))
-      -> BiGUL (Either ErrorInfo) [(k, a)] [(k, b)]
-align p b create conceal =
+      -> (a -> Maybe a)
+      -> BiGUL (Either ErrorInfo) [a] [b]
+align p match b create conceal =
   CaseSV [ ((\ss vs -> return (null (filter p ss) && null vs)),
             NormalSV ($(rearr [| \ [] -> () |]) Skip))
-         , ((\ss vs -> return (not (null (filter p ss)) && not (null vs) &&
-                               p (head ss) && fst (head ss) == fst (head vs))) ,
-            NormalSV $ $(rearrAndUpdate [p| (vk, v) : vs |]
-                                        [p| (vk, v) : vs |]
-                                        [d| vk = Replace
-                                            v  = b
-                                            vs = align p b create conceal |]))
          , ((\ss vs -> return (not (null (filter p ss)) && null vs)),
             AdaptiveSV (\ss _ -> return (catMaybes (map conceal ss))))
-         , ((\_ vs -> return (not (null vs))),
-            AdaptiveSV (\ss ((k, v):vs) ->
-                          case lookup k (filter p ss) of
-                            Nothing -> return ((k, create v):ss)
-                            Just s  -> return ((k, s):delete (k, s) ss))) ]
+         , ((\ss vs -> return (not (null (filter p ss)) && not (null vs) && not (p (head ss)))),
+            NormalSV $ $(rearrAndUpdate [p| vs |] [p| _:vs |]
+                                        [d| vs = align p match b create conceal |]))
+         , ((\ss vs -> return (not (null (filter p ss)) && not (null vs) && p (head ss) &&
+                               match (head ss) (head vs))) ,
+            NormalSV $ $(rearrAndUpdate [p| v : vs |]
+                                        [p| v : vs |]
+                                        [d| v  = b
+                                            vs = align p match b create conceal |]))
+         , ((\ss vs -> return (not (null vs))),
+            AdaptiveSV (\ss (v:_) ->
+                          case find (flip match v) (filter p ss) of
+                            Nothing -> return (create v:ss)
+                            Just s  -> return (s:delete s ss))) ]
 
-testAlign :: BiGUL (Either ErrorInfo) [(Int, Char)] [(Int, ())]
-testAlign = align (isLower . snd) Skip (const 'x') (\(k, c) -> return (k, toUpper c))
+testAlign :: BiGUL (Either ErrorInfo) [(Int, Char)] [Int]
+testAlign = align (isUpper . snd)
+                  (\(ks, _) v -> ks == v)
+                  ($(rearrAndUpdate [p| v |] [p| (v, _) |] [d| v = Replace |]))
+                  (\v -> (v, 'X'))
+                  (\(k, c) -> Just (k, toLower c))
 
 distribute :: ([Int] -> Int -> [Int]) -> BiGUL (Either ErrorInfo) [Int] Int
 distribute f = CaseSV [ ((\xs x -> return (sum xs == x)),
