@@ -107,18 +107,22 @@ putCaseSVAccu :: MonadError' ErrorInfo m =>
                  Bool ->
                  [s -> v -> m Bool] ->
                  m s
-putCaseSVAccu branches@(x@(p, branch): xs) s v allBranches flag accuPs = p s v >>=
-  \b -> if b
-    then case branch of
-      NormalSV bigul -> put bigul s v >>=
-        \s' -> p s' v >>=
-        \b'  -> if b'
+putCaseSVAccu branches@(x@(p, branch): xs) s v allBranches flag accuPs =
+  do b <- p s v
+     if b
+     then case branch of
+            NormalSV bigul q ->
+              do when (not (q s)) (throwError (ErrorInfo "branch prediction unsound"))
+                 s' <- put bigul s v
+                 b' <- p s' v
+                 if b'
                  then checkAccuSVBranches accuPs s' v
                  else throwError $ ErrorInfo "In CaseSV(put): updated source does not satisfy the condition."
-      AdaptiveSV f -> if flag
-                        then throwError $ ErrorInfo "In CaseSV(put): meet adaptive branch again"
-                        else f s v >>= \s' -> putCaseSVAccu allBranches s' v allBranches True []
-    else putCaseSVAccu xs s v allBranches flag (accuPs ++ [p])
+            AdaptiveSV f -> if flag
+                              then throwError $ ErrorInfo "In CaseSV(put): meet adaptive branch again"
+                              else f s v >>= \s' -> putCaseSVAccu allBranches s' v allBranches True []
+     else putCaseSVAccu xs s v allBranches flag (accuPs ++ [p])
+
 
 checkAccuSVBranches :: (MonadError' ErrorInfo m) => [s -> v -> m Bool] -> s -> v -> m s
 checkAccuSVBranches [] s v = return s
@@ -247,10 +251,10 @@ getCaseSV :: MonadError' ErrorInfo m => [(s -> v -> m Bool, CaseSVBranch m s v)]
 getCaseSV [] _ _ = throwError $ ErrorInfo "Get: CaseSV branch is empty"
 getCaseSV (branch@(p, caseSVBranch) : restBranches) s adaptConds =
   case caseSVBranch of
-    AdaptiveSV f   -> getCaseSV restBranches s (p:adaptConds)
-    NormalSV bigul ->
+    AdaptiveSV f     -> getCaseSV restBranches s (p:adaptConds)
+    NormalSV bigul q ->
       catchBind
-        (getAndCheck bigul p s)
+        (when (not (q s)) (throwError (ErrorInfo "internal: failure predicted")) >> getAndCheck bigul p s)
         (\v -> check s v adaptConds)
         (\e -> catchBind
                  (getCaseSV restBranches s adaptConds)

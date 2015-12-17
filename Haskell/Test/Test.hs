@@ -244,18 +244,21 @@ align :: (Eq a, Eq b)
       -> BiGUL (Either ErrorInfo) [a] [b]
 align p match b create conceal =
   CaseSV [ ((\ss vs -> return (null (filter p ss) && null vs)),
-            NormalSV ($(rearr [| \ [] -> () |]) Skip))
+            NormalSV ($(rearr [| \ [] -> () |]) Skip)
+              (null . filter p))
          , ((\ss vs -> return (not (null (filter p ss)) && null vs)),
             AdaptiveSV (\ss _ -> return (catMaybes (map conceal ss))))
          , ((\ss vs -> return (not (null (filter p ss)) && not (null vs) && not (p (head ss)))),
-            NormalSV $ $(rearrAndUpdate [p| vs |] [p| _:vs |]
-                                        [d| vs = align p match b create conceal |]))
+            NormalSV ($(rearrAndUpdate [p| vs |] [p| _:vs |]
+                                       [d| vs = align p match b create conceal |]))
+              (\ss -> not (null (filter p ss)) && not (p (head ss))))
          , ((\ss vs -> return (not (null (filter p ss)) && not (null vs) && p (head ss) &&
                                match (head ss) (head vs))) ,
-            NormalSV $ $(rearrAndUpdate [p| v : vs |]
-                                        [p| v : vs |]
-                                        [d| v  = b
-                                            vs = align p match b create conceal |]))
+            NormalSV ($(rearrAndUpdate [p| v : vs |]
+                                       [p| v : vs |]
+                                       [d| v  = b
+                                           vs = align p match b create conceal |]))
+              (\ss -> not (null (filter p ss)) && p (head ss)))
          , ((\ss vs -> return (not (null vs))),
             AdaptiveSV (\ss (v:_) ->
                           case find (flip match v) (filter p ss) of
@@ -271,6 +274,6 @@ testAlign = align (isUpper . snd)
 
 distribute :: ([Int] -> Int -> [Int]) -> BiGUL (Either ErrorInfo) [Int] Int
 distribute f = CaseSV [ ((\xs x -> return (sum xs == x)),
-                         NormalSV ($(rearr [| \x -> ((), x) |]) $ Dep (\xs () -> sum xs) Skip))
+                         NormalSV ($(rearr [| \x -> ((), x) |]) $ Dep (\xs () -> sum xs) Skip) (const True))
                       , ((\_ _ -> return True),
                          AdaptiveSV (\xs x -> return (f xs x))) ]

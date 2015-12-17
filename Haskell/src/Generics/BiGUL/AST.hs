@@ -61,7 +61,7 @@ instance Show (UPat m s v) where
 
 data CaseSBranch m s v = Normal (BiGUL m s v) | Adaptive (s -> v -> m s)
 
-data CaseSVBranch m s v = NormalSV (BiGUL m s v) | AdaptiveSV (s -> v -> m s)
+data CaseSVBranch m s v = NormalSV (BiGUL m s v) (s -> Bool) | AdaptiveSV (s -> v -> m s)
 
 instance Show (CaseSBranch m s v) where
   show (Normal bigul) = "Normal " ++ show bigul
