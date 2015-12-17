@@ -231,7 +231,7 @@ putEmployee =liftM (show) (put u employeeS employeeView')
 dep_pair :: BiGUL (Either ErrorInfo) (Int, Int) (Int, Int)
 dep_pair = CaseV [ ((return . uncurry (==)) ,
                      (CaseS [ $(normal' [| (/= 0) . snd |]) Replace ,
-                              $(normal [p| _ |]) $ Dep id $ $(rearr [| \x -> (x, 0) |]) Replace ])) ,
+                              $(normal [p| _ |]) $ Dep (const id) $ $(rearr [| \x -> (x, 0) |]) Replace ])) ,
                    ((return . (/= 0) . snd) ,
                       Replace) ]
 
@@ -261,3 +261,9 @@ align p b create conceal =
 
 testAlign :: BiGUL (Either ErrorInfo) [(Int, Char)] [(Int, ())]
 testAlign = align (isLower . snd) Skip (const 'x') (\(k, c) -> return (k, toUpper c))
+
+distribute :: ([Int] -> Int -> [Int]) -> BiGUL (Either ErrorInfo) [Int] Int
+distribute f = CaseSV [ ((\xs x -> return (sum xs == x)),
+                         NormalSV ($(rearr [| \x -> ((), x) |]) $ Dep (\xs () -> sum xs) Skip))
+                      , ((\_ _ -> return True),
+                         AdaptiveSV (\xs x -> return (f xs x))) ]

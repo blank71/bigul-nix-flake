@@ -76,7 +76,7 @@ data BiGUL :: (* -> *) -> * -> * -> * where
   Replace :: BiGUL m s s
   Update  :: UPat m s v -> BiGUL m s v
   Rearr   :: (Eq v') => RPat v env con -> Expr env v' -> BiGUL m s v' -> BiGUL m s v
-  Dep     :: (Eq v') => (v -> v') -> BiGUL m s v -> BiGUL m s (v, v')
+  Dep     :: (Eq v') => (s -> v -> v') -> BiGUL m s v -> BiGUL m s (v, v')
   CaseS   :: (Eq v) => [(s -> m Bool,      CaseSBranch m s v)] -> BiGUL m s v
   CaseV   ::           [(v -> m Bool,      BiGUL m s v)] -> BiGUL m s v
   CaseSV  ::           [(s -> v -> m Bool, CaseSVBranch m s v)] -> BiGUL m s v
