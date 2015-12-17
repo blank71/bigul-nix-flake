@@ -61,6 +61,8 @@ instance Show (UPat m s v) where
 
 data CaseSBranch m s v = Normal (BiGUL m s v) | Adaptive (s -> v -> m s)
 
+data CaseSVBranch m s v = NormalSV (BiGUL m s v) | AdaptiveSV (s -> v -> m s)
+
 instance Show (CaseSBranch m s v) where
   show (Normal bigul) = "Normal " ++ show bigul
   show (Adaptive _) = "Adaptive <adaptive function>"
@@ -75,9 +77,9 @@ data BiGUL :: (* -> *) -> * -> * -> * where
   Update  :: UPat m s v -> BiGUL m s v
   Rearr   :: (Eq v') => RPat v env con -> Expr env v' -> BiGUL m s v' -> BiGUL m s v
   Dep     :: (Eq v') => (v -> v') -> BiGUL m s v -> BiGUL m s (v, v')
-  CaseS   :: [(s -> m Bool, CaseSBranch m s v)] -> BiGUL m s v
-  CaseV   :: [(v -> m Bool, BiGUL m s v)] -> BiGUL m s v
-  CaseSV  :: [(s -> v -> m Bool,BiGUL m s v)] -> BiGUL m s v
+  CaseS   :: (Eq v) => [(s -> m Bool,      CaseSBranch m s v)] -> BiGUL m s v
+  CaseV   ::           [(v -> m Bool,      BiGUL m s v)] -> BiGUL m s v
+  CaseSV  ::           [(s -> v -> m Bool, CaseSVBranch m s v)] -> BiGUL m s v
   Align   :: (s -> m Bool)
           -> (s -> v -> m Bool)
           -> BiGUL m s v
