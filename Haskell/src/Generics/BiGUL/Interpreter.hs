@@ -17,10 +17,7 @@ put Replace s v = return v
 put (Update upat) s v = putUPat upat s v
 put (Rearr rpat expr bigul) s v = deconstructR rpat v >>= put bigul s . eval expr
 put (Dep f bigul) s (v, v') = if f s v == v' then put bigul s v else throwError $ ErrorInfo "view dependency not match"
-put (CaseS branchList) s v = putCaseS branchList s v
-put (CaseV branchList) s v = putCaseV branchList s v
-put (CaseSV branchList) s v = putCaseSV branchList s v
-put (Align sourceCond matchCond matchBigul create conceal) s v = putAlign sourceCond matchCond matchBigul create conceal s v
+put (Case branches) s v = putCase branches s v
 put (Emb g p) s v = p s v
 put (Compose bigul1 bigul2) s v = do u <- get bigul1 s
                                      u2 <- put bigul2 u v
@@ -38,192 +35,56 @@ putUPat (UIn upat) s v = liftM inn (putUPat upat (out s) v)
 putUPat (UElem upath upatt) [] (v, vs)  = throwError $ ErrorInfo "UElem pat not match"
 putUPat (UElem upath upatt) (s:xs) (v, vs) = liftM2 (:) (putUPat upath s v) (putUPat upatt xs vs)
 
+getCaseBranch :: MonadError' ErrorInfo m => (s -> v -> Bool, CaseBranch m s v) -> s -> m v
+getCaseBranch (p , Normal bigul q) s =
+  if q s
+  then do v <- get bigul s
+          if p s v
+          then return v
+          else throwError (ErrorInfo "getCaseBranch: condition not satisfied")
+  else throwError (ErrorInfo "getCaseBranch: failure predicted")
+getCaseBranch (p , Adaptive f)     s = throwError (ErrorInfo "getCaseBranch: matched an adaptive branch")
 
+putCaseCheckDiversion :: MonadError' ErrorInfo m => [(s -> v -> Bool, CaseBranch m s v)] -> s -> v -> m ()
+putCaseCheckDiversion []             s v = return ()
+putCaseCheckDiversion (pb@(p, b):bs) s v =
+  if not (p s v)
+  then catchBind (getCaseBranch pb s) (const (throwError (ErrorInfo "putCaseCheckDiversion: matched a previous branch")))
+                                      (const (putCaseCheckDiversion bs s v))
+  else throwError (ErrorInfo "putCaseCheckDiversion: condition not satisfied")
 
---putCaseSHelp :: MonadError' ErrorInfo m => [(s -> m Bool, CaseSBranch m s v)] -> s -> v -> [(s -> m Bool, CaseSBranch m s v)] -> Bool -> m s
---putCaseSHelp [] s v _ _ = throwError $ ErrorInfo "caseS empty with no matching pat"
---putCaseSHelp branches@(x@(p, branch): xs) s v backBranches flag = p s >>=
---  \b -> if b
---           then
---             case branch of
---                  Normal bigul -> put bigul s v >>= \s' -> p s' >>= \b' -> if b' then return s' else throwError $ ErrorInfo "update changes the branch."
---                  Adaptive f -> if flag
---                                   then throwError $ ErrorInfo "meet adaptive branch again"
---                                   else f s v >>= \s' -> putCaseSHelp backBranches s' v backBranches True
---           else putCaseSHelp xs s v  backBranches flag >>= \s' -> p s' >>= \b -> if b then throwError $ ErrorInfo "previous pat matches the updated source" else return s'
+putCaseWithAdaptation :: MonadError' ErrorInfo m =>
+                         [(s -> v -> Bool, CaseBranch m s v)] -> [(s -> v -> Bool, CaseBranch m s v)] ->
+                         s -> v -> (s -> m s) -> m s
+putCaseWithAdaptation []             bs' s v cont = throwError $ ErrorInfo "putCase: case exhaustion"
+putCaseWithAdaptation (pb@(p, b):bs) bs' s v cont =
+  if p s v
+  then case b of
+         Normal bigul q -> do
+           s' <- put bigul s v
+           if p s' v
+           then if q s'
+                then putCaseCheckDiversion bs' s' v >> return s'
+                else throwError (ErrorInfo "putCase: incorrect branch prediction")
+           else throwError (ErrorInfo "putCase: post-verification of condition failed")
+         Adaptive f -> cont (f s v)
+  else putCaseWithAdaptation bs (pb:bs') s v cont
 
-putCaseS :: (MonadError' ErrorInfo m, Eq v) => [(s -> m Bool, CaseSBranch m s v)] -> s -> v -> m s
-putCaseS branches s v = putCaseSAccu branches s v branches False []
-
-putCaseSAccu :: (MonadError' ErrorInfo m, Eq v) => [(s -> m Bool, CaseSBranch m s v)] -> s -> v -> [(s -> m Bool, CaseSBranch m s v)] -> Bool -> [s -> m Bool] -> m s
-putCaseSAccu [] s v _ _ _ = throwError $ ErrorInfo "No matching pattern for caseS"
-putCaseSAccu branches@(x@(p, branch): xs) s v allBranches flag accuPs = p s >>=
-  \b -> if b
-    then case branch of
-      Normal bigul -> put bigul s v >>=
-        \s' -> p s' >>=
-        \b' -> if b'
-                 then checkAccuBranches accuPs s' bigul v
-                 else get bigul s' >>= \v' -> if v' == v then return s' else throwError $ ErrorInfo "updated source does not satisfy the condition."
-      Adaptive f   -> if flag then throwError $ ErrorInfo "meet adaptive branch again"
-                              else f s v >>= \s' -> putCaseSAccu allBranches s' v allBranches True []
-    else putCaseSAccu xs s v allBranches flag (accuPs ++ [p])
-
--- AccuBranches only contains normal branches.
-checkAccuBranches :: (MonadError' ErrorInfo m, Eq v) => [s -> m Bool] -> s -> BiGUL m s v -> v -> m s
-checkAccuBranches [] s bigul v = return s
-checkAccuBranches (p: xs) s bigul v = p s >>=
-  \b -> if b
-    then
-      get bigul s >>= \v' ->
-        if v' == v then return s else throwError $ ErrorInfo "Updated source matched with previous branch"
-    else checkAccuBranches xs s bigul v
-
-putCaseV :: MonadError' ErrorInfo m => [(v -> m Bool, BiGUL m s v)] -> s -> v -> m s
-putCaseV [] s v = throwError $ ErrorInfo "caseV pattern is empty"
-putCaseV (x@(p , bigul) :xs) s v = p v >>=
-  \b -> if b
-          then put bigul s v
-          else putCaseV xs s v >>=
-            \s' ->  catchBind
-                    (getSelected p bigul s')
-                    (\_ -> throwError $ ErrorInfo "get of previous caseV satisfied")
-                    (\_ -> return s')
---catchBind (deconstruct patv2v' v)
---          (put bigul s)
---          (\_ -> putCaseV xs s v >>= \s' -> catchBind (get bigul s') (\_ -> throwError $ ErrorInfo "get of previous caseV satisfied") (\_ -> return s'))
--- catchBind (get bigul s') (\v' -> if v == v' then return s' else throwError $ ErrorInfo ""  ) (\_ -> return s')
-
-
-putCaseSV :: MonadError' ErrorInfo m => [(s -> v -> m Bool, CaseSVBranch m s v)] -> s -> v -> m s
-putCaseSV [] s v = throwError $ ErrorInfo "caseSV pattern is empty"
-putCaseSV branches s v = putCaseSVAccu branches s v branches False []
-
-putCaseSVAccu :: MonadError' ErrorInfo m =>
-                 [(s -> v -> m Bool, CaseSVBranch m s v)] ->
-                 s ->
-                 v ->
-                 [(s -> v -> m Bool, CaseSVBranch m s v)] ->
-                 Bool ->
-                 [s -> v -> m Bool] ->
-                 m s
-putCaseSVAccu branches@(x@(p, branch): xs) s v allBranches flag accuPs =
-  do b <- p s v
-     if b
-     then case branch of
-            NormalSV bigul q ->
-              do when (not (q s)) (throwError (ErrorInfo "branch prediction unsound"))
-                 s' <- put bigul s v
-                 b' <- p s' v
-                 if b'
-                 then checkAccuSVBranches accuPs s' v
-                 else throwError $ ErrorInfo "In CaseSV(put): updated source does not satisfy the condition."
-            AdaptiveSV f -> if flag
-                              then throwError $ ErrorInfo "In CaseSV(put): meet adaptive branch again"
-                              else f s v >>= \s' -> putCaseSVAccu allBranches s' v allBranches True []
-     else putCaseSVAccu xs s v allBranches flag (accuPs ++ [p])
-
-
-checkAccuSVBranches :: (MonadError' ErrorInfo m) => [s -> v -> m Bool] -> s -> v -> m s
-checkAccuSVBranches [] s v = return s
-checkAccuSVBranches (p: xs) s v = p s v >>=
-  \b -> if b
-    then throwError $ ErrorInfo "In CaseSV(put): updated source matched with previous branch"
-    else checkAccuSVBranches xs s v
-
-
-
-putAlign :: MonadError' ErrorInfo m =>
-             (s -> m Bool)
-          -> (s -> v -> m Bool)
-          -> BiGUL m s v
-          -> (v -> m s)
-          -> (s -> m (Maybe s))
-          -> [s]
-          -> [v]
-          -> m [s]
-putAlign sourceCond matchCond matchBigul create conceal ss vs =
-  filterSourceList sourceCond ss >>= \(filtered, residual) ->
-    align vs filtered sourceCond matchCond matchBigul create conceal >>= \(concealed, synced) ->  return (unfilterP (concealed ++ synced) residual)
--- put the unmatched source on the top, and this will not affect matched element for view.
-
--- Filter tries to remember the location.
-filterSourceList :: MonadError' ErrorInfo m => (s -> m Bool) -> [s] -> m ([s], [Maybe s])
-filterSourceList p [] = return $ ([], [])
-filterSourceList p (s: ss) = p s >>= \b -> liftM (\(ls, rs) -> if b then (s:ls, (Nothing: rs)) else (ls, (Just s) :rs)) (filterSourceList p ss)
-
-
-align :: MonadError' ErrorInfo m => [v] -> [s] ->
-             (s -> m Bool)
-          -> (s -> v -> m Bool)
-          -> BiGUL m s v
-          -> (v -> m s)
-          -> (s -> m (Maybe s))
-          -> m ([s], [s])
-align []         ss         sourceCond matchCond matchBigul create conceal = liftM (, []) $ concealSourceList ss sourceCond conceal
-align vss@(v:vs) []         sourceCond matchCond matchBigul create conceal = liftM ([] ,) $ createSourceList vss create sourceCond (put matchBigul) matchCond
-align (v:vs)     sss@(s:ss) sourceCond matchCond matchBigul create conceal = firstMatch v sss matchCond >>=
-            maybe (liftM2 (\s' -> id *** (s':)) (createAndCheck v create sourceCond (put matchBigul) matchCond) (align vs sss sourceCond matchCond matchBigul create conceal))
-                  (\(matchedS, sRest) -> putAndCheck matchedS v sourceCond (put matchBigul) matchCond >>= \s' -> liftM (id *** (s':)) (align vs sRest sourceCond matchCond matchBigul create conceal))
-
-
-
--- for a list of unmatched source, make them disappear in the view.
--- Make this list disappear by unsatisfying the condition.
--- foldM :: Monad m => (a -> b -> m a) -> a -> [b] -> m a
--- foldrM :: (Foldable t, Monad m) => (a -> b -> m b) -> b -> t a -> m b
-concealSourceList :: MonadError' ErrorInfo m => [s] -> (s -> m Bool) -> (s -> m (Maybe s)) -> m [s]
-concealSourceList ss p conceal = foldrM (\s ls -> conceal s >>= \ms' -> case ms' of {Just s' -> p s' >>= \b -> if b then throwError $ ErrorInfo "shall not satisfy cond anymore" else return (s': ls) ; Nothing -> return ls}) [] ss
-
--- for a list of unmatched view, create a source list.
-createSourceList :: MonadError' ErrorInfo m => [v] -> (v -> m s) -> (s -> m Bool) -> (s -> v -> m s) -> (s -> v -> m Bool) -> m [s]
-createSourceList []      create p elemPut matchCond = return []
-createSourceList (v: vs) create p elemPut matchCond = liftM2 (:) (createAndCheck v create p elemPut matchCond) (createSourceList vs create p elemPut matchCond)
-
-createAndCheck :: MonadError' ErrorInfo m => v -> (v -> m s) -> (s -> m Bool) -> (s -> v -> m s) -> (s -> v -> m Bool)-> m s
-createAndCheck v create p elemPut  matchCond = create v >>= \s -> putAndCheck s v p elemPut matchCond
-
-
-putAndCheck :: MonadError' ErrorInfo m => s -> v -> (s -> m Bool) -> (s -> v -> m s) -> (s -> v -> m Bool)-> m s
-putAndCheck s v p elemPut matchCond = elemPut s v
-                                      >>= \s' -> matchCond s' v
-                                      >>= \b -> if b
-                                              then p s' >>= \b' ->
-                                                  if b' then return s' else throwError $ ErrorInfo "created source not satisfy the source filter condition"
-                                              else throwError $ ErrorInfo "created source not aligned with the matched view"
-
-
-
-firstMatch :: MonadError' ErrorInfo m => v -> [s] -> (s -> v -> m Bool) -> m (Maybe (s, [s]))
-firstMatch v []      matchCond = return Nothing
-firstMatch v (s: ss) matchCond =
-  matchCond s v >>= \b -> if b
-                  then return (Just (s, ss))
-                  else liftM (fmap (id *** (s:))) (firstMatch v ss matchCond)
-                  --else liftM (fmap (\(s1, slast) -> (s1, s:slast))) (firstMatch v ss matchCond)
-                  --else liftM (\mtuple -> case mtuple of {Just (s1, slast) -> Just (s1, s:slast); Nothing -> Nothing }) (firstMatch v ss matchCond)
-
-
-unfilterP :: [s] -> [Maybe s] -> [s]
-unfilterP xs [] = xs
-unfilterP [] myss@(my: mys) = catMaybes myss
-unfilterP (x: xs) (Nothing : mys) = x : unfilterP xs mys
-unfilterP xss@(x: xs) (Just y  : mys) = y : unfilterP xss mys
+putCase :: MonadError' ErrorInfo m => [(s -> v -> Bool, CaseBranch m s v)] -> s -> v -> m s
+putCase bs s v = putCaseWithAdaptation bs [] s v
+                   (\s' -> putCaseWithAdaptation bs [] s' v
+                             (const (throwError (ErrorInfo "putCase: meeting an adaptive branch again"))))
 
 get :: MonadError' ErrorInfo m => BiGUL m s v -> s -> m v
-get Fail s = throwError $ ErrorInfo "get failed"
+get Fail s = throwError $ ErrorInfo "get fail operator"
 get Skip s = return $ ()
 get Replace s = return s
 get (Update upat) s = getUPat upat s
 get (Rearr rpat expr bigul) s = get bigul s >>= \v' -> uneval rpat expr v' (emptyContainer rpat) >>= constructR rpat
 get (Dep f bigul) s = get bigul s >>= \v -> return $ (v, f s v)
-get (CaseS sbranches) s = getCaseS sbranches s
-get (CaseV vbranches) s = getCaseV vbranches s
-get (Align sourceCond matchCond matchBigul create conceal) s = getAlign sourceCond matchCond matchBigul create conceal s
+get (Case branches) s = getCase branches s
+get (Compose bigul1 bigul2) s = get bigul1 s >>= get bigul2
 get (Emb g p) s = g s
-get (Compose bigul1 bigul2) s = do u <- get bigul1 s
-                                   get bigul2 u
-get (CaseSV branches) s = getCaseSV branches s []
 
 getUPat :: MonadError' ErrorInfo m => UPat m s v -> s -> m v
 getUPat (UVar bigul) s = get bigul s
@@ -237,81 +98,11 @@ getUPat (UIn    upat) s          = getUPat upat (out s)
 getUPat (UElem upath upatt) []  = throwError $ ErrorInfo "UElem cannot accept empty source list"
 getUPat (UElem upath upatt) (x: xs) = liftM2 (,) (getUPat upath x) (getUPat upatt xs)
 
-getCaseS :: MonadError' ErrorInfo m => [(s -> m Bool, CaseSBranch m s v)] -> s -> m v
-getCaseS []  s = throwError $ ErrorInfo "Get: caseS branch is empty"
-getCaseS (branch@(p, caseSBranch) : restBranches) s =
-  p s >>= \b ->
-    if b
-    then case caseSBranch of
-              Normal bigul -> get bigul s
-              Adaptive f   -> throwError $ ErrorInfo "Get: caseS shall not match adaptive branch"
-    else getCaseS restBranches s
-
-getCaseSV :: MonadError' ErrorInfo m => [(s -> v -> m Bool, CaseSVBranch m s v)] -> s -> [(s -> v -> m Bool)] -> m v
-getCaseSV [] _ _ = throwError $ ErrorInfo "Get: CaseSV branch is empty"
-getCaseSV (branch@(p, caseSVBranch) : restBranches) s adaptConds =
-  case caseSVBranch of
-    AdaptiveSV f     -> getCaseSV restBranches s (p:adaptConds)
-    NormalSV bigul q ->
-      catchBind
-        (when (not (q s)) (throwError (ErrorInfo "internal: failure predicted")) >> getAndCheck bigul p s)
-        (\v -> check s v adaptConds)
-        (\e -> catchBind
-                 (getCaseSV restBranches s adaptConds)
-                 (\v -> p s v >>= \b -> if b
-                                        then throwError $ ErrorInfo "Get: caseSV previous pattern matched."
-                                        else check s v adaptConds)
-                 (\e2 -> throwError $ ErrorInfo "failed."))
-  where check :: (MonadError' ErrorInfo m) => s -> v -> [(s -> v -> m Bool)] -> m v
-        check s v []     = return v
-        check s v (p:ps) = p s v >>= \b -> if b then throwError (ErrorInfo "In get direction: CaseSV shall not match adaptive branch") else check s v ps
-
-
-getCaseV :: MonadError' ErrorInfo m => [(v -> m Bool, BiGUL m s v)] -> s -> m v
-getCaseV [] s = throwError $ ErrorInfo "Get: caseV branch is empty"
-getCaseV (branch@(p , bigul) : restBranches) s =
-  catchBind
-    (getSelected p bigul s)
-    return
-    (\e -> catchBind
-             (getCaseV restBranches s)
-             (\v -> p v >>= \b -> if b
-               then throwError $ ErrorInfo "Get: caseV previous pattern matched."
-               else return v)
-             (\e2 -> throwError $ ErrorInfo "failed."))
-
---catchBind (get bigul s)
---            (\v' -> return $ construct pat v')
---            (\e -> catchBind (getCaseV restBranches s) (\v -> catchBind (deconstruct pat v) (\v' -> throwError $ ErrorInfo "Get: caseV previous pattern matched.") (\e -> return v)) (\e2 -> throwError $ ErrorInfo "failed."))
-
-
---getCaseSV :: MonadError' ErrorInfo m => [(s -> v -> m Bool , BiGUL m s v)] -> s -> m v
---getCaseSV [] s = throwError $ ErrorInfo "Get: caseSV branch is empty"
---getCaseSV (branch@(p , bigul) : restBranches) s =
---  catchBind (getAndCheck' p bigul s)
---            return
---            (\e -> catchBind (getCaseSV restBranches s) (\v -> p s v >>= \b -> if b
---                                                                               then throwError $ ErrorInfo "Get: caseV previous pattern matched."
---                                                                               else return v)  (\e2 -> throwError $ ErrorInfo "failed."))
-
-
-getAlign :: MonadError' ErrorInfo m =>
-             (s -> m Bool)
-          -> (s -> v -> m Bool)
-          -> BiGUL m s v
-          -> (v -> m s)
-          -> (s -> m (Maybe s))
-          -> [s]
-          -> m [v]
-getAlign sourceCond matchCond bigul create conceal ss =
-  filterSourceList sourceCond ss >>= \(filteredSource, residualSource) ->
-    mapM (getAndCheck bigul matchCond) filteredSource
-
-getAndCheck :: MonadError' ErrorInfo m => BiGUL m s v -> (s -> v -> m Bool) -> s -> m v
-getAndCheck bigul matchCond s = get bigul s >>= \v -> matchCond s v >>= \b -> if b then return v else throwError $ ErrorInfo "get: matchCond not satisfied."
-
-getSelected :: MonadError' ErrorInfo m => (v -> m Bool) -> BiGUL m s v -> s -> m v
-getSelected p bigul s = get bigul s >>= \v -> p v >>= \b -> if b then return v else throwError $ ErrorInfo "fail to satisfy p."
-
-getSelected' :: MonadError' ErrorInfo m => (s -> v -> m Bool) -> BiGUL m s v -> s -> m v
-getSelected' p bigul s = get bigul s >>= \v -> p s v >>= \b -> if b then return v else throwError $ ErrorInfo "fail to satisfy p."
+getCase :: MonadError' ErrorInfo m => [(s -> v -> Bool, CaseBranch m s v)] -> s -> m v
+getCase []             s = throwError $ ErrorInfo "getCase: case exhaustion"
+getCase (pb@(p, b):bs) s =
+  catchBind (getCaseBranch pb s) return
+            (const (do v <- getCase bs s
+                       if not (p s v)
+                       then return v
+                       else throwError (ErrorInfo "getCase: matched a previous branch")))

@@ -11,11 +11,26 @@ import GHC.Generics
 --import qualified Netscape
 --import qualified Xbel
 
+
 main :: IO ()
 main = putStrLn "Nothing to do: load the program into GHCi to test it."
 
----- 0 . iter operation test
-iterBigul :: MonadError' ErrorInfo m => BiGUL m [Int] Int
+
+type BiGUL' s v = BiGUL (Either ErrorInfo) s v
+
+
+---- iterative updates
+
+iter :: Eq v => BiGUL' s v -> BiGUL' [s] v
+iter bigul = Case [ ((\ss _ -> length ss == 1),
+                     Normal $(rearrAndUpdate [p| v |] [p| v:_ |] [d| v = bigul |])
+                       ((== 1) . length))
+                  , ((\ss _ -> not (null ss)),
+                     Normal ($(rearr [| \v -> (v, v) |]) $(update [p| s:ss |] [d| s = bigul; ss = iter bigul |]))
+                       (not . null))
+                  ]
+
+iterBigul :: BiGUL' [Int] Int
 iterBigul = iter Replace
 
 putIter :: [Int] -> Int -> Either ErrorInfo [Int]
@@ -24,9 +39,51 @@ putIter s v = put iterBigul s v
 getIter :: [Int] -> Either ErrorInfo Int
 getIter s = get iterBigul s
 
----- 1. Bookstore example
-data SBook = SBook String [String] Double Int deriving (Show)
-data VBook = VBook String Double deriving (Show)
+
+---- list alignment
+
+align :: (Eq a, Eq b)
+      => (a -> Bool)
+      -> (a -> b -> Bool)
+      -> BiGUL' a b
+      -> (b -> a)
+      -> (a -> Maybe a)
+      -> BiGUL' [a] [b]
+align p match b create conceal =
+  Case [ ((\ss vs -> null (filter p ss) && null vs),
+          Normal ($(rearr [| \ [] -> () |]) Skip)
+            (null . filter p))
+       , ((\ss vs -> not (null (filter p ss)) && null vs),
+          Adaptive (\ss _ -> catMaybes (map conceal ss)))
+       , ((\ss vs -> not (null (filter p ss)) && not (null vs) && not (p (head ss))),
+          Normal ($(rearrAndUpdate [p| vs |] [p| _:vs |]
+                                   [d| vs = align p match b create conceal |]))
+            (\ss -> not (null (filter p ss)) && not (p (head ss))))
+       , ((\ss vs -> not (null (filter p ss)) && not (null vs) && p (head ss) &&
+                     match (head ss) (head vs)) ,
+          Normal ($(rearrAndUpdate [p| v : vs |]
+                                   [p| v : vs |]
+                                   [d| v  = b
+                                       vs = align p match b create conceal |]))
+            (\ss -> not (null (filter p ss)) && p (head ss)))
+       , ((\ss vs -> not (null vs)),
+          Adaptive (\ss (v:_) ->
+                      case find (flip match v) (filter p ss) of
+                        Nothing -> create v:ss
+                        Just s  -> s:delete s ss)) ]
+
+testAlign :: BiGUL' [(Int, Char)] [Int]
+testAlign = align (isUpper . snd)
+                  (\(ks, _) v -> ks == v)
+                  ($(rearrAndUpdate [p| v |] [p| (v, _) |] [d| v = Replace |]))
+                  (\v -> (v, 'X'))
+                  (\(k, c) -> Just (k, toLower c))
+
+
+---- bookstore example
+
+data SBook = SBook String [String] Double Int deriving (Show, Eq)
+data VBook = VBook String Double deriving (Show, Eq)
 
 deriveBiGULGeneric ''SBook
 deriveBiGULGeneric ''VBook
@@ -34,246 +91,112 @@ deriveBiGULGeneric ''VBook
 s = [SBook "Real World Haskell is Not GOOD!" ["zantao"] 30.0 2015]
 v = [VBook "Real World Haskell is Not GOOD!" 10.0, VBook "Learn You Haskell is GOOD!"  20.0]
 
-bookstore :: MonadError' ErrorInfo m => BiGUL m [SBook] [VBook]
+bookstore :: BiGUL' [SBook] [VBook]
 bookstore =
-  Align (\_ -> return True)
-        (\(SBook stitle _ _ _) (VBook vtitle _) -> return $ stitle == vtitle)
-        ($(rearr [| \(VBook title price) -> (title, (), price, ()) |])
-           $(update [p| SBook title _ price _ |]
-                    [d| title = Replace
-                        price = Replace
-                        |]))
-        (\(VBook vtitle vprice) -> return $ SBook vtitle [] vprice 2012 )
-        (\_ -> return Nothing)
+  align (const True)
+        (\(SBook stitle _ _ _) (VBook vtitle _) -> stitle == vtitle)
+        ($(rearrAndUpdate [p| VBook title price |]
+                          [p| SBook title _ price _ |]
+                          [d| title = Replace
+                              price = Replace |]))
+        (\(VBook vtitle vprice) -> SBook vtitle [] vprice 2012)
+        (const Nothing)
 
-putBook :: Either ErrorInfo String
-putBook = catchBind (put bookstore s v) (Right . show) Left
+putBook :: Either ErrorInfo [SBook]
+putBook = put bookstore s v
 
-putBookWithCheck :: Either ErrorInfo String
-putBookWithCheck = checkFullEmbed bookstore >>= \b ->
+putBookWithCheck :: Either ErrorInfo [SBook]
+putBookWithCheck = do
+  b <- checkFullEmbed bookstore
   if b
-     then  catchBind (put bookstore s v) (\s' -> Right (show s')) (\e -> Left e)
-     else Left $ ErrorInfo "view variable is not fully embedded."
+  then putBook
+  else Left (ErrorInfo "view variable is not fully embedded.")
 
-putBook1 :: Either ErrorInfo String
-putBook1 =liftM (show) (put bookstore s v)
+getBook :: Either ErrorInfo [VBook]
+getBook = get bookstore s
 
-getBook = catchBind (get bookstore s) (\v -> Right (show v)) (\e -> Left e)
-
-checkBook :: Either ErrorInfo String
-checkBook = liftM (show) (checkFullEmbed bookstore)
-
--- 2.  Bookstore counter example
--- The following is an example that view is  not-fully embedded,
--- With our checking, it will not be passed.
---data SBook = SBook String [String] String Int deriving (Show)
---data VBook = VBook String String deriving (Show)
---
---instance Generic SBook where
---  type Rep SBook = K1 R String :*: K1 R [String] :*: K1 R String :*: K1 R Int
---  from (SBook title authors price year) = K1 title :*: K1 authors :*: K1 price :*: K1 year
---  to (K1 title :*: K1 authors :*: K1 price :*: K1 year) = (SBook title authors price year)
---
---instance Generic VBook where
---  type Rep VBook = K1 R String :*: K1 R String
---  from (VBook title price) = K1 title :*: K1 price
---  to (K1 title :*: K1 price) = (VBook title price)
---
---
---s = [SBook "Real World Haskell is Not GOOD!" ["zantao"] "30.0" 2015]
---v = [VBook "Real World Haskell is Not GOOD!" "10.0", VBook "Learn You Haskell is GOOD!"  "20.0"]
---
---bookstore :: MonadError' ErrorInfo m => BiGUL m [SBook] [VBook]
---bookstore =
---  Align (\_ -> return True)
---        (\(SBook stitle _ _ _) (VBook vtitle _) -> return $ stitle == vtitle)
---        (Rearr (RIn (RProd RVar RVar))
---               (EProd (EDir (DLeft DVar)) (EProd (EConst ()) (EProd (EDir (DLeft DVar)) (EConst ()))))
---               (Update (UIn (UProd (UVar Replace) (UProd (UVar Skip) (UProd (UVar Replace) (UVar Skip)))))))
---        (\(VBook vtitle vprice) -> return $ SBook vtitle [] vprice 2012 )
---        (\_ -> return Nothing)
---
---putBookWithCheck :: Either ErrorInfo String
---putBookWithCheck = checkFullEmbed bookstore >>= \b ->
---  if b
---     then  catchBind (put bookstore s v) (\s' -> Right (show s')) (\e -> Left e)
---     else Left $ ErrorInfo "view variable is not fully embedded."
+checkBook :: Either ErrorInfo Bool
+checkBook = checkFullEmbed bookstore
 
 
---top :: MonadError' ErrorInfo m =>  BiGUL m Netscape.Html Xbel.Xbel
---top = Update (UIn (UVar (
---                  Rearr (RIn RVar) (EDir DVar) (
---                    Update (UVar (
---                            Rearr RVar (EDir DVar) (
---                                Align  --TODO: source, view is not a list.
---                                  (\_ -> return True)
---                                  (\_ _ -> return True)
---                                  (
---                                     (Update (UIn (UProd
---                                       (UVar Skip)
---                                       (UIn (UProd
---                                         (UVar (Rearr (RIn (RProd (RIn Var) RVar))
---                                                      (EDir (DLeft DVar))
---                                                      Replace))
---                                         (UIn (UVar (Rearr
---                                                       (RIn (RProd (RIn Var) RVar))
---                                                       (EDir (DRight DVar))
---                                                       (contents) -- not supported yet.
---                                        )))
---                                      ))
---                                     )))
---                                    )
---                                  (..)
---                                  (\_ -> return Nothing)
---                              )
---                           ))
---                   )
---                  )))
---
---
---contents :: MonadError' ErrorInfo m =>  BiGUL m [(Either Netscape.Dt Netscape.Dd)] [(Either Xbel.Bookmark Xbel.Foler)]
---contents = Update (UVar (
---                    Rearr RVar
---                          (EDir DVar)
---                          (Align
---                            (\_ -> return True)
---                            (\_ _ -> return True)
---                            (Rearr RVar (EDir DVar)
---                                  (CaseV [
---                                    CaseVBranch (PIn (PProd (PIn PVar) (PIn PVar)))
---                                                (Rearr (RIn (RProd (RIn RVar) (RIn RVar)))
---                                                       (EIn (EIn (EProd (EIn (EDir (DLeft DVar))) (EDir (DRight DVar))))) --TODO: check attribute representation.
---                                                       (Update (UVar Replace))),
---                                    CaseVBranch (PIn (PProd (PIn PVar) PVar))
---                                                (--caseS
---                                                  Update (UVar
---                                                         ([
---                                                           (evalPatToBool(dd...), Normal (Update (UIn (UProd
---                                                                (UVar (Rearr (PIn (PProd (PIn PVar) (PVar))) (EDir (DLeft DVar)) Replace))
---                                                                (UVar (Rearr (PIn (PProd (PIn PVar) (PVar))) (EDir (DRight DVar)) contents )))))),
---                                                           (const (return True), Adaptive (\_ -> createS(expr)) ) -- ADAPT SOURCE s -> m s
---                                                          ]))
---                                                  )
---                                  ])
---                            )
---                            (..)
---                            (\_ -> return Nothing)
---                          )
---                  ))
---
+---- transatlantic corporation
+
+-- type Name = String
+-- type Salary = Float
+-- type Location = String
+-- type Employee = (Name, (Salary, Either Location Location))
+-- type EmployeeSource = [Employee]
 
 
+-- type EmployeeSimplified = (Name, Either Location Location)
+-- type EmployeeView = [EmployeeSimplified]
 
--- checkRearr :: MonadError' ErrorInfo m => Expr env v' -> RPat v env con -> m Bool
+-- transatlantic :: MonadError' e m => BiGUL m EmployeeSource EmployeeView
+-- transatlantic =
+--   align (const True)
+--         (\(sName, _) (vName, _) -> sName == vName)
+--         ($(rearr [| \(name, loc) -> (name, (), loc) |])
+--            $(update [p| (name, rest) |]
+--                     [d| name = Replace
+--                         rest = CaseV [ $(branch [p| (_, Left _) |])
+--                                          ($(rearr [| \(x, Left y) -> (x, y) |])
+--                                             (CaseS [ $(normal [p| (_, Left _) |])
+--                                                        $(update [p| (_, Left britLoc) |]
+--                                                                 [d| britLoc = Replace |]),
+--                                                      $(adaptive [p| (_, Right _) |])
+--                                                        (\(salary, _) _ -> return (salary*3/5, Left ""))
+--                                                    ])),
+--                                        $(branch [p| (_, Right _) |])
+--                                          ($(rearr [| \(x, Right y) -> (x, y) |])
+--                                             (CaseS [ $(normal   [p| (_, Right _) |])
+--                                                        $(update [p| (_, Right ameLoc) |]
+--                                                                 [d| ameLoc = Replace |]),
+--                                                      $(adaptive [p| (_, Left _) |])
+--                                                        (\(salary, _) _ -> return (salary*5/3, Right ""))
+--                                                    ]))
+--                                      ] |]))
+--         (\(vName, location) -> return (vName, (0, location)))
+--         (\_ -> return Nothing)
+
+-- employeeS :: EmployeeSource
+-- employeeS = [("Jermy Gibbons", (82495, Left "Oxford University")),
+--              ("Meng Wang", (13590, Left "Oxford University")),
+--              ("Nate Foster", (97000, Right "Cornell University")),
+--              ("Hugo Pacheco", (35000, Right "Cornell University"))
+--             ]
+
+-- getEmployee = catchBind (get u employeeS) (\v -> Right (show v)) (\e -> Left e)
+
+-- -- re-ordering
+-- -- update location
+-- -- deletion
+-- -- insertion
+-- employeeView' :: EmployeeView
+-- employeeView' = [
+--              ("Jermy Gibbons", Left "Oxford University"),
+--              ("Nate Foster", Left "Oxford University"),
+--              ("Josh Ko", Left "Oxford University"),
+--              ("Meng Wang", Right "Havard University")
+--              ]
+
+-- putEmployee :: Either ErrorInfo String
+-- putEmployee =liftM (show) (put u employeeS employeeView')
 
 
--- Example 2: involve Adaptive
-type Name = String
-type Salary = Float
-type Location = String
-type Employee = (Name, (Salary, Either Location Location))
-type EmployeeSource = [Employee]
-
-
-type EmployeeSimplified = (Name, Either Location Location)
-type EmployeeView = [EmployeeSimplified]
-
-u :: MonadError' e m => BiGUL m EmployeeSource EmployeeView
-u = Align (\_ -> return True)
-          (\(sName, _) (vName, _) -> return (sName == vName))
-          ($(rearr [| \(name, loc) -> (name, (), loc) |])
-             $(update [p| (name, rest) |]
-                      [d| name = Replace
-                          rest = CaseV [ $(branch [p| (_, Left _) |])
-                                           ($(rearr [| \(x, Left y) -> (x, y) |])
-                                              (CaseS [ $(normal [p| (_, Left _) |])
-                                                         $(update [p| (_, Left britLoc) |]
-                                                                  [d| britLoc = Replace |]),
-                                                       $(adaptive [p| (_, Right _) |])
-                                                         (\(salary, _) _ -> return (salary*3/5, Left ""))
-                                                     ])),
-                                         $(branch [p| (_, Right _) |])
-                                           ($(rearr [| \(x, Right y) -> (x, y) |])
-                                              (CaseS [ $(normal   [p| (_, Right _) |])
-                                                         $(update [p| (_, Right ameLoc) |]
-                                                                  [d| ameLoc = Replace |]),
-                                                       $(adaptive [p| (_, Left _) |])
-                                                         (\(salary, _) _ -> return (salary*5/3, Right ""))
-                                                     ]))
-                                       ] |]))
-          (\(vName, location) -> return (vName, (0, location)))
-          (\_ -> return Nothing)
-
-employeeS :: EmployeeSource
-employeeS = [("Jermy Gibbons", (82495, Left "Oxford University")),
-             ("Meng Wang", (13590, Left "Oxford University")),
-             ("Nate Foster", (97000, Right "Cornell University")),
-             ("Hugo Pacheco", (35000, Right "Cornell University"))
-            ]
-
-getEmployee = catchBind (get u employeeS) (\v -> Right (show v)) (\e -> Left e)
-
--- re-ordering
--- update location
--- deletion
--- insertion
-employeeView' :: EmployeeView
-employeeView' = [
-             ("Jermy Gibbons", Left "Oxford University"),
-             ("Nate Foster", Left "Oxford University"),
-             ("Josh Ko", Left "Oxford University"),
-             ("Meng Wang", Right "Havard University")
-             ]
-
-putEmployee :: Either ErrorInfo String
-putEmployee =liftM (show) (put u employeeS employeeView')
+---- view dependency
 
 dep_pair :: BiGUL (Either ErrorInfo) (Int, Int) (Int, Int)
-dep_pair = CaseV [ ((return . uncurry (==)) ,
-                     (CaseS [ $(normal' [| (/= 0) . snd |]) Replace ,
-                              $(normal [p| _ |]) $ Dep (const id) $ $(rearr [| \x -> (x, 0) |]) Replace ])) ,
-                   ((return . (/= 0) . snd) ,
-                      Replace) ]
+dep_pair = Case [ ((\_ (vx, vy) -> vx == vy) ,
+                   Normal (Case [ ((\(_, sy) _ -> sy /= 0), Normal Replace ((/= 0) . snd))
+                                , ((\_ _ -> True)        , Normal (Dep (const id) ($(rearr [| \x -> (x, 0) |]) Replace)) (const True)) ])
+                     (const True))
+                , ((\_ (_, vy) -> vy /= 0) ,
+                   Normal Replace
+                     (const True)) ]
 
-align :: (Eq a, Eq b)
-      => (a -> Bool)
-      -> (a -> b -> Bool)
-      -> BiGUL (Either ErrorInfo) a b
-      -> (b -> a)
-      -> (a -> Maybe a)
-      -> BiGUL (Either ErrorInfo) [a] [b]
-align p match b create conceal =
-  CaseSV [ ((\ss vs -> return (null (filter p ss) && null vs)),
-            NormalSV ($(rearr [| \ [] -> () |]) Skip)
-              (null . filter p))
-         , ((\ss vs -> return (not (null (filter p ss)) && null vs)),
-            AdaptiveSV (\ss _ -> return (catMaybes (map conceal ss))))
-         , ((\ss vs -> return (not (null (filter p ss)) && not (null vs) && not (p (head ss)))),
-            NormalSV ($(rearrAndUpdate [p| vs |] [p| _:vs |]
-                                       [d| vs = align p match b create conceal |]))
-              (\ss -> not (null (filter p ss)) && not (p (head ss))))
-         , ((\ss vs -> return (not (null (filter p ss)) && not (null vs) && p (head ss) &&
-                               match (head ss) (head vs))) ,
-            NormalSV ($(rearrAndUpdate [p| v : vs |]
-                                       [p| v : vs |]
-                                       [d| v  = b
-                                           vs = align p match b create conceal |]))
-              (\ss -> not (null (filter p ss)) && p (head ss)))
-         , ((\ss vs -> return (not (null vs))),
-            AdaptiveSV (\ss (v:_) ->
-                          case find (flip match v) (filter p ss) of
-                            Nothing -> return (create v:ss)
-                            Just s  -> return (s:delete s ss))) ]
+---- summative distribution
 
-testAlign :: BiGUL (Either ErrorInfo) [(Int, Char)] [Int]
-testAlign = align (isUpper . snd)
-                  (\(ks, _) v -> ks == v)
-                  ($(rearrAndUpdate [p| v |] [p| (v, _) |] [d| v = Replace |]))
-                  (\v -> (v, 'X'))
-                  (\(k, c) -> Just (k, toLower c))
-
-distribute :: ([Int] -> Int -> [Int]) -> BiGUL (Either ErrorInfo) [Int] Int
-distribute f = CaseSV [ ((\xs x -> return (sum xs == x)),
-                         NormalSV ($(rearr [| \x -> ((), x) |]) $ Dep (\xs () -> sum xs) Skip) (const True))
-                      , ((\_ _ -> return True),
-                         AdaptiveSV (\xs x -> return (f xs x))) ]
+distribute :: ([Int] -> Int -> [Int]) -> BiGUL' [Int] Int
+distribute f = Case [ ((\xs x -> sum xs == x),
+                       Normal ($(rearr [| \x -> ((), x) |]) $ Dep (\xs () -> sum xs) Skip) (const True))
+                    , ((\_ _ -> True), Adaptive f) ]

@@ -39,8 +39,6 @@ construct (PRight pat)      y      = Right (construct pat y)
 construct (PIn    pat)      x      = inn (construct pat x)
 construct (PElem hpat tpat) (x, y) = construct hpat x : construct tpat y
 
-
-
 data UPat :: (* -> *) -> * -> * -> * where
   UVar   :: BiGUL m s v -> UPat m s v
   UConst :: (Eq s,Show s) => s -> UPat m s ()
@@ -59,16 +57,11 @@ instance Show (UPat m s v) where
   show (UIn up)        = "(UIn " ++ show up ++ " )"
   show _               = "show error in UPat"
 
-data CaseSBranch m s v = Normal (BiGUL m s v) | Adaptive (s -> v -> m s)
+data CaseBranch m s v = Normal (BiGUL m s v) (s -> Bool) | Adaptive (s -> v -> s)
 
-data CaseSVBranch m s v = NormalSV (BiGUL m s v) (s -> Bool) | AdaptiveSV (s -> v -> m s)
-
-instance Show (CaseSBranch m s v) where
-  show (Normal bigul) = "Normal " ++ show bigul
-  show (Adaptive _) = "Adaptive <adaptive function>"
-
---data CaseVBranch m s v where
---  CaseVBranch :: Pat v v' -> BiGUL m s v' -> CaseVBranch m s v
+instance Show (CaseBranch m s v) where
+  show (Normal bigul _) = "Normal " ++ show bigul
+  show (Adaptive _    ) = "Adaptive <adaptive function>"
 
 data BiGUL :: (* -> *) -> * -> * -> * where
   Fail    :: BiGUL m s v
@@ -77,20 +70,12 @@ data BiGUL :: (* -> *) -> * -> * -> * where
   Update  :: UPat m s v -> BiGUL m s v
   Rearr   :: (Eq v') => RPat v env con -> Expr env v' -> BiGUL m s v' -> BiGUL m s v
   Dep     :: (Eq v') => (s -> v -> v') -> BiGUL m s v -> BiGUL m s (v, v')
-  CaseS   :: (Eq v) => [(s -> m Bool,      CaseSBranch m s v)] -> BiGUL m s v
-  CaseV   ::           [(v -> m Bool,      BiGUL m s v)] -> BiGUL m s v
-  CaseSV  ::           [(s -> v -> m Bool, CaseSVBranch m s v)] -> BiGUL m s v
-  Align   :: (s -> m Bool)
-          -> (s -> v -> m Bool)
-          -> BiGUL m s v
-          -> (v -> m s)
-          -> (s -> m (Maybe s))
-          -> BiGUL m [s] [v]
-  Emb     :: (s -> m v)
-          -> (s -> v -> m s)
-          -> BiGUL m s v
+  Case    :: [(s -> v -> Bool, CaseBranch m s v)] -> BiGUL m s v
   Compose :: BiGUL m s u
           -> BiGUL m u v
+          -> BiGUL m s v
+  Emb     :: (s -> m v)
+          -> (s -> v -> m s)
           -> BiGUL m s v
 
 instance Show (BiGUL m s v) where
@@ -100,9 +85,7 @@ instance Show (BiGUL m s v) where
   show (Update up) = "(Update " ++ show up ++ " )"
   show (Rearr rp exp bigul) = "(Rearr " ++ show rp ++ "  " ++ show exp ++ "  " ++ show bigul ++ " )"
   show (Dep _ bigul) = "(Dep   <dependency function>  " ++ show bigul ++ " )"
-  show (CaseS bs) = "(CaseS [" ++ unwords (intersperse "\n" (map (\(_,b) -> "(precidtion , " ++ show b ++ " )") bs)) ++ " ])"
-  show (CaseV bs) = "(CaseV [" ++ unwords (intersperse "\n" (map (\(_,b) -> "(precidtion , " ++ show b ++ " )") bs)) ++ " ])"
-  show (Align _ _ bigul _ _) = "(Align <source condition>\n       <match condition>\n       " ++ show bigul ++ "\n       <create function>\n       <conceal function>)"
+  show (Case bs) = "(Case [" ++ unwords (intersperse "\n" (map (\(_,b) -> "(predicate , " ++ show b ++ " )") bs)) ++ " ])"
   show _ = "Invalid BiGUL program in show"
 
 newtype Var a = Var a
@@ -245,17 +228,12 @@ checkFullEmbed Replace = return True
 checkFullEmbed (Update upat) = checkUPat upat
 checkFullEmbed (Rearr rpat expr bigul) = checkRearr expr rpat >>= \b -> if b then checkFullEmbed bigul else return False
 checkFullEmbed (Dep f bigul) = checkFullEmbed bigul
-checkFullEmbed (CaseS sbranches) = liftM and $ mapM checkSBranch sbranches
-checkFullEmbed (CaseV vbranches) = liftM and $ mapM checkVBranch vbranches
-checkFullEmbed (Align filter matchCond bigul create seal) = checkFullEmbed bigul
+checkFullEmbed (Case branches) = liftM and $ mapM checkBranch branches
 checkFullEmbed (Emb g p) = return True
 
-checkSBranch :: MonadError' ErrorInfo m => (s -> m Bool, CaseSBranch m s v)  -> m Bool
-checkSBranch (cond, (Normal bigul)) = checkFullEmbed bigul
-checkSBranch (cond, _)              = return True
-
-checkVBranch :: MonadError' ErrorInfo m => (v -> m Bool, BiGUL m s v)  ->  m Bool
-checkVBranch (cond, bigul) = checkFullEmbed bigul
+checkBranch :: MonadError' ErrorInfo m => (s -> v -> Bool, CaseBranch m s v)  -> m Bool
+checkBranch (cond, Normal bigul _) = checkFullEmbed bigul
+checkBranch (cond, _)              = return True
 
 checkUPat :: MonadError' ErrorInfo m => UPat m s v -> m Bool
 checkUPat (UVar bigul) = checkFullEmbed bigul
@@ -265,7 +243,6 @@ checkUPat (ULeft upatl)       = checkUPat upatl
 checkUPat (URight upatr)      = checkUPat upatr
 checkUPat (UIn upat)          = checkUPat upat
 checkUPat (UElem upath upatt) = checkUPat upath >>= \b -> if b then checkUPat upatt else return False
-
 
 checkRearr :: MonadError' ErrorInfo m => Expr env v' -> RPat v env con -> m Bool
 checkRearr expr rpat =  updateCon expr rpat (emptyContainer rpat) >>= checkCon rpat
@@ -300,47 +277,3 @@ updateDir (RRight rpatr     ) dir          con          = updateDir rpatr dir co
 updateDir (RIn rpat         ) dir          con          = updateDir rpat  dir con
 updateDir (RElem rpath rpatt) (DLeft dir)  (conl, conr) = liftM (, conr) (updateDir rpath dir conl)
 updateDir (RElem rpath rpatt) (DRight dir) (conl, conr) = liftM (conl, ) (updateDir rpatt dir conr)
-
--- iteration over source list
-iter :: (MonadError' ErrorInfo m, Eq v)  => BiGUL m s v -> BiGUL m [s] v
-iter bigul = CaseS [
---  (return . null, Normal Fail),
-  (return . (== 1) . length, Normal (Rearr RVar (EProd (EDir DVar) (EConst ())) (Update (UElem (UVar bigul) (UVar Skip))))),
-  (return . not . null, Normal(Rearr RVar (EProd (EDir DVar) (EDir DVar)) (Update (UElem (UVar bigul) (UVar (iter bigul))))))
-  ]
-
-{-
-
-data BiGUL = Fail
-           | Skip
-           | Replace -- id_lens: get is id, put ignore s
-           | Rearr XQExpr BiGUL
-           | Iter BiGUL -- map on list.
-           | Align (s -> m Bool)
-                   (s -> v -> m Bool)
-                   BiGUL
-                   (v -> m s)
-                   (s -> m (Maybe s)) -- may have deletion on s.
-           | CaseS [(s -> m Bool, Either (s -> m s) BiGUL)]
-           | CaseV [(Pat, BiGUL)]
-           | Update Pat
-        deriving (Eq,Show)
-
-
-data XQExpr = XQEmpty              -- ()
-            | XQProd XQExpr XQExpr        -- e,e'
-            | XQElem String XQExpr        -- n[e] when we construct an element we must put all attributes first and sorted
-            | XQAttr String XQExpr        -- @n='e'
---            | XQString String          -- w
---            | XQVar XVar            -- x (any variable)
-            | XQLet Pat XQExpr XQExpr      -- let x = e in e'
---            | XQBool Bool            -- true | false
-            | XQIf XQExpr XQExpr XQExpr      -- if c then e else e'
-            | XQBinOp XPath.Op XQExpr XQExpr  -- e ~~ e'
-            | XQFor XVar XQExpr XQExpr      -- for x- \in e return e' (still for tree variables)
-            | XQPath CPath            -- special case to consider core paths (since their implementation as core uXQ is very different)
-  deriving (Eq,Show)
-
-type XVar = String
-
--}
