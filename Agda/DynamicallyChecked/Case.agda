@@ -29,7 +29,8 @@ get-branch (p , adaptive f) s = fail
 
 check-diversion : List Branch → S → V → Par ⊤
 check-diversion []             s v = return tt
-check-diversion ((p , b) ∷ bs) s v = assert-not p s v then catch (get-branch (p , b) s) (const fail) (check-diversion bs s v)
+check-diversion ((p , b) ∷ bs) s v = assert-not p s v then
+                                     catch (get-branch (p , b) s) (const fail) (check-diversion bs s v)
 
 put-with-adaptation : List Branch → List Branch → S → V → (S → Par S) → Par S
 put-with-adaptation []             bs' s v cont = fail
@@ -38,9 +39,7 @@ put-with-adaptation ((p , b) ∷ bs) bs' s v cont =
                                         assert p s' v then assert q s' then
                                         check-diversion bs' s' v >> return s')
                                (λ f → cont (f s v)) b
-           else (put-with-adaptation bs ((p , b) ∷ bs') s v cont >>= λ s' →
-                 assert-not p s' v then
-                 catch (get-branch (p , b) s') (const fail) (return s'))
+           else put-with-adaptation bs ((p , b) ∷ bs') s v cont
 
 put : List Branch → S → V → Par S
 put bs s v = put-with-adaptation bs [] s v (λ s' → put-with-adaptation bs [] s' v (const fail))
@@ -64,8 +63,7 @@ PutGet-with-adaptation :
   put-with-adaptation bs bs' s v cont ↦ s' → get (revcat bs' bs) s' ↦ v
 PutGet-with-adaptation []                              bs' PutGet-cont ()
 PutGet-with-adaptation ((p , b) ∷ bs) {s} {v} bs' PutGet-cont put↦ with p s v
-PutGet-with-adaptation ((p , b) ∷ bs) bs' PutGet-cont (put↦ >>= (assert-not _ then catch-fst _ ())) | false
-PutGet-with-adaptation ((p , b) ∷ bs) bs' PutGet-cont (put↦ >>= (assert-not _ then catch-snd _ (return refl))) | false =
+PutGet-with-adaptation ((p , b) ∷ bs) bs' PutGet-cont put↦ | false =
   PutGet-with-adaptation bs ((p , b) ∷ bs') PutGet-cont put↦
 PutGet-with-adaptation ((p , normal l q) ∷ bs) {s} {v} bs' PutGet-cont
   (put↦ >>= assert p-s'-v≡true then assert q-s'≡true then check-diversion↦ >>= return refl) | true =
@@ -90,8 +88,7 @@ GetPut-with-adaptation ((p , normal l q) ∷ bs) bs' check-diversion↦
 GetPut-with-adaptation ((p , adaptive f) ∷ bs) bs' check-diversion↦ (catch-fst () _) | false | _
 GetPut-with-adaptation ((p , b) ∷ bs) bs' check-diversion↦
   (catch-snd get-branch/↦ (get↦ >>= assert-not p-s-v≡false then return refl)) | false | _ =
-  GetPut-with-adaptation bs ((p , b) ∷ bs') (assert-not p-s-v≡false then catch-snd get-branch/↦ check-diversion↦) get↦ >>=
-  (assert-not p-s-v≡false then catch-snd get-branch/↦ (return refl))
+  GetPut-with-adaptation bs ((p , b) ∷ bs') (assert-not p-s-v≡false then catch-snd get-branch/↦ check-diversion↦) get↦
 GetPut-with-adaptation ((p , normal l q) ∷ bs) bs' check-diversion↦
   (catch-fst (assert q-s≡true then l-get↦ >>= assert p-s-v≡true then return refl) (return refl)) | true | _ =
   Lens.GetPut l l-get↦ >>= assert p-s-v≡true then assert q-s≡true then check-diversion↦ >>= return refl
