@@ -22,12 +22,10 @@ type BiGUL' s v = BiGUL (Either ErrorInfo) s v
 ---- iterative updates
 
 iter :: Eq v => BiGUL' s v -> BiGUL' [s] v
-iter bigul = Case [ ((\ss _ -> length ss == 1),
-                     Normal $(rearrAndUpdate [p| v |] [p| v:_ |] [d| v = bigul |])
-                       ((== 1) . length))
-                  , ((\ss _ -> not (null ss)),
-                     Normal ($(rearr [| \v -> (v, v) |]) $(update [p| s:ss |] [d| s = bigul; ss = iter bigul |]))
-                       (not . null))
+iter bigul = Case [ $(normalS [p| [_] |]) $
+                      $(rearrAndUpdate [p| v |] [p| v:_ |] [d| v = bigul |])
+                  , $(normalS [p| _:_ |]) $
+                      $(rearr [| \v -> (v, v) |]) $(update [p| s:ss |] [d| s = bigul; ss = iter bigul |])
                   ]
 
 iterBigul :: BiGUL' [Int] Int
@@ -50,27 +48,24 @@ align :: (Eq a, Eq b)
       -> (a -> Maybe a)
       -> BiGUL' [a] [b]
 align p match b create conceal =
-  Case [ ((\ss vs -> null (filter p ss) && null vs),
-          Normal ($(rearr [| \ [] -> () |]) Skip)
-            (null . filter p))
-       , ((\ss vs -> not (null (filter p ss)) && null vs),
-          Adaptive (\ss _ -> catMaybes (map conceal ss)))
-       , ((\ss vs -> not (null (filter p ss)) && not (null vs) && not (p (head ss))),
-          Normal ($(rearrAndUpdate [p| vs |] [p| _:vs |]
-                                   [d| vs = align p match b create conceal |]))
-            (\ss -> not (null (filter p ss)) && not (p (head ss))))
-       , ((\ss vs -> not (null (filter p ss)) && not (null vs) && p (head ss) &&
-                     match (head ss) (head vs)) ,
-          Normal ($(rearrAndUpdate [p| v : vs |]
-                                   [p| v : vs |]
-                                   [d| v  = b
-                                       vs = align p match b create conceal |]))
-            (\ss -> not (null (filter p ss)) && p (head ss)))
-       , ((\ss vs -> not (null vs)),
-          Adaptive (\ss (v:_) ->
-                      case find (flip match v) (filter p ss) of
-                        Nothing -> create v:ss
-                        Just s  -> s:delete s ss)) ]
+  Case [ $(normalSV [| null . filter p |] [p| [] |]) $
+           $(rearr [| \ [] -> () |]) Skip
+       , $(adaptiveSV [| not . null . filter p |] [p| [] |]) $
+           \ss _ -> catMaybes (map conceal ss)
+       , $(normalSV [| \ss -> not (null (filter p ss)) && not (p (head ss)) |] [p| _:_ |]) $
+           $(rearrAndUpdate [p| vs |] [p| _:vs |]
+                            [d| vs = align p match b create conceal |])
+       , $(normal' [| \ss vs -> not (null (filter p ss)) && p (head ss) && not (null vs) &&
+                                match (head ss) (head vs) |]
+                   [| \ss -> not (null (filter p ss)) && p (head ss) |]) $
+           $(rearrAndUpdate [p| v : vs |]
+                            [p| v : vs |]
+                            [d| v  = b
+                                vs = align p match b create conceal |])
+       , $(adaptiveV [p| _:_ |]) $
+           \ss (v:_) -> case find (flip match v) (filter p ss) of
+                          Nothing -> create v:ss
+                          Just s  -> s:delete s ss ]
 
 testAlign :: BiGUL' [(Int, Char)] [Int]
 testAlign = align (isUpper . snd)
@@ -121,66 +116,56 @@ checkBook = checkFullEmbed bookstore
 
 ---- transatlantic corporation
 
--- type Name = String
--- type Salary = Float
--- type Location = String
--- type Employee = (Name, (Salary, Either Location Location))
--- type EmployeeSource = [Employee]
+type Name = String
+type Salary = Float
+type Location = String
+type Employee = (Name, (Salary, Either Location Location))
+type EmployeeSource = [Employee]
 
 
--- type EmployeeSimplified = (Name, Either Location Location)
--- type EmployeeView = [EmployeeSimplified]
+type EmployeeSimplified = (Name, Either Location Location)
+type EmployeeView = [EmployeeSimplified]
 
--- transatlantic :: MonadError' e m => BiGUL m EmployeeSource EmployeeView
--- transatlantic =
---   align (const True)
---         (\(sName, _) (vName, _) -> sName == vName)
---         ($(rearr [| \(name, loc) -> (name, (), loc) |])
---            $(update [p| (name, rest) |]
---                     [d| name = Replace
---                         rest = CaseV [ $(branch [p| (_, Left _) |])
---                                          ($(rearr [| \(x, Left y) -> (x, y) |])
---                                             (CaseS [ $(normal [p| (_, Left _) |])
---                                                        $(update [p| (_, Left britLoc) |]
---                                                                 [d| britLoc = Replace |]),
---                                                      $(adaptive [p| (_, Right _) |])
---                                                        (\(salary, _) _ -> return (salary*3/5, Left ""))
---                                                    ])),
---                                        $(branch [p| (_, Right _) |])
---                                          ($(rearr [| \(x, Right y) -> (x, y) |])
---                                             (CaseS [ $(normal   [p| (_, Right _) |])
---                                                        $(update [p| (_, Right ameLoc) |]
---                                                                 [d| ameLoc = Replace |]),
---                                                      $(adaptive [p| (_, Left _) |])
---                                                        (\(salary, _) _ -> return (salary*5/3, Right ""))
---                                                    ]))
---                                      ] |]))
---         (\(vName, location) -> return (vName, (0, location)))
---         (\_ -> return Nothing)
+transatlantic :: BiGUL' EmployeeSource EmployeeView
+transatlantic =
+  align (const True)
+        (\(sName, _) (vName, _) -> sName == vName)
+        ($(rearrAndUpdate
+             [p| (name, rest) |] [p| (name, rest) |]
+             [d| name = Replace
+                 rest = Case [ $(normalSV [p| (_, Left  _) |] [p| Left  _ |]) $
+                                 $(rearrAndUpdate [p| Left  loc |] [p| (_, Left  loc) |] [d| loc = Replace |])
+                             , $(normalSV [p| (_, Right _) |] [p| Right _ |]) $
+                                 $(rearrAndUpdate [p| Right loc |] [p| (_, Right loc) |] [d| loc = Replace |])
+                             , $(adaptiveSV [p| (_, Left  _) |] [p| Right _ |]) $
+                                 \(salary, _) loc -> (salary/3*5, loc)
+                             , $(adaptiveSV [p| (_, Right _) |] [p| Left  _ |]) $
+                                 \(salary, _) loc -> (salary/5*3, loc)
+                             ] |]))
+        (\(vName, location) -> (vName, (0, location)))
+        (const Nothing)
 
--- employeeS :: EmployeeSource
--- employeeS = [("Jermy Gibbons", (82495, Left "Oxford University")),
---              ("Meng Wang", (13590, Left "Oxford University")),
---              ("Nate Foster", (97000, Right "Cornell University")),
---              ("Hugo Pacheco", (35000, Right "Cornell University"))
---             ]
+employeeS :: EmployeeSource
+employeeS = [ ("Jermy Gibbons", (82495, Left  "Oxford University" ))
+            , ("Meng Wang"    , (13590, Left  "Oxford University" ))
+            , ("Nate Foster"  , (97000, Right "Cornell University"))
+            , ("Hugo Pacheco" , (35000, Right "Cornell University")) ]
 
--- getEmployee = catchBind (get u employeeS) (\v -> Right (show v)) (\e -> Left e)
+getEmployee :: Either ErrorInfo EmployeeView
+getEmployee = get transatlantic employeeS
 
--- -- re-ordering
--- -- update location
--- -- deletion
--- -- insertion
--- employeeView' :: EmployeeView
--- employeeView' = [
---              ("Jermy Gibbons", Left "Oxford University"),
---              ("Nate Foster", Left "Oxford University"),
---              ("Josh Ko", Left "Oxford University"),
---              ("Meng Wang", Right "Havard University")
---              ]
+-- re-ordering
+-- update location
+-- deletion
+-- insertion
+employeeView' :: EmployeeView
+employeeView' = [ ("Jermy Gibbons", Left  "Cambridge University")
+                , ("Nate Foster"  , Left  "Oxford University"   )
+                , ("Josh Ko"      , Left  "Oxford University"   )
+                , ("Meng Wang"    , Right "Havard University"   ) ]
 
--- putEmployee :: Either ErrorInfo String
--- putEmployee =liftM (show) (put u employeeS employeeView')
+putEmployee :: Either ErrorInfo EmployeeSource
+putEmployee = put transatlantic employeeS employeeView'
 
 
 ---- view dependency
@@ -193,6 +178,7 @@ dep_pair = Case [ ((\_ (vx, vy) -> vx == vy) ,
                 , ((\_ (_, vy) -> vy /= 0) ,
                    Normal Replace
                      (const True)) ]
+
 
 ---- summative distribution
 

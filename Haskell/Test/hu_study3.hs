@@ -64,12 +64,12 @@ Right (100,200)
 -- upHead
 -- [100,2,3,4] <-> 100
 
-upHead :: (Eq a, MonadError' ErrorInfo m) => BiGUL m [a] a
+-- upHead :: (Eq a, MonadError' ErrorInfo m) => BiGUL m [a] a
 --upHead = CaseS [ (return . (==[]), Normal $ failMsg "upHead: the source should not be empty"),
 --                 (return . (/=[]), Normal $ (Update (UElem (UVar Replace) (UVar Skip)) @@ upFst)) ]
 
-upHead = CaseS [ $(normal [p| [] |]) $ failMsg "upHead: the source should not be empty",
-                 $(normal' [| (/=[]) |])  ($(update [p| x:_ |] [d| x = Replace |]) @@ upFst) ]
+-- upHead = CaseS [ $(normal [p| [] |]) $ failMsg "upHead: the source should not be empty",
+--                  $(normal' [| (/=[]) |])  ($(update [p| x:_ |] [d| x = Replace |]) @@ upFst) ]
 
 {-
 
@@ -82,11 +82,11 @@ Left (ErrorInfo "upHead: the source should not be empty")
 
 -}
 
-upTail :: (Eq a, MonadError' ErrorInfo m) => BiGUL m [a] [a]
+-- upTail :: (Eq a, MonadError' ErrorInfo m) => BiGUL m [a] [a]
 --upTail = CaseS [ (return . (==[]), Normal $ failMsg "upTail: the source should not be empty"),
 --                 (return . (/=[]), Normal $ (Update (UElem (UVar Skip) (UVar Replace)) @@ upSnd)) ]
-upTail = CaseS [ $(normal [p| [] |]) $ failMsg "upTail: the source should not be empty",
-                 $(normal' [| (/=[]) |])  ($(update [p| _:x |] [d| x = Replace |]) @@ upSnd) ]
+-- upTail = CaseS [ $(normal [p| [] |]) $ failMsg "upTail: the source should not be empty",
+--                  $(normal' [| (/=[]) |])  ($(update [p| _:x |] [d| x = Replace |]) @@ upSnd) ]
 {-
 
 *Main> testGet upTail [1,2,3]
@@ -100,8 +100,8 @@ Right [1,100,200,300]
 -- mapU upHead:
 --   [[1,2,3],[10,11,12,13],[20]] <-> [1,10,20]
 
-mapUpHead :: MonadError' ErrorInfo m => BiGUL m [[Int]] [Int]
-mapUpHead = mapU [0] upHead
+-- mapUpHead :: MonadError' ErrorInfo m => BiGUL m [[Int]] [Int]
+-- mapUpHead = mapU [0] upHead
 
 {-
 
@@ -121,9 +121,9 @@ Right [[100,2,3],[200,11,12,13]]
 -- embedAt 2:
 --  [1,2,300,4] <--> 300
 
-embedAt :: (Eq a, MonadError' ErrorInfo m) => Int -> BiGUL m [a] a
-embedAt i | i==0      = upHead
-          | otherwise = upTail @@ embedAt (i-1)
+-- embedAt :: (Eq a, MonadError' ErrorInfo m) => Int -> BiGUL m [a] a
+-- embedAt i | i==0      = upHead
+--           | otherwise = upTail @@ embedAt (i-1)
 
 {-
 
@@ -157,24 +157,27 @@ Right [1,2,3,100,5,6,7,8,9,10]
 
 
 
-uLefts :: (MonadError' ErrorInfo m, Eq a) => a -> BiGUL m [Either a a] [Either a a]
-uLefts a0 = CaseV [ $(branch [p| [] |])  
-                      ($(rearr [| \([]) -> () |])
-                        (CaseS [ $(normal' [| all (not . isLeft) |]) Skip,
-                                 $(adaptive [p| _ |]) (\s v-> return (rmLefts s))
-                               ])),
-                    $(branch [p| _ : _ |]) 
-                      ($(rearr [| \(x:y) -> (x,y) |])
-                        (CaseS [ $(normal [p| Left _ : _ |])
-                                          $(update [p| x : xs |]
-                                                   [d| x  = Replace
-                                                       xs = uLefts a0 |]),
-                                 $(normal [p| Right _ : _ |])
-                                          ($(rearr [| \(x, xs) -> ((), x : xs) |])
-                                           $(update [p| _ : xs |] [d| xs = uLefts a0 |])),
-                                $(adaptive [p| [] |]) (\s v-> return [Left a0])
-                              ]))
-                  ]
+uLefts :: (MonadError' ErrorInfo m, Eq a) => BiGUL m [Either a a] [a]
+uLefts = Case [ $(normalV [p| [] |]) $
+                  $(rearr [| \[] -> () |]) $
+                    Case [ $(normalS [| all (not . isLeft) |])
+                             Skip
+                         , $(adaptiveS [p| _ |]) $
+                             \s _ -> rmLefts s
+                         ]
+              , $(normalV [p| _ : _ |]) $
+                   $(rearr [| \(x:xs) -> (x,xs) |]) $
+                     (Case [ $(normalS [p| Left  _ : _ |]) $
+                               $(update [p| Left x : xs |]
+                                        [d| x  = Replace
+                                            xs = uLefts |])
+                           , $(normalS [p| Right _ : _ |]) $
+                               $(rearr [| \(x,xs) -> ((), x:xs) |]) $
+                                 $(update [p| _ : xs |] [d| xs = uLefts |])
+                           , $(adaptiveS [p| [] |]) $
+                               \_ _ -> [Left (error "uLefts")]
+                           ])
+               ]
 
 
 hasLeftHead (Left _ : _) = True
@@ -200,19 +203,13 @@ Right [Left 100,Right 1,Left 200,Left 300,Right 2,Left 400]
 -- rmLeftTags
 --  [Left 1, Left 2, Left 3] <-> [1,2,3]
 
-rmLeftTags :: (Eq a, Show a, MonadError' ErrorInfo m) => a -> BiGUL m [Either a a] [a]
-rmLeftTags a = mapU (Left a) uLeft
+rmLeftTags :: (Eq a, Show a, MonadError' ErrorInfo m) => BiGUL m [Either a a] [a]
+rmLeftTags = mapU uLeft
 
 uLeft :: (Eq a, MonadError' ErrorInfo m) => BiGUL m (Either a a) a
---uLeft = CaseS [ (return . isLeft,
---                   Normal $ Update (ULeft (UVar Replace))),
---                (return . const True,
---                   Normal $ failMsg "rmLeftTags: any element in the source should be a left value.")
---              ]
-
-uLeft = CaseS [ $(normal' [| isLeft |]) $(update [p| Left x |] [d| x = Replace |]),
-                $(normal [p| _ |]) $ failMsg "rmLeftTags: any element in the source should be a left value."
-              ]
+uLeft = Case [ $(normalS [p| Left _ |]) $ $(update [p| Left x |] [d| x = Replace |])
+             , $(normalS [p| _      |]) $ failMsg "rmLeftTags: any element in the source should be a left value."
+             ]
 
 {-
 

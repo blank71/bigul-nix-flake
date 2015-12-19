@@ -2,7 +2,9 @@
 {- Utilities for simple testing by Zhenjiang Hu @ 22/09/2015 -}
 
 module Util where
-import Generics.BiGUL
+import Generics.BiGUL.AST
+import Generics.BiGUL.Interpreter
+import Generics.BiGUL.TH
 import Generics.BiGUL.MonadBiGULError
 import Control.Monad
 import Control.Monad.Except
@@ -38,18 +40,14 @@ failMsg msg = Emb getf putf
 
 -- Useful higher order lenses
 
-mapU :: (Eq s, Eq v, Show v,  Monad m) => s -> BiGUL m s v -> BiGUL m [s] [v]
-mapU s0 u = CaseV [ (\v -> return $ v == [],
-                      Rearr (RIn (RLeft (RConst ())))
-                            (EConst ())
-                            (CaseS [ (return . (==[]), Normal Skip),
-                              (return . (/=[]), Adaptive (\s v -> return []))
-                            ])),
-                    (\v -> return $ v /= [],
-                      Rearr (RElem RVar RVar)
-                            (EProd (EDir (DLeft DVar)) (EDir (DRight DVar)))
-                            (CaseS
-                              [ (return . (/=[]), Normal (Update (UElem (UVar u) (UVar (mapU s0 u))))),
-                                (return . (==[]), Adaptive (\s v -> return [s0]))])
-                    )
-                  ]
+mapU :: (Eq s, Eq v, Show v,  Monad m) => BiGUL m s v -> BiGUL m [s] [v]
+mapU bigul =
+  Case [ $(normalSV [p| [] |] [p| [] |]) $
+           $(rearrAndUpdate [p| [] |] [p| [] |] [d| |])
+       , $(normalSV [p| _:_ |] [p| _:_ |]) $
+           $(rearrAndUpdate [p| x:xs |] [p| x:xs |] [d| x = bigul; xs = mapU bigul |])
+       , $(adaptiveSV [p| _:_ |] [p| [] |]) $
+           \_ _ -> []
+       , $(adaptiveSV [p| [] |] [p| _:_ |]) $
+           \_ _ -> [error "mapU"]
+       ]
