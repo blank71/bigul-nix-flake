@@ -22,163 +22,52 @@ t2 = testPut ruleExprArith0 (EAdd (ETerm . TFactor . FNum $ 4 ) (TFactor (FNum 3
 
 ruleExprArith0 :: BiGUL (Either ErrorInfo) Expr Arith
 ruleExprArith0 =
-  CaseSV [ ( (\ s v -> return $
-               case s of
-                 EAdd _ _ ->
-                   case v of
-                     Add _ _ -> True
-                     _       -> False
-                 _        -> False)
-           , NormalSV $ ($(rearr [| \(Add l r) -> (l, r) |])
-                $(update [p| EAdd el tr |]
-                         [d| el = ruleExprArith0; tr = ruleTermArith0 |]))
-           )
-         , ( (\ s v -> return $
-               case s of
-                 ESub _ _ ->
-                   case v of
-                     Sub _ _ -> True
-                     _       -> False
-                 _        -> False)
-           , NormalSV $ ($(rearr [| \(Sub l r) -> (l, r) |])
-                $(update [p| ESub el tr |]
-                         [d| el = ruleExprArith0; tr = ruleTermArith0 |]))
-           )
-         , ( (\ s v -> return $
-               case s of
-                 ETerm _ ->
-                   case v of
-                      _ -> True
-                 _        -> False)
-           , NormalSV $ ($(rearr [| \a -> a |])
-                $(update [p| ETerm et |]
-                         [d| et = ruleTermArith0 |]))
-           )
-         , ( (\s v  -> return $
-               case v of
-                 Add _ _ -> True
-                 _       -> False)
-           , AdaptiveSV $ (\_ _ -> return $ EAdd ENull TNull)
-           )
-         , ( (\s v  -> return $
-               case v of
-                 Sub _ _ -> True
-                 _       -> False)
-           , AdaptiveSV $ (\_ _ -> return $ ESub ENull TNull)
-           )
-         , ( (\s v  -> return $
-               case v of
-                 _ -> True)
-           , AdaptiveSV $ (\_ _ -> return $ ETerm TNull)
-           )
-         ]
-
+  Case [ $(normalSV [p| EAdd _ _ |] [p| Add _ _ |] )
+           $(rearrAndUpdate [p| Add l r |] [p| EAdd l r |]
+                            [d| l = ruleExprArith0; r = ruleTermArith0 |])
+       , $(normalSV [p| ESub _ _ |] [p| Sub _ _ |] )
+           $(rearrAndUpdate [p| Sub l r |] [p| ESub l r |]
+                            [d| l = ruleExprArith0; r = ruleTermArith0 |])
+       , $(normalSV [p| ETerm _ |] [p|  _ |] )
+           $(rearrAndUpdate [p| a  |] [p| ETerm a |]
+                            [d| a = ruleTermArith0 |])
+       , $(adaptiveV [p| Add _ _|]) (\_ _ -> EAdd ENull TNull)
+       , $(adaptiveV [p| Sub _ _|]) (\_ _ -> ESub ENull TNull)
+       , $(adaptiveV [p| _ |])      (\_ _ -> ETerm TNull)
+       ]
 
 --
 ruleTermArith0 :: BiGUL (Either ErrorInfo) Term Arith
 ruleTermArith0 =
-  CaseSV [ ( (\ s v -> return $
-               case s of
-                 TMul _ _ ->
-                   case v of
-                     Mul _ _ -> True
-                     _       -> False
-                 _        -> False)
-           , NormalSV $ ($(rearr [| \(Mul l r) -> (l, r) |])
-                $(update [p| TMul tl tr |]
-                         [d| tl = ruleTermArith0; tr = ruleFactorArith0 |]))
-           )
-         , ( (\ s v -> return $
-               case s of
-                 TDiv _ _ ->
-                   case v of
-                     Div _ _ -> True
-                     _       -> False
-                 _        -> False)
-           , NormalSV $ ($(rearr [| \(Div l r) -> (l, r) |])
-                $(update [p| TDiv tl tr |]
-                         [d| tl = ruleTermArith0; tr = ruleFactorArith0 |]))
-           )
-         , ( (\ s v -> return $
-               case s of
-                 TFactor _ ->
-                   case v of
-                     _ -> True
-                 _        -> False)
-           , NormalSV $ ($(rearr [| \a -> a |])
-                $(update [p| TFactor tf |]
-                         [d| tf = ruleFactorArith0 |]))
-           )
-         , ( (\s v  -> return $
-               case v of
-                 Mul _ _ -> True
-                 _       -> False)
-           , AdaptiveSV $ (\_ _ -> return $ TMul TNull FNull)
-           )
-         , ( (\s v  -> return $
-               case v of
-                 Div _ _ -> True
-                 _       -> False)
-           , AdaptiveSV $ (\_ _ -> return $ TDiv TNull FNull)
-           )
-         , ( (\s v  -> return $
-               case v of
-                 _ -> True)
-           , AdaptiveSV $ (\_ _ -> return $ TFactor FNull)
-           )
-         ]
+  Case [ $(normalSV [p| TMul _ _ |] [p| Mul _ _ |] )
+           $(rearrAndUpdate [p| Mul l r |] [p| TMul l r |]
+                            [d| l = ruleTermArith0; r = ruleFactorArith0 |])
+       , $(normalSV [p| TDiv _ _ |] [p| Div _ _ |] )
+           $(rearrAndUpdate [p| Div l r |] [p| TDiv l r |]
+                            [d| l = ruleTermArith0; r = ruleFactorArith0 |])
+       , $(normalSV [p| TFactor _ |] [p|  _ |] )
+           $(rearrAndUpdate [p| a  |] [p| TFactor a |]
+                            [d| a = ruleFactorArith0 |])
+       , $(adaptiveV [p| Mul _ _|]) (\_ _ -> TMul TNull FNull )
+       , $(adaptiveV [p| Div _ _|]) (\_ _ -> TDiv TNull FNull )
+       , $(adaptiveV [p| _ |])      (\_ _ -> TFactor FNull)
+       ]
 
 ruleFactorArith0 :: BiGUL (Either ErrorInfo) Factor Arith
 ruleFactorArith0 =
-  CaseSV [ ( (\ s v -> return $
-               case s of
-                 FNeg _ ->
-                   case v of
-                     Sub (Num 0) _ -> True
-                     _       -> False
-                 _        -> False)
-           , NormalSV $ ($(rearr [| \(Sub (Num 0) n ) -> n |])
-                $(update [p| FNeg neg |]
-                         [d| neg = ruleFactorArith0 |]))
-           )
-         , ( (\ s v -> return $
-               case s of
-                 FNum _ ->
-                   case v of
-                     Num _ -> True
-                     _     -> False
-                 _      -> False)
-           , NormalSV $ ($(rearr [| \(Num n) -> n |])
-                $(update [p| FNum fn |]
-                         [d| fn = Replace |]))
-           )
-         , ( (\ s v -> return $
-               case s of
-                 FExpr _ -> True
-                 _       -> False)
-           , NormalSV $ ($(rearr [| \a -> a |])
-                $(update [p| FExpr fe |]
-                         [d| fe = ruleExprArith0 |]))
-           )
-         , ( (\s v -> return $
-                case v of
-                  Sub (Num 0) _ -> True
-                  _             -> False)
-             , AdaptiveSV $ (\_ _ -> return $ FNeg FNull)
-           )
-         , ( (\s v -> return $
-                case v of
-                  Num _ -> True
-                  _     -> False)
-             , AdaptiveSV $ (\_ _ -> return $ FNum 0) -- maybe we can use undefined
-           )
-         , ( (\s v -> return $
-                case v of
-                  _ -> True)
-             , AdaptiveSV (\_ _ -> return $ FExpr ENull)
-           )
-         ]
-
+  Case [ $(normalSV [p| FNeg _ |] [p| Sub (Num 0) _ |] )
+           $(rearrAndUpdate [p| Sub (Num 0) n |] [p| FNeg n |]
+                            [d| n = ruleFactorArith0 |])
+       , $(normalSV [p| FNum _ |] [p| Num _ |] )
+           $(rearrAndUpdate [p| Num n |] [p| FNum n |]
+                            [d| n = Replace |])
+       , $(normalSV [p| FExpr _ |] [p|  _ |] )
+           $(rearrAndUpdate [p| a  |] [p| FExpr a |]
+                            [d| a = ruleExprArith0 |])
+       , $(adaptiveV [p| Sub (Num 0) _ |]) (\_ _ -> FNeg FNull)
+       , $(adaptiveV [p| Num _|])          (\_ _ -> FNum 0 )
+       , $(adaptiveV [p| _ |])             (\_ _ -> FExpr ENull)
+       ]
 
 -------------- quick check ---------------
 -- quick check

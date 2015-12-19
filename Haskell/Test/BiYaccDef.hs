@@ -47,15 +47,15 @@ deriveBiGULGeneric ''Arith
 --           ]
 --  |]
 
-rule :: Q Pat -> Q Pat -> Q Exp -> Q Exp -> Q Exp
-rule vPat sPat upd next =
-  [| CaseV [ $(branch vPat)
-                  (CaseS [ $(normal sPat) $(upd),
-                           $(normal [p| _ |]) $(next)
-                         ]),
-                $(branch [p| _ |]) $(next)
-              ]
-  |]
+-- rule :: Q Pat -> Q Pat -> Q Exp -> Q Exp -> Q Exp
+-- rule vPat sPat upd next =
+--   [| CaseV [ $(branch vPat)
+--                   (CaseS [ $(normal sPat) $(upd),
+--                            $(normal [p| _ |]) $(next)
+--                          ]),
+--                 $(branch [p| _ |]) $(next)
+--               ]
+--   |]
 
 --gen vpat cons parcount =
 --  if vpat == [| _ |]
@@ -67,10 +67,10 @@ rule vPat sPat upd next =
 --    gen' cons 2 = [| \( cons x y)  -> (x,y) |]
 
 
-adaptation :: Q Pat -> Q Pat -> Q Exp -> Q Exp -> Q Exp
-adaptation vPat sPat upd new =
-  [| $(branch vPat)
-       (CaseS [ $(normal sPat) $(upd),
-                $(adaptive [p| _ |]) (\_ _ -> return $(new))
-              ])
-  |]
+-- adaptation :: Q Pat -> Q Pat -> Q Exp -> Q Exp -> Q Exp
+-- adaptation vPat sPat upd new =
+--   [| $(branch vPat)
+--        (CaseS [ $(normal sPat) $(upd),
+--                 $(adaptive [p| _ |]) (\_ _ -> return $(new))
+--               ])
+--   |]
