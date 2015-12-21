@@ -76,8 +76,8 @@ l ↕ r = record
   ; PutGet = λ { (put-l↦ >>= put-r↦ >>= return refl) → Lens.PutGet l put-l↦ >>= Lens.PutGet r put-r↦ >>= return refl }
   ; GetPut = λ { (get-l↦ >>= get-r↦ >>= return refl) → Lens.GetPut l get-l↦ >>= Lens.GetPut r get-r↦ >>= return refl } }
 
-dependency-lens : {A B C : Set} → (A → B → C) → Decidable (_≡_ {A = C}) → A ⇆ B → A ⇆ B × C
-dependency-lens {A} {B} {C} f dec l = record
+dependency-lens : {A B C : Set} → A ⇆ B → (A → B → C) → Decidable (_≡_ {A = C}) → A ⇆ B × C
+dependency-lens {A} {B} {C} l f dec = record
   { put    = put
   ; get    = get
   ; PutGet = PutGet

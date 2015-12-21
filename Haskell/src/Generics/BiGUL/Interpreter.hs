@@ -16,7 +16,7 @@ put Skip s v = return s
 put Replace s v = return v
 put (Update upat) s v = putUPat upat s v
 put (Rearr rpat expr bigul) s v = deconstructR rpat v >>= put bigul s . eval expr
-put (Dep f bigul) s (v, v') = put bigul s v >>= \s' ->
+put (Dep bigul f) s (v, v') = put bigul s v >>= \s' ->
                               if f s' v == v' then return s' else throwError $ ErrorInfo "view dependency not match"
 put (Case branches) s v = putCase branches s v
 put (Emb g p) s v = p s v
@@ -82,7 +82,7 @@ get Skip s = return $ ()
 get Replace s = return s
 get (Update upat) s = getUPat upat s
 get (Rearr rpat expr bigul) s = get bigul s >>= \v' -> uneval rpat expr v' (emptyContainer rpat) >>= constructR rpat
-get (Dep f bigul) s = get bigul s >>= \v -> return $ (v, f s v)
+get (Dep bigul f) s = get bigul s >>= \v -> return $ (v, f s v)
 get (Case branches) s = getCase branches s
 get (Compose bigul1 bigul2) s = get bigul1 s >>= get bigul2
 get (Emb g p) s = g s

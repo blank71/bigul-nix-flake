@@ -175,7 +175,8 @@ dep_pair = Case [ $(normalV [| \(vx, vy) -> vx == vy |]) $
                     Case [ $(normalS [| (/= 0) . snd |]) $
                              Replace
                          , $(normalS [p| _ |]) $
-                             Dep (const id) $ $(rearr [| \x -> (x, 0) |]) Replace
+                             Dep ($(rearr [| \x -> (x, 0) |]) Replace)
+                                 (const id)
                          ]
                 , $(normalV [| (/= 0) . snd |]) $
                     Replace
@@ -186,7 +187,7 @@ dep_pair = Case [ $(normalV [| \(vx, vy) -> vx == vy |]) $
 
 distribute :: ([Int] -> Int -> [Int]) -> BiGUL' [Int] Int
 distribute f = Case [ $(normal [| \xs x -> sum xs == x |]) $
-                        $(rearr [| \x -> ((), x) |]) $ Dep (\xs () -> sum xs) Skip
+                        $(rearr [| \x -> ((), x) |]) $ Dep Skip (\xs () -> sum xs)
                     , $(adaptive [| \_ _ -> True |])
                         f
                     ]

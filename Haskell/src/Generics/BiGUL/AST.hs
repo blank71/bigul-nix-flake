@@ -69,7 +69,7 @@ data BiGUL :: (* -> *) -> * -> * -> * where
   Replace :: BiGUL m s s
   Update  :: UPat m s v -> BiGUL m s v
   Rearr   :: (Eq v') => RPat v env con -> Expr env v' -> BiGUL m s v' -> BiGUL m s v
-  Dep     :: (Eq v') => (s -> v -> v') -> BiGUL m s v -> BiGUL m s (v, v')
+  Dep     :: (Eq v') => BiGUL m s v -> (s -> v -> v') -> BiGUL m s (v, v')
   Case    :: [(s -> v -> Bool, CaseBranch m s v)] -> BiGUL m s v
   Compose :: BiGUL m s u
           -> BiGUL m u v
@@ -84,7 +84,7 @@ instance Show (BiGUL m s v) where
   show Replace = "Replace"
   show (Update up) = "(Update " ++ show up ++ " )"
   show (Rearr rp exp bigul) = "(Rearr " ++ show rp ++ "  " ++ show exp ++ "  " ++ show bigul ++ " )"
-  show (Dep _ bigul) = "(Dep   <dependency function>  " ++ show bigul ++ " )"
+  show (Dep bigul _) = "(Dep   <dependency function>  " ++ show bigul ++ " )"
   show (Case bs) = "(Case [" ++ unwords (intersperse "\n" (map (\(_,b) -> "(predicate , " ++ show b ++ " )") bs)) ++ " ])"
   show _ = "Invalid BiGUL program in show"
 
@@ -227,7 +227,7 @@ checkFullEmbed Skip = return True
 checkFullEmbed Replace = return True
 checkFullEmbed (Update upat) = checkUPat upat
 checkFullEmbed (Rearr rpat expr bigul) = checkRearr expr rpat >>= \b -> if b then checkFullEmbed bigul else return False
-checkFullEmbed (Dep f bigul) = checkFullEmbed bigul
+checkFullEmbed (Dep bigul f) = checkFullEmbed bigul
 checkFullEmbed (Case branches) = liftM and $ mapM checkBranch branches
 checkFullEmbed (Emb g p) = return True
 
