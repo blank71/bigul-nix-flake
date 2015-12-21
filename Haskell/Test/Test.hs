@@ -231,7 +231,7 @@ putEmployee =liftM (show) (put u employeeS employeeView')
 dep_pair :: BiGUL (Either ErrorInfo) (Int, Int) (Int, Int)
 dep_pair = CaseV [ ((return . uncurry (==)) ,
                      (CaseS [ $(normal' [| (/= 0) . snd |]) Replace ,
-                              $(normal [p| _ |]) $ Dep (const id) $ $(rearr [| \x -> (x, 0) |]) Replace ])) ,
+                              $(normal [p| _ |]) $ Dep id $ $(rearr [| \x -> (x, 0) |]) Replace ])) ,
                    ((return . (/= 0) . snd) ,
                       Replace) ]
 
@@ -271,9 +271,3 @@ testAlign = align (isUpper . snd)
                   ($(rearrAndUpdate [p| v |] [p| (v, _) |] [d| v = Replace |]))
                   (\v -> (v, 'X'))
                   (\(k, c) -> Just (k, toLower c))
-
-distribute :: ([Int] -> Int -> [Int]) -> BiGUL (Either ErrorInfo) [Int] Int
-distribute f = CaseSV [ ((\xs x -> return (sum xs == x)),
-                         NormalSV ($(rearr [| \x -> ((), x) |]) $ Dep (\xs () -> sum xs) Skip) (const True))
-                      , ((\_ _ -> return True),
-                         AdaptiveSV (\xs x -> return (f xs x))) ]
