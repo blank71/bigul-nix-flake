@@ -171,18 +171,22 @@ putEmployee = put transatlantic employeeS employeeView'
 ---- view dependency
 
 dep_pair :: BiGUL (Either ErrorInfo) (Int, Int) (Int, Int)
-dep_pair = Case [ ((\_ (vx, vy) -> vx == vy) ,
-                   Normal (Case [ ((\(_, sy) _ -> sy /= 0), Normal Replace ((/= 0) . snd))
-                                , ((\_ _ -> True)        , Normal (Dep (const id) ($(rearr [| \x -> (x, 0) |]) Replace)) (const True)) ])
-                     (const True))
-                , ((\_ (_, vy) -> vy /= 0) ,
-                   Normal Replace
-                     (const True)) ]
+dep_pair = Case [ $(normalV [| \(vx, vy) -> vx == vy |]) $
+                    Case [ $(normalS [| (/= 0) . snd |]) $
+                             Replace
+                         , $(normalS [p| _ |]) $
+                             Dep (const id) $ $(rearr [| \x -> (x, 0) |]) Replace
+                         ]
+                , $(normalV [| (/= 0) . snd |]) $
+                    Replace
+                ]
 
 
 ---- summative distribution
 
 distribute :: ([Int] -> Int -> [Int]) -> BiGUL' [Int] Int
-distribute f = Case [ ((\xs x -> sum xs == x),
-                       Normal ($(rearr [| \x -> ((), x) |]) $ Dep (\xs () -> sum xs) Skip) (const True))
-                    , ((\_ _ -> True), Adaptive f) ]
+distribute f = Case [ $(normal [| \xs x -> sum xs == x |]) $
+                        $(rearr [| \x -> ((), x) |]) $ Dep (\xs () -> sum xs) Skip
+                    , $(adaptive [| \_ _ -> True |])
+                        f
+                    ]

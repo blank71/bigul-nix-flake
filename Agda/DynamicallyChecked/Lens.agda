@@ -5,6 +5,8 @@ open import DynamicallyChecked.Utilities
 
 open import Function
 open import Data.Product
+open import Relation.Nullary
+open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
 
 
@@ -73,3 +75,35 @@ l ↕ r = record
   ; get = λ { (a , c) → liftPar₂ _,_ (Lens.get l a) (Lens.get r c) }
   ; PutGet = λ { (put-l↦ >>= put-r↦ >>= return refl) → Lens.PutGet l put-l↦ >>= Lens.PutGet r put-r↦ >>= return refl }
   ; GetPut = λ { (get-l↦ >>= get-r↦ >>= return refl) → Lens.GetPut l get-l↦ >>= Lens.GetPut r get-r↦ >>= return refl } }
+
+dependency-lens : {A B C : Set} → (A → B → C) → Decidable (_≡_ {A = C}) → A ⇆ B → A ⇆ B × C
+dependency-lens {A} {B} {C} f dec l = record
+  { put    = put
+  ; get    = get
+  ; PutGet = PutGet
+  ; GetPut = GetPut }
+  where
+    put-aux : A → B → C → Par A
+    put-aux a b c with dec (f a b) c
+    put-aux a b c | yes _ = return a
+    put-aux a b c | no  _ = fail
+
+    put : A → B × C → Par A
+    put a (b , c) = Lens.put l a b >>= λ a' → put-aux a' b c
+
+    get : A → Par (B × C)
+    get a = Lens.get l a >>= (λ b → return (b , f a b))
+
+    PutGet : {a : A} {bc : B × C} {a' : A} → put a bc ↦ a' → get a' ↦ bc
+    PutGet {a} {b , c } (_>>=_ {x = a''} put↦ put-aux↦) with dec (f a'' b) c
+    PutGet {a} {b , ._} (put↦ >>= (return refl)) | yes refl = Lens.PutGet l put↦ >>= return refl
+    PutGet {a} {b , c } (put↦ >>= ()           ) | no  _
+
+    GetPut-aux : {a : A} {b : B} → put-aux a b (f a b) ↦ a
+    GetPut-aux {a} {b} with dec (f a b) (f a b)
+    GetPut-aux {a} {b} | yes _   = return refl
+    GetPut-aux {a} {b} | no  neq with neq refl
+    GetPut-aux {a} {b} | no  neq | ()
+
+    GetPut : {a : A} {bc : B × C} → get a ↦ bc → put a bc ↦ a
+    GetPut {a} {b , ._} (get↦ >>= return refl) = Lens.GetPut l get↦ >>= GetPut-aux

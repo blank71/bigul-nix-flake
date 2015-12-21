@@ -30,7 +30,7 @@ mutual
                                (b : BiGUL S' V) → BiGUL S V
     rearrV  : {S V V' : U n} → (vpat : Pattern F V) (vpat' : Pattern F V') (expr : Expr vpat vpat')
                                (b : BiGUL S V') → BiGUL S V
-    dep     : {S V V' : U n} → (⟦ V ⟧ (μ F) → ⟦ V' ⟧ (μ F)) → BiGUL S V → BiGUL S (V ⊗ V')
+    dep     : {S V V' : U n} → (⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → ⟦ V' ⟧ (μ F)) → BiGUL S V → BiGUL S (V ⊗ V')
     caseS   : {S V : U n} → (branches : List (CaseSBranch  S V)) → BiGUL S V
     caseSV  : {S V : U n} → (branches : List (CaseSVBranch S V)) → BiGUL S V
     align   : {S V : U n} → (source-condition : ⟦ S ⟧ (μ F) → Par Bool)
@@ -111,7 +111,7 @@ mutual
   interp (update pat bs) c = pat-iso pat ▷ interp-update pat bs c
   interp (rearrS spat spat' expr b) (c , c') = rearrangement-iso spat spat' expr c ▷ interp b c'
   interp (rearrV vpat vpat' expr b) (c , c') = interp b c' ◁ sym-iso (rearrangement-iso vpat vpat' expr c)
-  interp (dep {V' = V'} f b) c = interp b c ◁ sym-iso (dependency-iso f (U-dec V'))
+  interp (dep {V' = V'} f b) c = dependency-lens f (U-dec V') (interp b c)
   interp (caseS  {S} {V} branches) c = caseS-lens (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)) (interp-CaseSBranch branches c)
   interp (caseSV {S} {V} branches) c = caseSV-lens (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)) (U-dec V) (interp-CaseSVBranch branches c)
   interp (align source-condition match? b create conceal) c = align-lens source-condition match? (interp b c) create conceal

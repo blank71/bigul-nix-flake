@@ -177,7 +177,7 @@ uLefts = Case [ $(normalV [p| [] |]) $
                            , $(adaptiveS [p| [] |]) $
                                \_ _ -> [Left (error "uLefts")]
                            ])
-               ]
+              ]
 
 
 hasLeftHead (Left _ : _) = True
