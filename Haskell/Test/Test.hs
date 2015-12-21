@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators, TypeFamilies, FlexibleContexts, DeriveGeneric  #-}
+{-# LANGUAGE TypeOperators, TypeFamilies, FlexibleContexts, DeriveGeneric, ViewPatterns  #-}
 
 import Generics.BiGUL
 import Generics.BiGUL.AST
@@ -170,7 +170,7 @@ putEmployee = put transatlantic employeeS employeeView'
 
 ---- view dependency
 
-dep_pair :: BiGUL (Either ErrorInfo) (Int, Int) (Int, Int)
+dep_pair :: BiGUL' (Int, Int) (Int, Int)
 dep_pair = Case [ $(normalV [| \(vx, vy) -> vx == vy |]) $
                     Case [ $(normalS [| (/= 0) . snd |]) $
                              Replace
@@ -183,11 +183,25 @@ dep_pair = Case [ $(normalV [| \(vx, vy) -> vx == vy |]) $
                 ]
 
 
----- summative distribution
+---- trivial well-behaved wrapper
 
-distribute :: ([Int] -> Int -> [Int]) -> BiGUL' [Int] Int
-distribute f = Case [ $(normal [| \xs x -> sum xs == x |]) $
-                        $(rearr [| \x -> ((), x) |]) $ Dep Skip (\xs () -> sum xs)
-                    , $(adaptive [| \_ _ -> True |])
-                        f
-                    ]
+wrap :: Eq v => (s -> v) -> (s -> v -> s) -> BiGUL' s v
+wrap g p = Case [ $(normal [| \x y -> g x == y |]) $
+                    $(rearr [| \x -> ((), x) |]) $ Dep Skip (\x () -> g x)
+                , $(adaptive [| \_ _ -> True |])
+                    p
+                ]
+
+
+forkS :: (Eq s) => (s -> Bool) -> BiGUL' [s] ([s], [s])
+forkS p = Case [ $(normalSV [p| [] |] [p| ([], []) |]) $
+                   $(rearr [| \([], []) -> () |]) Skip
+               , $(normalSV [p| (p -> True ):_ |] [p| (_:_, _) |]) $
+                   $(rearr [| \(x:xs, ys) -> (x , (xs , ys)) |])
+                     $(update [p| s:ss |] [d| s = Replace; ss = forkS p |])
+               , $(normalSV [p| (p -> False):_ |] [p| (_, _:_) |]) $
+                   $(rearr [| \(xs, y:ys) -> (y , (xs , ys)) |])
+                     $(update [p| s:ss |] [d| s = Replace; ss = forkS p |])
+               , $(adaptiveSV [p| _ |] [p| _ |]) $
+                   \_ (xs, ys) -> xs ++ ys
+               ]
