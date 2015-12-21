@@ -628,14 +628,14 @@ instance ExpOrPat (TH.PatQ) where
 
 -- $(normal [| predicateOnSV |]) b
 --   ~>  (predicateOnSV, Normal b (const True))
-normal :: ExpOrPat a => a -> TH.ExpQ
-normal psv = [|\b -> ($(toExp psv), $(nameNormal) b (const True))|]
+normal :: TH.ExpQ -> TH.ExpQ
+normal psv = [|\b -> ($psv, $(nameNormal) b (const True))|]
 
 
 -- $(normal' [| predicateOnSV |] [| predictionPredicate |]) b
 --   ~>  (predicateOnSV, Normal b predictionPredicate)
-normal' :: (ExpOrPat a, ExpOrPat b) => a -> b -> TH.ExpQ
-normal' psv pp = [|\b -> ($(toExp psv), $(nameNormal) b $(toExp pp)) |]
+normal' :: ExpOrPat a => TH.ExpQ -> a -> TH.ExpQ
+normal' psv pp = [|\b -> ($psv, $(nameNormal) b $(toExp pp)) |]
 
 
 -- $(normalS [| predicateOnS |]) b
@@ -660,8 +660,8 @@ normalSV ps pv = [|\b -> (\s v -> $(toExp ps) s && $(toExp pv) v, $(nameNormal) 
 
 -- $(adaptive [| predicateOnSV |]) f
 --   ~> (predicateOnSV, Adaptive f)
-adaptive :: ExpOrPat a => a -> TH.ExpQ
-adaptive psv = [| \f -> ($(toExp psv), $(nameAdaptive) f) |]
+adaptive :: TH.ExpQ -> TH.ExpQ
+adaptive psv = [| \f -> ($psv, $(nameAdaptive) f) |]
 
 -- $(adaptiveS [| predicateOnS |]) f
 --   ~> ((\s _ -> predicateOnS s), Adaptive f)
