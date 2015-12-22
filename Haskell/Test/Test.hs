@@ -185,13 +185,12 @@ dep_pair = Case [ $(normalV [| \(vx, vy) -> vx == vy |]) $
 
 ---- trivial well-behaved wrapper
 
-wrap :: Eq v => (s -> v) -> (s -> v -> s) -> BiGUL' s v
-wrap g p = Case [ $(normal [| \x y -> g x == y |]) $
-                    $(rearr [| \x -> ((), x) |]) $ Dep Skip (\x () -> g x)
-                , $(adaptive [| \_ _ -> True |])
-                    p
-                ]
-
+emb :: Eq v => (s -> v) -> (s -> v -> s) -> BiGUL' s v
+emb g p = Case [ $(normal [| \x y -> g x == y |]) $
+                   $(rearr [| \x -> ((), x) |]) $ Dep Skip (\x () -> g x)
+               , $(adaptive [| \_ _ -> True |])
+                   p
+               ]
 
 forkS :: (Eq s) => (s -> Bool) -> BiGUL' [s] ([s], [s])
 forkS p = Case [ $(normalSV [p| [] |] [p| ([], []) |]) $

@@ -9,54 +9,6 @@ import Generics.BiGUL.MonadBiGULError
 import Data.List(intersperse)
 
 
-data Pat :: * -> * -> *  where
-  PVar   :: Pat a a
-  PConst :: Eq a => a -> Pat a ()
-  PProd  :: Pat a a' -> Pat b b' -> Pat (a, b) (a', b')
-  PLeft  :: Pat a a' -> Pat (Either a b) a'
-  PRight :: Pat b b'  -> Pat (Either a b) b'
-  PIn    :: InOut a => Pat (F a) b -> Pat a b
-  PElem  :: Pat a b -> Pat [a] b' -> Pat [a] (b, b')
-
-deconstruct :: MonadError' ErrorInfo m => Pat a b -> a -> m b
-deconstruct  PVar             x         = return x
-deconstruct (PConst y)        x         = if x == y then return () else throwError $ ErrorInfo "unmatched constant pattern"
-deconstruct (PProd lpat rpat) (x, y)    = liftM2 (,) (deconstruct lpat x) (deconstruct rpat y)
-deconstruct (PLeft  pat)      (Left  x) = deconstruct pat x
-deconstruct (PLeft  pat)      (Right y) = throwError $ ErrorInfo  "left pattern for right value"
-deconstruct (PRight pat)      (Left  x) = throwError $ ErrorInfo "right pattern for left value"
-deconstruct (PRight pat)      (Right y) = deconstruct pat y
-deconstruct (PIn    pat)      x         = deconstruct pat (out x)
-deconstruct (PElem hpat tpat) []        = throwError $ ErrorInfo "head-tail pattern for empty list"
-deconstruct (PElem hpat tpat) (x : xs)  = liftM2 (,) (deconstruct hpat x) (deconstruct tpat xs)
-
-construct :: Pat a b -> b -> a
-construct  PVar             x      = x
-construct (PConst y)        _      = y
-construct (PProd lpat rpat) (x, y) = (construct lpat x, construct rpat y)
-construct (PLeft  pat)      x      = Left  (construct pat x)
-construct (PRight pat)      y      = Right (construct pat y)
-construct (PIn    pat)      x      = inn (construct pat x)
-construct (PElem hpat tpat) (x, y) = construct hpat x : construct tpat y
-
-data UPat :: (* -> *) -> * -> * -> * where
-  UVar   :: BiGUL m s v -> UPat m s v
-  UConst :: (Eq s,Show s) => s -> UPat m s ()
-  UProd  :: UPat m s v -> UPat m s' v' -> UPat m (s, s') (v, v')
-  ULeft  :: UPat m s v -> UPat m (Either s s') v
-  URight :: UPat m s' v -> UPat m (Either s s') v
-  UIn    :: InOut s => UPat m (F s) v -> UPat m s v
-  UElem  :: UPat m s v -> UPat m [s] v' -> UPat m [s] (v, v')
-
-instance Show (UPat m s v) where
-  show (UVar bigul)    = "(UVar " ++ show bigul ++ " )"
-  show (UConst c)      = show c
-  show (UProd up1 up2) = "(UProd " ++ show up1 ++ " " ++ show up2 ++ " )"
-  show (ULeft up)      = "(ULeft " ++ show up ++ " )"
-  show (URight up)     = "(URight " ++ show up ++ " )"
-  show (UIn up)        = "(UIn " ++ show up ++ " )"
-  show _               = "show error in UPat"
-
 data CaseBranch m s v = Normal (BiGUL m s v) (s -> Bool) | Adaptive (s -> v -> s)
 
 instance Show (CaseBranch m s v) where
@@ -67,85 +19,92 @@ data BiGUL :: (* -> *) -> * -> * -> * where
   Fail    :: BiGUL m s v
   Skip    :: BiGUL m s ()
   Replace :: BiGUL m s s
-  Update  :: UPat m s v -> BiGUL m s v
-  Rearr   :: (Eq v') => RPat v env con -> Expr env v' -> BiGUL m s v' -> BiGUL m s v
+  Prod    :: BiGUL m s v -> BiGUL m s' v' -> BiGUL m (s, s') (v, v')
+  RearrS  :: Pat s env con -> Expr env s' -> BiGUL m s' v -> BiGUL m s v
+  RearrV  :: (Eq v') => Pat v env con -> Expr env v' -> BiGUL m s v' -> BiGUL m s v
   Dep     :: (Eq v') => BiGUL m s v -> (s -> v -> v') -> BiGUL m s (v, v')
   Case    :: [(s -> v -> Bool, CaseBranch m s v)] -> BiGUL m s v
   Compose :: BiGUL m s u
           -> BiGUL m u v
-          -> BiGUL m s v
-  Emb     :: (s -> m v)
-          -> (s -> v -> m s)
           -> BiGUL m s v
 
 instance Show (BiGUL m s v) where
   show Fail = "Fail"
   show Skip = "Skip"
   show Replace = "Replace"
-  show (Update up) = "(Update " ++ show up ++ " )"
-  show (Rearr rp exp bigul) = "(Rearr " ++ show rp ++ "  " ++ show exp ++ "  " ++ show bigul ++ " )"
   show (Dep bigul _) = "(Dep   <dependency function>  " ++ show bigul ++ " )"
   show (Case bs) = "(Case [" ++ unwords (intersperse "\n" (map (\(_,b) -> "(predicate , " ++ show b ++ " )") bs)) ++ " ])"
-  show _ = "Invalid BiGUL program in show"
+  show _ = "Unknown BiGUL program in show"
 
 newtype Var a = Var a
 
 instance Show a => Show (Var a) where
   show (Var a) = "Var: " ++ show a
 
--- RPat (view type) (environment type) (container type)
-data RPat :: * -> * -> * -> * where
-  RVar   :: Eq a => RPat a (Var a) (Maybe a)
-  RConst :: (Eq a,Show a) => a -> RPat a () ()
-  RProd  :: RPat a a' a'' -> RPat b b' b'' -> RPat (a, b) (a', b') (a'', b'')
-  RLeft  :: RPat a a' a'' -> RPat (Either a b) a' a''
-  RRight :: RPat b b' b'' -> RPat (Either a b) b' b''
-  RIn    :: InOut a => RPat (F a) b c -> RPat a b c
-  RElem  :: RPat a b c -> RPat [a] b' c' -> RPat [a] (b, b') (c, c')
+-- Pat (view type) (environment type) (container type)
+data Pat :: * -> * -> * -> * where
+  PVar   :: Eq a => Pat a (Var a) (Maybe a)
+  PConst :: (Eq a, Show a) => a -> Pat a () ()
+  PProd  :: Pat a a' a'' -> Pat b b' b'' -> Pat (a, b) (a', b') (a'', b'')
+  PLeft  :: Pat a a' a'' -> Pat (Either a b) a' a''
+  PRight :: Pat b b' b'' -> Pat (Either a b) b' b''
+  PIn    :: InOut a => Pat (F a) b c -> Pat a b c
+
+instance Show (Pat v e c) where
+  show  PVar           = "PVar"
+  show (PConst c)      = show c
+  show (PProd rp1 rp2) = "(PProd " ++ show rp1 ++ " " ++ show rp2 ++ " )"
+  show (PLeft rp)      = "(PLeft " ++ show rp ++ " )"
+  show (PRight rp)     = "(PRight " ++ show rp ++ " )"
+  show (PIn rp)        = "(PIn " ++ show rp ++ " )"
+  -- show _               = "show error in Pat"
+
+deconstruct :: MonadError' ErrorInfo m => Pat a env con -> a -> m env
+deconstruct PVar              a          = return $ Var a
+deconstruct (PConst c)        a          = if c == a then return () else throwError $ ErrorInfo "mismatch with constant"
+deconstruct (PProd patl patr) (al, ar)   = liftM2 (,) (deconstruct patl al) (deconstruct patr ar)
+deconstruct (PLeft patl)      (Left al)  = deconstruct patl al
+deconstruct (PLeft patl)      _          = throwError $ ErrorInfo "PLeft pattern error"
+deconstruct (PRight patr)     (Right ar) = deconstruct patr ar
+deconstruct (PRight patr)     _          = throwError $ ErrorInfo "PRight pattern error"
+deconstruct (PIn pat)         a          = deconstruct pat (out a)
+
+construct :: Pat a env con -> env -> a
+construct PVar              (Var a)  = a
+construct (PConst c)        _        = c
+construct (PProd patl patr) (al, ar) = (construct patl al, construct patr ar)
+construct (PLeft patl)      al       = Left  (construct patl al)
+construct (PRight patr)     ar       = Right (construct patr ar)
+construct (PIn pat)         a        = inn (construct pat a)
+
+fromContainerV :: MonadError' ErrorInfo m => Pat v env con -> con -> m env
+fromContainerV PVar              Nothing      = throwError $ ErrorInfo "PVar canot be empty"
+fromContainerV PVar              (Just v)     = return (Var v)
+fromContainerV (PConst c)        con          = return ()
+fromContainerV (PProd patl patr) (conl, conr) = liftM2 (,) (fromContainerV patl conl) (fromContainerV patr conr)
+fromContainerV (PLeft pat)       con          = fromContainerV pat con
+fromContainerV (PRight pat)      con          = fromContainerV pat con
+fromContainerV (PIn pat)         con          = fromContainerV pat con
+
+fromContainerS :: Pat s env con -> env -> con -> env
+fromContainerS PVar              (Var s)     Nothing     = (Var s)
+fromContainerS PVar              (Var s)     (Just s')   = (Var s')
+fromContainerS (PConst c)        _           _           = ()
+fromContainerS (PProd lpat rpat) (env, env') (con, con') = (fromContainerS lpat env con, fromContainerS rpat env' con')
+fromContainerS (PLeft pat)       env         con         = fromContainerS pat env con
+fromContainerS (PRight pat)      env         con         = fromContainerS pat env con
+fromContainerS (PIn pat)         env         con         = fromContainerS pat env con
+
+emptyContainer :: Pat v env con -> con
+emptyContainer PVar                           = Nothing
+emptyContainer (PConst  c)                    = ()
+emptyContainer (PProd rpatl rpatr)            = (emptyContainer rpatl, emptyContainer rpatr)
+emptyContainer (PLeft pat        )            = emptyContainer pat
+emptyContainer (PRight pat       )            = emptyContainer pat
+emptyContainer (PIn  pat         )            = emptyContainer pat
 
 
-instance Show (RPat v e c) where
-  show  RVar           = "RVar"
-  show (RConst c)      = show c
-  show (RProd rp1 rp2) = "(RProd " ++ show rp1 ++ " " ++ show rp2 ++ " )"
-  show (RLeft rp)      = "(RLeft " ++ show rp ++ " )"
-  show (RRight rp)     = "(RRight " ++ show rp ++ " )"
-  show (RIn rp)        = "(RIn " ++ show rp ++ " )"
-  show _               = "show error in RPat"
-
-deconstructR :: MonadError' ErrorInfo m => RPat v env con -> v -> m env
-deconstructR RVar                v          = return $ Var v
-deconstructR (RConst c)          v          = if c == v then return () else throwError $ ErrorInfo "view must be a constant"
-deconstructR (RProd rpatl rpatr) (vl, vr)   = liftM2 (,) (deconstructR rpatl vl) (deconstructR rpatr vr)
-deconstructR (RLeft rpatl)       (Left vl)  = deconstructR rpatl vl
-deconstructR (RLeft rpatl)       _          = throwError $ ErrorInfo "RLeft pattern error"
-deconstructR (RRight rpatr)      (Right vr) = deconstructR rpatr vr
-deconstructR (RRight rpatr)      _          = throwError $ ErrorInfo "RRight pattern error"
-deconstructR (RIn rpat)          v          = deconstructR rpat (out v)
-deconstructR (RElem rpath rpatt) []         = throwError $ ErrorInfo "view element cannot be empty"
-deconstructR (RElem rpath rpatt) (v: vs)    = liftM2 (,) (deconstructR rpath v) (deconstructR rpatt vs)
-
-constructR   :: MonadError' ErrorInfo m => RPat v env con -> con -> m v
-constructR RVar                Nothing      = throwError $ ErrorInfo "RVar canot be empty"
-constructR RVar                (Just v)     = return v
-constructR (RConst c)          con          = return c
-constructR (RProd rpatl rpatr) (conl, conr) = liftM2 (,) (constructR rpatl conl) (constructR rpatr conr)
-constructR (RLeft rpat)        con          = liftM Left (constructR rpat con)
-constructR (RRight rpat)       con          = liftM Right (constructR rpat con)
-constructR (RIn rpat)          con          = liftM inn (constructR rpat con)
-constructR (RElem rpath rpatt) (conh, cont) = liftM2 (:) (constructR rpath conh) (constructR rpatt cont)
-
-emptyContainer :: RPat v env con -> con
-emptyContainer RVar                           = Nothing
-emptyContainer (RConst  c)                    = ()
-emptyContainer (RProd rpatl rpatr)            = (emptyContainer rpatl, emptyContainer rpatr)
-emptyContainer (RLeft pat        )            = emptyContainer pat
-emptyContainer (RRight pat       )            = emptyContainer pat
-emptyContainer (RIn  pat         )            = emptyContainer pat
-emptyContainer (RElem rpath rpatt)            = (emptyContainer rpath, emptyContainer rpatt)
-
-
--- You need explicitly specify the type arguments at the type level when using the Direction type.
+-- You need to explicitly specify the type arguments at the type level when using the Direction type.
 -- From type, you could know the type of the data you want.
 -- !comment: DMaybe did not used.
 data Direction :: * -> * -> * where
@@ -170,8 +129,6 @@ data Expr :: * -> * -> * where
   EProd    :: (Eq a, Eq b)        => Expr orig a -> Expr orig b -> Expr orig (a, b)
   ELeft    :: (Eq a, Eq b)        => Expr orig a -> Expr orig (Either a b)
   ERight   :: (Eq a, Eq b)        => Expr orig b -> Expr orig (Either a b)
-  EElem    :: (Eq a)              => Expr orig a -> Expr orig [a] -> Expr orig [a]
-  ECompare :: (Eq a)              => Expr orig a -> a -> Expr orig (Either () a)
 
 instance Show (Expr orig a) where
   show (EDir dir)      = "(EDir " ++ show dir ++ " )"
@@ -180,100 +137,80 @@ instance Show (Expr orig a) where
   show (ELeft e)       = "(ELeft " ++ show e ++ " )"
   show (ERight e)      = "(ERight " ++ show e ++ " )"
   show (EIn e)         = "(EIn " ++ show e ++ " )"
-  show _               = "show error in Expr"
 
-eval :: (Eq v') => Expr env v' -> env -> v'
+eval :: Expr env a' -> env -> a'
 eval (EDir dir)          env = retrieve dir env
 eval (EConst c)          env = c
 eval (EIn expr)          env = inn (eval expr env)
 eval (EProd exprl exprr) env = (eval exprl env, eval exprr env)
 eval (ELeft expr       ) env = Left $ eval expr env
 eval (ERight expr      ) env = Right $ eval expr env
-eval (EElem exprh exprt) env = eval exprh env : eval exprt env
-eval (ECompare expr v  ) env = let v' = eval expr env
-                                in if v == v' then Left () else Right v'
 
 -- The goal is to update the "Maybe" con to fill in proper values.
--- con follow the structure of RPat
--- we have updated value v', which follows the structure of Expr
-uneval :: (MonadError' ErrorInfo m ) => RPat v env con -> Expr env v' -> v' -> con -> m con
-uneval rpat (EDir dir)          v'          con = updateRPat rpat dir v' con
-uneval rpat (EConst c)          v'          con = if c == v' then return con else throwError $ ErrorInfo "const not matched."
-uneval rpat (EIn expr)          v'          con = uneval rpat expr (out v') con
-uneval rpat (EProd exprl exprr) (vl', vr')  con = uneval rpat exprl vl' con >>= uneval rpat exprr vr'
-uneval rpat (ELeft expr)        (Left vl')  con = uneval rpat expr vl' con
-uneval rpat (ELeft expr)        _           con = throwError $ ErrorInfo "view shall be Either Left."
-uneval rpat (ERight expr)       (Right vr') con = uneval rpat expr vr' con
-uneval rpat (ERight expr)       _           con = throwError $ ErrorInfo "view shall be Either Right."
-uneval rpat (EElem exprh exprt) []          con = throwError $ ErrorInfo "view list length is not correct."
-uneval rpat (EElem exprh exprt) (vh' : vs') con = uneval rpat exprh vh' con >>= uneval rpat exprt vs'
+-- con follow the structure of Pat
+-- we have updated value a', which follows the structure of Expr
+uneval :: (MonadError' ErrorInfo m) => Pat a env con -> Expr env a' -> a' -> con -> m con
+uneval pat (EDir dir)          a'          con = updatePat pat dir a' con
+uneval pat (EConst c)          a'          con = if c == a' then return con else throwError $ ErrorInfo "const not matched."
+uneval pat (EIn expr)          a'          con = uneval pat expr (out a') con
+uneval pat (EProd exprl exprr) (al', ar')  con = uneval pat exprl al' con >>= uneval pat exprr ar'
+uneval pat (ELeft expr)        (Left al')  con = uneval pat expr al' con
+uneval pat (ELeft expr)        _           con = throwError $ ErrorInfo "Right value for Left pattern"
+uneval pat (ERight expr)       (Right ar') con = uneval pat expr ar' con
+uneval pat (ERight expr)       _           con = throwError $ ErrorInfo "Left value for Right pattern"
 
-updateRPat :: (MonadError' ErrorInfo m) => RPat v env con -> Direction env v' -> v' -> con -> m con
-updateRPat RVar                DVar          v' (Just v'')   = if v' == v'' then return (Just v') else throwError $ ErrorInfo "multiple updating un equal"
-updateRPat RVar                DVar          v' Nothing      = return $ Just v'
-updateRPat (RConst c)          _             v' con          = return con
-updateRPat (RProd rpatl rpatr) (DLeft dir)   v' (conl, conr) = liftM (, conr) (updateRPat rpatl dir v' conl)
-updateRPat (RProd rpatl rpatr) (DRight dir)  v' (conl, conr) = liftM (conl ,) (updateRPat rpatr dir v' conr)
-updateRPat (RLeft rpatl      ) dir           v' con          = updateRPat rpatl dir v' con
-updateRPat (RRight rpatr     ) dir           v' con          = updateRPat rpatr dir v' con
-updateRPat (RIn rpat         ) dir           v' con          = updateRPat rpat  dir v' con
-updateRPat (RElem rpath rpatt) (DLeft dir)   v' (conl, conr) = liftM (, conr) (updateRPat rpath dir v' conl)
-updateRPat (RElem rpath rpatt) (DRight dir)  v' (conl, conr) = liftM (conl ,) (updateRPat rpatt dir v' conr)
+updatePat :: (MonadError' ErrorInfo m) => Pat a env con -> Direction env a' -> a' -> con -> m con
+updatePat PVar              DVar          a' (Just a'')   = if a' == a''
+                                                            then return (Just a')
+                                                            else throwError $ ErrorInfo "multiple updating unequal"
+updatePat PVar              DVar          a' Nothing      = return (Just a')
+updatePat (PConst c)        _             a' con          = return con
+updatePat (PProd patl patr) (DLeft dir)   a' (conl, conr) = liftM (, conr) (updatePat patl dir a' conl)
+updatePat (PProd patl patr) (DRight dir)  a' (conl, conr) = liftM (conl ,) (updatePat patr dir a' conr)
+updatePat (PLeft  patl    ) dir           a' con          = updatePat patl dir a' con
+updatePat (PRight patr    ) dir           a' con          = updatePat patr dir a' con
+updatePat (PIn pat        ) dir           a' con          = updatePat pat  dir a' con
 
--- static check of the full embedding
-checkFullEmbed :: MonadError' ErrorInfo m => BiGUL m s v -> m Bool
-checkFullEmbed Fail = return True
-checkFullEmbed Skip = return True
-checkFullEmbed Replace = return True
-checkFullEmbed (Update upat) = checkUPat upat
-checkFullEmbed (Rearr rpat expr bigul) = checkRearr expr rpat >>= \b -> if b then checkFullEmbed bigul else return False
-checkFullEmbed (Dep bigul f) = checkFullEmbed bigul
-checkFullEmbed (Case branches) = liftM and $ mapM checkBranch branches
-checkFullEmbed (Emb g p) = return True
+-- TODO: static check of full embedding
+checkFullEmbed :: BiGUL m s v -> Bool
+checkFullEmbed Fail                    = True
+checkFullEmbed Skip                    = True
+checkFullEmbed Replace                 = True
+checkFullEmbed (RearrS pat expr bigul) = checkFullEmbed bigul
+checkFullEmbed (RearrV pat expr bigul) = checkRearr expr pat && checkFullEmbed bigul
+checkFullEmbed (Dep bigul f)           = checkFullEmbed bigul
+checkFullEmbed (Case branches)         = and (map checkBranch branches)
 
-checkBranch :: MonadError' ErrorInfo m => (s -> v -> Bool, CaseBranch m s v)  -> m Bool
+checkBranch :: (s -> v -> Bool, CaseBranch m s v)  -> Bool
 checkBranch (cond, Normal bigul _) = checkFullEmbed bigul
-checkBranch (cond, _)              = return True
+checkBranch (cond, _)              = True
 
-checkUPat :: MonadError' ErrorInfo m => UPat m s v -> m Bool
-checkUPat (UVar bigul) = checkFullEmbed bigul
-checkUPat (UConst c)   = return True
-checkUPat (UProd upatl upatr) = checkUPat upatl >>= \b -> if b then checkUPat upatr else return False
-checkUPat (ULeft upatl)       = checkUPat upatl
-checkUPat (URight upatr)      = checkUPat upatr
-checkUPat (UIn upat)          = checkUPat upat
-checkUPat (UElem upath upatt) = checkUPat upath >>= \b -> if b then checkUPat upatt else return False
+checkRearr :: Expr env v' -> Pat v env con -> Bool
+checkRearr expr pat = checkCon pat (abstractUpdateCon expr pat (emptyContainer pat))
 
-checkRearr :: MonadError' ErrorInfo m => Expr env v' -> RPat v env con -> m Bool
-checkRearr expr rpat =  updateCon expr rpat (emptyContainer rpat) >>= checkCon rpat
+abstractUpdateCon :: Expr env a' -> Pat a env con -> con -> con
+abstractUpdateCon (EDir dir)          pat con = abstractUpdateDir pat dir con
+abstractUpdateCon (EConst c)          pat con = con
+abstractUpdateCon (EIn expr)          pat con = abstractUpdateCon expr pat con
+abstractUpdateCon (EProd exprl exprr) pat con = abstractUpdateCon exprr pat (abstractUpdateCon exprl pat con)
+abstractUpdateCon (ELeft expr)        pat con = abstractUpdateCon expr  pat con
+abstractUpdateCon (ERight expr)       pat con = abstractUpdateCon expr  pat con
 
-checkCon :: MonadError' ErrorInfo m => RPat v env con -> con -> m Bool
-checkCon RVar                 (Just _)     = return True
-checkCon RVar                 Nothing      = return False
-checkCon (RConst c)           _            = return True
-checkCon (RProd rpatl rpatr)  (conl, conr) = checkCon rpatl conl >>= \b -> if b then checkCon rpatr conr else return b
-checkCon (RLeft rpatl      )  con          = checkCon rpatl con
-checkCon (RRight rpatr     )  con          = checkCon rpatr con
-checkCon (RIn rpat         )  con          = checkCon rpat  con
-checkCon (RElem rpath rpatt)  (conl, conr) = checkCon rpath conl >>= \b -> if b then checkCon rpatt conr else return b
+abstractUpdateDir :: Pat a env con -> Direction env a' -> con -> con
+abstractUpdateDir PVar              DVar         Nothing      = Just undefined
+abstractUpdateDir PVar              DVar         (Just _)     = Just undefined
+abstractUpdateDir (PConst c)        _            con          = con
+abstractUpdateDir (PProd patl patr) (DLeft dir)  (conl, conr) = (abstractUpdateDir patl dir conl, conr)
+abstractUpdateDir (PProd patl patr) (DRight dir) (conl, conr) = (conl, abstractUpdateDir patr dir conr)
+abstractUpdateDir (PLeft patl     ) dir          con          = abstractUpdateDir patl dir con
+abstractUpdateDir (PRight patr    ) dir          con          = abstractUpdateDir patr dir con
+abstractUpdateDir (PIn pat        ) dir          con          = abstractUpdateDir pat  dir con
 
-updateCon :: MonadError' ErrorInfo m => Expr env v' -> RPat v env con -> con -> m con
-updateCon (EDir dir) rpat con = updateDir rpat dir con
-updateCon (EConst c) rpat con = return con
-updateCon (EIn expr) rpat con = updateCon expr rpat con
-updateCon (EProd exprl exprr) rpat con = updateCon exprl rpat con >>= updateCon exprr rpat
-updateCon (ELeft expr)        rpat con = updateCon expr  rpat con
-updateCon (ERight expr)       rpat con = updateCon expr  rpat con
-updateCon (EElem exprh exprt) rpat con = updateCon exprh rpat con >>= updateCon exprt rpat
-
-updateDir :: MonadError' ErrorInfo m => RPat v env con -> Direction env v' -> con -> m con
-updateDir RVar                DVar         Nothing      = return $ Just undefined
-updateDir RVar                DVar         (Just _)     = return $ Just undefined
-updateDir (RConst c)          _            con          = return con
-updateDir (RProd rpatl rpatr) (DLeft dir)  (conl, conr) = liftM (, conr) (updateDir rpatl dir conl)
-updateDir (RProd rpatl rpatr) (DRight dir) (conl, conr) = liftM (conl, ) (updateDir rpatr dir conr)
-updateDir (RLeft rpatl      ) dir          con          = updateDir rpatl dir con
-updateDir (RRight rpatr     ) dir          con          = updateDir rpatr dir con
-updateDir (RIn rpat         ) dir          con          = updateDir rpat  dir con
-updateDir (RElem rpath rpatt) (DLeft dir)  (conl, conr) = liftM (, conr) (updateDir rpath dir conl)
-updateDir (RElem rpath rpatt) (DRight dir) (conl, conr) = liftM (conl, ) (updateDir rpatt dir conr)
+checkCon :: Pat v env con -> con -> Bool
+checkCon PVar               (Just _)     = True
+checkCon PVar               Nothing      = False
+checkCon (PConst c)         _            = True
+checkCon (PProd patl patr)  (conl, conr) = checkCon patl conl && checkCon patr conr
+checkCon (PLeft  patl)      con          = checkCon patl con
+checkCon (PRight patr)      con          = checkCon patr con
+checkCon (PIn pat    )      con          = checkCon pat  con

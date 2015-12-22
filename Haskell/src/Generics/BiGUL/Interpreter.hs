@@ -6,35 +6,24 @@ import Generics.BiGUL.MonadBiGULError
 import Control.Monad
 import Control.Monad.Except
 import GHC.InOut
-import Data.Maybe (catMaybes)
-import Data.Foldable
-import Control.Arrow
 
 put :: MonadError' ErrorInfo m => BiGUL m s v -> s -> v -> m s
-put Fail s v = throwError $ ErrorInfo "update fails"
-put Skip s v = return s
-put Replace s v = return v
-put (Update upat) s v = putUPat upat s v
-put (Rearr rpat expr bigul) s v = deconstructR rpat v >>= put bigul s . eval expr
-put (Dep bigul f) s (v, v') = put bigul s v >>= \s' ->
-                              if f s' v == v' then return s' else throwError $ ErrorInfo "view dependency not match"
-put (Case branches) s v = putCase branches s v
-put (Emb g p) s v = p s v
-put (Compose bigul1 bigul2) s v = do u <- get bigul1 s
-                                     u2 <- put bigul2 u v
-                                     put bigul1 s u2
-
-putUPat :: MonadError' ErrorInfo m => UPat m s v -> s -> v -> m s
-putUPat (UVar bigul) s v = put bigul s v
-putUPat (UConst c  ) s v = if s == c then return c else throwError $ ErrorInfo "source is not a const: "
-putUPat (UProd upatl upatr) (sl, sr) (vl, vr) = liftM2 (,) (putUPat upatl sl vl) (putUPat upatr sr vr)
-putUPat (ULeft upat) (Left s) v = liftM Left (putUPat upat s v)
-putUPat (ULeft _   ) _ _ = throwError $ ErrorInfo "Either Left not match"
-putUPat (URight upat) (Right s) v = liftM Right (putUPat upat s v)
-putUPat (URight _) _ _ = throwError $ ErrorInfo "Either Right not match"
-putUPat (UIn upat) s v = liftM inn (putUPat upat (out s) v)
-putUPat (UElem upath upatt) [] (v, vs)  = throwError $ ErrorInfo "UElem pat not match"
-putUPat (UElem upath upatt) (s:xs) (v, vs) = liftM2 (:) (putUPat upath s v) (putUPat upatt xs vs)
+put Fail                    s       v       = throwError $ ErrorInfo "update fails"
+put Skip                    s       v       = return s
+put Replace                 s       v       = return v
+put (Prod bigul bigul')     (s, s') (v, v') = liftM2 (,) (put bigul s v) (put bigul' s' v')
+put (RearrS pat expr bigul) s       v       = do env <- deconstruct pat s
+                                                 s'  <- put bigul (eval expr env) v
+                                                 con <- uneval pat expr s' (emptyContainer pat)
+                                                 return (construct pat (fromContainerS pat env con))
+put (RearrV pat expr bigul) s       v       = deconstruct pat v >>= put bigul s . eval expr
+put (Dep bigul f)           s       (v, v') = put bigul s v >>= \s' ->
+                                              if f s' v == v' then return s'
+                                                             else throwError $ ErrorInfo "view dependency not match"
+put (Case branches)         s       v       = putCase branches s v
+put (Compose bigul bigul')  s       v       = do m  <- get bigul s
+                                                 m' <- put bigul' m v
+                                                 put bigul s m'
 
 getCaseBranch :: MonadError' ErrorInfo m => (s -> v -> Bool, CaseBranch m s v) -> s -> m v
 getCaseBranch (p , Normal bigul q) s =
@@ -77,27 +66,17 @@ putCase bs s v = putCaseWithAdaptation bs [] s v
                              (const (throwError (ErrorInfo "putCase: meeting an adaptive branch again"))))
 
 get :: MonadError' ErrorInfo m => BiGUL m s v -> s -> m v
-get Fail s = throwError $ ErrorInfo "get fail operator"
-get Skip s = return $ ()
-get Replace s = return s
-get (Update upat) s = getUPat upat s
-get (Rearr rpat expr bigul) s = get bigul s >>= \v' -> uneval rpat expr v' (emptyContainer rpat) >>= constructR rpat
-get (Dep bigul f) s = get bigul s >>= \v -> return $ (v, f s v)
-get (Case branches) s = getCase branches s
+get Fail                    s = throwError $ ErrorInfo "get fail operator"
+get Skip                    s = return ()
+get Replace                 s = return s
+get (RearrS pat expr bigul) s = deconstruct pat s >>= get bigul . eval expr
+get (RearrV pat expr bigul) s = do v'  <- get bigul s
+                                   con <- uneval pat expr v' (emptyContainer pat)
+                                   env <- fromContainerV pat con
+                                   return (construct pat env)
+get (Dep bigul f)           s = get bigul s >>= \v -> return $ (v, f s v)
+get (Case branches)         s = getCase branches s
 get (Compose bigul1 bigul2) s = get bigul1 s >>= get bigul2
-get (Emb g p) s = g s
-
-getUPat :: MonadError' ErrorInfo m => UPat m s v -> s -> m v
-getUPat (UVar bigul) s = get bigul s
-getUPat (UConst c  ) s = if c== s then return () else throwError $ ErrorInfo "source is not a constant."
-getUPat (UProd upatl upatr) (s, s') = liftM2 (,) (getUPat upatl s) (getUPat upatr s')
-getUPat (ULeft  upat) (Left s)  = getUPat upat s
-getUPat (ULeft  upat) _         = throwError $ ErrorInfo "ULeft pat not match"
-getUPat (URight upat) (Right s) = getUPat upat s
-getUPat (URight upat) _         = throwError $ ErrorInfo "URight pat not match"
-getUPat (UIn    upat) s          = getUPat upat (out s)
-getUPat (UElem upath upatt) []  = throwError $ ErrorInfo "UElem cannot accept empty source list"
-getUPat (UElem upath upatt) (x: xs) = liftM2 (,) (getUPat upath x) (getUPat upatt xs)
 
 getCase :: MonadError' ErrorInfo m => [(s -> v -> Bool, CaseBranch m s v)] -> s -> m v
 getCase []             s = throwError $ ErrorInfo "getCase: case exhaustion"
