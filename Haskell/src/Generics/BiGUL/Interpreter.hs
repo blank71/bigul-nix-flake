@@ -8,7 +8,7 @@ import Control.Monad.Except
 import GHC.InOut
 
 put :: MonadError' ErrorInfo m => BiGUL m s v -> s -> v -> m s
-put Fail                    s       v       = throwError $ ErrorInfo "update fails"
+put (Fail (ErrorInfo err))  s       v       = throwError $ ErrorInfo ("Fail: " ++ err)
 put Skip                    s       v       = return s
 put Replace                 s       v       = return v
 put (Prod bigul bigul')     (s, s') (v, v') = liftM2 (,) (put bigul s v) (put bigul' s' v')
@@ -66,17 +66,18 @@ putCase bs s v = putCaseWithAdaptation bs [] s v
                              (const (throwError (ErrorInfo "putCase: meeting an adaptive branch again"))))
 
 get :: MonadError' ErrorInfo m => BiGUL m s v -> s -> m v
-get Fail                    s = throwError $ ErrorInfo "get fail operator"
-get Skip                    s = return ()
-get Replace                 s = return s
-get (RearrS pat expr bigul) s = deconstruct pat s >>= get bigul . eval expr
-get (RearrV pat expr bigul) s = do v'  <- get bigul s
-                                   con <- uneval pat expr v' (emptyContainer pat)
-                                   env <- fromContainerV pat con
-                                   return (construct pat env)
-get (Dep bigul f)           s = get bigul s >>= \v -> return $ (v, f s v)
-get (Case branches)         s = getCase branches s
-get (Compose bigul1 bigul2) s = get bigul1 s >>= get bigul2
+get (Fail (ErrorInfo err))  s       = throwError $ ErrorInfo ("Fail: " ++ err)
+get Skip                    s       = return ()
+get Replace                 s       = return s
+get (Prod bigul bigul')     (s, s') = liftM2 (,) (get bigul s) (get bigul' s')
+get (RearrS pat expr bigul) s       = deconstruct pat s >>= get bigul . eval expr
+get (RearrV pat expr bigul) s       = do v'  <- get bigul s
+                                         con <- uneval pat expr v' (emptyContainer pat)
+                                         env <- fromContainerV pat con
+                                         return (construct pat env)
+get (Dep bigul f)           s       = get bigul s >>= \v -> return $ (v, f s v)
+get (Case branches)         s       = getCase branches s
+get (Compose bigul1 bigul2) s       = get bigul1 s >>= get bigul2
 
 getCase :: MonadError' ErrorInfo m => [(s -> v -> Bool, CaseBranch m s v)] -> s -> m v
 getCase []             s = throwError $ ErrorInfo "getCase: case exhaustion"
