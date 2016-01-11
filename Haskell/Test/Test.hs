@@ -15,9 +15,34 @@ import GHC.Generics
 main :: IO ()
 main = putStrLn "Nothing to do: load the program into GHCi to test it."
 
+xforkS :: (Eq s) => (s -> Bool) -> BiGUL [s] ([s], [s])
+xforkS p = Case
+  [ $(normalSV [p| [] |] [p| ([], []) |])$
+      RearrV (PIn (PLeft (PConst ())) `PProd` PIn (PLeft (PConst ())))
+             (EConst ()) $
+      -- $(rearrV [| \([], []) -> () |])$
+        Skip
+  , $(normalSV [p| ((p -> True ):_) |] [p| (_:_, _) |])$
+      RearrV (PIn (PRight (PVar `PProd` PVar)) `PProd` PVar)
+             (EDir (DLeft (DLeft DVar)) `EProd` (EDir (DLeft (DRight DVar)) `EProd` EDir (DRight DVar))) $
+      -- $(rearrV [| \(x:xs, ys) -> (x, (xs, ys)) |])$
+        RearrS (PIn (PRight (PVar `PProd` PVar)))
+               (EDir (DLeft DVar) `EProd` EDir (DRight DVar)) $
+        -- $(rearrS [| \(s:ss) -> (s, ss) |])$
+          Replace `Prod` xforkS p
+  , $(normalSV [p| ((p -> False):_) |] [p| (_, _:_) |])$
+      RearrV (PVar `PProd` PIn (PRight (PVar `PProd` PVar)))
+             (EDir (DRight (DLeft DVar)) `EProd` (EDir (DLeft DVar) `EProd` EDir (DRight (DRight DVar)))) $
+      -- $(rearrV [| \(xs, y:ys) -> (y, (xs, ys)) |])$
+        RearrS (PIn (PRight (PVar `PProd` PVar)))
+               (EDir (DLeft DVar) `EProd` EDir (DRight DVar)) $
+        -- $(rearrS [| \(s:ss) -> (s, ss) |])$
+          Replace `Prod` xforkS p
+  , $(adaptiveSV [p| _ |] [p| _ |])$
+      \_ (xs, ys) -> xs ++ ys
+  ]
 
-type BiGUL' s v = BiGUL (Either ErrorInfo) s v
-
+{-
 
 ---- iterative updates
 
@@ -204,3 +229,5 @@ forkS p = Case [ $(normalSV [p| [] |] [p| ([], []) |]) $
                , $(adaptiveSV [p| _ |] [p| _ |]) $
                    \_ (xs, ys) -> xs ++ ys
                ]
+
+-}

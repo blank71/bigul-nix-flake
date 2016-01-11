@@ -5,31 +5,28 @@ import Control.Monad.Except
 import GHC.Generics
 import GHC.InOut
 import Text.PrettyPrint
-import Generics.BiGUL.MonadBiGULError
 import Data.List(intersperse)
 
 
-data CaseBranch m s v = Normal (BiGUL m s v) (s -> Bool) | Adaptive (s -> v -> s)
+data CaseBranch s v = Normal (BiGUL s v) (s -> Bool) | Adaptive (s -> v -> s)
 
-instance Show (CaseBranch m s v) where
+instance Show (CaseBranch s v) where
   show (Normal bigul _) = "Normal " ++ show bigul
   show (Adaptive _    ) = "Adaptive <adaptive function>"
 
-data BiGUL :: (* -> *) -> * -> * -> * where
-  Fail    :: ErrorInfo -> BiGUL m s v
-  Skip    :: BiGUL m s ()
-  Replace :: BiGUL m s s
-  Prod    :: BiGUL m s v -> BiGUL m s' v' -> BiGUL m (s, s') (v, v')
-  RearrS  :: Pat s env con -> Expr env s' -> BiGUL m s' v -> BiGUL m s v
-  RearrV  :: Pat v env con -> Expr env v' -> BiGUL m s v' -> BiGUL m s v
-  Dep     :: (Eq v') => BiGUL m s v -> (s -> v -> v') -> BiGUL m s (v, v')
-  Case    :: [(s -> v -> Bool, CaseBranch m s v)] -> BiGUL m s v
-  Compose :: BiGUL m s u
-          -> BiGUL m u v
-          -> BiGUL m s v
+data BiGUL :: * -> * -> * where
+  Fail    :: String -> BiGUL s v
+  Skip    :: BiGUL s ()
+  Replace :: BiGUL s s
+  Prod    :: BiGUL s v -> BiGUL s' v' -> BiGUL (s, s') (v, v')
+  RearrS  :: Pat s env con -> Expr env s' -> BiGUL s' v -> BiGUL s v
+  RearrV  :: Pat v env con -> Expr env v' -> BiGUL s v' -> BiGUL s v
+  Dep     :: (Eq v') => BiGUL s v -> (s -> v -> v') -> BiGUL s (v, v')
+  Case    :: [(s -> v -> Bool, CaseBranch s v)] -> BiGUL s v
+  Compose :: BiGUL s u -> BiGUL u v -> BiGUL s v
 
-instance Show (BiGUL m s v) where
-  show (Fail (ErrorInfo s)) = "Fail: " ++ s
+instance Show (BiGUL s v) where
+  show (Fail s) = "Fail: " ++ s
   show Skip = "Skip"
   show Replace = "Replace"
   show (Dep bigul _) = "(Dep   <dependency function>  " ++ show bigul ++ " )"
@@ -61,16 +58,64 @@ instance Show (Pat v e c) where
   show (PIn rp)        = "(PIn " ++ show rp ++ " )"
   -- show _               = "show error in Pat"
 
-deconstruct :: MonadError' ErrorInfo m => Pat a env con -> a -> m env
-deconstruct PVar              a          = return $ Var a
-deconstruct PVar'             a          = return $ Var a
-deconstruct (PConst c)        a          = if c == a then return () else throwError $ ErrorInfo "mismatch with constant"
-deconstruct (PProd patl patr) (al, ar)   = liftM2 (,) (deconstruct patl al) (deconstruct patr ar)
-deconstruct (PLeft patl)      (Left al)  = deconstruct patl al
-deconstruct (PLeft patl)      _          = throwError $ ErrorInfo "PLeft pattern error"
-deconstruct (PRight patr)     (Right ar) = deconstruct patr ar
-deconstruct (PRight patr)     _          = throwError $ ErrorInfo "PRight pattern error"
-deconstruct (PIn pat)         a          = deconstruct pat (out a)
+data PatExprDirError :: * -> * where
+  PEDConstantMismatch    :: a -> a -> PatExprDirError a
+  PEDPatEitherMismatch   :: Pat (Either a b) env con -> Either a b -> PatExprDirError (Either a b)
+  PEDExprEitherMismatch  :: Expr env (Either a b) -> Either a b -> PatExprDirError (Either a b)
+  PEDValueUnrecoverable  :: PatExprDirError a
+  PEDIncompatibleUpdates :: a -> a -> PatExprDirError a
+  PEDMultipleUpdates     :: a -> a -> PatExprDirError a
+  --
+  PEDProdLeft    :: PatExprDirError a -> PatExprDirError (a, b)
+  PEDProdRight   :: PatExprDirError b -> PatExprDirError (a, b)
+  PEDEitherLeft  :: PatExprDirError a -> PatExprDirError (Either a b)
+  PEDEitherRight :: PatExprDirError b -> PatExprDirError (Either a b)
+  PEDIn          :: InOut a => PatExprDirError (F a) -> PatExprDirError a
+
+instance Show (PatExprDirError a) where
+  show (PEDConstantMismatch _ _)    = "constant mismatch"
+  show (PEDPatEitherMismatch _ _)   = "either pattern mismatch"
+  show (PEDExprEitherMismatch _ _)  = "either expression mismatch"
+  show  PEDValueUnrecoverable       = "value unrecoverable"
+  show (PEDIncompatibleUpdates _ _) = "incompatible updates"
+  show (PEDMultipleUpdates _ _)     = "multiple updates"
+  show (PEDProdLeft e)              = "on the left-hand side of Prod\n" ++ show e
+  show (PEDProdRight e)             = "on the right-hand side of Prod\n" ++ show e
+  show (PEDEitherLeft e)            = "inside Left\n" ++ show e
+  show (PEDEitherRight e)           = "inside Right\n" ++ show e
+  show (PEDIn e)                    = "inside In" ++ show e
+
+liftE :: (a -> b) -> Either a c -> Either b c
+liftE f = either (Left . f) Right
+
+class LiftPED a b where
+  liftPED' :: PatExprDirError a -> PatExprDirError b
+  liftPED  :: Either (PatExprDirError a) c -> Either (PatExprDirError b) c
+  liftPED  = liftE liftPED'
+
+instance LiftPED a (a, b) where
+  liftPED' = PEDProdLeft
+
+instance LiftPED b (a, b) where
+  liftPED' = PEDProdRight
+
+instance LiftPED a (Either a b) where
+  liftPED' = PEDEitherLeft
+
+instance LiftPED b (Either a b) where
+  liftPED' = PEDEitherRight
+
+deconstruct :: Pat a env con -> a -> Either (PatExprDirError a) env
+deconstruct PVar              a          = return (Var a)
+deconstruct PVar'             a          = return (Var a)
+deconstruct (PConst c)        a          = if c == a then return () else throwError (PEDConstantMismatch c a)
+deconstruct (PProd patl patr) (al, ar)   = liftM2 (,) (liftPED (deconstruct patl al))
+                                                      (liftPED (deconstruct patr ar))
+deconstruct (PLeft patl)      (Left  al) = liftPED (deconstruct patl al)
+deconstruct pat@(PLeft _)     a          = throwError (PEDPatEitherMismatch pat a)
+deconstruct (PRight patr)     (Right ar) = liftPED (deconstruct patr ar)
+deconstruct pat@(PRight _)    a          = throwError (PEDPatEitherMismatch pat a)
+deconstruct (PIn pat)         a          = liftE PEDIn (deconstruct pat (out a))
 
 construct :: Pat a env con -> env -> a
 construct PVar              (Var a)  = a
@@ -81,16 +126,17 @@ construct (PLeft patl)      al       = Left  (construct patl al)
 construct (PRight patr)     ar       = Right (construct patr ar)
 construct (PIn pat)         a        = inn (construct pat a)
 
-fromContainerV :: MonadError' ErrorInfo m => Pat v env con -> con -> m env
-fromContainerV PVar              Nothing      = throwError $ ErrorInfo "PVar canot be empty"
+fromContainerV :: Pat v env con -> con -> Either (PatExprDirError v) env
+fromContainerV PVar              Nothing      = throwError PEDValueUnrecoverable
 fromContainerV PVar              (Just v)     = return (Var v)
-fromContainerV PVar'             Nothing      = throwError $ ErrorInfo "PVar'canot be empty"
+fromContainerV PVar'             Nothing      = throwError PEDValueUnrecoverable
 fromContainerV PVar'             (Just v)     = return (Var v)
 fromContainerV (PConst c)        con          = return ()
-fromContainerV (PProd patl patr) (conl, conr) = liftM2 (,) (fromContainerV patl conl) (fromContainerV patr conr)
-fromContainerV (PLeft pat)       con          = fromContainerV pat con
-fromContainerV (PRight pat)      con          = fromContainerV pat con
-fromContainerV (PIn pat)         con          = fromContainerV pat con
+fromContainerV (PProd patl patr) (conl, conr) = liftM2 (,) (liftPED (fromContainerV patl conl))
+                                                           (liftPED (fromContainerV patr conr))
+fromContainerV (PLeft pat)       con          = liftPED (fromContainerV pat con)
+fromContainerV (PRight pat)      con          = liftPED (fromContainerV pat con)
+fromContainerV (PIn pat)         con          = liftE PEDIn (fromContainerV pat con)
 
 fromContainerS :: Pat s env con -> env -> con -> env
 fromContainerS PVar              (Var s)     Nothing     = (Var s)
@@ -111,7 +157,6 @@ emptyContainer (PProd rpatl rpatr) = (emptyContainer rpatl, emptyContainer rpatr
 emptyContainer (PLeft pat        ) = emptyContainer pat
 emptyContainer (PRight pat       ) = emptyContainer pat
 emptyContainer (PIn  pat         ) = emptyContainer pat
-
 
 -- You need to explicitly specify the type arguments at the type level when using the Direction type.
 -- From type, you could know the type of the data you want.
@@ -158,22 +203,22 @@ eval (ERight expr      ) env = Right $ eval expr env
 -- The goal is to update the "Maybe" con to fill in proper values.
 -- con follow the structure of Pat
 -- we have updated value a', which follows the structure of Expr
-uneval :: (MonadError' ErrorInfo m) => Pat a env con -> Expr env a' -> a' -> con -> m con
+uneval :: Pat a env con -> Expr env a' -> a' -> con -> Either (PatExprDirError a') con
 uneval pat (EDir dir)          a'          con = unevalDir pat dir a' con
-uneval pat (EConst c)          a'          con = if c == a' then return con else throwError $ ErrorInfo "const not matched."
-uneval pat (EIn expr)          a'          con = uneval pat expr (out a') con
-uneval pat (EProd exprl exprr) (al', ar')  con = uneval pat exprl al' con >>= uneval pat exprr ar'
-uneval pat (ELeft expr)        (Left al')  con = uneval pat expr al' con
-uneval pat (ELeft expr)        _           con = throwError $ ErrorInfo "Right value for Left pattern"
-uneval pat (ERight expr)       (Right ar') con = uneval pat expr ar' con
-uneval pat (ERight expr)       _           con = throwError $ ErrorInfo "Left value for Right pattern"
+uneval pat (EConst c)          a'          con = if c == a' then return con else throwError (PEDConstantMismatch c a')
+uneval pat (EIn expr)          a'          con = liftE PEDIn (uneval pat expr (out a') con)
+uneval pat (EProd exprl exprr) (al', ar')  con = liftPED (uneval pat exprl al' con) >>= liftPED . uneval pat exprr ar'
+uneval pat (ELeft expr)        (Left al')  con = liftPED (uneval pat expr al' con)
+uneval pat expr@(ELeft _)      a'          con = throwError (PEDExprEitherMismatch expr a')
+uneval pat (ERight expr)       (Right ar') con = liftPED (uneval pat expr ar' con)
+uneval pat expr@(ERight _)     a'          con = throwError (PEDExprEitherMismatch expr a')
 
-unevalDir :: (MonadError' ErrorInfo m) => Pat a env con -> Direction env a' -> a' -> con -> m con
+unevalDir :: Pat a env con -> Direction env a' -> a' -> con -> Either (PatExprDirError a') con
 unevalDir PVar              DVar          a' (Just a'')   = if a' == a''
                                                             then return (Just a')
-                                                            else throwError $ ErrorInfo "multiple unequal updates to PVar"
+                                                            else throwError (PEDIncompatibleUpdates a' a'')
 unevalDir PVar              DVar          a' Nothing      = return (Just a')
-unevalDir PVar'             DVar          a' (Just a'')   = throwError $ ErrorInfo "multiple updates to PVar'"
+unevalDir PVar'             DVar          a' (Just a'')   = throwError (PEDMultipleUpdates a' a'')
 unevalDir PVar'             DVar          a' Nothing      = return (Just a')
 unevalDir (PConst c)        _             a' con          = return con
 unevalDir (PProd patl patr) (DLeft dir)   a' (conl, conr) = liftM (, conr) (unevalDir patl dir a' conl)
