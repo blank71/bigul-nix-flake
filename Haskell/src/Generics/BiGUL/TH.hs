@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell, TupleSections, DeriveDataTypeable, TypeSynonymInstances, FlexibleInstances #-}
-module Generics.BiGUL.TH( normal, normal', normalS, normalV, normalV', normalSV, adaptive, adaptiveS, adaptiveV, adaptiveSV, rearr,update,rearrAndUpdate,deriveBiGULGeneric) where
+module Generics.BiGUL.TH( normal, normal', normalS, normalV, normalV', normalSV, adaptive, adaptiveS, adaptiveV, adaptiveSV, rearr,update,rearrAndUpdate,deriveBiGULGeneric,rearrS,rearrV,rearrSV) where
 import Data.Data
 import Data.Maybe
 import Data.List as List
@@ -17,13 +17,14 @@ data ConTag = L | R
     deriving (Show, Data, Typeable)
 
 
-data PatTag = PTag | UTag | RTag | ETag
+data PatTag = PTag | UTag | RTag | ETag | STag
 
 instance Show PatTag where
    show PTag = "P"
    show UTag = "U"
-   show RTag = "R"
+   show RTag = "P"
    show ETag = "E"
+   show STag = "P"
 
 contag :: a -> a -> ConTag -> a
 contag a1 _  L = a1
@@ -312,15 +313,20 @@ mkPat (WildP) UTag = do
   (_, [uvar, skip]) <- lookupNames [] [astNameSpace ++ s | s <- ["UVar", "Skip"]] (notFoundMsg "UVar, Skip")
   return $ ConE uvar `AppE` ConE skip
 mkPat (WildP) RTag = fail $ "Wildcard(_) connot be used in lambda pattern expression."
-
+mkPat (WildP) STag = do
+  (_, [pvar])       <- lookupNames [] [astNameSpace ++ "PVar'"] (notFoundMsg "PVar'")
+  return $ ConE pvar
 
 mkPat (VarP name) PTag =  fail $ "Please do not use variables here, use wildcard(_) instead."
 mkPat (VarP name) UTag =  do
   (_, [uvar])       <- lookupNames [] [astNameSpace ++ "UVar"] (notFoundMsg "UVar")
   return $ ConE uvar `AppE` VarE name
 mkPat (VarP name) RTag =  do
-  (_, [rvar])       <- lookupNames [] [astNameSpace ++ "RVar"] (notFoundMsg "RVar")
-  return $ ConE rvar
+  (_, [pvar])       <- lookupNames [] [astNameSpace ++ "PVar"] (notFoundMsg "PVar")
+  return $ ConE pvar
+mkPat (VarP name) STag =  do
+  (_, [pvar])       <- lookupNames [] [astNameSpace ++ "PVar'"] (notFoundMsg "PVar'")
+  return $ ConE pvar
 
 mkPat _ patTag = fail $ "Pattern not handled yet."
 
@@ -486,17 +492,27 @@ mkBodyExpForRearr _           = fail $ "Invalid syntax in lambda body expression
 
 
 
-rearr' :: TH.Exp -> Q TH.Exp
-rearr' (LamE [p] e) = do
-  (_, [edir,rearrc]) <- lookupNames [] [astNameSpace ++ s | s <- ["EDir","Rearr"] ] (notFoundMsg "EDir, Rearr")
-  pat <- mkPat p RTag
+rearr' :: PatTag -> TH.Exp -> Q TH.Exp
+rearr' patTag (LamE [p] e) = do
+  let suffixRS = case patTag of {RTag -> "V" ; STag -> "S" ; _ -> ""}
+  (_, [edir,rearrc]) <- lookupNames [] [astNameSpace ++ s | s <- ["EDir","Rearr"++suffixRS] ] (notFoundMsg $ "EDir, Rearr"++suffixRS)
+  pat <- mkPat p patTag
   exp <- mkBodyExpForRearr e
   env <- mkEnvForRearr p
   newexp <- rearrangeExp exp (Map.map (ConE edir `AppE`) env)
   return ((ConE rearrc `AppE` pat) `AppE` newexp)
 
 rearr :: Q TH.Exp -> Q TH.Exp
-rearr = (rearr' =<<)
+rearr = ((rearr' RTag) =<<)
+
+rearrV :: Q TH.Exp -> Q TH.Exp
+rearrV = rearr
+
+rearrS :: Q TH.Exp -> Q TH.Exp
+rearrS = ((rearr' STag) =<<)
+
+
+
 
 
 
@@ -522,6 +538,14 @@ mkExpFromPat (TupP ps) = do
 mkExpFromPat (VarP name) = return (VarE name)
 mkExpFromPat WildP = [| () |]
 mkExpFromPat _ = fail $ "pattern not handled in mkExpFromPat"
+
+mkExpFromPat' :: TH.Pat -> Q TH.Exp
+mkExpFromPat' (VarP name) = return (VarE name)
+mkExpFromPat' (TupP ps) = do
+  (_, [prod]) <- lookupNames [] [ astNameSpace ++ "Prod" ] (notFoundMsg "Prod")
+  es <- mapM mkExpFromPat' ps
+  return $ foldr1 (\e1 e2 -> ((ConE prod `AppE` e1) `AppE` e2)) es
+mkExpFromPat' _ = fail $ "rearrSV only supports tuple"
 
 toProduct :: TH.Exp -> Q TH.Exp
 toProduct (AppE e1 e2) = do
@@ -554,6 +578,27 @@ rearrAndUpdate qrp qup qud = do
   uenv <- mkEnvForUpdate ud
   ubigul <- rearrangeExp (ConE upd `AppE` upat) uenv
   return $ ((ConE rearrc `AppE` rpat) `AppE` newrexp) `AppE` ubigul
+
+rearrSV :: Q TH.Pat -> Q TH.Pat -> Q TH.Pat -> Q [TH.Dec] -> Q TH.Exp
+rearrSV qsp qvp qpp qpd = do
+  (_, [edir,rearrs,rearrv]) <- lookupNames [] [astNameSpace ++ s | s <- ["EDir","RearrS","RearrV"] ] (notFoundMsg "EDir, RearrS, RearrV")
+  sp <- qsp
+  vp <- qvp
+  pp <- qpp
+  pd <- qpd
+  spat <- mkPat sp STag
+  vpat <- mkPat vp RTag
+  commonexp <- mkExpFromPat pp
+  commonexp' <- mkBodyExpForRearr commonexp
+  commonexp'' <- toProduct commonexp'
+  senv <- mkEnvForRearr sp
+  sbody <- rearrangeExp commonexp'' (Map.map (ConE edir `AppE`) senv)
+  venv <- mkEnvForRearr vp
+  vbody <- rearrangeExp commonexp'' (Map.map (ConE edir `AppE`) venv)
+  prodexp <- mkExpFromPat' pp
+  prodenv <-  mkEnvForUpdate pd
+  prodbigul <- rearrangeExp prodexp prodenv
+  return $ ((ConE rearrs `AppE` spat) `AppE` sbody) `AppE` (((ConE rearrv `AppE` vpat) `AppE` vbody) `AppE` prodbigul)
 
 
 mkEnvForUpdate :: [TH.Dec] -> Q (Map String TH.Exp)
