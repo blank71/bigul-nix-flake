@@ -1,5 +1,5 @@
 {-# LANGUAGE TemplateHaskell, TupleSections, DeriveDataTypeable, TypeSynonymInstances, FlexibleInstances #-}
-module Generics.BiGUL.TH( normal, normal', normalS, normalV, normalV', normalSV, adaptive, adaptiveS, adaptiveV, adaptiveSV, rearr,update,rearrAndUpdate,deriveBiGULGeneric,rearrS,rearrV,rearrSV) where
+module Generics.BiGUL.TH( normal, normal', normalS, normalV, normalV', normalSV, adaptive, adaptiveS, adaptiveV, adaptiveSV, update, deriveBiGULGeneric, rearrS, rearrV) where
 import Data.Data
 import Data.Maybe
 import Data.List as List
@@ -646,8 +646,8 @@ rearrSV qsp qvp qpp qpd = do
   vp <- qvp
   pp <- qpp
   pd <- qpd
-  spat <- mkPat sp STag
-  vpat <- mkPat vp RTag
+  spat <- mkPat sp SPTag
+  vpat <- mkPat vp RPTag
   commonexp <- mkExpFromPat pp
   commonexp' <- mkBodyExpForRearr commonexp
   commonexp'' <- toProduct commonexp'
