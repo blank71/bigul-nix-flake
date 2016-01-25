@@ -2,7 +2,6 @@
 module Generics.BiGUL.TH( normal, normal', normalS, normalV, normalV', normalSV, adaptive, adaptiveS, adaptiveV, adaptiveSV, rearr,update,rearrAndUpdate,deriveBiGULGeneric,rearrS,rearrV,rearrSV) where
 import Data.Data
 import Data.Maybe
-import Data.Set (fromList,toList)
 import Data.List as List
 import Data.Map (Map)
 import qualified Data.Map as Map
