@@ -17,6 +17,18 @@ data Bar = M { x0 :: Int , x1 :: Int , x2 :: Int}
          | N { y0 :: Int , y1 :: Int } deriving(Eq,Show)
 deriveBiGULGeneric ''Bar
 
+data Fooo = P | Q Fooo Fooo deriving(Eq,Show)
+deriveBiGULGeneric ''Fooo
+
+{-
+rearrVEqTest :: BiGUL Fooo Fooo
+rearrVEqTest = $(rearrV [| \p -> Q p p|]) Replace
+-}
+
+rearrSEqTest :: BiGUL Fooo Fooo
+rearrSEqTest = $(rearrS [| \p -> Q p p |]) Replace
+
+
 rearrVTest1 :: BiGUL (Int,(Int,Int)) (Int,Int)
 rearrVTest1 = $(rearrV [| \(x,y) -> (x,(y,x))|]) Replace
 
@@ -38,13 +50,11 @@ rearrSTest3 = $(rearrS [| \M {x1 = y , x0 = x , x2 = _} -> N {y0 = x , y1 = y} |
 
 
 rearrSVTest1 :: BiGUL (Int,(Int,Int)) Foo
-rearrSVTest1 = $(rearrSV [p| (a,(b,_)) |]
-                         [p| Y a b|]
-                         [p| (b , a) |]
+rearrSVTest1 = $(update  [p| Y a b|]
+                         [p| (a,(b,_)) |]
                          [d| a = Replace ; b = Replace|])
 
 rearrSVTest2 :: BiGUL Foo Bar
-rearrSVTest2 = $(rearrSV [p| X a _ b |]
-                         [p| N {y1 = a , y0 = b} |]
-                         [p| (a , b) |]
+rearrSVTest2 = $(update  [p| N {y1 = a , y0 = b} |]
+                         [p| X a _ b |]
                          [d| a = Replace ; b = Replace|])
