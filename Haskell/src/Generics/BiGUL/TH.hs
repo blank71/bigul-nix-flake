@@ -540,7 +540,8 @@ rearrV qlambexp = do lambexp@(LamE _ e) <- qlambexp
 rearrS :: Q TH.Exp -> Q TH.Exp
 rearrS qlambexp = do lambexp@(LamE _ e) <- qlambexp
                      let varnames = getAllVars e
-                     if (toList . fromList) varnames == varnames
+                     let varnamessort = sort varnames
+                     if nub varnamessort == varnamessort
                      then rearr' SPTag lambexp
                      else rearr' STag lambexp
 
