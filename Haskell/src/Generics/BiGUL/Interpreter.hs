@@ -36,6 +36,7 @@ data BiGULPutError :: * -> * -> * where
 
 incrBranchNo :: BiGULPutError s v -> BiGULPutError s v
 incrBranchNo (BPBranch i e) = BPBranch (i+1) e
+incrBranchNo e              = e
 
 instance Show (BiGULPutError s v) where
   show (BPFail str)                   = "fail: " ++ str
