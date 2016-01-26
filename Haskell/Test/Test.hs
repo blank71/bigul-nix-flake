@@ -1,7 +1,8 @@
 {-# LANGUAGE TypeOperators, TypeFamilies, FlexibleContexts, DeriveGeneric, ViewPatterns  #-}
 
-import Generics.BiGUL
+import Generics.BiGUL.Error
 import Generics.BiGUL.AST
+import Generics.BiGUL.Interpreter
 import Generics.BiGUL.TH
 import Control.Arrow
 import Control.Monad
@@ -31,11 +32,11 @@ iter b = Case
 iterBigul :: BiGUL [Int] Int
 iterBigul = iter Replace
 
--- putIter :: [Int] -> Int -> Either BiGULPutError [Int]
--- putIter s v = put iterBigul s v
+putIter :: [Int] -> Int -> Either (PutError [Int] Int) [Int]
+putIter s v = put iterBigul s v
 
--- getIter :: [Int] -> Either BiGULPutError Int
--- getIter s = get iterBigul s
+getIter :: [Int] -> Either (GetError [Int] Int) Int
+getIter s = get iterBigul s
 
 ---- list alignment
 
@@ -98,20 +99,20 @@ bookstore =
         (\(VBook vtitle vprice) -> SBook vtitle [] vprice 2012)
         (const Nothing)
 
--- putBook :: Either ErrorInfo [SBook]
--- putBook = put bookstore s v
+putBook :: Either (PutError [SBook] [VBook]) [SBook]
+putBook = put bookstore s v
 
--- putBookWithCheck :: Either ErrorInfo [SBook]
+-- putBookWithCheck :: Either PutError [SBook]
 -- putBookWithCheck = do
 --   b <- checkFullEmbed bookstore
 --   if b
 --   then putBook
---   else Left (ErrorInfo "view variable is not fully embedded.")
+--   else throwError (BPFail "view variable(s) not fully embedded")
 
--- getBook :: Either ErrorInfo [VBook]
--- getBook = get bookstore s
+getBook :: Either (GetError [SBook] [VBook]) [VBook]
+getBook = get bookstore s
 
--- checkBook :: Either ErrorInfo Bool
+-- checkBook :: Either PutError Bool
 -- checkBook = checkFullEmbed bookstore
 
 ---- transatlantic corporation
@@ -149,8 +150,8 @@ employeeS = [ ("Jermy Gibbons", (82495, Left  "Oxford University" ))
             , ("Nate Foster"  , (97000, Right "Cornell University"))
             , ("Hugo Pacheco" , (35000, Right "Cornell University")) ]
 
--- getEmployee :: Either ErrorInfo EmployeeView
--- getEmployee = get transatlantic employeeS
+getEmployee :: Either (GetError EmployeeSource EmployeeView) EmployeeView
+getEmployee = get transatlantic employeeS
 
 -- re-ordering
 -- update location
@@ -162,8 +163,8 @@ employeeView' = [ ("Jermy Gibbons", Left  "Cambridge University")
                 , ("Josh Ko"      , Left  "Oxford University"   )
                 , ("Meng Wang"    , Right "Havard University"   ) ]
 
--- putEmployee :: Either ErrorInfo EmployeeSource
--- putEmployee = put transatlantic employeeS employeeView'
+putEmployee :: Either (PutError EmployeeSource EmployeeView) EmployeeSource
+putEmployee = put transatlantic employeeS employeeView'
 
 ---- view dependency
 
@@ -192,7 +193,7 @@ emb g p = Case
       p
   ]
 
-xforkS :: (s -> Bool) -> BiGUL [s] ([s], [s])
+xforkS :: Show s => (s -> Bool) -> BiGUL [s] ([s], [s])
 xforkS p = Case
   [ $(normalSV [p| [] |] [p| ([], []) |])$
       $(rearrV [| \([], []) -> () |])$
