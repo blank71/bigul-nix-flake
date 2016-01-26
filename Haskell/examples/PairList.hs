@@ -4,13 +4,13 @@ module Main where
 -- the example.
 
 import Generics.BiGUL.AST
-         ( Expr (EDir, EConst, EProd)
-         , BiGUL (Replace, Skip, Align, Update, Rearr)
-         , RPat (RVar)
-         , UPat (UVar, UProd)
-         , Direction (DVar)
-         , checkFullEmbed
-         )
+         -- ( Expr (EDir, EConst, EProd)
+         -- , BiGUL (..)
+         -- , RPat (RVar)
+         -- , UPat (UVar, UProd)
+         -- , Direction (DVar)
+         -- , checkFullEmbed
+         -- )
 import Generics.BiGUL.Interpreter
          (put)
 import Generics.BiGUL.MonadBiGULError
@@ -18,9 +18,7 @@ import Generics.BiGUL.MonadBiGULError
          , ErrorInfo
          )
 import Generics.BiGUL.TH
-         ( rearr
-         , update
-         )
+         (update)
 
 import System.Exit (exitFailure)
 
