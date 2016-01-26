@@ -132,16 +132,16 @@ retrieve (DLeft  p) (x, y)  = retrieve p x
 retrieve (DRight p) (x, y)  = retrieve p y
 
 data Expr :: * -> * -> * where
-  EDir     :: Direction orig a -> Expr orig a
-  EConst   :: (Eq a, Show a) =>  a -> Expr orig a
-  EIn      :: (InOut a, Eq (F a)) => Expr orig (F a) -> Expr orig a
-  EProd    :: Expr orig a -> Expr orig b -> Expr orig (a, b)
-  ELeft    :: Expr orig a -> Expr orig (Either a b)
-  ERight   :: Expr orig b -> Expr orig (Either a b)
+  EDir   :: Direction orig a -> Expr orig a
+  EConst :: Eq a =>  a -> Expr orig a
+  EIn    :: InOut a => Expr orig (F a) -> Expr orig a
+  EProd  :: Expr orig a -> Expr orig b -> Expr orig (a, b)
+  ELeft  :: Expr orig a -> Expr orig (Either a b)
+  ERight :: Expr orig b -> Expr orig (Either a b)
 
 instance Show (Expr orig a) where
   show (EDir dir)      = "(EDir " ++ show dir ++ ")"
-  show (EConst c)      = "(EConst " ++ show c ++ ")"
+  show (EConst c)      = "EConst"
   show (EProd e1 e2)   = "(EProd " ++ show e1 ++ " " ++ show e2 ++ ")"
   show (ELeft e)       = "(ELeft " ++ show e ++ ")"
   show (ERight e)      = "(ERight " ++ show e ++ ")"
