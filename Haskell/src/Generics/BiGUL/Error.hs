@@ -1,4 +1,4 @@
-{-# LANGUAGE UndecidableInstances #-}
+{-# LANGUAGE UndecidableInstances, KindSignatures, GADTs, FlexibleInstances #-}
 
 module Generics.BiGUL.Error where
 
