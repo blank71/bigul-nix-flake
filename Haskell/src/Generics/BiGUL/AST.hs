@@ -1,6 +1,8 @@
 {-# LANGUAGE GADTs, KindSignatures, MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, DeriveGeneric, TupleSections #-}
 module Generics.BiGUL.AST where
 
+import Generics.BiGUL.Error
+import Control.Monad
 import Control.Monad.Except
 import GHC.Generics
 import GHC.InOut
@@ -26,12 +28,12 @@ data BiGUL :: * -> * -> * where
   Compose :: BiGUL s u -> BiGUL u v -> BiGUL s v
 
 instance Show (BiGUL s v) where
-  show (Fail s) = "Fail: " ++ s
-  show Skip = "Skip"
-  show Replace = "Replace"
-  show (Dep bigul _) = "(Dep   <dependency function>  " ++ show bigul ++ " )"
-  show (Case bs) = "(Case [" ++ unwords (intersperse "\n" (map (\(_,b) -> "(predicate , " ++ show b ++ " )") bs)) ++ " ])"
-  show _ = "Unknown BiGUL program in show"
+  show (Fail s)  = "Fail: " ++ s
+  show Skip      = "Skip"
+  show Replace   = "Replace"
+  show (Dep b _) = "(Dep <dependency function> " ++ show b ++ ")"
+  show (Case bs) = "(Case [" ++ unwords (intersperse "\n" (map (\(_,b) -> "(predicate, " ++ show b ++ ")") bs)) ++ " ])"
+  show _         = "Unknown BiGUL program in show"
 
 newtype Var a = Var a
 
@@ -42,7 +44,7 @@ instance Show a => Show (Var a) where
 data Pat :: * -> * -> * -> * where
   PVar   :: Eq a => Pat a (Var a) (Maybe a)
   PVar'  :: Pat a (Var a) (Maybe a)
-  PConst :: (Eq a, Show a) => a -> Pat a () ()
+  PConst :: (Eq a) => a -> Pat a () ()
   PProd  :: Pat a a' a'' -> Pat b b' b'' -> Pat (a, b) (a', b') (a'', b'')
   PLeft  :: Pat a a' a'' -> Pat (Either a b) a' a''
   PRight :: Pat b b' b'' -> Pat (Either a b) b' b''
@@ -51,70 +53,23 @@ data Pat :: * -> * -> * -> * where
 instance Show (Pat v e c) where
   show  PVar           = "PVar"
   show  PVar'          = "PVar'"
-  show (PConst c)      = show c
-  show (PProd rp1 rp2) = "(PProd " ++ show rp1 ++ " " ++ show rp2 ++ " )"
-  show (PLeft rp)      = "(PLeft " ++ show rp ++ " )"
-  show (PRight rp)     = "(PRight " ++ show rp ++ " )"
-  show (PIn rp)        = "(PIn " ++ show rp ++ " )"
+  show (PConst c)      = "PConst"
+  show (PProd rp1 rp2) = "(PProd " ++ show rp1 ++ " " ++ show rp2 ++ ")"
+  show (PLeft rp)      = "(PLeft " ++ show rp ++ ")"
+  show (PRight rp)     = "(PRight " ++ show rp ++ ")"
+  show (PIn rp)        = "(PIn " ++ show rp ++ ")"
   -- show _               = "show error in Pat"
-
-data PatExprDirError :: * -> * where
-  PEDConstantMismatch    :: a -> a -> PatExprDirError a
-  PEDPatEitherMismatch   :: Pat (Either a b) env con -> Either a b -> PatExprDirError (Either a b)
-  PEDExprEitherMismatch  :: Expr env (Either a b) -> Either a b -> PatExprDirError (Either a b)
-  PEDValueUnrecoverable  :: PatExprDirError a
-  PEDIncompatibleUpdates :: a -> a -> PatExprDirError a
-  PEDMultipleUpdates     :: a -> a -> PatExprDirError a
-  --
-  PEDProdLeft    :: PatExprDirError a -> PatExprDirError (a, b)
-  PEDProdRight   :: PatExprDirError b -> PatExprDirError (a, b)
-  PEDEitherLeft  :: PatExprDirError a -> PatExprDirError (Either a b)
-  PEDEitherRight :: PatExprDirError b -> PatExprDirError (Either a b)
-  PEDIn          :: InOut a => PatExprDirError (F a) -> PatExprDirError a
-
-instance Show (PatExprDirError a) where
-  show (PEDConstantMismatch _ _)    = "constant mismatch"
-  show (PEDPatEitherMismatch _ _)   = "either pattern mismatch"
-  show (PEDExprEitherMismatch _ _)  = "either expression mismatch"
-  show  PEDValueUnrecoverable       = "value unrecoverable"
-  show (PEDIncompatibleUpdates _ _) = "incompatible updates"
-  show (PEDMultipleUpdates _ _)     = "multiple updates"
-  show (PEDProdLeft e)              = "on the left-hand side of Prod\n" ++ show e
-  show (PEDProdRight e)             = "on the right-hand side of Prod\n" ++ show e
-  show (PEDEitherLeft e)            = "inside Left\n" ++ show e
-  show (PEDEitherRight e)           = "inside Right\n" ++ show e
-  show (PEDIn e)                    = "inside In" ++ show e
-
-liftE :: (a -> b) -> Either a c -> Either b c
-liftE f = either (Left . f) Right
-
-class LiftPED a b where
-  liftPED' :: PatExprDirError a -> PatExprDirError b
-  liftPED  :: Either (PatExprDirError a) c -> Either (PatExprDirError b) c
-  liftPED  = liftE liftPED'
-
-instance LiftPED a (a, b) where
-  liftPED' = PEDProdLeft
-
-instance LiftPED b (a, b) where
-  liftPED' = PEDProdRight
-
-instance LiftPED a (Either a b) where
-  liftPED' = PEDEitherLeft
-
-instance LiftPED b (Either a b) where
-  liftPED' = PEDEitherRight
 
 deconstruct :: Pat a env con -> a -> Either (PatExprDirError a) env
 deconstruct PVar              a          = return (Var a)
 deconstruct PVar'             a          = return (Var a)
-deconstruct (PConst c)        a          = if c == a then return () else throwError (PEDConstantMismatch c a)
-deconstruct (PProd patl patr) (al, ar)   = liftM2 (,) (liftPED (deconstruct patl al))
-                                                      (liftPED (deconstruct patr ar))
-deconstruct (PLeft patl)      (Left  al) = liftPED (deconstruct patl al)
-deconstruct pat@(PLeft _)     a          = throwError (PEDPatEitherMismatch pat a)
-deconstruct (PRight patr)     (Right ar) = liftPED (deconstruct patr ar)
-deconstruct pat@(PRight _)    a          = throwError (PEDPatEitherMismatch pat a)
+deconstruct (PConst c)        a          = if c == a then return () else throwError PEDConstantMismatch
+deconstruct (PProd patl patr) (al, ar)   = liftM2 (,) (liftE PEDProdLeft  (deconstruct patl al))
+                                                      (liftE PEDProdRight (deconstruct patr ar))
+deconstruct (PLeft patl)      (Left  al) = liftE PEDEitherLeft  (deconstruct patl al)
+deconstruct pat@(PLeft _)     a          = throwError PEDEitherMismatch
+deconstruct (PRight patr)     (Right ar) = liftE PEDEitherRight (deconstruct patr ar)
+deconstruct pat@(PRight _)    a          = throwError PEDEitherMismatch
 deconstruct (PIn pat)         a          = liftE PEDIn (deconstruct pat (out a))
 
 construct :: Pat a env con -> env -> a
@@ -132,10 +87,10 @@ fromContainerV PVar              (Just v)     = return (Var v)
 fromContainerV PVar'             Nothing      = throwError PEDValueUnrecoverable
 fromContainerV PVar'             (Just v)     = return (Var v)
 fromContainerV (PConst c)        con          = return ()
-fromContainerV (PProd patl patr) (conl, conr) = liftM2 (,) (liftPED (fromContainerV patl conl))
-                                                           (liftPED (fromContainerV patr conr))
-fromContainerV (PLeft pat)       con          = liftPED (fromContainerV pat con)
-fromContainerV (PRight pat)      con          = liftPED (fromContainerV pat con)
+fromContainerV (PProd patl patr) (conl, conr) = liftM2 (,) (liftE PEDProdLeft  (fromContainerV patl conl))
+                                                           (liftE PEDProdRight (fromContainerV patr conr))
+fromContainerV (PLeft pat)       con          = liftE PEDEitherLeft  (fromContainerV pat con)
+fromContainerV (PRight pat)      con          = liftE PEDEitherRight (fromContainerV pat con)
 fromContainerV (PIn pat)         con          = liftE PEDIn (fromContainerV pat con)
 
 fromContainerS :: Pat s env con -> env -> con -> env
@@ -168,8 +123,8 @@ data Direction :: * -> * -> * where
 
 instance Show (Direction a t) where
   show  DVar = "DVar"
-  show (DLeft dir)  = "(DLeft " ++ show dir ++ " )"
-  show (DRight dir) = "(DRight " ++ show dir ++ " )"
+  show (DLeft dir)  = "(DLeft " ++ show dir ++ ")"
+  show (DRight dir) = "(DRight " ++ show dir ++ ")"
 
 retrieve :: Direction a t -> a -> t
 retrieve  DVar      (Var x) = x
@@ -177,20 +132,20 @@ retrieve (DLeft  p) (x, y)  = retrieve p x
 retrieve (DRight p) (x, y)  = retrieve p y
 
 data Expr :: * -> * -> * where
-  EDir     :: Direction orig a -> Expr orig a
-  EConst   :: (Eq a, Show a) =>  a -> Expr orig a
-  EIn      :: (InOut a, Eq (F a)) => Expr orig (F a) -> Expr orig a
-  EProd    :: Expr orig a -> Expr orig b -> Expr orig (a, b)
-  ELeft    :: Expr orig a -> Expr orig (Either a b)
-  ERight   :: Expr orig b -> Expr orig (Either a b)
+  EDir   :: Direction orig a -> Expr orig a
+  EConst :: Eq a =>  a -> Expr orig a
+  EIn    :: InOut a => Expr orig (F a) -> Expr orig a
+  EProd  :: Expr orig a -> Expr orig b -> Expr orig (a, b)
+  ELeft  :: Expr orig a -> Expr orig (Either a b)
+  ERight :: Expr orig b -> Expr orig (Either a b)
 
 instance Show (Expr orig a) where
-  show (EDir dir)      = "(EDir " ++ show dir ++ " )"
-  show (EConst c)      = "(EConst " ++ show c ++ " )"
-  show (EProd e1 e2)   = "(EProd " ++ show e1 ++ " " ++ show e2 ++ " )"
-  show (ELeft e)       = "(ELeft " ++ show e ++ " )"
-  show (ERight e)      = "(ERight " ++ show e ++ " )"
-  show (EIn e)         = "(EIn " ++ show e ++ " )"
+  show (EDir dir)      = "(EDir " ++ show dir ++ ")"
+  show (EConst c)      = "EConst"
+  show (EProd e1 e2)   = "(EProd " ++ show e1 ++ " " ++ show e2 ++ ")"
+  show (ELeft e)       = "(ELeft " ++ show e ++ ")"
+  show (ERight e)      = "(ERight " ++ show e ++ ")"
+  show (EIn e)         = "(EIn " ++ show e ++ ")"
 
 eval :: Expr env a' -> env -> a'
 eval (EDir dir)          env = retrieve dir env
@@ -205,13 +160,13 @@ eval (ERight expr      ) env = Right $ eval expr env
 -- we have updated value a', which follows the structure of Expr
 uneval :: Pat a env con -> Expr env a' -> a' -> con -> Either (PatExprDirError a') con
 uneval pat (EDir dir)          a'          con = unevalDir pat dir a' con
-uneval pat (EConst c)          a'          con = if c == a' then return con else throwError (PEDConstantMismatch c a')
+uneval pat (EConst c)          a'          con = if c == a' then return con else throwError PEDConstantMismatch
 uneval pat (EIn expr)          a'          con = liftE PEDIn (uneval pat expr (out a') con)
-uneval pat (EProd exprl exprr) (al', ar')  con = liftPED (uneval pat exprl al' con) >>= liftPED . uneval pat exprr ar'
-uneval pat (ELeft expr)        (Left al')  con = liftPED (uneval pat expr al' con)
-uneval pat expr@(ELeft _)      a'          con = throwError (PEDExprEitherMismatch expr a')
-uneval pat (ERight expr)       (Right ar') con = liftPED (uneval pat expr ar' con)
-uneval pat expr@(ERight _)     a'          con = throwError (PEDExprEitherMismatch expr a')
+uneval pat (EProd exprl exprr) (al', ar')  con = liftE PEDProdLeft (uneval pat exprl al' con) >>= liftE PEDProdRight . uneval pat exprr ar'
+uneval pat (ELeft expr)        (Left al')  con = liftE PEDEitherLeft (uneval pat expr al' con)
+uneval pat expr@(ELeft _)      a'          con = throwError PEDEitherMismatch
+uneval pat (ERight expr)       (Right ar') con = liftE PEDEitherRight (uneval pat expr ar' con)
+uneval pat expr@(ERight _)     a'          con = throwError PEDEitherMismatch
 
 unevalDir :: Pat a env con -> Direction env a' -> a' -> con -> Either (PatExprDirError a') con
 unevalDir PVar              DVar          a' (Just a'')   = if a' == a''

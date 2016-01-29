@@ -2,6 +2,7 @@ import GHC.Generics
 import Generics.BiGUL hiding (Expr, Pat)
 import Generics.BiGUL.AST hiding (Expr, Pat)
 import Generics.BiGUL.TH
+import Generics.BiGUL.Error
 import Language.Haskell.TH
 import BiYaccDef
 
@@ -11,59 +12,59 @@ import Control.Monad
 
 
 
-testPut :: BiGUL (Either ErrorInfo) s v -> s -> v -> Either ErrorInfo s
-testPut u s v = catchBind (put u s v) (\s' -> Right s') (\e -> Left e)
+testPut :: BiGUL s v -> s -> v -> s
+testPut u s v = either (error . show) id (put u s v)
 
-testGet :: BiGUL (Either ErrorInfo) s v -> s -> Either ErrorInfo v
-testGet u s = catchBind (get u s) (\v' -> Right v') (\e -> Left e)
+testGet :: BiGUL s v -> s -> v
+testGet u s = either (error . show) id (get u s)
 
-t1 = testGet ruleExprArith0 (EAdd (ETerm . TFactor . FNum $ 4 ) (TFactor (FNum 3)))
-t2 = testPut ruleExprArith0 (EAdd (ETerm . TFactor . FNum $ 4 ) (TFactor (FNum 3)))
+-- t1 = testGet ruleExprArith (EAdd (ETerm . TFactor . FNum $ 4 ) (TFactor (FNum 3)))
+-- t2 = testPut ruleExprArith (EAdd (ETerm . TFactor . FNum $ 4 ) (TFactor (FNum 3)))
 
-ruleExprArith0 :: BiGUL (Either ErrorInfo) Expr Arith
-ruleExprArith0 =
+ruleExprArith :: BiGUL Expr Arith
+ruleExprArith =
   Case [ $(normalSV [p| EAdd _ _ |] [p| Add _ _ |] )
-           $(rearrAndUpdate [p| Add l r |] [p| EAdd l r |]
-                            [d| l = ruleExprArith0; r = ruleTermArith0 |])
+           $(update [p| Add l r |] [p| EAdd l r |]
+                            [d| l = ruleExprArith; r = ruleTermArith |])
        , $(normalSV [p| ESub _ _ |] [p| Sub _ _ |] )
-           $(rearrAndUpdate [p| Sub l r |] [p| ESub l r |]
-                            [d| l = ruleExprArith0; r = ruleTermArith0 |])
+           $(update [p| Sub l r |] [p| ESub l r |]
+                            [d| l = ruleExprArith; r = ruleTermArith |])
        , $(normalSV [p| ETerm _ |] [p|  _ |] )
-           $(rearrAndUpdate [p| a  |] [p| ETerm a |]
-                            [d| a = ruleTermArith0 |])
+           $(update [p| a  |] [p| ETerm a |]
+                            [d| a = ruleTermArith |])
        , $(adaptiveV [p| Add _ _|]) (\_ _ -> EAdd ENull TNull)
        , $(adaptiveV [p| Sub _ _|]) (\_ _ -> ESub ENull TNull)
        , $(adaptiveV [p| _ |])      (\_ _ -> ETerm TNull)
        ]
 
 --
-ruleTermArith0 :: BiGUL (Either ErrorInfo) Term Arith
-ruleTermArith0 =
+ruleTermArith :: BiGUL Term Arith
+ruleTermArith =
   Case [ $(normalSV [p| TMul _ _ |] [p| Mul _ _ |] )
-           $(rearrAndUpdate [p| Mul l r |] [p| TMul l r |]
-                            [d| l = ruleTermArith0; r = ruleFactorArith0 |])
+           $(update [p| Mul l r |] [p| TMul l r |]
+                            [d| l = ruleTermArith; r = ruleFactorArith |])
        , $(normalSV [p| TDiv _ _ |] [p| Div _ _ |] )
-           $(rearrAndUpdate [p| Div l r |] [p| TDiv l r |]
-                            [d| l = ruleTermArith0; r = ruleFactorArith0 |])
+           $(update [p| Div l r |] [p| TDiv l r |]
+                            [d| l = ruleTermArith; r = ruleFactorArith |])
        , $(normalSV [p| TFactor _ |] [p|  _ |] )
-           $(rearrAndUpdate [p| a  |] [p| TFactor a |]
-                            [d| a = ruleFactorArith0 |])
+           $(update [p| a  |] [p| TFactor a |]
+                            [d| a = ruleFactorArith |])
        , $(adaptiveV [p| Mul _ _|]) (\_ _ -> TMul TNull FNull )
        , $(adaptiveV [p| Div _ _|]) (\_ _ -> TDiv TNull FNull )
        , $(adaptiveV [p| _ |])      (\_ _ -> TFactor FNull)
        ]
 
-ruleFactorArith0 :: BiGUL (Either ErrorInfo) Factor Arith
-ruleFactorArith0 =
+ruleFactorArith :: BiGUL Factor Arith
+ruleFactorArith =
   Case [ $(normalSV [p| FNeg _ |] [p| Sub (Num 0) _ |] )
-           $(rearrAndUpdate [p| Sub (Num 0) n |] [p| FNeg n |]
-                            [d| n = ruleFactorArith0 |])
+           $(update [p| Sub (Num 0) n |] [p| FNeg n |]
+                            [d| n = ruleFactorArith |])
        , $(normalSV [p| FNum _ |] [p| Num _ |] )
-           $(rearrAndUpdate [p| Num n |] [p| FNum n |]
+           $(update [p| Num n |] [p| FNum n |]
                             [d| n = Replace |])
        , $(normalSV [p| FExpr _ |] [p|  _ |] )
-           $(rearrAndUpdate [p| a  |] [p| FExpr a |]
-                            [d| a = ruleExprArith0 |])
+           $(update [p| a  |] [p| FExpr a |]
+                            [d| a = ruleExprArith |])
        , $(adaptiveV [p| Sub (Num 0) _ |]) (\_ _ -> FNeg FNull)
        , $(adaptiveV [p| Num _|])          (\_ _ -> FNum 0 )
        , $(adaptiveV [p| _ |])             (\_ _ -> FExpr ENull)
@@ -79,25 +80,35 @@ ruleFactorArith0 =
 --   return $ if v == v' then True else False
 
 
--- prop_GetPut :: (BiGUL (Either ErrorInfo) Expr Arith) -> Expr -> Property
-prop_GetPut s = monadic runBigulM $ do
-  v <- run $ testGet ruleExprArith0 s
-  s' <- run $ testPut ruleExprArith0 s v
-  assert $ s == s'
+-- prop_GetPut :: (BiGUL Expr Arith) -> Expr -> Property
+prop_GetPut s =
+  let v  = testGet ruleExprArith s
+      s' = testPut ruleExprArith s v
+  in  s == s'
   where types = s :: Expr
+-- prop_GetPut s = monadic runBigulM $ do
+--   v <- run $ testGet ruleExprArith0 s
+--   s' <- run $ testPut ruleExprArith0 s v
+--   assert $ s == s'
+--   where types = s :: Expr
 
 
-prop_PutGet s v = monadic runBigulM $ do
-  s' <- run $ testPut ruleExprArith0 s v
-  v' <- run $ testGet ruleExprArith0 s'
-  assert $ v == v'
+prop_PutGet s v =
+  let s' = testPut ruleExprArith s v
+      v' = testGet ruleExprArith s'
+  in  v == v'
   where types = (s :: Expr, v :: Arith)
+-- prop_PutGet s v = monadic runBigulM $ do
+--   s' <- run $ testPut ruleExprArith0 s v
+--   v' <- run $ testGet ruleExprArith0 s'
+--   assert $ v == v'
+--   where types = (s :: Expr, v :: Arith)
 
 
-runBigulM ma =
-  case ma of
-    Left _ -> error "cuole"
-    Right a -> a
+-- runBigulM ma =
+--   case ma of
+--     Left _ -> error "cuole"
+--     Right a -> a
 
 
 -----------
