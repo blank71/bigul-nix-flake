@@ -617,24 +617,28 @@ rearrAndUpdate qrp qup qud = do
   ubigul <- rearrangeExp (ConE upd `AppE` upat) uenv
   return $ ((ConE rearrc `AppE` rpat) `AppE` newrexp) `AppE` ubigul
 
+mkProdPatFromSHelper :: TH.Pat -> Q TH.Pat
+mkProdPatFromSHelper (TupP []) = [p| () |]
+mkProdPatFromSHelper other     = return other
+
 mkProdPatFromS :: TH.Pat -> Q TH.Pat
 mkProdPatFromS (LitP c) = return (LitP c)
 mkProdPatFromS (ConP name ps) = do
   es <- mapM mkProdPatFromS ps
-  return $ TupP es
+  mkProdPatFromSHelper $ TupP es
 mkProdPatFromS (RecP name ps) = do
   rs <- mapM mkProdPatFromS (map snd ps)
-  return (TupP rs)
+  mkProdPatFromSHelper (TupP rs)
 mkProdPatFromS (ListP ps) = do
   es <- mapM mkProdPatFromS ps
-  return (TupP es)
+  mkProdPatFromSHelper (TupP es)
 mkProdPatFromS (InfixP pl name pr) = do
   epl <- mkProdPatFromS pl
   epr <- mkProdPatFromS pr
   return (TupP [epl,epr])
 mkProdPatFromS (TupP ps) = do
   es <- mapM mkProdPatFromS ps
-  return (TupP es)
+  mkProdPatFromSHelper (TupP es)
 mkProdPatFromS (VarP name) = return (VarP name)
 mkProdPatFromS WildP = [p| () |]
 mkProdPatFromS _ = fail $ "pattern not handled in mkProdPatFromS"
