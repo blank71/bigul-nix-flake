@@ -9,7 +9,6 @@ import qualified Data.Map as Map
 import Language.Haskell.TH as TH
 import qualified Language.Haskell.TH.Syntax as THS
 import Language.Haskell.TH.Quote
-import Generics.BiGUL
 import Generics.BiGUL.AST
 import Control.Monad
 
