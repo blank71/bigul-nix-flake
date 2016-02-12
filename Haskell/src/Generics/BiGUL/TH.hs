@@ -1,4 +1,5 @@
 {-# LANGUAGE TemplateHaskell, TupleSections, DeriveDataTypeable, TypeSynonymInstances, FlexibleInstances #-}
+
 module Generics.BiGUL.TH( normal, normal', normalS, normalV, normalV', normalSV, adaptive, adaptiveS, adaptiveV, adaptiveSV, update, deriveBiGULGeneric, rearrS, rearrV) where
 import Data.Data
 import Data.Maybe

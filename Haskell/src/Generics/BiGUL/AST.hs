@@ -1,12 +1,10 @@
-{-# LANGUAGE GADTs, KindSignatures, MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, DeriveGeneric, TupleSections #-}
+{-# LANGUAGE GADTs, KindSignatures, TupleSections #-}
+
 module Generics.BiGUL.AST where
 
 import Generics.BiGUL.Error
-import Control.Monad
 import Control.Monad.Except
-import GHC.Generics
 import GHC.InOut
-import Text.PrettyPrint
 import Data.List(intersperse)
 
 

@@ -1,10 +1,8 @@
-{-# LANGUAGE GADTs, KindSignatures, MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, DeriveGeneric, TupleSections #-}
+{-# LANGUAGE GADTs #-}
+
 module Generics.BiGUL.Interpreter.Unsafe (put, get) where
 
 import Generics.BiGUL.AST
-import Control.Monad
-import Control.Monad.Except
-import GHC.InOut
 
 fromRight :: Either a b -> b
 fromRight (Right b) = b

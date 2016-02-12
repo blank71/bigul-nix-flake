@@ -1,11 +1,10 @@
-{-# LANGUAGE GADTs, KindSignatures, MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, DeriveGeneric, TupleSections #-}
+{-# LANGUAGE GADTs #-}
+
 module Generics.BiGUL.Interpreter (put, get) where
 
 import Generics.BiGUL.Error
 import Generics.BiGUL.AST
-import Control.Monad
 import Control.Monad.Except
-import GHC.InOut
 
 catchBind :: Either e a -> (a -> Either e b) -> (e -> Either e b) -> Either e b
 catchBind ma f g = either g f ma
