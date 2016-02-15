@@ -50,7 +50,7 @@ align p match b create conceal = Case
   [ $(normalSV [| null . filter p |] [p| [] |])$
       $(rearrV [| \[] -> () |])$ Skip
   , $(adaptiveV [p| [] |])$
-      \ss _ -> catMaybes (map conceal (filter p ss))
+      \ss _ -> catMaybes (map (\s -> if p s then conceal s else Just s) ss)
   -- view is necessarily nonempty in the cases below
   , $(normalS [p| (p -> False):_ |])$
       $(rearrS [| \(s:ss) -> ss |])$
