@@ -19,10 +19,10 @@ Library
   build-depends: base >= 4.0, mtl >= 2.2 && < 2.3, pretty, containers, template-haskell
   default-language: Haskell2010
   exposed-modules:
-    Generics.BiGUL
+    Generics.BiGUL.Error
     Generics.BiGUL.AST
     Generics.BiGUL.Interpreter
-    Generics.BiGUL.MonadBiGULError
+    Generics.BiGUL.Interpreter.Unsafe
     Generics.BiGUL.TH
     GHC.InOut
   default-extensions: GADTs, KindSignatures, MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, DeriveGeneric, TupleSections

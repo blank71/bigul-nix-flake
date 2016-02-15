@@ -1,16 +1,17 @@
-{-# LANGUAGE GADTs, KindSignatures, MultiParamTypeClasses, FlexibleContexts, FlexibleInstances, DeriveGeneric, TupleSections #-}
+{-# LANGUAGE GADTs #-}
+
 module Generics.BiGUL.Interpreter (put, get) where
 
 import Generics.BiGUL.Error
 import Generics.BiGUL.AST
-import Control.Monad
 import Control.Monad.Except
-import GHC.InOut
 
 catchBind :: Either e a -> (a -> Either e b) -> (e -> Either e b) -> Either e b
 catchBind ma f g = either g f ma
 
-put :: BiGUL s v -> s -> v -> Either (PutError s v) s
+type PutResult s v = Either (PutError s v) s
+
+put :: BiGUL s v -> s -> v -> PutResult s v
 put (Fail str)              s       v       = throwError (PFail str)
 put Skip                    s       v       = return s
 put Replace                 s       v       = return v
@@ -33,7 +34,7 @@ put (Compose bigul bigul')  s       v       = do m  <- liftE PNoIntermediateSour
                                                  m' <- liftE (PComposeRight m v) (put bigul' m v)
                                                  liftE (PComposeLeft s m') (put bigul s m')
 
-getCaseBranch :: (s -> v -> Bool, CaseBranch s v) -> s -> Either (GetError s v) v
+getCaseBranch :: (s -> v -> Bool, CaseBranch s v) -> s -> GetResult s v
 getCaseBranch (p , Normal bigul q) s =
   if q s
   then do v <- get bigul s
@@ -53,7 +54,7 @@ putCaseCheckDiversion (pb@(p, b):bs) s v =
   else throwError PPreviousBranchMatched
 
 putCaseWithAdaptation :: [(s -> v -> Bool, CaseBranch s v)] -> [(s -> v -> Bool, CaseBranch s v)] ->
-                         s -> v -> (s -> Either (PutError s v) s) -> Either (PutError s v) s
+                         s -> v -> (s -> PutResult s v) -> PutResult s v
 putCaseWithAdaptation []             bs' s v cont = throwError PCaseExhausted
 putCaseWithAdaptation (pb@(p, b):bs) bs' s v cont =
   if p s v
@@ -74,7 +75,9 @@ putCase bs s v = putCaseWithAdaptation bs [] s v
                    (\s' -> putCaseWithAdaptation bs [] s' v
                              (const (throwError PAdaptiveBranchRevisited)))
 
-get :: BiGUL s v -> s -> Either (GetError s v) v
+type GetResult s v = Either (GetError s v) v
+
+get :: BiGUL s v -> s -> GetResult s v
 get (Fail str)              s       = throwError (GFail str)
 get Skip                    s       = return ()
 get Replace                 s       = return s
@@ -93,7 +96,7 @@ get (Case branches)         s       = getCase branches s
 get (Compose bigul bigul')  s       = do m <- liftE (GComposeLeft s) (get bigul s)
                                          liftE (GComposeRight m) (get bigul' m)
 
-getCase :: [(s -> v -> Bool, CaseBranch s v)] -> s -> Either (GetError s v) v
+getCase :: [(s -> v -> Bool, CaseBranch s v)] -> s -> GetResult s v
 getCase []             s = throwError (GCaseExhausted [])
 getCase (pb@(p, b):bs) s =
   catchBind (getCaseBranch pb s) return

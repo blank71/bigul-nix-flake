@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators, TypeFamilies, FlexibleContexts, DeriveGeneric, ViewPatterns  #-}
+{-# LANGUAGE TypeOperators, TypeFamilies, FlexibleContexts, DeriveGeneric, ViewPatterns, ScopedTypeVariables  #-}
 
 import Generics.BiGUL.Error
 import Generics.BiGUL.AST
@@ -50,7 +50,7 @@ align p match b create conceal = Case
   [ $(normalSV [| null . filter p |] [p| [] |])$
       $(rearrV [| \[] -> () |])$ Skip
   , $(adaptiveV [p| [] |])$
-      \ss _ -> catMaybes (map conceal (filter p ss))
+      \ss _ -> catMaybes (map (\s -> if p s then conceal s else Just s) ss)
   -- view is necessarily nonempty in the cases below
   , $(normalS [p| (p -> False):_ |])$
       $(rearrS [| \(s:ss) -> ss |])$
@@ -193,7 +193,7 @@ emb g p = Case
       p
   ]
 
-xforkS :: Show s => (s -> Bool) -> BiGUL [s] ([s], [s])
+xforkS :: (s -> Bool) -> BiGUL [s] ([s], [s])
 xforkS p = Case
   [ $(normalSV [p| [] |] [p| ([], []) |])$
       $(rearrV [| \([], []) -> () |])$
@@ -209,3 +209,55 @@ xforkS p = Case
   , $(adaptiveSV [p| _ |] [p| _ |])$
       \_ (xs, ys) -> xs ++ ys
   ]
+
+updateMultiple :: forall v s. Eq v => (v -> s -> Bool) -> BiGUL s v -> (v -> s) -> BiGUL [s] [v]
+updateMultiple p b c = Case
+  [ $(normalSV [p| [] |] [p| [] |])$
+      $(update [p| [] |] [p| _ |] [d| |])
+  , $(adaptiveV [p| [] |])$
+      \_ _ -> []
+  -- view is necessarily nonempty in the cases below
+  , $(normal' [| \ss (v:_) -> firstMatched v ss && secondMatched v ss |]
+              [| (>= 2) . length |])$
+      $(rearrV [| \(v:vs) -> (v, v:vs) |])$
+        $(rearrS [| \(s:ss) -> (s, ss) |])$
+          b `Prod` updateMultiple p b c
+  , $(normal' [| \ss (v:_) -> firstMatched v ss && not (secondMatched v ss) |]
+              [| not . null |])$
+      $(update [p| v:vs |] [p| v:vs |] [d| v = b; vs = updateMultiple p b c |])
+  , $(adaptive [| \ss (v:_) -> not (firstMatched v ss) |])$
+      \ss (v:_) -> c v:ss
+  ]
+  where
+    firstMatched :: v -> [s] -> Bool
+    firstMatched v ((p v -> True):_) = True
+    firstMatched v _                 = False
+    secondMatched :: v -> [s] -> Bool
+    secondMatched v (_:(p v -> True):_) = True
+    secondMatched v _                   = False
+
+updateMultiple' :: forall v s k. (Eq v, Eq k) => (v -> k) -> (s -> k) -> BiGUL s v -> (v -> s) -> BiGUL [s] [v]
+updateMultiple' kv ks b c = Case
+  [ $(normalSV [p| [] |] [p| [] |])$
+      $(update [p| [] |] [p| _ |] [d| |])
+  , $(adaptiveV [p| [] |])$
+      \_ _ -> []
+  -- view is necessarily nonempty in the cases below
+  , $(normal' [| \ss (v:_) -> firstMatched v ss && secondMatched v ss |]
+              [| \ss -> length ss >= 2 && let (s0:s1:_) = ss in ks s0 == ks s1 |])$
+      $(rearrV [| \(v:vs) -> (v, v:vs) |])$
+        $(rearrS [| \(s:ss) -> (s, ss) |])$
+          b `Prod` updateMultiple' kv ks b c
+  , $(normal' [| \ss (v:_) -> firstMatched v ss && not (secondMatched v ss) |]
+              [| not . null |])$
+      $(update [p| v:vs |] [p| v:vs |] [d| v = b; vs = updateMultiple' kv ks b c |])
+  , $(adaptive [| \ss (v:_) -> not (firstMatched v ss) |])$
+      \ss (v:_) -> c v:ss
+  ]
+  where
+    firstMatched :: v -> [s] -> Bool
+    firstMatched v (s:_) | kv v == ks s = True
+    firstMatched v _                   = False
+    secondMatched :: v -> [s] -> Bool
+    secondMatched v (_:s:_) | kv v == ks s = True
+    secondMatched v _                     = False
