@@ -1,0 +1,360 @@
+\documentclass[preprint,numbers]{sigplanconf}
+
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{xspace}
+\usepackage{verbatim}
+\usepackage{listings}
+\lstset{%
+	basicstyle=\scriptsize\ttfamily,
+	language={Haskell},
+	inputencoding=utf8,
+	breaklines=true,
+	prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
+	morekeywords={},
+	deletekeywords={Num},
+	keywordstyle=\color[rgb]{0,0,1},             % keywords
+	commentstyle=\color[rgb]{0.133,0.545,0.133}, % comments
+	stringstyle=\color[rgb]{0.627,0.126,0.941},  % strings
+	escapechar=@,
+}
+
+\newcommand{\TODO}[1]{{\color{black!10!blue}TODO #1}}
+\newcommand{\mydraft}[1]{{\color{black!50!green}#1}}
+\newcommand{\mywrong}[1]{{\color{black!10!red}#1}}
+
+\DeclareMathOperator{\where}{where}
+\DeclareMathOperator{\bxget}{get}
+\DeclareMathOperator{\bxput}{put}
+\DeclareMathOperator{\bxcreate}{create}
+\DeclareMathOperator{\dput}{dput}
+\DeclareMathOperator{\dcreate}{dcreate}
+\DeclareMathOperator{\data}{data}
+\DeclareMathOperator{\shape}{shape}
+\DeclareMathOperator{\recover}{recover}
+
+\begin{document}
+
+\special{papersize=8.5in,11in}
+\setlength{\pdfpageheight}{\paperheight}
+\setlength{\pdfpagewidth}{\paperwidth}
+
+\conferenceinfo{CONF 'yy}{Month d--d, 20yy, City, ST, Country}
+\copyrightyear{20yy}
+\copyrightdata{978-1-nnnn-nnnn-n/yy/mm}
+\copyrightdoi{nnnnnnn.nnnnnnn}
+
+% Uncomment the publication rights you want to use.
+%\publicationrights{transferred}
+%\publicationrights{licensed}     % this is the default
+%\publicationrights{author-pays}
+
+%\titlebanner{banner above paper title}        % These are ignored unless
+%\preprintfooter{short description of paper}   % 'preprint' option specified.
+
+\title{The Under-Appreciated Put: Implementing Delta-Alignment in BiGUL}
+\subtitle{Functional Pearl}
+
+\authorinfo{Jorge Mendes}
+           {HASLab, INESC TEC \& Universidade do Minho, Portugal}
+           {jorgemendes@di.uminho.pt}
+%\authorinfo{Name2\and Name3}
+%           {Affiliation2/3}
+%           {Email2/3}
+
+\maketitle
+
+\begin{abstract}
+  \TODO{Ideas to express: BX in the put direction is precise; more concepts can
+  be described.}
+\end{abstract}
+
+\category{CR-number}{subcategory}{third-level}
+
+% general terms are not compulsory anymore,
+% you may leave them out
+\terms
+term1, term2
+
+\keywords
+keyword1, keyword2
+
+
+%%%
+%%% Introduction
+%%%
+\section{Introduction}
+
+\noindent\TODO{
+  \begin{itemize}
+    \item What are BXs and what are they used for.
+    \item How are BXs used (one writes the source to view transformation, and
+      then a view to source transformation is derived).
+    \item Limitations of the above approach.
+  \end{itemize}
+}
+
+In the next sections, an overview on bidirectional transformations and the
+alignment problem is provided. Then, putback-based bidirectional transformation
+techniques are presented, followed by an implementation of alignment using such
+technique.
+
+
+%%%
+%%% Bidirectional Transformations
+%%%
+\section{Bidirectional Transformations}
+
+A successful language to specify BX systems is the \emph{lenses}
+language~\cite{Greenwald2003}. A lens \(l : S \leftrightarrow V\), with source
+type \(S\) and view type \(V\), is composed by two functions:
+%
+\begin{align*}
+  \bxget &:: S \rightarrow V\\
+  \bxput &:: S \rightarrow V \rightarrow S
+\end{align*}
+%
+The \emph{get} function extracts a view from a source and the \emph{put}
+function updates the original source with information from the new view.
+
+Lenses must obey two laws in order to be considered \emph{well-behaved}:
+%
+\begin{align*}
+  \bxget \left(\bxput s~v\right) = v
+    \tag{\sc GetPut}\label{eq:getput}\\
+  \bxput s\,\left(\bxget s\right) = s
+    \tag{\sc PutGet}\label{eq:putget}
+\end{align*}
+%
+The \ref{eq:getput} law states that after performing an update to the original
+source, the view obtained from this result should be the same as the one used to
+perform the update. The \ref{eq:putget} law states that updating the source with an
+unchanged view should result in the original source.
+
+\noindent\TODO{
+  \begin{itemize}
+    \item very well-behaved lenses (it is worth to mention?)
+    \item the create function
+    \item get is easier to write than put. When writing get, a put can be
+      derived, but, since it may be not unique, some assumptions are made, and
+      in some cases update policies must be provided.
+    \item variations from other languages (matching lenses, delta lenses,~\dots)
+  \end{itemize}
+}
+
+
+%%%
+%%% The Alignment Problem
+%%%
+\section{The Alignment Problem}
+
+\noindent\TODO{
+  \begin{itemize}
+    \item What is alignment.
+    \item How it is handled in BX languages.
+    \item What are the shortcommings of current implementations.
+    \item Implications on the BX developer part (doesn't have control, has to
+      annotate the BX, needs to provide changes in the view [delta-based],
+      etc.).
+  \end{itemize}
+}
+
+% Kinds of alignments
+% - [implicitly] positional
+% - arbitrary algorithm
+% - delta-based
+% - operation-based
+Alignment can be dealt with in several possible ways:
+%
+\begin{itemize}
+  \item Update elements positionally, removing elements at the start/end of the
+    source if it contains more elements than the view, or adding new elements at
+    the start/end of the source if the view have more elements. Here, start/end
+    is an arbitrary position within the source. The move of elements is not
+    taken into account.
+  \item Use an algorithm to match elements of the original source with elements
+    of the new view.
+  \item Use information about changes in the view (i.e., \emph{deltas}), so that
+    the elements can be matched accurately between the original source and the
+    new view.
+  \item Work with operations, matching operations performed on the view with
+    operations to be matched on the source.
+\end{itemize}
+
+
+%%% Shapely Types
+\subsection{Shapely Types}
+
+\noindent\TODO{
+\begin{itemize}
+  \item Background/related work to understand the work presented in this paper.
+  \item From ``Deltas over Polymorphic Inductive Types''
+    \begin{itemize}
+      \item Functors
+      \item Positions
+      \item Deltas
+    \end{itemize}
+  \item Shapely type functions:
+    \begin{itemize}
+      \item shape
+      \item data
+      \item recover
+    \end{itemize}
+\end{itemize}
+}
+
+
+%%% Mapping with Deltas
+\subsection{Mapping with Deltas}
+
+\noindent\TODO{
+\begin{itemize}
+  \item Description of mapping elements from the view to elements on the source.
+  \item In the get direction, position of elements does not change. There is a
+    one-to-one mapping.
+  \item In the put direction, the source is recovered using its shape and the
+    updated data from the original source with the new view using the
+    information from the delta.
+\end{itemize}
+}
+
+\begin{flalign*}
+  \bxget s \hspace{2ex} &= S \bxget_l s &\\
+  \bxput s\, v          &= \recover \left(\shape v, \dput \cup \dcreate\right) \\
+  \where \hspace{-2ex}&\hspace{3ex}\dput = \bxput_l \circ \langle \data v, \data s \circ d\rangle\\
+         \hspace{-2ex}&\hspace{3ex}\dcreate = (\bxcreate_l \circ \data v) \circ (id - \delta\dput)
+\end{flalign*}
+
+
+%%%
+%%% Putback-Based Bidirectional Transformations
+%%%
+\section{Putback-Based Bidirectional Transformations}
+
+\noindent\TODO{
+\begin{itemize}
+  \item Concept of putback-based BX.
+  \item BiGUL
+\end{itemize}
+}
+
+
+%%%
+%%% Alignment as a put Program
+%%%
+\section{Alignment as a \emph{put} Program}
+
+Alignment is a process performed when the source is updated with the new view.
+Thus, it falls naturaly in the process of writing a \emph{put} program.
+
+\noindent\TODO{More text motivating writing alignment in a put program.
+Introduction for the next subsections.}
+
+\subsection{Specific Implementation for Lists}
+
+An implementation of positional mapping on lists is presented in
+Listing~\ref{lst:posmapl}. This implementation receives a BiGUL program to
+perform the element update and is specified for several situations that can
+occur:
+\begin{enumerate}
+  \item\label{item:posmap1} both view and source are empty;
+  \item\label{item:posmap2} view is empty but source has elements;
+  \item\label{item:posmap3} both view and source have elements;
+  \item\label{item:posmap4} view has elements but source is empty.
+\end{enumerate}
+
+\mywrong{The program should also receive a function to create the new elements.
+The current implementation works only if the source is of the same type as the
+view, and the given program only uses the view element.}
+
+The content of the view is checked with the outter \emph{caseV}, while the
+content of the source is checked with the inner \emph{caseS} in each alternative
+of the view. In situation~\ref{item:posmap1}, a \emph{skip} is performed since
+there are no elements to update. In situation~\ref{item:posmap2}, the content of
+the source is discarded, and a new empty source is used to match the empty view.
+This results in the removal of elements that are not present in the view. In
+situation~\ref{item:posmap3}, normal element wise update is performed. Finally,
+in situation~\ref{item:posmap4}, the empty source is transformed in a new source
+with only one element that is not used since it is replace by the value from the
+view.
+
+\begin{lstlisting}[caption={Positional mapping of lists.},label={lst:posmapl}]
+mapL :: (MonadError' ErrorInfo m, Eq s, Eq v)
+     => BiGUL m s v -- BiGUL program to apply to the values
+     -> BiGUL m [s] [v]
+mapL u = CaseV
+  [(return . null , $(rearr [| \ [] -> () |])
+    (CaseS [(return . null, Normal Skip),
+            (return . not . null,
+              Adaptive (\ _ _ -> return []))
+           ])),
+   (return . not . null,
+    $(rearr [| \ (x : xs) -> (x, xs) |])
+      (CaseS
+        [(return . not . null,
+            Normal (Update (UIn $ URight (UProd (UVar u) (UVar (mapL u)))))),
+         (return . null,
+            Adaptive (\ _ _ -> return [undefined]))
+        ]))
+  ]
+\end{lstlisting}
+
+Positional mapping does not take into account changes in the model, except for
+added or deleted elements that are dealt with at the end of the new source.
+
+\noindent\TODO{
+\begin{itemize}
+  \item Type of the implementation with deltas.
+  \item Trick used to use the information about deltas in the cases.
+  \item Embedding of lens to insert the deltas.
+\end{itemize}
+}
+
+
+%%% Generic Implementation for Container/Shapely Types
+\subsection{Generic Implementation for Container/Shapely Types}
+
+\noindent\TODO{
+\begin{itemize}
+  \item A generalization of the implementation for lists.
+    \begin{itemize}
+      \item This is currently implemented with any container as the source and a
+        list as a view.
+    \end{itemize}
+\end{itemize}
+}
+
+
+%%%
+%%% Conclusion
+%%%
+\section{Conclusion}
+
+\TODO
+
+%\appendix
+%\section{Appendix Title}
+%
+%This is the text of the appendix, if you need one.
+
+%\acks
+%
+%Acknowledgments, if needed.
+
+% We recommend abbrvnat bibliography style.
+
+\bibliographystyle{abbrvnat}
+\bibliography{references}
+
+%% The bibliography should be embedded for final submission.
+%
+%\begin{thebibliography}{}
+%\softraggedright
+%
+%\bibitem[Smith et~al.(2009)Smith, Jones]{smith02}
+%P. Q. Smith, and X. Y. Jones. ...reference text...
+%
+%\end{thebibliography}
+
+\end{document}
