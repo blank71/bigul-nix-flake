@@ -44,8 +44,7 @@ putCaseWithAdaptation (pb@(p, b):bs) s v cont =
   else putCaseWithAdaptation bs s v cont
 
 putCase :: [(s -> v -> Bool, CaseBranch s v)] -> s -> v -> s
-putCase bs s v = putCaseWithAdaptation bs s v
-                   (\s' -> putCaseWithAdaptation bs s' v (error "meeting adaptive branch again"))
+putCase bs s v = putCaseWithAdaptation bs s v (\s' -> putCase bs s' v)
 
 get :: BiGUL s v -> s -> v
 get (Fail err)              s       = error ("fail: " ++ err)
