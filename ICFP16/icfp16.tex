@@ -311,15 +311,78 @@ mapL u = CaseV
 
 Positional mapping does not take into account changes in the model, except for
 added or deleted elements that are dealt with at the end of the new source.
+%
+Thus, deltas are inserted into the BiGUL alignment program in order to obtain a
+precise alignment (see Listing~\ref{lst:align0}).
 
-\noindent\TODO{
-\begin{itemize}
-  \item Type of the implementation with deltas.
-  \item Trick used to use the information about deltas in the cases.
-  \item Embedding of lens to insert the deltas.
-\end{itemize}
-}
+\begin{lstlisting}[caption={Delta-based alignment function for lists.},label={lst:align0}]
+align' :: (MonadError' ErrorInfo m, Eq a, Eq b)
+  => BiGUL m a b
+  -> (b -> a)
+  -> BiGUL m ([a], Delta [b] [b]) [b]
+align' b c = CaseS
+ [ ( return . (uncurry (==)) . (getId >< id),
+     Normal (Rearr RVar (EProd (EDir DVar)
+                               (EConst ()))
+             (Update $ UProd (UVar (mapL b))
+                             (UVar Skip))))
+ , ( return . const True,
+     Adaptive $ \(s,d) v-> let s' = putMapD c s v d
+                           in return (s', getId s')
+   )
+ ]
+\end{lstlisting}
 
+The alignment process is done in two steps:
+%
+\begin{enumerate}
+  \item Creation of new elements and removal of deleted elements.
+  \item Positional update.
+\end{enumerate}
+%
+An alternative case statement is used to check which of these two steps are to
+be performed. This is done based on the changes performed on the view: if no
+changes were performed, the delta maps each element's position to the same
+position (the identity delta, Listing~\ref{lst:getid}); otherwise, a
+transformation is performed on the source to create missing view elements and
+delete no longer existent view elements.
+
+\noindent\TODO{Can the deltas be paired with the view instead of the source in
+more recent BiGUL? It might be more natural, since the delta is on the view.}
+
+\noindent\TODO{Is it possible to introduce the delta into a state monad? This
+way, it wouldn't be necessary to pair delta with the source nor the view.}
+
+\begin{lstlisting}[caption={Get identity delta.},label={lst:getid}]
+getId :: [a] -> Delta [a] [a]
+getId = map (id /\ id) . Set.elems . locs
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Mapping of elements between to containers of the same type using a delta.},label={lst:putmapd}]
+putMapD
+ :: (b -> a) -- Function to create a missing source
+ -> [a]           -- Source
+ -> [b]           -- View
+ -> Delta [b] [b] -- View delta
+ -> [a]
+putMapD c s v dV = fst (traverse aux (v,0))
+ where aux (vi, i) | Set.size js > 0 = (si, succ i)
+                   | otherwise = (c vi, succ i)
+         where js = rngOf i d
+               si = data_(s) !! (Set.findMin js)
+               d = Set.fromList dV
+\end{lstlisting}
+
+\begin{lstlisting}[caption={Delta-based alignment function for lists.},label={lst:align1}]
+align :: (MonadError' ErrorInfo m, Eq a, Eq b)
+  => BiGUL m a b
+  -> (b -> a)
+  -> Delta [b] [b]
+  -> BiGUL m [a] [b]
+align b c d = Emb g p
+  where g s   = get (align' b c) (s, getId s)
+        p s v = fst <$> put (align' b c) (s, d) v
+\end{lstlisting}
 
 %%% Generic Implementation for Container/Shapely Types
 \subsection{Generic Implementation for Container/Shapely Types}
