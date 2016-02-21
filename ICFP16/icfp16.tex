@@ -1,5 +1,10 @@
 \documentclass[preprint,numbers]{sigplanconf}
 
+\newif\ifanonymous
+
+%\anonymoustrue
+\anonymousfalse
+
 \usepackage{amsmath}
 \usepackage{graphicx}
 \usepackage{xcolor}
@@ -56,12 +61,16 @@
 \title{The Under-Appreciated Put: Implementing Delta-Alignment in BiGUL}
 \subtitle{Functional Pearl}
 
+\ifanonymous
+\authorinfo{}{}{}
+\else
 \authorinfo{Jorge Mendes}
            {HASLab, INESC TEC \& Universidade do Minho, Portugal}
            {jorgemendes@di.uminho.pt}
 %\authorinfo{Name2\and Name3}
 %           {Affiliation2/3}
 %           {Email2/3}
+\fi
 
 \maketitle
 
