@@ -248,6 +248,36 @@ Alignment can be dealt with in several possible ways:
 \end{itemize}
 }
 
+An under-appreciated fact about well-behaved lenses is that \emph{put} completely determines the behavior of the corresponding \emph{get} --- that is, given a \emph{put} function and two \emph{get} functions each of which forms a well-behaved lens when paired with the \emph{put} function, it must be the case that the two \emph{get} functions are pointwise equal. This fact was already noted by Foster in his PhD thesis \TODO{citation} but had remained neglected until people dug up this idea and started exploring the possibility of specifying BXs in terms of \emph{put} \TODO{citations}.
+
+Intuitively, think of a BiGUL program of type \lstinline{BiGUL s v} as describing how to manipulate a state consisting of a source component of type~\lstinline{s} and a view component of type~\lstinline{v}; the goal is to copy all information in the view to proper places in the source.
+In the simplest case, the view has type \lstinline{()} and contains no information, and we can use \lstinline{Skip :: BiGUL s ()} to leave the source unchanged;
+another simple case is when the view has the same type as the source, and we can use \lstinline{Replace :: BiGUL s s} to replace the entire source with the view.
+BiGUL programs compose --- for example, when both the source and the view are pairs, we can use
+\begin{lstlisting}
+Prod :: BiGUL s v -> BiGUL s' v' ->
+        BiGUL (s, s') (v, v')
+\end{lstlisting}
+to compose two BiGUL programs on the left and right components respectively.
+Of course, in most cases the source and view are in more complex forms, and we should somehow transform and decompose them into simpler forms before we can use \lstinline{Skip}, \lstinline{Replace}, or \lstinline{Prod}; this is usually done using two ``rearrangement'' operations on the source and view respectively:
+We can use the source rearranging operation
+\begin{lstlisting}
+$(rearrS [| f |]) :: BiGUL s' v -> BiGUL s v
+\end{lstlisting}
+where \lstinline{f}~is a ``simple'' $\lambda$-expression of type \lstinline{s -> s'} for extracting from the source of type~\lstinline{s} a (usually smaller) source of type~\lstinline{s'} before performing further updates on the extracted source, or dually the view rearranging operation
+\begin{lstlisting}
+$(rearrV [| g |]) :: BiGUL s v' -> BiGUL s v
+\end{lstlisting}
+where the ``simple'' $\lambda$-expression \lstinline{g} should have type \lstinline{v -> v'}, and is used to transform the view from type~\lstinline{v} to type~\lstinline{v'} before performing further updates.
+
+Most expressiveness of BiGUL comes from its \lstinline{Case} operation for performing case analysis:
+\begin{lstlisting}
+Case :: [(s -> b -> Bool, Branch s v)] -> BiGUL s v
+\end{lstlisting}
+\lstinline{Case} takes a list of pairs whose first component is a boolean predicate on both the source and the view, and whose second component is a ``branch''.
+A branch can be a ``normal'' branch, in which case it is a BiGUL program of type \lstinline{BiGUL s v}, or an ``adaptive'' branch, in which case it is a Haskell function of type \lstinline{s -> v -> s}.
+The semantics of \lstinline{Case} is largely as people would expect: executing the first branch whose associated predicate evaluates to true on the current state, and performing further updates when this branch is normal.
+More interestingly, when the chosen branch is adaptive, the source will be replaced by the result of evaluating the associated function on the current state and the whole \lstinline{Case} will be executed again.
 
 %%%
 %%% Alignment as a put Program
@@ -255,7 +285,7 @@ Alignment can be dealt with in several possible ways:
 \section{Alignment as a \emph{put} Program}
 
 Alignment is a process performed when the source is updated with the new view.
-Thus, it falls naturaly in the process of writing a \emph{put} program.
+Thus, it falls naturally in the process of writing a \emph{put} program.
 
 \noindent\TODO{More text motivating writing alignment in a put program.
 Introduction for the next subsections.}
