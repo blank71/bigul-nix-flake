@@ -1,10 +1,15 @@
 {-# LANGUAGE GADTs #-}
 
-module Generics.BiGUL.Interpreter (put, get) where
+module Generics.BiGUL.Interpreter (put, get, errorTrace) where
 
 import Generics.BiGUL.Error
 import Generics.BiGUL.AST
 import Control.Monad.Except
+import Text.PrettyPrint
+
+
+errorTrace :: PrettyPrintable e => Either e a -> Either Doc a
+errorTrace = either (Left . (text "error" $+$) . toDoc) Right
 
 catchBind :: Either e a -> (a -> Either e b) -> (e -> Either e b) -> Either e b
 catchBind ma f g = either g f ma

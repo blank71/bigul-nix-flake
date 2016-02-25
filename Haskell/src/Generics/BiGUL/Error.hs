@@ -5,12 +5,15 @@ module Generics.BiGUL.Error where
 import GHC.InOut
 import Text.PrettyPrint
 
+
+class PrettyPrintable a where
+  toDoc :: a -> Doc
+
 data PutError :: * -> * -> * where
   PFail                      :: String -> PutError s v
   PSourcePatternMismatch     :: PatExprDirError s -> PutError s v
   PViewPatternMismatch       :: PatExprDirError v -> PutError s v
   PUnevalFailed              :: PatExprDirError s' -> PutError s v
-  PViewRecoveringIncomplete  :: PatExprDirError v' -> PutError s v
   PDependencyMismatch        :: s -> PutError s (v, v')
   PNoIntermediateSource      :: GetError s v' -> PutError s v
   PCaseExhausted             :: PutError s v
@@ -39,7 +42,6 @@ instance Show (PutError s v) where
   show (PSourcePatternMismatch e)    = show e
   show (PViewPatternMismatch e)      = show e
   show (PUnevalFailed e)             = show e
-  show (PViewRecoveringIncomplete e) = show e
   show (PDependencyMismatch _)       = "dependency mismatch"
   show (PNoIntermediateSource e)     = show e
   show  PCaseExhausted               = "case exhausted"
@@ -56,7 +58,33 @@ instance Show (PutError s v) where
   show (PDep _ _ e)                  = show e
   show (PComposeLeft _ _ e)          = show e
   show (PComposeRight _ _ e)         = show e
-  show (PBranch i e)                 = show e
+  show (PBranch _ e)                 = show e
+
+indent :: Doc -> Doc
+indent = nest 2
+
+instance PrettyPrintable (PutError s v) where
+  toDoc e@(PFail str)                = text (show e)
+  toDoc (PSourcePatternMismatch e)   = text "source pattern mismatch" $+$ indent (toDoc e)
+  toDoc (PViewPatternMismatch e)     = text "view pattern mismatch" $+$ indent (toDoc e)
+  toDoc (PUnevalFailed e)            = text "inverse evaluation failed" $+$ indent (toDoc e)
+  toDoc e@(PDependencyMismatch _)    = text (show e)
+  toDoc (PNoIntermediateSource e)    = text "computation of intermediate source failed" $+$ indent (toDoc e)
+  toDoc e@PCaseExhausted             = text (show e)
+  toDoc e@PAdaptiveBranchRevisited   = text (show e)
+  toDoc e@PAdaptiveBranchMatched     = text (show e)
+  toDoc e@PPreviousBranchMatched     = text (show e)
+  toDoc e@PBranchPredictionIncorrect = text (show e)
+  toDoc e@PPostVerificationFailed    = text (show e)
+  toDoc e@PBranchUnmatched           = text (show e)
+  toDoc (PProdLeft _ _ e)            = text "on the left-hand side of Prod" $+$ toDoc e
+  toDoc (PProdRight _ _ e)           = text "on the right-hand side of Prod" $+$ toDoc e
+  toDoc (PRearrS _ _ e)              = text "in RearrS" $+$ toDoc e
+  toDoc (PRearrV _ _ e)              = text "in RearrV" $+$ toDoc e
+  toDoc (PDep _ _ e)                 = text "in Dep" $+$ toDoc e
+  toDoc (PComposeLeft _ _ e)         = text "on the left-hand side of Comp" $+$ toDoc e
+  toDoc (PComposeRight _ _ e)        = text "on the right-hand side of Comp" $+$ toDoc e
+  toDoc (PBranch i e)                = text ("in Case branch " ++ show i) $+$ toDoc e
 
 data GetError :: * -> * -> * where
   GFail                      :: String -> GetError s v
@@ -100,6 +128,28 @@ instance Show (GetError s v) where
   show (GComposeRight _ e)           = show e
   show (GBranch _ e)                 = show e
 
+instance PrettyPrintable (GetError s v) where
+  toDoc e@(GFail str)                 = text (show e)
+  toDoc (GSourcePatternMismatch e)    = text "source pattern mismatch" $+$ indent (toDoc e)
+  toDoc (GUnevalFailed e)             = text "inverse evaluation failed" $+$ indent (toDoc e)
+  toDoc (GViewRecoveringIncomplete e) = text "view recovering incomplete" $+$ indent (toDoc e)
+  toDoc e@(GCaseExhausted es)         = text (show e) $+$
+                                                foldr ($+$) empty
+                                                  (zipWith (\i doc -> text ("branch " ++ show i) $+$ indent doc)
+                                                           [0..]
+                                                           (map toDoc es))
+  toDoc e@GPreviousBranchMatched      = text (show e)
+  toDoc e@GPostVerificationFailed     = text (show e)
+  toDoc e@GBranchUnmatched            = text (show e)
+  toDoc (GProdLeft _ e)               = text "on the left-hand side of Prod" $+$ toDoc e
+  toDoc (GProdRight _ e)              = text "on the right-hand side of Prod" $+$ toDoc e
+  toDoc (GRearrS _ e)                 = text "in RearrS" $+$ toDoc e
+  toDoc (GRearrV _ e)                 = text "in RearrV" $+$ toDoc e
+  toDoc (GDep _ e)                    = text "in Dep" $+$ toDoc e
+  toDoc (GComposeLeft _ e)            = text "on the left-hand side of Comp" $+$ toDoc e
+  toDoc (GComposeRight _ e)           = text "on the right-hand side of Comp" $+$ toDoc e
+  toDoc (GBranch i e)                 = text ("in Case branch " ++ show i) $+$ toDoc e
+
 data PatExprDirError :: * -> * where
   PEDConstantMismatch    :: PatExprDirError a
   PEDEitherMismatch   :: PatExprDirError (Either a b)
@@ -125,11 +175,20 @@ instance Show (PatExprDirError a) where
   show (PEDEitherRight e)           = show e
   show (PEDIn e)                    = show e
 
+instance PrettyPrintable (PatExprDirError a) where
+  toDoc e@PEDConstantMismatch          = text (show e)
+  toDoc e@PEDEitherMismatch            = text (show e)
+  toDoc e@PEDValueUnrecoverable        = text (show e)
+  toDoc e@(PEDIncompatibleUpdates _ _) = text (show e)
+  toDoc e@(PEDMultipleUpdates _ _)     = text (show e)
+  toDoc (PEDProdLeft e)                = text "on the left-hand side of PProd" $+$ toDoc e
+  toDoc (PEDProdRight e)               = text "on the right-hand side of PProd" $+$ toDoc e
+  toDoc (PEDEitherLeft e)              = text "inside PLeft" $+$ toDoc e
+  toDoc (PEDEitherRight e)             = text "inside PRight" $+$ toDoc e
+  toDoc (PEDIn e)                      = text "inside PIn" $+$ toDoc e
+
 liftE :: (a -> b) -> Either a c -> Either b c
 liftE f = either (Left . f) Right
-
-class PrettyPrintable a where
-  toDoc :: a -> Doc
 
 data BiGULType :: * -> * where
   BProd   :: BiGULType a -> BiGULType b -> BiGULType (a, b)
