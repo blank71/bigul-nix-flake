@@ -95,14 +95,59 @@ keyword1, keyword2
 %%%
 \section{Introduction}
 
-\noindent\TODO{
-  \begin{itemize}
-    \item What are BXs and what are they used for.
-    \item How are BXs used (one writes the source to view transformation, and
-      then a view to source transformation is derived).
-    \item Limitations of the above approach.
-  \end{itemize}
-}
+Several approaches exist to help dealing with specific situations when
+developing software. One such approach consists in the use of bidirectional
+transformation (BX) mechanisms to maintain consistency between two pieces of
+related information.
+
+Some work on BXs emerges from the view-update problem, where a view is generated
+from a source database and consistency must be kept between these two artefacts.
+If the view suffers changes, these should be reflected in the source database.
+
+The \emph{lens} framework~\cite{Greenwald2003} emerged to solve similar
+problems, where a \emph{get} function creates a abstract view from a concrete
+source, and a \emph{put} function provides an updated source using the original
+source and the modified view.
+
+To define a BX system, one has to provide a \emph{get} and a \emph{put}
+functions, ensuring that some properties are statisfied by this pair of
+functions. These properties ensure the \emph{well-behavedness} of the BX system.
+
+Research was done in order to derive a suitable \emph{put} for a given
+\emph{get} in order to help the development of BXs. This has some limitations,
+since the \emph{put} direction is usually the problematic one.
+
+An example of a get program is the projection of a map structure, selecting its
+key and part of its value:
+%
+\[ (K, (V_1, V_2)) \longrightarrow (K, V_1) \]
+%
+This has several possible \emph{put} functions that would satisfy the
+\emph{well-behavedness} properties. One can annotate the transformation in order
+to select a way to perform the \emph{put} operation:
+%
+\[ (K, (V_1, V_2)) \xrightarrow{\text{\small best match on \(K\)}} (K, V_1) \]
+%
+This provides information on how to align the elements in the \emph{put}
+direction. But it is not enough: how to deal with new elements? On can provide
+another annotation:
+%
+\[ (K, (V_1, V_2 = v_2)) \xrightarrow{\text{\small best match on \(K\)}} (K, V_1) \]
+%
+where \(v_2\) is a default value for type \(V_2\).
+
+Another approach is writing the \emph{put} function. This is more difficult than
+writing the \emph{get} function, but it removes the need for extra annotations.
+The \emph{put} function has access to both the original source and the modified
+view, i.e., all the possible information available to write a program that
+provides an updated source. The program, in this example, includes the logic
+that leads to the alignment strategy and the default value to use for new
+elements. Moreover, an unique \emph{get} function can be derived from this
+\emph{put}.
+%
+\[ (K, (V_1, V_2)) \longleftarrow (K, (V_1, V_2)) \times (K, V_1) \]
+
+\TODO{Goal of the paper.}
 
 In the next sections, an overview on bidirectional transformations and the
 alignment problem is provided. Then, putback-based bidirectional transformation
