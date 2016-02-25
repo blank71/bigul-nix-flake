@@ -338,9 +338,9 @@ Introduction for the next subsections.}
 \subsection{Specific Implementation for Lists}
 
 An implementation of positional mapping on lists is presented in
-Listing~\ref{lst:posmapl}. This implementation receives a BiGUL program to
-perform the element update and is specified for several situations that can
-occur:
+Listing~\ref{lst:posmapl}. This implementation receives a function to create new
+source elements when a new view element is added, and a BiGUL program to perform
+the element update. It is specified for the several situations that can occur:
 \begin{enumerate}
   \item\label{item:posmap1} both view and source are empty;
   \item\label{item:posmap2} view is empty but source has elements;
@@ -348,13 +348,8 @@ occur:
   \item\label{item:posmap4} view has elements but source is empty.
 \end{enumerate}
 
-\mywrong{The program should also receive a function to create the new elements.
-The current implementation works only if the source is of the same type as the
-view, and the given program only uses the view element.}
-
-The content of the view is checked with the outter \emph{caseV}, while the
-content of the source is checked with the inner \emph{caseS} in each alternative
-of the view. In situation~\ref{item:posmap1}, a \emph{skip} is performed since
+The content of both the view and the source are checked with the \emph{case}
+construct. In situation~\ref{item:posmap1}, a \emph{skip} is performed since
 there are no elements to update. In situation~\ref{item:posmap2}, the content of
 the source is discarded, and a new empty source is used to match the empty view.
 This results in the removal of elements that are not present in the view. In
@@ -364,23 +359,19 @@ with only one element that is not used since it is replace by the value from the
 view.
 
 \begin{lstlisting}[caption={Positional mapping of lists.},label={lst:posmapl}]
-mapL :: (MonadError' ErrorInfo m, Eq s, Eq v)
-     => BiGUL m s v -- BiGUL program to apply to the values
-     -> BiGUL m [s] [v]
-mapL u = CaseV
-  [(return . null , $(rearr [| \ [] -> () |])
-    (CaseS [(return . null, Normal Skip),
-            (return . not . null,
-              Adaptive (\ _ _ -> return []))
-           ])),
-   (return . not . null,
-    $(rearr [| \ (x : xs) -> (x, xs) |])
-      (CaseS
-        [(return . not . null,
-            Normal (Update (UIn $ URight (UProd (UVar u) (UVar (mapL u)))))),
-         (return . null,
-            Adaptive (\ _ _ -> return [undefined]))
-        ]))
+mapL :: (v -> s)
+     -> BiGUL s v
+     -> BiGUL [s] [v]
+mapL c u = Case
+  [ $(normalSV [p| [] |] [p| [] |])$
+      $(rearrV [| \ [] -> () |]) Skip
+  , $(adaptiveV [p| [] |])$ \ _ _ -> []
+  , $(normalSV [p| (_ : _) |] [p| (_ : _) |])$
+      $(rearrV [| \ (v:vs) -> (v, vs) |])$
+        $(rearrS [| \(s:ss) -> (s, ss) |])$
+          u `Prod` mapL c u
+  , $(adaptiveV [p| (_ : _) |])$
+    \ _ (v : _) -> [c v]
   ]
 \end{lstlisting}
 
@@ -391,21 +382,16 @@ Thus, deltas are inserted into the BiGUL alignment program in order to obtain a
 precise alignment (see Listing~\ref{lst:align0}).
 
 \begin{lstlisting}[caption={Delta-based alignment function for lists.},label={lst:align0}]
-align' :: (MonadError' ErrorInfo m, Eq a, Eq b)
-  => BiGUL m a b
-  -> (b -> a)
-  -> BiGUL m ([a], Delta [b] [b]) [b]
-align' b c = CaseS
- [ ( return . (uncurry (==)) . (getId >< id),
-     Normal (Rearr RVar (EProd (EDir DVar)
-                               (EConst ()))
-             (Update $ UProd (UVar (mapL b))
-                             (UVar Skip))))
- , ( return . const True,
-     Adaptive $ \(s,d) v-> let s' = putMapD c s v d
-                           in return (s', getId s')
-   )
- ]
+align' :: BiGUL a b
+       -> (b -> a)
+       -> BiGUL ([a], Delta [b] [b]) [b]
+align' b c = Case
+  [ $(normal [| \(_, d) v -> d == getId v |])$
+      $(rearrS [| \(s, _) -> s |])$ mapL (const undefined) b
+  , $(adaptiveS [| const True |])$
+      \(s,d) v -> let s' = putMapD c s v d
+                  in (s', getId v)
+  ]
 \end{lstlisting}
 
 The alignment process is done in two steps:
@@ -424,9 +410,6 @@ delete no longer existent view elements.
 
 \noindent\TODO{Can the deltas be paired with the view instead of the source in
 more recent BiGUL? It might be more natural, since the delta is on the view.}
-
-\noindent\TODO{Is it possible to introduce the delta into a state monad? This
-way, it wouldn't be necessary to pair delta with the source nor the view.}
 
 \begin{lstlisting}[caption={Get identity delta.},label={lst:getid}]
 getId :: [a] -> Delta [a] [a]
@@ -449,14 +432,13 @@ putMapD c s v dV = fst (traverse aux (v,0))
 \end{lstlisting}
 
 \begin{lstlisting}[caption={Delta-based alignment function for lists.},label={lst:align1}]
-align :: (MonadError' ErrorInfo m, Eq a, Eq b)
-  => BiGUL m a b
-  -> (b -> a)
-  -> Delta [b] [b]
-  -> BiGUL m [a] [b]
-align b c d = Emb g p
+align :: BiGUL a b
+      -> (b -> a)
+      -> Delta [b] [b]
+      -> BiGUL [a] [b]
+align b c d = emb g p
   where g s   = get (align' b c) (s, getId s)
-        p s v = fst <$> put (align' b c) (s, d) v
+        p s v = fst (put (align' b c) (s, d) v)
 \end{lstlisting}
 
 %%% Generic Implementation for Container/Shapely Types
