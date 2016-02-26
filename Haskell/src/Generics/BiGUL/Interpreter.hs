@@ -1,6 +1,6 @@
 {-# LANGUAGE GADTs #-}
 
-module Generics.BiGUL.Interpreter (put, get, errorTrace) where
+module Generics.BiGUL.Interpreter (put, get, PutResult, GetResult, errorTrace) where
 
 import Generics.BiGUL.Error
 import Generics.BiGUL.AST
