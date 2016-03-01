@@ -119,6 +119,7 @@ instance Show (GetError s v) where
   show  GPreviousBranchMatched       = "previous branch matched"
   show  GPostVerificationFailed      = "post-verification failed"
   show  GBranchUnmatched             = "branch unmatched"
+  show  GAdaptiveBranchMatched       = "adaptive branch matched"
   show (GProdLeft _ e)               = show e
   show (GProdRight _ e)              = show e
   show (GRearrS _ e)                 = show e
@@ -141,6 +142,7 @@ instance PrettyPrintable (GetError s v) where
   toDoc e@GPreviousBranchMatched      = text (show e)
   toDoc e@GPostVerificationFailed     = text (show e)
   toDoc e@GBranchUnmatched            = text (show e)
+  toDoc e@GAdaptiveBranchMatched      = text (show e)
   toDoc (GProdLeft _ e)               = text "on the left-hand side of Prod" $+$ toDoc e
   toDoc (GProdRight _ e)              = text "on the right-hand side of Prod" $+$ toDoc e
   toDoc (GRearrS _ e)                 = text "in RearrS" $+$ toDoc e
