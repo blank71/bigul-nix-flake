@@ -129,7 +129,7 @@ to select a way to perform the \emph{put} operation:
 \[ (K, (V_1, V_2)) \xrightarrow{\text{\small best match on \(K\)}} (K, V_1) \]
 %
 This provides information on how to align the elements in the \emph{put}
-direction. But it is not enough: how to deal with new elements? On can provide
+direction. But it is not enough: how to deal with new elements? One can provide
 another annotation:
 %
 \[ (K, (V_1, V_2 = v_2)) \xrightarrow{\text{\small best match on \(K\)}} (K, V_1) \]
@@ -146,6 +146,15 @@ elements. Moreover, an unique \emph{get} function can be derived from this
 \emph{put}.
 %
 \[ (K, (V_1, V_2)) \longleftarrow (K, (V_1, V_2)) \times (K, V_1) \]
+
+% Motivation for delta-based alignment.
+This example continues to have some drawbacks. The key-based alignment might not
+reflect the operations performed to the view, resulting in an incorrect
+alignment. Having information about the operations performed to the view, it
+should be possible to provide a relation of the elements from the original view
+that are also present in the modified view. Using this relation, or
+\emph{delta}, it is possible to precisely align the elements in the modified
+view with the ones in the original source for the \emph{put} operation.
 
 \TODO{Goal of the paper.}
 
@@ -349,7 +358,9 @@ the element update. It is specified for the several situations that can occur:
 \end{enumerate}
 
 The content of both the view and the source are checked with the \emph{case}
-construct. In situation~\ref{item:posmap1}, a \emph{skip} is performed since
+construct, where each of the alternatives checks for one of the possible
+situations following the given order. In situation~\ref{item:posmap1}, a
+\emph{skip} is performed since
 there are no elements to update. In situation~\ref{item:posmap2}, the content of
 the source is discarded, and a new empty source is used to match the empty view.
 This results in the removal of elements that are not present in the view. In
@@ -377,6 +388,8 @@ mapL c u = Case
 
 Positional mapping does not take into account changes in the model, except for
 added or deleted elements that are dealt with at the end of the new source.
+However, it is useful to map elements when the source is modified to correspond
+to the view in the alignment process.
 %
 Thus, deltas are inserted into the BiGUL alignment program in order to obtain a
 precise alignment (see Listing~\ref{lst:align0}).
@@ -397,7 +410,8 @@ align' b c = Case
 The alignment process is done in two steps:
 %
 \begin{enumerate}
-  \item Creation of new elements and removal of deleted elements.
+  %\item Creation of new elements and removal of deleted elements.
+  \item Modification of the source aligning to the view using a delta.
   \item Positional update.
 \end{enumerate}
 %
@@ -405,7 +419,8 @@ An alternative case statement is used to check which of these two steps are to
 be performed. This is done based on the changes performed on the view: if no
 changes were performed, the delta maps each element's position to the same
 position (the identity delta, Listing~\ref{lst:getid}); otherwise, a
-transformation is performed on the source to create missing view elements and
+transformation is performed on the source to rearrange the elements based on the
+delta, create missing view elements, and
 delete no longer existent view elements.
 
 \noindent\TODO{Can the deltas be paired with the view instead of the source in
