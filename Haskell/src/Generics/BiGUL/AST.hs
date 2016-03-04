@@ -1,6 +1,8 @@
 {-# LANGUAGE GADTs, KindSignatures, TupleSections #-}
 
-module Generics.BiGUL.AST where
+module Generics.BiGUL.AST
+  (BiGUL(..), CaseBranch(..), Pat(..), Direction(..), Expr(..),
+   deconstruct, construct, eval, uneval, emptyContainer, fromContainerS, fromContainerV) where
 
 import Generics.BiGUL.Error
 import Control.Monad.Except
@@ -24,6 +26,8 @@ data BiGUL :: * -> * -> * where
   Dep     :: (Eq v') => BiGUL s v -> (s -> v -> v') -> BiGUL s (v, v')
   Case    :: [(s -> v -> Bool, CaseBranch s v)] -> BiGUL s v
   Compose :: BiGUL s u -> BiGUL u v -> BiGUL s v
+
+infixr 1 `Prod`
 
 instance Show (BiGUL s v) where
   show (Fail s)  = "Fail: " ++ s
