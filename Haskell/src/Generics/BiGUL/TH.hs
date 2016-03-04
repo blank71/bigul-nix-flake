@@ -13,20 +13,18 @@ import Generics.BiGUL.AST
 import Control.Monad
 
 
+
 data ConTag = L | R
     deriving (Show, Data, Typeable)
 
 
-data PatTag = PTag | UTag | RTag | ETag | STag | RPTag | SPTag
+data PatTag = RTag   -- ^ view pattern
+            | STag   -- ^ source Pattern
+            | ETag   -- ^ expression
 
 instance Show PatTag where
-   show PTag = "P"
-   show UTag = "U"
-   show RTag = "P"
    show ETag = "E"
-   show STag = "P"
-   show RPTag = "P"
-   show SPTag = "P"
+   show _    = "P"
 
 contag :: a -> a -> ConTag -> a
 contag a1 _  L = a1
@@ -245,15 +243,16 @@ mkConstrutorFromLRs lrs patTag = do (_, [gin, gleft, gright]) <- lookupNames [] 
 astNameSpace :: String
 astNameSpace = "Generics.BiGUL.AST."
 
-mkPat :: TH.Pat -> PatTag -> Q TH.Exp
+-- |
+mkPat :: TH.Pat -> PatTag -> [Name] -> Q TH.Exp
 
-mkPat (LitP c) patTag  = do
+mkPat (LitP c) patTag _ = do
   (_, [gconst]) <- lookupNames [] [astNameSpace ++ show patTag ++ "Const"] (notFoundMsg $ show patTag ++ "Const")
   return $ ConE gconst `AppE` LitE c
 
 
 -- user defined datatypes && unit pattern
-mkPat (ConP name ps) patTag = do
+mkPat (ConP name ps) patTag dupnames = do
   ConP name' [] <- [p| () |]
   if name == name' && ps == []
   then do
@@ -264,83 +263,67 @@ mkPat (ConP name ps) patTag = do
        lrs <- lookupLRs name
        conInEither <- mkConstrutorFromLRs lrs patTag
        pes         <- case ps of
-                       [] -> [p| () |] >>= flip mkPat patTag
-                       _  -> mkPat (TupP ps)  patTag
+                       [] -> mkPat (ConP name' []) patTag dupnames
+                       _  -> mkPat (TupP ps)  patTag dupnames
        return $ conInEither pes
 
 
 
-mkPat (RecP name ps) patTag = do
-  len <- lookupRecordLength name
-  indexs <- mapM (\(n,_) -> lookupRecordField name n) ps
-  let nps = map snd ps
-  mkPat (ConP name (helper 0 len (zip indexs nps) [])) patTag
+mkPat (RecP name ps) patTag dupnames = do
+  -- reduce the case for a record constructor to the case for an ordinary constructor
+  len <- lookupRecordLength name -- number of constructor arguments
+  indexs <- mapM (\(n,_) -> lookupRecordField name n) ps -- positions of the fields mentioned in p
+  let nps = map snd ps  -- patterns for the fields
+  mkPat (ConP name (helper 0 len (zip indexs nps) [])) patTag dupnames -- grab the pattern for position i for each 0 <= i < len from zip indexs nps
   where findInPair [] i = WildP
         findInPair ((j,p):xs) i | i == j = p
                                 | otherwise = findInPair xs i
         helper i n pairs acc  | i == n = acc
                               | otherwise = helper (i+1) n pairs (acc++[findInPair pairs i])
+        -- let ips = zip indexs nps in [ maybe WildP id (List.lookup i ips) | i <- [0..len-1] ]
 
 
-mkPat (ListP []) patTag = [p| [] |] >>= flip mkPat patTag
+mkPat (ListP []) patTag dupnames = do emptyp <- [p| [] |]
+                                      mkPat emptyp patTag dupnames
 
-mkPat (ListP (p:xs)) patTag = do
-  hexp <- mkPat p patTag
-  rexp <- mkPat (ListP xs) patTag
+mkPat (ListP (p:xs)) patTag dupnames = do
+  hexp <- mkPat p patTag dupnames
+  rexp <- mkPat (ListP xs) patTag dupnames
   (_, [gin,gright,gprod]) <- lookupNames [] [astNameSpace ++ show patTag ++ s | s <- ["In","Right","Prod"]] (notFoundMsg $ (concatWith " ". map (withPatTag patTag)) ["In","Right","Prod"])
   return $ ConE gin `AppE` (ConE gright `AppE` (ConE gprod `AppE` hexp `AppE` rexp))
 
-mkPat (InfixP pl name pr) patTag = do
+mkPat (InfixP pl name pr) patTag dupnames = do
   ConE name' <- [| (:) |]
   if name == name'
-  then do lpat <- mkPat pl patTag
-          rpat <- mkPat pr patTag
+  then do lpat <- mkPat pl patTag dupnames
+          rpat <- mkPat pr patTag dupnames
           (_, [gin,gright,gprod]) <- lookupNames [] [astNameSpace ++ show patTag ++ s | s <- ["In","Right","Prod"]] (notFoundMsg $ (concatWith " ". map (withPatTag patTag)) ["In","Right","Prod"])
           return $ ConE gin `AppE` (ConE gright `AppE` (ConE gprod `AppE` lpat `AppE` rpat))
   else fail $ "constructors mismatch: " ++ nameBase name ++ " and " ++ nameBase name'
 
 
-mkPat (TupP [p]) patTag = mkPat p patTag
-mkPat (TupP (p:ps)) patTag = do
-  lexp <- mkPat p patTag
-  rexp <- mkPat (TupP ps) patTag
+mkPat (TupP [p]) patTag dupnames = mkPat p patTag dupnames
+mkPat (TupP (p:ps)) patTag dupnames = do
+  lexp <- mkPat p patTag dupnames
+  rexp <- mkPat (TupP ps) patTag dupnames
   (_, [gprod]) <- lookupNames [] [astNameSpace ++ show patTag ++ s | s <- ["Prod"]] (notFoundMsg "Prod")
   return ((ConE gprod `AppE` lexp) `AppE` rexp)
 
 
-mkPat (WildP) PTag = do
-  (_, [pvar])       <- lookupNames [] [astNameSpace ++ "PVar"]  (notFoundMsg "PVar")
-  return $ ConE pvar
-mkPat (WildP) UTag = do
-  (_, [uvar, skip]) <- lookupNames [] [astNameSpace ++ s | s <- ["UVar", "Skip"]] (notFoundMsg "UVar, Skip")
-  return $ ConE uvar `AppE` ConE skip
-mkPat (WildP) RTag = fail $ "Wildcard(_) connot be used in lambda pattern expression."
-mkPat (WildP) RPTag = fail $ "Wildcard(_) connot be used in lambda pattern expression."
-mkPat (WildP) STag = do
-  (_, [pvar])       <- lookupNames [] [astNameSpace ++ "PVar"] (notFoundMsg "PVar")
-  return $ ConE pvar
-mkPat (WildP) SPTag = do
-  (_, [pvar])       <- lookupNames [] [astNameSpace ++ "PVar'"] (notFoundMsg "PVar'")
-  return $ ConE pvar
 
-mkPat (VarP name) PTag =  fail $ "Please do not use variables here, use wildcard(_) instead."
-mkPat (VarP name) UTag =  do
-  (_, [uvar])       <- lookupNames [] [astNameSpace ++ "UVar"] (notFoundMsg "UVar")
-  return $ ConE uvar `AppE` VarE name
-mkPat (VarP name) RTag =  do
-  (_, [pvar])       <- lookupNames [] [astNameSpace ++ "PVar"] (notFoundMsg "PVar")
-  return $ ConE pvar
-mkPat (VarP name) RPTag =  do
-  (_, [pvar])       <- lookupNames [] [astNameSpace ++ "PVar'"] (notFoundMsg "PVar'")
-  return $ ConE pvar
-mkPat (VarP name) STag =  do
-  (_, [pvar])       <- lookupNames [] [astNameSpace ++ "PVar"] (notFoundMsg "PVar")
-  return $ ConE pvar
-mkPat (VarP name) SPTag =  do
-  (_, [pvar])       <- lookupNames [] [astNameSpace ++ "PVar'"] (notFoundMsg "PVar'")
-  return $ ConE pvar
+mkPat (WildP) RTag _ = fail $ "Wildcard(_) connot be used in lambda pattern expression."
+mkPat (WildP) STag _ = do
+  (_, [pvar'])       <- lookupNames [] [astNameSpace ++ "PVar'"] (notFoundMsg "PVar'")
+  return $ ConE pvar'
 
-mkPat _ patTag = fail $ "Pattern not handled yet."
+
+mkPat (VarP name) _  dupnames =  do
+  (_, [pvar,pvar'])       <- lookupNames [] [ astNameSpace ++ s | s <- ["PVar", "PVar'"] ] (notFoundMsg "PVar,PVar'")
+  return $ if name `elem` dupnames then ConE pvar else ConE pvar'
+
+
+
+mkPat _ patTag _ = fail $ "Pattern not handled yet."
 
 
 
@@ -350,7 +333,7 @@ mkPat _ patTag = fail $ "Pattern not handled yet."
 
 
 
--- rearrange all (VarE name) with env, generalized version
+-- | translate all (VarE name) to directions using env
 rearrangeExp :: Exp -> Map String Exp -> Q Exp
 rearrangeExp (VarE name) env  =
   case Map.lookup (nameBase name) env of
@@ -446,12 +429,15 @@ mkBodyExpForRearr (LitE c) = do
 mkBodyExpForRearr (VarE name) =  return $ VarE name
 
 mkBodyExpForRearr (AppE e1 e2) = do
+  -- must be constructor applied to arguments (rearrangement expression does not allow general functions)
+  -- surface syntax is curried constructor applied to arguments in order; should translate that to uncurried constructor applied to a tuple of arguments
   (_, [eprod]) <- lookupNames [] [astNameSpace ++ "EProd"] (notFoundMsg "EProd")
   (con, ds)   <- splitDataAndCon (AppE e1 e2)
   return $ con (foldr1 (\d1 d2 -> ConE eprod `AppE` d1 `AppE` d2) ds)
 
 
 mkBodyExpForRearr (ConE name) =  do
+  -- must be constructor without argument
   (ConE name') <- [| () |]
   (_, [econst]) <- lookupNames [] [astNameSpace ++ s | s <- ["EConst"] ] (notFoundMsg "EConst")
   if name == name'
@@ -459,6 +445,7 @@ mkBodyExpForRearr (ConE name) =  do
   else mkBodyExpForRearr (AppE (ConE name) (ConE name'))
 
 mkBodyExpForRearr (RecConE name es) = do
+  -- reduce to the case for ordinary constructors
   (ConE name') <- [| () |]
   (_, [econst,eprod]) <- lookupNames [] [astNameSpace ++ s | s <- ["EConst","EProd"]] (notFoundMsg "EConst and EProd")
   len <- lookupRecordLength name
@@ -504,11 +491,11 @@ mkBodyExpForRearr _           = fail $ "Invalid syntax in lambda body expression
 
 
 
-rearr' :: PatTag -> TH.Exp -> Q TH.Exp
-rearr' patTag (LamE [p] e) = do
-  let suffixRS = case patTag of {RPTag -> "V" ; SPTag -> "S"; RTag -> "V" ; STag -> "S" ; _ -> ""}
+rearr' :: PatTag -> TH.Exp -> [Name] -> Q TH.Exp
+rearr' patTag (LamE [p] e) dupnames = do
+  let suffixRS = case patTag of {RTag -> "V" ; STag -> "S" ; _ -> ""}
   (_, [edir,rearrc]) <- lookupNames [] [astNameSpace ++ s | s <- ["EDir","Rearr"++suffixRS] ] (notFoundMsg $ "EDir, Rearr"++suffixRS)
-  pat <- mkPat p patTag
+  pat <- mkPat p patTag dupnames
   exp <- mkBodyExpForRearr e
   env <- mkEnvForRearr p
   newexp <- rearrangeExp exp (Map.map (ConE edir `AppE`) env)
@@ -525,24 +512,17 @@ getAllVars (ListE es) = concatMap getAllVars es
 getAllVars (TupE  es) = concatMap getAllVars es
 getAllVars  _         =  fail $ "Invalid exp in getAllVars"
 
-rearr :: Q TH.Exp -> Q TH.Exp
-rearr = ((rearr' RTag) =<<)
 
 rearrV :: Q TH.Exp -> Q TH.Exp
 rearrV qlambexp = do lambexp@(LamE _ e) <- qlambexp
                      let varnames = getAllVars e
-                     let varnamessort = sort varnames
-                     if nub varnamessort == varnamessort
-                     then rearr' RPTag lambexp
-                     else rearr' RTag lambexp
+                     rearr' RTag lambexp (varnames \\ (nub varnames))
 
 rearrS :: Q TH.Exp -> Q TH.Exp
 rearrS qlambexp = do lambexp@(LamE _ e) <- qlambexp
                      let varnames = getAllVars e
-                     let varnamessort = sort varnames
-                     if nub varnamessort == varnamessort
-                     then rearr' SPTag lambexp
-                     else rearr' STag lambexp
+                     rearr' STag lambexp (varnames \\ (nub varnames))
+
 
 
 
@@ -600,29 +580,16 @@ toProduct (AppE e1 e2) = do
 
 toProduct other = return other
 
-rearrAndUpdate :: Q TH.Pat -> Q TH.Pat -> Q [TH.Dec] -> Q TH.Exp
-rearrAndUpdate qrp qup qud = do
-  (_, [edir,rearrc,upd]) <- lookupNames [] [astNameSpace ++ s | s <- ["EDir","Rearr","Update"] ] (notFoundMsg "EDir, Rearr, Update")
-  rp <- qrp
-  up <- qup
-  ud <- qud
-  rpat <- mkPat rp RTag
-  bexp <- mkExpFromPat up
-  rexp <- mkBodyExpForRearr bexp
-  proexp <- toProduct rexp
-  renv <- mkEnvForRearr rp
-  newrexp <- rearrangeExp proexp (Map.map (ConE edir `AppE`) renv)
-  upat <- mkPat up UTag
-  uenv <- mkEnvForUpdate ud
-  ubigul <- rearrangeExp (ConE upd `AppE` upat) uenv
-  return $ ((ConE rearrc `AppE` rpat) `AppE` newrexp) `AppE` ubigul
+
 
 mkProdPatFromSHelper :: TH.Pat -> Q TH.Pat
 mkProdPatFromSHelper (TupP []) = [p| () |]
 mkProdPatFromSHelper other     = return other
 
+-- | takes a source pattern and produces a tuple pattern consisting of all the variables in the source pattern
+-- 1:s:ss -> (() , (s, ss))
 mkProdPatFromS :: TH.Pat -> Q TH.Pat
-mkProdPatFromS (LitP c) = return (LitP c)
+mkProdPatFromS (LitP c) = [p| () |]
 mkProdPatFromS (ConP name ps) = do
   es <- mapM mkProdPatFromS ps
   mkProdPatFromSHelper $ TupP es
@@ -643,6 +610,9 @@ mkProdPatFromS (VarP name) = return (VarP name)
 mkProdPatFromS WildP = [p| () |]
 mkProdPatFromS _ = fail $ "pattern not handled in mkProdPatFromS"
 
+-- | Example: rearrSV [p| x:xs |] [p| x:xs |] [p| (x,xs) |] [d| x = Replace; xs = rec |]
+--   generates a rearrS from the first  pattern and the third pattern
+--         and a rearrV from the second pattern and the third pattern
 rearrSV :: Q TH.Pat -> Q TH.Pat -> Q TH.Pat -> Q [TH.Dec] -> Q TH.Exp
 rearrSV qsp qvp qpp qpd = do
   (_, [edir,rearrs,rearrv]) <- lookupNames [] [astNameSpace ++ s | s <- ["EDir","RearrS","RearrV"] ] (notFoundMsg "EDir, RearrS, RearrV")
@@ -650,8 +620,8 @@ rearrSV qsp qvp qpp qpd = do
   vp <- qvp
   pp <- qpp
   pd <- qpd
-  spat <- mkPat sp SPTag
-  vpat <- mkPat vp RPTag
+  spat <- mkPat sp STag []
+  vpat <- mkPat vp RTag []
   commonexp <- mkExpFromPat pp
   commonexp' <- mkBodyExpForRearr commonexp
   commonexp'' <- toProduct commonexp'
@@ -699,17 +669,7 @@ patToFunc p =  do
                         [Match p (NormalB (ConE htrue)) [], Match WildP (NormalB (ConE hfalse)) []])
 
 
-addAdaptive :: TH.Exp -> Q TH.Exp
-addAdaptive exp = do
-  (_, [badaptive]) <- lookupNames [] [astNameSpace ++ "Adaptive"] (notFoundMsg "Adaptive")
-  return $ TupE [exp,ConE badaptive]
 
-adaptive' :: Q TH.Exp -> Q TH.Exp
-adaptive' me = do
-  (_, [hreturn,hcomposition]) <- lookupNames [] ["return","."] (notFoundMsg "return,composition")
-  e <- me
-  let a = addAdaptive $ InfixE (Just (VarE hreturn)) (VarE hcomposition) (Just e)
-  [| \update -> fmap ($ update) $(a) |]
 
 
 --
@@ -722,11 +682,6 @@ withPatTag tag con = show tag ++ con
 concatWith :: String -> [String] -> String
 concatWith sep [] = ""
 concatWith sep (x:xs) = x ++ sep ++ concatWith sep xs
-
-checkVariables :: TH.Pat -> Q Bool
-checkVariables pat = do
-  k <- mkPat pat PTag
-  return True
 
 
 class ExpOrPat a where
