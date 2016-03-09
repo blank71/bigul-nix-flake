@@ -24,6 +24,15 @@
 	stringstyle=\color[rgb]{0.627,0.126,0.941},  % strings
 	escapechar=@,
 }
+\usepackage{array}
+\usepackage{tikz}
+\usetikzlibrary{arrows,positioning,
+  shapes.multipart,
+  matrix,
+  positioning,
+  shapes.callouts,
+  shapes.arrows,
+  calc}
 
 \newcommand{\TODO}[1]{{\color{black!10!blue}TODO #1}}
 \newcommand{\mydraft}[1]{{\color{black!50!green}#1}}
@@ -38,6 +47,7 @@
 \DeclareMathOperator{\data}{data}
 \DeclareMathOperator{\shape}{shape}
 \DeclareMathOperator{\recover}{recover}
+\DeclareMathOperator{\locs}{locs}
 
 \begin{document}
 
@@ -76,7 +86,7 @@
 
 \begin{abstract}
   \TODO{Ideas to express: BX in the put direction is precise; more concepts can
-  be described.}
+  be described. An example of such concept is alignment.}
 \end{abstract}
 
 \category{CR-number}{subcategory}{third-level}
@@ -120,19 +130,19 @@ since the \emph{put} direction is usually the problematic one.
 An example of a get program is the projection of a map structure, selecting its
 key and part of its value:
 %
-\[ (K, (V_1, V_2)) \longrightarrow (K, V_1) \]
+\[ \mathcal M (K, (V_1, V_2)) \longrightarrow \mathcal M (K, V_1) \]
 %
 This has several possible \emph{put} functions that would satisfy the
 \emph{well-behavedness} properties. One can annotate the transformation in order
 to select a way to perform the \emph{put} operation:
 %
-\[ (K, (V_1, V_2)) \xrightarrow{\text{\small best match on \(K\)}} (K, V_1) \]
+\[ \mathcal M (K, (V_1, V_2)) \xrightarrow{\text{\small best match on \(K\)}} \mathcal M (K, V_1) \]
 %
 This provides information on how to align the elements in the \emph{put}
 direction. But it is not enough: how to deal with new elements? One can provide
 another annotation:
 %
-\[ (K, (V_1, V_2 = v_2)) \xrightarrow{\text{\small best match on \(K\)}} (K, V_1) \]
+\[ \mathcal M (K, (V_1, V_2 = v_2)) \xrightarrow{\text{\small best match on \(K\)}} \mathcal M (K, V_1) \]
 %
 where \(v_2\) is a default value for type \(V_2\).
 
@@ -145,7 +155,7 @@ that leads to the alignment strategy and the default value to use for new
 elements. Moreover, an unique \emph{get} function can be derived from this
 \emph{put}.
 %
-\[ (K, (V_1, V_2)) \longleftarrow (K, (V_1, V_2)) \times (K, V_1) \]
+\[ \mathcal M (K, (V_1, V_2)) \longleftarrow \mathcal M (K, (V_1, V_2)) \times \mathcal M (K, V_1) \]
 
 % Motivation for delta-based alignment.
 This example continues to have some drawbacks. The key-based alignment might not
@@ -155,8 +165,13 @@ should be possible to provide a relation of the elements from the original view
 that are also present in the modified view. Using this relation, or
 \emph{delta}, it is possible to precisely align the elements in the modified
 view with the ones in the original source for the \emph{put} operation.
+%
+\[ \mathcal M (K, (V_1, V_2)) \longleftarrow \mathcal M (K, (V_1, V_2)) \times \mathcal M (K, V_1) \times \Delta \]
 
-\TODO{Goal of the paper.}
+\TODO{Goal of the paper. Show that defining the \emph{put} direction has its
+benefits and can be more intuitive for certain operations. Moreover, it shows
+how to use additional information, namely the delta, that isn't defined in the
+put operation, but in is given at runtime instead.}
 
 In the next sections, an overview on bidirectional transformations and the
 alignment problem is provided. Then, putback-based bidirectional transformation
@@ -181,7 +196,16 @@ type \(S\) and view type \(V\), is composed by two functions:
 The \emph{get} function extracts a view from a source and the \emph{put}
 function updates the original source with information from the new view.
 
-Lenses must obey two laws in order to be considered \emph{well-behaved}:
+When developing a BX system, one expects it to be \emph{well-behaved}, i.e.,
+that performing certain actions should provide a stable result. One of these
+actions is updating a source with an unmodified view of such source, which
+should result in the same source. Another action is getting the view after
+updating a source, which should result in the same view used for the update.
+From these actions and respective results, two laws were defined:
+\textsc{PutGet}, for the former action; and, \textsc{GetPut}, for the latter.
+
+For the lenses framework, in order a BX system to be considered
+\emph{well-behaved}, the following two laws must be ensured:
 %
 \begin{align*}
   \bxget \left(\bxput s~v\right) = v
@@ -197,14 +221,19 @@ unchanged view should result in the original source.
 
 \noindent\TODO{
   \begin{itemize}
-    \item very well-behaved lenses (it is worth to mention?)
-    \item the create function
     \item get is easier to write than put. When writing get, a put can be
       derived, but, since it may be not unique, some assumptions are made, and
       in some cases update policies must be provided.
-    \item variations from other languages (matching lenses, delta lenses,~\dots)
+      Where is this information available?
   \end{itemize}
 }
+
+%%
+%% TODO (maybe)
+%% very well-behaved lenses (it is worth to mention?)
+%%  - the create function
+%%  - variations from other languages (matching lenses, delta lenses,~\dots)
+%%
 
 
 %%%
@@ -212,42 +241,82 @@ unchanged view should result in the original source.
 %%%
 \section{The Alignment Problem}
 
-\noindent\TODO{
-  \begin{itemize}
-    \item What is alignment.
-    \item How it is handled in BX languages.
-    \item What are the shortcommings of current implementations.
-    \item Implications on the BX developer part (doesn't have control, has to
-      annotate the BX, needs to provide changes in the view [delta-based],
-      etc.).
-  \end{itemize}
-}
+Alignment consists in matching elements in the source container with elements in
+the source container. When modifying a view, the elements in a container might
+be modified, e.g., new elements are added, others are deleted, or some are moved
+within the container. Many examples of containers exist, with lists and trees
+being the more common.
 
+\begin{figure}[ht]
+  \centering
+  \input{./figures/alignment1}
+  \caption{Example of a view, the changes applied to it, and the obtained
+  result. Other sets of operations can result in the same view.}
+  \label{fig:alignment}
+\end{figure}
+
+Unexpected results can be obtained when container elements are not properly
+aligned. Most of these issues are consequences of the alignment approach
+selected, which include the following ones:
+%
 % Kinds of alignments
 % - [implicitly] positional
 % - arbitrary algorithm
 % - delta-based
 % - operation-based
-Alignment can be dealt with in several possible ways:
 %
 \begin{itemize}
-  \item Update elements positionally, removing elements at the start/end of the
-    source if it contains more elements than the view, or adding new elements at
-    the start/end of the source if the view have more elements. Here, start/end
-    is an arbitrary position within the source. The move of elements is not
-    taken into account.
-  \item Use an algorithm to match elements of the original source with elements
-    of the new view.
-  \item Use information about changes in the view (i.e., \emph{deltas}), so that
-    the elements can be matched accurately between the original source and the
-    new view.
-  \item Work with operations, matching operations performed on the view with
-    operations to be matched on the source.
+  \item positional update;
+  \item use of an arbitrary matching algorithm (e.g., best match);
+  \item delta-based alignment; and,
+  \item operation-based BX.
 \end{itemize}
 
+A positional update of the elements removes elements at the start/end of the source
+if it contains more elements than the view, or adds new elements at the
+start/end of the source if the view have more elements. Here, start/end is an
+arbitrary position within the source. The move of elements is not taken into
+account. Using the example in Fig.~\ref{fig:alignment}, a positional update
+would be equivalent to a modification of \(v_1\) to \(v_2\), and a change of
+\(k_2~v_2\) to \(k_3~v_3\). Thus, the alignment does not reflect the operations
+performed to the view.
 
-%%% Shapely Types
-\subsection{Shapely Types}
+Using an algorithm to match elements of the original source with elements of the
+new view can provide more precision than the positional update. A common
+strategy is key-based matching, where a key is used to identify the elements
+in the container. With the example in Fig.~\ref{fig:alignment}, one can use the
+\(k\) part of the element as a key, resulting in an alignment equivalent to the
+modification of \(v_1\) to \(v_2\), the removal of \(k_2~v_2\) and the addition
+of \(k_3~v_3\). This alignment also does not reflect the operations performed to
+the view, but it is closer than the positional update.
+
+Using information about changes in the view (i.e., \emph{deltas}) is one of the
+approaches so that
+the elements can be matched accurately between the original source and the
+new view. This can be implemented in distinct fashions, one of them identifying
+the relation of the elements in the original view with the ones in the modified
+view. The elements that are not in this relation were either deleted (if not
+present in the modified view) or added (if not present in the original view).
+
+Finally, it is also possible to work with operations, matching operations
+performed on the view with operations to be performed on the source.
+
+The first two approaches might not reflect the actual changes performed to the
+view, which can introduce some misalignment of the elements of the view with the
+source ones. Moreover, these approaches are implicit in some frameworks, or
+require additional annotations in the programs. On the other hand, the last two
+options use information of the
+actual changes or operations performed, resulting in a precise alignment.
+However, this information is not always available thus preventing the use of
+the last two precise options in some situations. Furthermore, these approaches
+differ from the traditional lenses, where more information should be provided
+(in the case of the deltas), or the complete system logic is flipped and the BX
+system works with operations instead of the usual artefacts.
+
+\TODO{What BX frameworks changed in order to allow alignment strategies. E.g.,
+matching lenses and the resources/complements/chunks.}
+
+\begin{comment}
 
 \noindent\TODO{
 \begin{itemize}
@@ -267,10 +336,6 @@ Alignment can be dealt with in several possible ways:
 \end{itemize}
 }
 
-
-%%% Mapping with Deltas
-\subsection{Mapping with Deltas}
-
 \noindent\TODO{
 \begin{itemize}
   \item Description of mapping elements from the view to elements on the source.
@@ -282,12 +347,7 @@ Alignment can be dealt with in several possible ways:
 \end{itemize}
 }
 
-\begin{flalign*}
-  \bxget s \hspace{2ex} &= S \bxget_l s &\\
-  \bxput s\, v          &= \recover \left(\shape v, \dput \cup \dcreate\right) \\
-  \where \hspace{-2ex}&\hspace{3ex}\dput = \bxput_l \circ \langle \data v, \data s \circ d\rangle\\
-         \hspace{-2ex}&\hspace{3ex}\dcreate = (\bxcreate_l \circ \data v) \circ (id - \delta\dput)
-\end{flalign*}
+\end{comment}
 
 
 %%%
@@ -295,14 +355,7 @@ Alignment can be dealt with in several possible ways:
 %%%
 \section{Putback-Based Bidirectional Transformations}
 
-\noindent\TODO{
-\begin{itemize}
-  \item Concept of putback-based BX.
-  \item BiGUL
-\end{itemize}
-}
-
-An under-appreciated fact about well-behaved lenses is that \emph{put} completely determines the behavior of the corresponding \emph{get} --- that is, given a \emph{put} function and two \emph{get} functions each of which forms a well-behaved lens when paired with the \emph{put} function, it must be the case that the two \emph{get} functions are pointwise equal. This fact was already noted by Foster in his PhD thesis \TODO{citation} but had remained neglected until people dug up this idea and started exploring the possibility of specifying BXs in terms of \emph{put} \TODO{citations}.
+An under-appreciated fact about well-behaved lenses is that \emph{put} completely determines the behavior of the corresponding \emph{get} --- that is, given a \emph{put} function and two \emph{get} functions each of which forms a well-behaved lens when paired with the \emph{put} function, it must be the case that the two \emph{get} functions are pointwise equal. This fact was already noted by Foster in his PhD thesis~\cite{Foster2009} but had remained neglected until people dug up this idea and started exploring the possibility of specifying BXs in terms of \emph{put} \TODO{citations}.
 
 Intuitively, think of a BiGUL program of type \lstinline{BiGUL s v} as describing how to manipulate a state consisting of a source component of type~\lstinline{s} and a view component of type~\lstinline{v}; the goal is to copy all information in the view to proper places in the source.
 In the simplest case, the view has type \lstinline{()} and contains no information, and we can use \lstinline{Skip :: BiGUL s ()} to leave the source unchanged;
@@ -344,7 +397,7 @@ Thus, it falls naturally in the process of writing a \emph{put} program.
 \noindent\TODO{More text motivating writing alignment in a put program.
 Introduction for the next subsections.}
 
-\subsection{Specific Implementation for Lists}
+\subsection{Positional Update for Lists}
 
 An implementation of positional mapping on lists is presented in
 Listing~\ref{lst:posmapl}. This implementation receives a function to create new
@@ -390,7 +443,20 @@ Positional mapping does not take into account changes in the model, except for
 added or deleted elements that are dealt with at the end of the new source.
 However, it is useful to map elements when the source is modified to correspond
 to the view in the alignment process.
-%
+
+\subsection{Containers as Shape and Data}
+
+\citet{Pacheco2012} rely on types with explicit notion of shape and data, a
+property provided by polymorphic data types in functional programming.
+
+Employing this concept, one can abstract from the shapes of both source and
+view, and just take the data into account for the alignment process.
+
+\TODO{Improve description. Information about $\shape$, $\data$, $\recover$, and
+$\locs$ (used in getId).}
+
+\subsection{Delta-Alignment for Lists}
+
 Thus, deltas are inserted into the BiGUL alignment program in order to obtain a
 precise alignment (see Listing~\ref{lst:align0}).
 
@@ -423,13 +489,18 @@ transformation is performed on the source to rearrange the elements based on the
 delta, create missing view elements, and
 delete no longer existent view elements.
 
-\noindent\TODO{Can the deltas be paired with the view instead of the source in
-more recent BiGUL? It might be more natural, since the delta is on the view.}
-
 \begin{lstlisting}[caption={Get identity delta.},label={lst:getid}]
 getId :: [a] -> Delta [a] [a]
 getId = map (id /\ id) . Set.elems . locs
 \end{lstlisting}
+
+\TODO{Listing~\ref{lst:putmapd} does the put direction:}
+\begin{flalign*}
+  \bxget s \hspace{2ex} &= S \bxget_l s &\\
+  \bxput s\, v          &= \recover \left(\shape v, \dput \cup \dcreate\right) \\
+  \where \hspace{-2ex}&\hspace{3ex}\dput = \bxput_l \circ \langle \data v, \data s \circ d\rangle\\
+         \hspace{-2ex}&\hspace{3ex}\dcreate = (\bxcreate_l \circ \data v) \circ (id - \delta\dput)
+\end{flalign*}
 
 \begin{lstlisting}[caption={Mapping of elements between to containers of the same type using a delta.},label={lst:putmapd}]
 putMapD
@@ -454,6 +525,44 @@ align :: BiGUL a b
 align b c d = emb g p
   where g s   = get (align' b c) (s, getId s)
         p s v = fst (put (align' b c) (s, d) v)
+\end{lstlisting}
+
+It is possible to make minor changes to the \lstinline!align! function to
+implement other kinds of alignments, e.g., key-based
+(Listing~\ref{lst:keyalign}).
+
+\begin{lstlisting}[caption={Key-based alignment function for lists.},label={lst:keyalign}]
+keyAlign
+  :: (Shapely s, s ~ [], Eq b, Eq k)
+  => BiGUL a b         -- Inner BiGUL program
+  -> (b -> a)          -- Create function
+  -> (a -> k)          -- Source key
+  -> (b -> k)          -- View key
+  -> BiGUL (s a) (s b)
+keyAlign b c sk vk = emb g p
+  where g s   = get (pAlign' b c) (s, getId s)
+        p s v = fst $ put (pAlign' b c)
+                          (s, keyDelta sk vk s v) v
+\end{lstlisting}
+
+The \lstinline!keyAlign! function, instead of receiving the delta, receives two
+functions to get the key component of the view and the source, respectively.
+Then, using the original source and the modified view, another function is used
+to infer a delta --- \lstinline!keyDelta!, Listing~\ref{lst:keydelta}.
+
+\begin{lstlisting}[caption={Calculation of deltas using key-based alignment.},label={lst:keydelta}]
+keyDelta
+  :: (Shapely s, Eq k)
+  => (a -> k)          -- Source key
+  -> (b -> k)          -- View key
+  -> s a               -- Source
+  -> s b               -- View
+  -> Delta (s a) (s b)
+keyDelta sk vk ss vs =
+  [ (sp, vp) | (s, sp) <- sps, (v, vp) <- vps
+                             , sk s == vk v   ]
+  where sps = zip (data_ ss) [0..]
+        vps = zip (data_ vs) [0..]
 \end{lstlisting}
 
 %%% Generic Implementation for Container/Shapely Types
