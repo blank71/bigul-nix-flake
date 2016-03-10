@@ -1,8 +1,9 @@
 {-# LANGUAGE TypeOperators, TypeFamilies, FlexibleContexts, DeriveGeneric, ViewPatterns  #-}
 
 import GHC.Generics
-import Generics.BiGUL
+import Generics.BiGUL.Error
 import Generics.BiGUL.AST
+import Generics.BiGUL.Interpreter
 import Language.Haskell.TH as TH hiding (Name)
 import Generics.BiGUL.TH
 import Data.List
@@ -234,7 +235,6 @@ that part is unchanged.
 Noted that not every rearrV and rearrS combination can be written
 this way. The second case is a counterexample.
 -}
-
 
 -- to be continued
 
