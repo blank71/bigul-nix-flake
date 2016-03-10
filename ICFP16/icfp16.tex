@@ -5,7 +5,7 @@
 %\anonymoustrue
 \anonymousfalse
 
-\usepackage{amsmath}
+\usepackage{amsmath,amssymb,amsfonts}
 \usepackage{graphicx}
 \usepackage{xcolor}
 \usepackage{xspace}
@@ -397,6 +397,7 @@ Thus, it falls naturally in the process of writing a \emph{put} program.
 \noindent\TODO{More text motivating writing alignment in a put program.
 Introduction for the next subsections.}
 
+%%% Positional Update for Lists
 \subsection{Positional Update for Lists}
 
 An implementation of positional mapping on lists is presented in
@@ -444,17 +445,27 @@ added or deleted elements that are dealt with at the end of the new source.
 However, it is useful to map elements when the source is modified to correspond
 to the view in the alignment process.
 
+%%% Containers as Shape and Data
 \subsection{Containers as Shape and Data}
 
 \citet{Pacheco2012} rely on types with explicit notion of shape and data, a
 property provided by polymorphic data types in functional programming.
-
-Employing this concept, one can abstract from the shapes of both source and
+Moreover, they applied a notation from \emph{shapely types}~\cite{jay1995} in
+order to have tools to work with these data types.
+Employing these concepts, one can abstract from the shapes of both source and
 view, and just take the data into account for the alignment process.
 
-\TODO{Improve description. Information about $\shape$, $\data$, $\recover$, and
-$\locs$ (used in getId).}
+Thus, a polymorphic type \(T~a\) can be characterized by three functions:
+\(\shape : T~a \rightarrow T~()\) to extract the shape;
+\(\data : T~a \rightarrow [a]\) to extract the data;
+and, \(\recover : T~() \times [a] \rightarrow T~a\) to rebuild the type value
+from its shape and data.
 
+On top of these functions, it is possible to define new ones, e.g., \(\locs :
+T~a \rightarrow [\mathbb{N}]\) to get a list with all the locations of data
+elements.
+
+%%% Delta-Alignment for Lists
 \subsection{Delta-Alignment for Lists}
 
 Thus, deltas are inserted into the BiGUL alignment program in order to obtain a
