@@ -5,6 +5,8 @@
 %\anonymoustrue
 \anonymousfalse
 
+\input{lhs2tex}
+
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{graphicx}
 \usepackage{xcolor}
@@ -127,24 +129,72 @@ Research was done in order to derive a suitable \emph{put} for a given
 \emph{get} in order to help the development of BXs. This has some limitations,
 since the \emph{put} direction is usually the problematic one.
 
+%
+% PUT-BASED BX
+%
+
+\TODO{Start introducing BiGUL with a very simple BX program.}
+%
+\input{basicput}
+
+\TODO{Simplify following code, specifying its types. Reuse this program in the
+alignment example, thus removing the need for parameters in aligment functions.}
+
+%
+% POSITIONAL ALIGNMENT
+%
+
 An example of a get program is the projection of a map structure, selecting its
 key and part of its value:
 %
 \[ \mathcal M (K, (V_1, V_2)) \longrightarrow \mathcal M (K, V_1) \]
 %
 This has several possible \emph{put} functions that would satisfy the
-\emph{well-behavedness} properties. One can annotate the transformation in order
+\emph{well-behavedness} properties. This situation can be easily solved by
+writing the \emph{put} function and derive the one. Using BiGUL, a language with
+such purpose, one can write a simple example that performs the same actions as
+the default \emph{put} usually derived from the \emph{get} function, i.e.,
+update elements positionally, adding or deleting elements at the end of the
+list:
+%
+\input{positional}
+%
+This program is generic for any source of type \((K, (V_1, V_2))\) and view \(K,
+V_1\). Thus it must be parametrized with a create function to create the default
+values and a BiGUL udpate program for the elements in the container.
+
+\TODO{Move the ``The Alignment Problem'' section to here in order to introduce
+the concept?}
+
+%
+% KEY-BASED ALIGNMENT
+%
+
+One way to improve a get-based transformation is to annotate it in order
 to select a way to perform the \emph{put} operation:
 %
 \[ \mathcal M (K, (V_1, V_2)) \xrightarrow{\text{\small best match on \(K\)}} \mathcal M (K, V_1) \]
 %
 This provides information on how to align the elements in the \emph{put}
-direction. But it is not enough: how to deal with new elements? One can provide
+direction, which is based on a key (\(K\)) in this example. A similar program
+can be written in the \emph{put} direction:
+%
+\input{keybased}
+
+\TODO{Say that, with BiGUL, the developer implements the alignment strategy
+wanted, and does not have to rely on it being implemented in the BX framework.}
+
+\TODO{Maybe move this to a previous point.}
+But it is not enough: how to deal with new elements? One can provide
 another annotation:
 %
 \[ \mathcal M (K, (V_1, V_2 = v_2)) \xrightarrow{\text{\small best match on \(K\)}} \mathcal M (K, V_1) \]
 %
 where \(v_2\) is a default value for type \(V_2\).
+
+%
+% PUT-BASED BX
+%
 
 Another approach is writing the \emph{put} function. This is more difficult than
 writing the \emph{get} function, but it removes the need for extra annotations.
@@ -156,6 +206,10 @@ elements. Moreover, an unique \emph{get} function can be derived from this
 \emph{put}.
 %
 \[ \mathcal M (K, (V_1, V_2)) \longleftarrow \mathcal M (K, (V_1, V_2)) \times \mathcal M (K, V_1) \]
+
+%
+% DELTA-BASED ALIGNMENT
+%
 
 % Motivation for delta-based alignment.
 This example continues to have some drawbacks. The key-based alignment might not
@@ -173,10 +227,12 @@ benefits and can be more intuitive for certain operations. Moreover, it shows
 how to use additional information, namely the delta, that isn't defined in the
 put operation, but in is given at runtime instead.}
 
+\begin{comment}
 In the next sections, an overview on bidirectional transformations and the
 alignment problem is provided. Then, putback-based bidirectional transformation
 techniques are presented, followed by an implementation of alignment using such
 technique.
+\end{comment}
 
 
 %%%
@@ -397,6 +453,7 @@ Thus, it falls naturally in the process of writing a \emph{put} program.
 \noindent\TODO{More text motivating writing alignment in a put program.
 Introduction for the next subsections.}
 
+\begin{comment}
 %%% Positional Update for Lists
 \subsection{Positional Update for Lists}
 
@@ -444,6 +501,7 @@ Positional mapping does not take into account changes in the model, except for
 added or deleted elements that are dealt with at the end of the new source.
 However, it is useful to map elements when the source is modified to correspond
 to the view in the alignment process.
+\end{comment}
 
 %%% Containers as Shape and Data
 \subsection{Containers as Shape and Data}
