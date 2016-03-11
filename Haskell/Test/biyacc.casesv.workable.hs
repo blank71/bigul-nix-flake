@@ -1,6 +1,7 @@
 import GHC.Generics
-import Generics.BiGUL hiding (Expr, Pat)
+--import Generics.BiGUL hiding (Expr, Pat)
 import Generics.BiGUL.AST hiding (Expr, Pat)
+import Generics.BiGUL.Interpreter hiding (Expr, Pat)
 import Generics.BiGUL.TH
 import Generics.BiGUL.Error
 import Language.Haskell.TH
@@ -11,6 +12,7 @@ import Test.QuickCheck.Monadic
 import Control.Monad
 
 
+tc1 = (ETerm (TFactor (FExpr (ETerm (TFactor (FExpr (EAdd (ETerm (TFactor (FNum 3))) (TFactor (FNum 3)) )  ))))))
 
 testPut :: BiGUL s v -> s -> v -> s
 testPut u s v = either (error . show) id (put u s v)
@@ -18,23 +20,26 @@ testPut u s v = either (error . show) id (put u s v)
 testGet :: BiGUL s v -> s -> v
 testGet u s = either (error . show) id (get u s)
 
--- t1 = testGet ruleExprArith (EAdd (ETerm . TFactor . FNum $ 4 ) (TFactor (FNum 3)))
--- t2 = testPut ruleExprArith (EAdd (ETerm . TFactor . FNum $ 4 ) (TFactor (FNum 3)))
-
 ruleExprArith :: BiGUL Expr Arith
 ruleExprArith =
-  Case [ $(normalSV [p| EAdd _ _ |] [p| Add _ _ |] )
-           $(update [p| Add l r |] [p| EAdd l r |]
-                            [d| l = ruleExprArith; r = ruleTermArith |])
-       , $(normalSV [p| ESub _ _ |] [p| Sub _ _ |] )
-           $(update [p| Sub l r |] [p| ESub l r |]
-                            [d| l = ruleExprArith; r = ruleTermArith |])
-       , $(normalSV [p| ETerm _ |] [p|  _ |] )
-           $(update [p| a  |] [p| ETerm a |]
-                            [d| a = ruleTermArith |])
-       , $(adaptiveV [p| Add _ _|]) (\_ _ -> EAdd ENull TNull)
-       , $(adaptiveV [p| Sub _ _|]) (\_ _ -> ESub ENull TNull)
-       , $(adaptiveV [p| _ |])      (\_ _ -> ETerm TNull)
+  Case  [ $(normalSV [p| EAdd _ _ |] [p| Add _ _ |] )
+            $(update [p| Add l r |] [p| EAdd l r |]
+                             [d| l = ruleExprArith; r = ruleTermArith |])
+        , $(adaptiveSV [p| ETerm (TFactor (FExpr (ETerm (TFactor (FExpr (EAdd _ _)))))) |]
+                       [p| Add _ _ |] )
+                       (\s _ -> case s of ETerm (TFactor (FExpr a)) ->  a)
+        , $(normalSV [p| ESub _ _ |] [p| Sub _ _ |] )
+            $(update [p| Sub l r |] [p| ESub l r |]
+                             [d| l = ruleExprArith; r = ruleTermArith |])
+        , $(adaptiveSV [p| ETerm (TFactor (FExpr (ETerm (TFactor (FExpr (ESub _ _)))))) |]
+                       [p| Sub _ _ |] )
+                       (\s _ -> case s of ETerm (TFactor (FExpr a)) ->  a)
+        , $(normalSV [p| ETerm _ |] [p|  _ |] )
+            $(update [p| a  |] [p| ETerm a |]
+                             [d| a = ruleTermArith |])
+        , $(adaptiveV [p| Add _ _|]) (\_ _ -> EAdd ENull TNull)
+        , $(adaptiveV [p| Sub _ _|]) (\_ _ -> ESub ENull TNull)
+        , $(adaptiveV [p| _ |])      (\_ _ -> ETerm TNull)
        ]
 
 --
