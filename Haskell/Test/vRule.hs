@@ -81,11 +81,13 @@ Rearrangement of the structure of source/view
 RearrS 
 $(rearrS [| structural transformation :: str1 -> str2 |]) ::
   BiGUL str2 v -> BiGUL str1 v
-* the structural transformation can lose information but should not be duplciated
+* the structural transformation can lose information
+  but should not be duplciated
 
 $(rearrV [| structural transformation :: str1 -> str2 |]) ::
   BiGUL s str2 -> BiGUL s str1 
-* the structural transformation can be duplicated but can lose information
+* the structural transformation can be duplicated
+  but can lose information
 
 Note for rearrV, for the information should not be lost in the
 structural transformation (but allow duplication).
@@ -109,7 +111,8 @@ jin2 i = if i == 0 then bx3
                  $(rearrV [| \v -> ((), v) |]) $
                     Skip `Prod` jin2 (i-1) 
 
--- note that bx3' could be written as follows without using weaker application $.
+-- Note that bx3' could be written as follows without using
+-- weaker application $.
 
 bx3'' :: BiGUL [s] s
 bx3'' = $(rearrS [| \(x:xs) -> (x,xs) |]) 
@@ -140,7 +143,8 @@ Case [ $(normal [| cond1 :: s -> v -> Bool |]) $ bx1,
 bx4 :: BiGUL [s] s
 bx4 = Case [
         $(normal [| \s v -> not (isEmpty s) |]) $ bx3,
-        $(normal [| \s v -> isEmpty s |]) $ Fail "It is wrong to putback on an empty source"
+        $(normal [| \s v -> isEmpty s |]) $
+           Fail "It is wrong to putback on an empty source"
       ]
 
 isEmpty [] = True
@@ -194,6 +198,7 @@ jin3 :: Eq s1 => BiGUL [(s1,s2)] s1
 jin3 = iter upFst
   where upFst = $(rearrS [| \(x,y) -> x |]) Replace
 
+-- Application: View-based adaptation rule:
 -- put (jin4 2) [1,2,3,4,5] 100 ==> [1,2,100,99,5]
 --  [x0,x1,x2,x3,x4]: v==100 |- x0 ==1 => x3 := 99
 --                    v==0   |- x0==1 && x1==2 => x3 := 88
@@ -210,6 +215,7 @@ jin4 i = Case [
              ]
   where set s i v = take i s ++ [v] ++ drop (i+1) s
 
+-- "safe" embedding for introducing library functons from outside
 emb :: Eq v => (s -> v) -> (s -> v -> s) -> BiGUL s v
 emb g p = Case
   [ $(normal [| \x y -> g x == y |])$
@@ -219,6 +225,7 @@ emb g p = Case
       p
   ]
 
+-- demonstration of encoding iso instead of just Replace
 -- put jin5 3 9 = 8
 -- get jin5 8 = 9     get: increase by 1, put: decrease by 1
 jin5 :: BiGUL Int Int
@@ -232,3 +239,23 @@ jin5 = emb inc1 dec1
 
 jin6 :: BiGUL (Int,Int) (Int,Int)
 jin6 = jin5 `Prod` Replace
+
+-- make "Case" be more intuitive
+infixr 0 ==>
+(==>) :: (a->b) -> a -> b
+f ==> x = f $ x
+
+-- now bx6 can be written as follows.
+
+bx6'' :: Eq s => BiGUL [s] s
+bx6'' = Case [
+        $(normal [| \s v -> length s == 1 |]) 
+          ==> $(rearrS [| \[x] -> x |]) Replace,
+        $(normal [| \s v -> length s > 1 |])
+          ==> $(rearrS [| \(x:xs) -> (x,xs) |]) $
+                 $(rearrV [| \v -> (v, v) |]) $
+                   Replace `Prod` bx6'',
+        $(adaptive [| \s v -> length s == 0 |]) 
+          ==> \s v -> [undefined]
+      ]
+
