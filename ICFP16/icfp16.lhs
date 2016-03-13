@@ -5,7 +5,18 @@
 %\anonymoustrue
 \anonymousfalse
 
-\input{lhs2tex}
+%include polycode.fmt
+%
+%format `Prod`="\times"
+%format V1="V_1"
+%format V2="V_2"
+%format Prelude.map=map
+%format Prelude.filter=filter
+%format Set.map=map
+%format Set.findMin=findMin
+%format Set.fromList=
+%format Set.elems=elems
+%format mapLExample=mapL
 
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{graphicx}
@@ -24,7 +35,7 @@
 	keywordstyle=\color[rgb]{0,0,1},             % keywords
 	commentstyle=\color[rgb]{0.133,0.545,0.133}, % comments
 	stringstyle=\color[rgb]{0.627,0.126,0.941},  % strings
-	escapechar=@,
+	% escapechar=@,
 }
 \usepackage{array}
 \usepackage{tikz}
@@ -78,7 +89,7 @@
 \else
 \authorinfo{Jorge Mendes}
            {HASLab, INESC TEC \& Universidade do Minho, Portugal}
-           {jorgemendes@di.uminho.pt}
+           {jorgemendes@@di.uminho.pt}
 %\authorinfo{Name2\and Name3}
 %           {Affiliation2/3}
 %           {Email2/3}
@@ -100,6 +111,24 @@ term1, term2
 
 \keywords
 keyword1, keyword2
+
+%%%
+%%% Haskell Preamble
+%%%
+\begin{comment}
+\begin{code}
+{-# LANGUAGE TemplateHaskell #-}
+module ICFP16 where
+
+import Data.Relation (rngOf)
+import Data.Set as Set
+import Data.Shape
+import Generics.BiGUL.AST
+import Generics.BiGUL.Interpreter.Unsafe (get, put)
+import Generics.BiGUL.TH
+import Prelude hiding (traverse)
+\end{code}
+\end{comment}
 
 
 %%%
@@ -135,7 +164,15 @@ since the \emph{put} direction is usually the problematic one.
 
 \TODO{Start introducing BiGUL with a very simple BX program.}
 %
-\input{basicput}
+\begin{code}
+type Source = (Int, (Char, Int))
+type View = (Int, Char)
+\end{code}
+\begin{code}
+myBX :: BiGUL Source View
+myBX = Replace `Prod` $(rearrV   [| \ c -> (c, ()) |])
+                                 (Replace `Prod` Skip)
+\end{code}
 
 \TODO{Simplify following code, specifying its types. Reuse this program in the
 alignment example, thus removing the need for parameters in aligment functions.}
@@ -157,7 +194,39 @@ the default \emph{put} usually derived from the \emph{get} function, i.e.,
 update elements positionally, adding or deleting elements at the end of the
 list:
 %
-\input{positional}
+\begin{code}
+mapLExample  ::  (View -> Source)
+             ->  BiGUL Source View
+             ->  BiGUL [Source] [View]
+mapLExample c u = Case
+  [ $(normalSV [p| [] |] [p| [] |])$
+      $(rearrV [| \ [] -> () |]) Skip
+  , $(adaptiveV [p| [] |])$ \ _ _ -> []
+  , $(normalSV [p| (_ : _) |] [p| (_ : _) |])$
+      $(rearrV [| \ (v:vs) -> (v, vs) |])$
+        $(rearrS [| \(s:ss) -> (s, ss) |])$
+          u `Prod` mapLExample c u
+  , $(adaptiveV [p| (_ : _) |])$
+    \ _ (v : _) -> [c v]
+  ]
+\end{code}
+%
+\begin{comment}
+\begin{code}
+mapL :: (v -> s)
+     -> BiGUL s v
+     -> BiGUL [s] [v]
+mapL c u = Case
+  [ $(normalSV [p| [] |] [p| [] |])$ $(rearrV [| \ [] -> () |]) Skip
+  , $(adaptiveV [p| [] |])$ \ _ _ -> []
+  , $(normalSV [p| (_ : _) |] [p| (_ : _) |])$
+      $(rearrV [| \ (v:vs) -> (v, vs) |])$
+        $(rearrS [| \(s:ss) -> (s, ss) |])$
+          u `Prod` mapL c u
+  , $(adaptiveV [p| (_ : _) |])$ \ _ (v : _) -> [c v]
+  ]
+\end{code}
+\end{comment}
 %
 This program is generic for any source of type \((K, (V_1, V_2))\) and view \(K,
 V_1\). Thus it must be parametrized with a create function to create the default
@@ -179,7 +248,24 @@ This provides information on how to align the elements in the \emph{put}
 direction, which is based on a key (\(K\)) in this example. A similar program
 can be written in the \emph{put} direction:
 %
-\input{keybased}
+\begin{code}
+keyMatch  ::  BiGUL [Source] [View]
+keyMatch  = Case
+  [ $(normal [| isAligned |]) (mapL create myBX)
+  , $(adaptive [| \ _ _ -> True |]) kalign ]
+  where  isAligned s v = length s == length v
+           && and (zipWith kmatch s v)
+         kmatch se ve = fst se == fst ve
+         kalign s v = Prelude.map (getSourceElement s) v
+         getSourceElement s ve =
+           case Prelude.filter ((== fst ve) . fst) s of
+             []        -> create ve
+             (se : _ ) -> se
+         create (k, v1) = (k, (v1, 0))
+\end{code}
+%
+This \emph{put} program makes use of BiGUL \emph{case} constructor, where an
+adaption of the source is made when the source is not aligned with the view.
 
 \TODO{Say that, with BiGUL, the developer implements the alignment strategy
 wanted, and does not have to rely on it being implemented in the BX framework.}
@@ -506,7 +592,8 @@ to the view in the alignment process.
 %%% Containers as Shape and Data
 \subsection{Containers as Shape and Data}
 
-\citet{Pacheco2012} rely on types with explicit notion of shape and data, a
+\citet{Pacheco2012} rely on types with explicit notion of shape and data in
+their delta-alignment over inductive types, a
 property provided by polymorphic data types in functional programming.
 Moreover, they applied a notation from \emph{shapely types}~\cite{jay1995} in
 order to have tools to work with these data types.
@@ -514,35 +601,74 @@ Employing these concepts, one can abstract from the shapes of both source and
 view, and just take the data into account for the alignment process.
 
 Thus, a polymorphic type \(T~a\) can be characterized by three functions:
-\(\shape : T~a \rightarrow T~()\) to extract the shape;
-\(\data : T~a \rightarrow [a]\) to extract the data;
-and, \(\recover : T~() \times [a] \rightarrow T~a\) to rebuild the type value
+|shape :: T a -> T ()| to extract the shape;
+|data_ :: T a -> [a]| to extract the data;
+and, |recover :: (T (), [a]) -> T a| to rebuild the type value
 from its shape and data.
 
-On top of these functions, it is possible to define new ones, e.g., \(\locs :
-T~a \rightarrow [\mathbb{N}]\) to get a list with all the locations of data
-elements.
+\begin{comment}
+\begin{code}
+type Loc = Int
+\end{code}
+\end{comment}
+%
+On top of these functions, it is possible to define new ones, e.g., |locs ::
+T a -> Set Loc| to get a all the locations of the data elements within the
+container.
 
-%%% Delta-Alignment for Lists
-\subsection{Delta-Alignment for Lists}
+%%% Delta Alignment
+\subsection{Delta Alignment}
 
-Thus, deltas are inserted into the BiGUL alignment program in order to obtain a
-precise alignment (see Listing~\ref{lst:align0}).
+Before implemeting delta-based alignment, let us define what a delta is. Using
+the containers as specified in the previous section, each element is indexed by
+a location in the container. Moreover, it is easier to define a relation from
+elements in an artifact to an element in another element than describing which
+elements were added and which ones were deleted. Thus, we define a delta a set
+of pair of locations between two artifacts:
+%
+\begin{code}
+type Delta = Set (Loc, Loc)
+\end{code}
 
-\begin{lstlisting}[caption={Delta-based alignment function for lists.},label={lst:align0}]
-align' :: BiGUL a b
-       -> (b -> a)
-       -> BiGUL ([a], Delta [b] [b]) [b]
+Furthermore, we need a method to determine from a delta if some artifact has
+suffered any positional change (movement within the container, addition, or
+removal), which can be accomplished by checking if all elements are in the delta
+and that each location in the delta is related to the same location:
+%
+\begin{spec}
+delta == getId artifact
+\end{spec}
+%
+The |getId| function creates an identity delta based on the locations of the
+artifact:
+%
+\begin{code}
+getId :: [a] -> Delta
+getId = Set.map (\ l -> (l, l)) . locs
+\end{code}
+
+%%% Delta Alignment for Lists
+\subsection{Delta Alignment for Lists}
+
+In order to implement such kind of alignment in BiGUL, the delta can be inserted
+into the source, since we are able to manipulate it using adaptation in
+\emph{case} branches.
+%
+\begin{code}
+align'  ::  BiGUL a b -> (b -> a)
+        ->  BiGUL ([a], Delta) [b]
 align' b c = Case
   [ $(normal [| \(_, d) v -> d == getId v |])$
-      $(rearrS [| \(s, _) -> s |])$ mapL (const undefined) b
+      $(rearrS [| \(s, _) -> s |])$ mapL c b
   , $(adaptiveS [| const True |])$
-      \(s,d) v -> let s' = putMapD c s v d
-                  in (s', getId v)
-  ]
-\end{lstlisting}
+      \(s,d) v ->  let s' = putMapD c s v d
+                   in (s', getId v) ]
+\end{code}
+%
+Note that the create function |c| given to |mapL| is not required since
+|putMapD| creates the missing elements.
 
-The alignment process is done in two steps:
+Thus, the delta-based alignment process is done in two steps:
 %
 \begin{enumerate}
   %\item Creation of new elements and removal of deleted elements.
@@ -553,23 +679,54 @@ The alignment process is done in two steps:
 An alternative case statement is used to check which of these two steps are to
 be performed. This is done based on the changes performed on the view: if no
 changes were performed, the delta maps each element's position to the same
-position (the identity delta, Listing~\ref{lst:getid}); otherwise, a
+position, i.e., the identity delta.
+Otherwise, a
 transformation is performed on the source to rearrange the elements based on the
 delta, create missing view elements, and
-delete no longer existent view elements.
+delete no longer existent view elements:
+%
+\begin{code}
+putMapD :: (b -> a) -> [a] -> [b] -> Delta -> [a]
+putMapD c s v d = fst (traverse aux (v,0))
+  where  aux (vi, i)  | Set.size js > 0 = (si, succ i)
+                      | otherwise = (c vi, succ i)
+           where  js = rngOf i d
+                  si = data_(s) !! (Set.findMin js)
+\end{code}
 
-\begin{lstlisting}[caption={Get identity delta.},label={lst:getid}]
-getId :: [a] -> Delta [a] [a]
-getId = map (id /\ id) . Set.elems . locs
-\end{lstlisting}
+However, having the delta paired with the source might be inconvenient. To solve
+such situation, a wrapper is made that takes care of dealing with the delta:
+%
+\begin{code}
+align  :: Eq b
+       => BiGUL a b -> (b -> a) -> Delta
+       -> BiGUL [a] [b]
+align b c d = emb g p
+  where  g s    = get (align' b c) (s, getId s)
+         p s v  = fst $ put (align' b c) (s, d) v
+\end{code}
+%
+This wrapper implements directly the \emph{get} and \emph{put} functions, and
+embeds them into a BiGUL program.
 
+The embedding of |get| and |put| functions can be defined as a BiGUL program:
+%
+\begin{code}
+emb :: Eq v => (s -> v) -> (s -> v -> s) -> BiGUL s v
+emb g p = Case
+  [ $(normal [| \x y -> g x == y |])$
+      $(rearrV [| \x -> ((), x) |])$
+        Dep Skip (\x () -> g x)
+  , $(adaptive [| \_ _ -> True |]) p ]
+\end{code}
+%
+In order for an embedding to be well-behaved, running the |put| function should
+produce a source that when running |get| should return the view given to the
+former, as stated by the \textsc{GetPut} law and enforced by the case structure.
+Furthermore, the view should be completely defined by the source.
+
+\begin{comment}
 \TODO{Listing~\ref{lst:putmapd} does the put direction:}
-\begin{flalign*}
-  \bxget s \hspace{2ex} &= S \bxget_l s &\\
-  \bxput s\, v          &= \recover \left(\shape v, \dput \cup \dcreate\right) \\
-  \where \hspace{-2ex}&\hspace{3ex}\dput = \bxput_l \circ \langle \data v, \data s \circ d\rangle\\
-         \hspace{-2ex}&\hspace{3ex}\dcreate = (\bxcreate_l \circ \data v) \circ (id - \delta\dput)
-\end{flalign*}
 
 \begin{lstlisting}[caption={Mapping of elements between to containers of the same type using a delta.},label={lst:putmapd}]
 putMapD
@@ -595,44 +752,7 @@ align b c d = emb g p
   where g s   = get (align' b c) (s, getId s)
         p s v = fst (put (align' b c) (s, d) v)
 \end{lstlisting}
-
-It is possible to make minor changes to the \lstinline!align! function to
-implement other kinds of alignments, e.g., key-based
-(Listing~\ref{lst:keyalign}).
-
-\begin{lstlisting}[caption={Key-based alignment function for lists.},label={lst:keyalign}]
-keyAlign
-  :: (Shapely s, s ~ [], Eq b, Eq k)
-  => BiGUL a b         -- Inner BiGUL program
-  -> (b -> a)          -- Create function
-  -> (a -> k)          -- Source key
-  -> (b -> k)          -- View key
-  -> BiGUL (s a) (s b)
-keyAlign b c sk vk = emb g p
-  where g s   = get (pAlign' b c) (s, getId s)
-        p s v = fst $ put (pAlign' b c)
-                          (s, keyDelta sk vk s v) v
-\end{lstlisting}
-
-The \lstinline!keyAlign! function, instead of receiving the delta, receives two
-functions to get the key component of the view and the source, respectively.
-Then, using the original source and the modified view, another function is used
-to infer a delta --- \lstinline!keyDelta!, Listing~\ref{lst:keydelta}.
-
-\begin{lstlisting}[caption={Calculation of deltas using key-based alignment.},label={lst:keydelta}]
-keyDelta
-  :: (Shapely s, Eq k)
-  => (a -> k)          -- Source key
-  -> (b -> k)          -- View key
-  -> s a               -- Source
-  -> s b               -- View
-  -> Delta (s a) (s b)
-keyDelta sk vk ss vs =
-  [ (sp, vp) | (s, sp) <- sps, (v, vp) <- vps
-                             , sk s == vk v   ]
-  where sps = zip (data_ ss) [0..]
-        vps = zip (data_ vs) [0..]
-\end{lstlisting}
+\end{comment}
 
 %%% Generic Implementation for Container/Shapely Types
 \subsection{Generic Implementation for Container/Shapely Types}
@@ -646,6 +766,40 @@ keyDelta sk vk ss vs =
     \end{itemize}
 \end{itemize}
 }
+
+%%% Other Matching Algorithms Built Upon Deltas
+\subsection{Other Matching Algorithms Built Upon Deltas}
+
+It is possible to make minor changes to the |align| function to
+implement other kinds of alignments, e.g., key-based (for the special case of
+lists):
+
+%\begin{lstlisting}[caption={Key-based alignment function for lists.},label={lst:keyalign}]
+\begin{code}
+keyAlign :: (Shapely s, s ~ [], Eq b, Eq k)
+  => BiGUL a b -> (b -> a) -> (a -> k) -> (b -> k)
+  -> BiGUL (s a) (s b)
+keyAlign b c sk vk = emb g p
+  where  g s    = get (align' b c) (s, getId s)
+         p s v  = fst $ put  (align' b c)
+                             (s, keyDelta sk vk s v) v
+\end{code}
+
+The |keyAlign| function, instead of receiving the delta, receives two
+functions to get the key component of the view and the source, respectively.
+Then, using the original source and the modified view, another function is used
+to infer a delta --- |keyDelta|.
+
+%\begin{lstlisting}[caption={Calculation of deltas using key-based alignment.},label={lst:keydelta}]
+\begin{code}
+keyDelta :: (Shapely s, Eq k)
+  => (a -> k) -> (b -> k) -> s a -> s b -> Delta
+keyDelta sk vk ss vs = Set.fromList [ (sp, vp)  |  (s, sp) <- sps
+                                                ,  (v, vp) <- vps
+                                                ,  sk s == vk v   ]
+  where  sps  = zip (data_ ss) (Set.elems $ locs ss)
+         vps  = zip (data_ vs) (Set.elems $ locs vs)
+\end{code}
 
 
 %%%
