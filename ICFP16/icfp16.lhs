@@ -19,6 +19,7 @@
 %format Set.findMin=findMin
 %format Set.fromList=
 %format Set.elems=elems
+%format Set.empty=" \emptyset "
 
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{graphicx}
@@ -128,6 +129,7 @@ import Data.Shape
 import Generics.BiGUL.AST
 import Generics.BiGUL.Interpreter.Unsafe (get, put)
 import Generics.BiGUL.TH
+import GHC.Generics
 import Prelude hiding (traverse)
 \end{code}
 \end{comment}
@@ -219,23 +221,31 @@ The put-based method, on the other hand, can solve the above problem,
 because for each |put|, if there exists a valid |get| then such |get|
 is unique. In other words, |put| can describe all intentions of bidirectional
 transformation since |get| is fully determined by |put|.
-However, the put-based method is less appreciated and not yet widely used.
+However, the put-based method is less appreciated.
 This is not without reason: as argued in \cite{Foster:09}, 
 it is far from being straightforward to
 construct a framework that can directly support putback-based
 bidirectional programming.
 
 In this pearl paper, we show that the put-based method should deserve
-more appreciation. ... the new libraries for
+more appreciation.
+\TODO{Shoudl continue revision from here}
+... the new libraries for
 matching lenses, editing/delta lenses,
 generic lenses ... become much more easier to constructed
-under the put-based framework ...
+under the put-based framework ... In the get-based approach, we cannot
+foresee what additional information should be added to control the put
+behavior in the future, so if we want to add new information to control
+new put behavior, we will have to reconstruct all the get-library and
+prove all again ...
 
 
 %%%
 %%% Putback-Based Bidirectional Transformations
 %%%
 \section{Preparation: Putback-Based BX}
+
+\TODO{Will revise this part later}
 
 An under-appreciated fact about well-behaved lenses is that \emph{put} completely determines the behavior of the corresponding \emph{get} --- that is, given a \emph{put} function and two \emph{get} functions each of which forms a well-behaved lens when paired with the \emph{put} function, it must be the case that the two \emph{get} functions are pointwise equal. This fact was already noted by Foster in his PhD thesis~\cite{Foster2009} but had remained neglected until people dug up this idea and started exploring the possibility of specifying BXs in terms of \emph{put} \TODO{citations}.
 
@@ -314,8 +324,8 @@ myMapL = Case
       ==> \ _ _ -> []
   , $(normalSV [p| (_ : _) |] [p| (_ : _) |])
       ==> $(rearrV [| \ (v:vs) -> (v, vs) |])$
-        $(rearrS [| \(s:ss) -> (s, ss) |])$
-          u `Prod` myMapL c u
+        $(rearrS [| \ (s:ss) -> (s, ss) |])$
+          myBX `Prod` myMapL
   , $(adaptiveV [p| (_ : _) |])
       ==> \ _ ((k,v1) : _) -> [(k,(v1,0))]
   ]
@@ -339,9 +349,23 @@ The |myMapL| program can be generalized to work on lists with arbitrary values.
 For that, it must be parametrized with a \emph{create} function, to produce a
 source element from a view one, and with a BiGUL program to be run on the
 elements:
-\begin{spec}
+\begin{code}
 mapL :: (v -> s) -> BiGUL s v -> BiGUL [s] [v]
-\end{spec}
+\end{code}
+%
+\begin{comment}
+\begin{code}
+mapL c u = Case
+  [ $(normalSV [p| [] |] [p| [] |])$ $(rearrV [| \ [] -> () |]) Skip
+  , $(adaptiveV [p| [] |])$ \ _ _ -> []
+  , $(normalSV [p| (_ : _) |] [p| (_ : _) |])$
+      $(rearrV [| \ (v:vs) -> (v, vs) |])$
+        $(rearrS [| \ (s:ss) -> (s, ss) |])$
+          u `Prod` mapL c u
+  , $(adaptiveV [p| (_ : _) |])$ \ _ (v : _) -> [c v]
+  ]
+\end{code}
+\end{comment}
 
 %%%
 %%% Key-Based Alignment
@@ -382,8 +406,8 @@ present in view are discarded. The adaptation of the source can be implemented
 as:
 %
 \begin{code}
-keyMatchAdapt s v = Prelude.map (getSourceElement s) v
-  where  getSourceElement s ve =
+keyMatchAdapt s v = Prelude.map getSourceElement v
+  where  getSourceElement ve =
            case Prelude.filter ((== fst ve) . fst) s of
              []        -> create ve
              (se : _ ) -> se
@@ -396,7 +420,7 @@ the following BiGUL program:
 %
 \begin{code}
 myKeyMatch ::  BiGUL [Source] [View]
-mykeyMatch = Case
+myKeyMatch = Case
   [ $(normal [| isAligned |]) ==> myMapL
   , $(adaptive [| \ _ _ -> True |]) ==> keyMatchAdapt ]
 \end{code}
@@ -417,10 +441,284 @@ keyMatch  :: Eq k => (s -> k) -> (b -> k)
 %%%
 \section{Delta-Based List Alignment}
 
+Alignment can be made more precise using information about the operations
+applied to the view. If we extract the relation of elements in the original
+view to the elements in the modified view, then the alignment performed when
+updating the source can be completely correct.
+
+%%% Containers as Shape and Data
+\subsection{Containers as Shape and Data}
+
+\citet{Pacheco2012} rely on types with explicit notion of shape and data in
+their delta-alignment over inductive types, a
+property provided by polymorphic data types in functional programming.
+Moreover, they applied a notation from \emph{shapely types}~\cite{jay1995} in
+order to have tools to work with these data types.
+Employing these concepts, one can abstract from the shapes of both source and
+view, and just take the data into account for the alignment process.
+
+Thus, a polymorphic type \(T~a\) can be characterized by three functions:
+|shape :: T a -> T ()| to extract the shape;
+|data_ :: T a -> [a]| to extract the data;
+and, |recover :: (T (), [a]) -> T a| to rebuild the type value
+from its shape and data.
+
+\begin{comment}
+\begin{code}
+type Loc = Int
+\end{code}
+\end{comment}
+%
+On top of these functions, it is possible to define new ones, e.g., |locs ::
+T a -> Set Loc| to get a all the locations of the data elements within the
+container.
+
+%%% Delta Alignment
+\subsection{Delta Alignment}
+
+Before implemeting delta-based alignment, let us define what a delta is. Using
+the containers as specified in the previous section, each element is indexed by
+a location in the container. Moreover, it is easier to define a relation from
+elements in an artifact to an element in another element than describing which
+elements were added and which ones were deleted. Thus, we define a delta a set
+of pair of locations between two artifacts:
+%
+\begin{code}
+type Delta = Set (Loc, Loc)
+\end{code}
+
+Furthermore, we need a method to determine from a delta if some artifact has
+suffered any positional change (movement within the container, addition, or
+removal), which can be accomplished by checking if all elements are in the delta
+and that each location in the delta is related to the same location:
+%
+\begin{spec}
+delta == getId artifact
+\end{spec}
+%
+The |getId| function creates an identity delta based on the locations of the
+artifact:
+%
+\begin{code}
+getId :: [a] -> Delta
+getId = Set.map (\ l -> (l, l)) . locs
+\end{code}
+
+%%% Delta Alignment for Lists
+\subsection{Delta Alignment for Lists}
+
+In order to implement such kind of alignment in BiGUL, the delta can be inserted
+into the source, since we are able to manipulate it using adaptation in
+|Case| branches.
+
+The implementation of delta-based alignment is similar to the key-based one:
+%
+\begin{enumerate}
+  \item modification of the source aligning to the view using a delta;
+  \item a positional update.
+\end{enumerate}
+%
+However, the delta in the source introduces a bit more complexity to deal the
+additional information:
+%
+\begin{code}
+align'  ::  BiGUL s v -> (v -> s)
+        ->  BiGUL ([s], Delta) [v]
+align' b c = Case
+  [ $(normal [| \(_, d) v -> d == getId v |])
+      ==> $(rearrS [| \(s, _) -> s |]) (mapL c b)
+  , $(adaptiveS [| const True |])
+      ==> \(s,d) v ->  let s' = adaptDeltaL c s v d
+                       in (s', getId v) ]
+\end{code}
+%
+An alternative |Case| statement is used to check which of these two steps are to
+be performed. This is done based on the changes performed on the view: if no
+changes were performed, the delta maps each element's position to the same
+position, i.e., the identity delta.
+Otherwise, a
+transformation is performed on the source to rearrange the elements based on the
+delta, create missing view elements, and
+delete no longer existent view elements:
+%
+\begin{code}
+adaptDeltaL :: (v -> s) -> [s] -> [v] -> Delta -> [s]
+adaptDeltaL c s v d = Prelude.map idOrCreate (Set.elems $ locs v)
+  where  idOrCreate i =  let js = rngOf i d
+                         in  if js /= Set.empty
+                             then data_ s !! Set.findMin js
+                             else c (data_ v !! i)
+\end{code}
+%
+Note that in |align'| the create function |c| given to |mapL| is not required since
+|adaptDeltaL| creates the missing elements.
+
+However, having the delta paired with the source might be inconvenient. To solve
+such situation, a wrapper is made that takes care of dealing with the delta:
+%
+\begin{code}
+align  :: Eq v
+       => BiGUL s v -> (s -> v) -> Delta
+       -> BiGUL [s] [v]
+align b c d = emb g p
+  where  g s    = get (align' b c) (s, getId s)
+         p s v  = fst $ put (align' b c) (s, d) v
+\end{code}
+%
+This wrapper implements directly the |get| and |put| functions, and
+embeds them into a BiGUL program.
+
+The embedding of |get| and |put| functions can be defined as a BiGUL program:
+%
+\begin{code}
+emb :: Eq v => (s -> v) -> (s -> v -> s) -> BiGUL s v
+emb g p = Case
+  [ $(normal [| \x y -> g x == y |])$
+      $(rearrV [| \x -> ((), x) |])$
+        Dep Skip (\x () -> g x)
+  , $(adaptive [| \_ _ -> True |]) p ]
+\end{code}
+%
+In order for an embedding to be well-behaved, running the |put| function should
+produce a source that when running |get| should return the view given to the
+former, as stated by the \textsc{GetPut} law and enforced by the case structure.
+Furthermore, the view should be completely defined by the source.
+
+
 %%%
 %%% Delta-Based Tree Alignment
 %%%
 \section{Delta-Based Tree Alignment}
+
+Delta-based alignment can also be implemented for other containers. The
+implementation for the list case is easily generalizable in some parts, and the
+structure of the |align'| can also be kept. Thus, two parts must be modified:
+the adaptation, and the positional update.
+
+Starting with the adaptation, we can make use of the functions resulting from
+the fact that we can see a container as a shape and data. Therefore, we recover
+a container with the shape of the view, but with the data of the original source
+or with created data when new elements were added:
+%
+\begin{code}
+adaptDelta  :: Shapely s
+            => (b -> a) -> s a -> s b -> Delta -> s a
+adaptDelta c s v d = recover (newShape, newData)
+  where  newShape = shape v
+         newData = Prelude.map idOrCreate (Set.elems $ locs v)
+         idOrCreate i =  let js = rngOf i d
+                         in  if js /= Set.empty
+                             then data_ s !! Set.findMin js
+                             else c (data_ v !! i)
+\end{code}
+%
+With this function, any shapely type can be adapted, including lists and trees.
+
+The other part is the positional update. Before implementing it, let us define
+a tree data structure:
+%
+\begin{code}
+data Tree a = Nil | Node a (Tree a) (Tree a)
+\end{code}
+\begin{comment}
+\begin{code}
+instance Generic (Tree a) where
+      type Rep (Tree a) = (:+:) U1 ((:*:) (K1 R a) ((:*:) (K1 R (Tree a)) (K1 R (Tree a))))
+      from Nil = L1 U1
+      from (Node var_arJr var_arJs var_arJt)
+        = R1 ((:*:) (K1 var_arJr) ((:*:) (K1 var_arJs) (K1 var_arJt)))
+      to (L1 U1) = Nil
+      to (R1 ((:*:) (K1 var_arJr) ((:*:) (K1 var_arJs) (K1 var_arJt))))
+        = Node var_arJr var_arJs var_arJt
+$(return [])
+\end{code}
+\end{comment}
+%
+This data structure presents similarities with lists, were both have only two
+constructors. However, trees have double recursion. Taking the positional
+mapping implemented for lists, a generic one for this tree data structure can be
+defined as:
+%
+\begin{code}
+mapT  :: (v -> s) -> BiGUL s v
+      -> BiGUL (Tree s) (Tree v)
+mapT c u = Case
+  [ $(normalSV [p| Nil |] [p| Nil |])
+      ==> $(rearrV [| \ Nil -> () |]) Skip
+  , $(adaptiveV [p| Nil |])
+      ==> \ _ _ -> Nil
+  , $(normalSV [p| Node _ _ _ |] [p| Node _ _ _ |])
+      ==>  $(rearrV  [| \ (Node v vl vr)
+                       -> (v, (vl, vr)) |]) $
+             $(rearrS  [| \ (Node s sl sr)
+                         -> (s, (sl, sr)) |])$
+                  u `Prod` (mapT c u `Prod` mapT c u)
+  , $(adaptiveV [p| (Node _ _ _) |])
+      ==> \ _ (Node v _ _) -> Node (c v) Nil Nil
+  ]
+\end{code}
+
+Having the adaptation and the positional update, we can now define a delta-based
+alignment for trees in a similar way as with lists:
+%
+\begin{code}
+alignT'  ::  BiGUL a b -> (b -> a)
+         ->  BiGUL (Tree a, Delta) (Tree b)
+alignT' b c = Case
+  [ $(normal [| \(_, d) v -> d == getId v |])
+      ==> $(rearrS [| \(s, _) -> s |]) (mapT c b)
+  , $(adaptiveS [| const True |])
+      ==> \(s,d) v ->  let s' = adaptDelta c s v d
+                       in (s', getId v) ]
+\end{code}
+%
+and corresponding wrapper:
+%
+\begin{code}
+alignT  :: Eq v
+        => BiGUL s v -> (s -> v) -> Delta
+        -> BiGUL (Tree s) (Tree v)
+alignT b c d = emb g p
+  where  g s    = get (alignT' b c) (s, getId s)
+         p s v  = fst $ put (alignT' b c) (s, d) v
+\end{code}
+
+%%%
+%%% Other Matching Algorithms Built Upon Deltas
+%%%
+\section{Other Matching Algorithms Built Upon Deltas}
+
+With the implementation of delta-based alignment, we can implement other
+alignment strategies upon the deltas without much work.
+It is possible to make minor changes to the |align| function to
+implement other kinds of alignments, e.g., key-based (for the special case of
+lists):
+%
+\begin{code}
+keyAlign :: (Shapely s, s ~ [], Eq b, Eq k)
+  => BiGUL a b -> (b -> a) -> (a -> k) -> (b -> k)
+  -> BiGUL (s a) (s b)
+keyAlign b c sk vk = emb g p
+  where  g s    = get (align' b c) (s, getId s)
+         p s v  = fst $ put  (align' b c)
+                             (s, keyDelta sk vk s v) v
+\end{code}
+
+The |keyAlign| function, instead of receiving the delta, receives two
+functions to get the key component of the view and the source, respectively.
+Then, using the original source and the modified view, another function is used
+to infer a delta:
+%
+\begin{code}
+keyDelta :: (Shapely s, Eq k)
+  => (a -> k) -> (b -> k) -> s a -> s b -> Delta
+keyDelta sk vk ss vs = Set.fromList [ (sp, vp)  |  (s, sp) <- sps
+                                                ,  (v, vp) <- vps
+                                                ,  sk s == vk v   ]
+  where  sps  = zip (data_ ss) (Set.elems $ locs ss)
+         vps  = zip (data_ vs) (Set.elems $ locs vs)
+\end{code}
+
 
 %%%
 %%% Conclusion
@@ -1071,7 +1369,6 @@ keyDelta sk vk ss vs = Set.fromList [ (sp, vp)  |  (s, sp) <- sps
   where  sps  = zip (data_ ss) (Set.elems $ locs ss)
          vps  = zip (data_ vs) (Set.elems $ locs vs)
 \end{code}
-
 
 %%%
 %%% Conclusion
