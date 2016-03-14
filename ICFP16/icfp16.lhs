@@ -136,11 +136,13 @@ import Prelude hiding (traverse)
 
 \section{Key-Based Alignment}
 
-\section{Delta-Based Alignment}
+\section{Delta-Based List Alignment}
+
+\section{Delta-Based Tree Alignment}
 
 \section{Conclusion}
 
-\newpage
+\clearpage
 
 %%%
 %%% Introduction
