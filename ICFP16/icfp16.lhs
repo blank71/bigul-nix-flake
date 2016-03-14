@@ -7,16 +7,18 @@
 
 %include polycode.fmt
 %
-%format `Prod`="\times"
+%format ==> = "\Longrightarrow"
+%format `Prod`=" \times "
 %format V1="V_1"
 %format V2="V_2"
+%format v1="v_1"
+%format v2="v_2"
 %format Prelude.map=map
 %format Prelude.filter=filter
 %format Set.map=map
 %format Set.findMin=findMin
 %format Set.fromList=
 %format Set.elems=elems
-%format mapLExample=mapL
 
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{graphicx}
@@ -132,14 +134,163 @@ import Prelude hiding (traverse)
 
 \section{Introduction}
 
+%%%
+%%% Positional Alignment
+%%%
 \section{Positional Alignment}
 
+\begin{code}
+type Source = (Int, (Char, Int))
+type View = (Int, Char)
+\end{code}
+
+\begin{code}
+myBX :: BiGUL Source View
+myBX = Replace `Prod` $(rearrV   [| \ c -> (c, ()) |])
+                                 (Replace `Prod` Skip)
+\end{code}
+
+The simplest alignment strategy is the positional one. No moves are taken into
+account, and elements are added or deleted at the end of the source. Just as
+with any other programming practice, the BiGUL program must take into account
+the several possibilities of source and view values in the update process:
+%
+\begin{itemize}
+  \item both source and view are empty, and we just
+    |Skip|;
+  \item all elements of the view were processed, so we adapt the source removing
+    the extra elements
+    |\ _ _ -> []|;
+    \item both source and view have elements, then we update with the head of both
+    source and view, and then recurse
+    |u `Prod` myMapL c u|;
+  \item the source does not have enough elements and create new ones
+    |\ _ ((k,v1) : _) -> [(k,(v1,0))]|.
+\end{itemize}
+%
+These actions are packed into a |Case| statement which selects the correct
+action for each situation:
+%
+\begin{code}
+myMapL :: BiGUL [Source] [View]
+myMapL = Case
+  [ $(normalSV [p| [] |] [p| [] |])
+      ==> $(rearrV [| \ [] -> () |]) Skip
+  , $(adaptiveV [p| [] |])
+      ==> \ _ _ -> []
+  , $(normalSV [p| (_ : _) |] [p| (_ : _) |])
+      ==> $(rearrV [| \ (v:vs) -> (v, vs) |])$
+        $(rearrS [| \(s:ss) -> (s, ss) |])$
+          u `Prod` myMapL c u
+  , $(adaptiveV [p| (_ : _) |])
+      ==> \ _ ((k,v1) : _) -> [(k,(v1,0))]
+  ]
+\end{code}
+
+When both source and view are empty, or both have elements, a BiGUL program can
+be applied. When both are empty is the terminal case, yielding the empty list.
+When both have values, the head of the source is updated with the head of the
+view, and then recursion is performed.
+
+In the other two cases, adaptation of the source is required. The first one is
+when the view is empty, and the source is modified to be the empty list. After
+this adaption, the |Case| statement looks for a normal branch to apply, entering
+in the one where both source and view are empty. The second case is when the
+view still has elements, but the source is empty. In this case, a new source
+element is created from the source element at the head of the list. Then, the
+|Case| statement looks for a normal branch, entering in the one where both
+source and view have elements, updating the heads and recursing.
+
+The |myMapL| program can be generalized to work on lists with arbitrary values.
+For that, it must be parametrized with a \emph{create} function, to produce a
+source element from a view one, and with a BiGUL program to be run on the
+elements:
+\begin{spec}
+mapL :: (v -> s) -> BiGUL s v -> BiGUL [s] [v]
+\end{spec}
+
+%%%
+%%% Key-Based Alignment
+%%%
 \section{Key-Based Alignment}
 
+More complex alignment strategies can be implemented using BiGUL. One example is
+a key-based one, where elements of the source and the view are paired based on a
+key component from each of the elements.
+
+The idea to implement this strategy is to separate the program in two parts:
+%
+\begin{itemize}
+  \item aligment of the elements;
+  \item the actual update.
+\end{itemize}
+
+To align the elements, we must first be able to extract a key from source and
+view elements. For our running example, we use the first component of the
+source, and the same for the view. Thus, we can use the |fst| function to
+extract the key from either elements. In order to help with the implementation,
+we define a function to check if the source and the view are aligned:
+%
+\begin{code}
+isAligned s v =  length s == length v
+                 && and (zipWith kmatch s v)
+  where kmatch se ve = fst se == fst ve
+\end{code}
+%
+We consider that source and view are aligned if both have the same number of
+elements, and that the keys match element wise.
+
+In the case that both lists are not aligned, we define a function that adapts a
+source such that then they are both aligned. This is performed by traversing the
+view and fecthing the first corresponding element in the original source. If
+such element is not present, we create it. At the end, source elements not
+present in view are discarded. The adaptation of the source can be implemented
+as:
+%
+\begin{code}
+keyMatchAdapt s v = Prelude.map (getSourceElement s) v
+  where  getSourceElement s ve =
+           case Prelude.filter ((== fst ve) . fst) s of
+             []        -> create ve
+             (se : _ ) -> se
+         create (k, v1) = (k, (v1, 0))
+\end{code}
+
+When the source and the view are aligned, a simple positional update, as defined
+in the previous section, can be used. Thus, putting it all together, we obtain a
+the following BiGUL program:
+%
+\begin{code}
+myKeyMatch ::  BiGUL [Source] [View]
+mykeyMatch = Case
+  [ $(normal [| isAligned |]) ==> myMapL
+  , $(adaptive [| \ _ _ -> True |]) ==> keyMatchAdapt ]
+\end{code}
+
+As with the positional update, this program can be generalized for key-based
+alignment on lists with arbitrary contents. For that, the |keyMatch| function
+must be parametrized with function to get a key component from the source, another
+function to get the key component from the view, and the create and BiGUL update
+program as with |mapL|:
+%
+\begin{spec}
+keyMatch  :: Eq k => (s -> k) -> (b -> k)
+          -> (v -> s) -> BiGUL s v -> BiGUL [s] [v]
+\end{spec}
+
+%%%
+%%% Delta-Based List Alignment
+%%%
 \section{Delta-Based List Alignment}
 
+%%%
+%%% Delta-Based Tree Alignment
+%%%
 \section{Delta-Based Tree Alignment}
 
+%%%
+%%% Conclusion
+%%%
 \section{Conclusion}
 
 \clearpage
