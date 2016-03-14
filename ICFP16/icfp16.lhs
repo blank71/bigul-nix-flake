@@ -130,6 +130,17 @@ import Prelude hiding (traverse)
 \end{code}
 \end{comment}
 
+\section{Introduction}
+
+\section{Positional Alignment}
+
+\section{Key-Based Alignment}
+
+\section{Delta-Based Alignment}
+
+\section{Conclusion}
+
+\newpage
 
 %%%
 %%% Introduction
