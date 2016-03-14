@@ -162,7 +162,7 @@ since the \emph{put} direction is usually the problematic one.
 % PUT-BASED BX
 %
 
-\TODO{Start introducing BiGUL with a very simple BX program.}
+\TODO{Start introducing BiGUL~\cite{Ko2016} with a very simple BX program.}
 %
 \begin{code}
 type Source = (Int, (Char, Int))
@@ -455,8 +455,18 @@ differ from the traditional lenses, where more information should be provided
 (in the case of the deltas), or the complete system logic is flipped and the BX
 system works with operations instead of the usual artefacts.
 
-\TODO{What BX frameworks changed in order to allow alignment strategies. E.g.,
-matching lenses and the resources/complements/chunks.}
+\mydraft{In the concrete example of matching lenses~\cite{Barbosa2010}, the
+original definition of lenses is extended with another function |res :: S -> C|
+(``residue''), that maps a source to complement, which consists in information
+not present in the view and that is necessary for the update process. Moreover,
+this complement is formed by two components: a rigid complement that stores the
+chunks; and a resource that maps chunk locations to chunk contents. On top of
+this machinery, new laws are added (\textsc{GetChunks}, \textsc{ResChunks},
+\textsc{ChunkPut}, etc.).}
+
+\TODO{From State- to Delta-Based Bidirectional Model Transformations}
+
+\TODO{Delta lenses over inductive types.}
 
 \begin{comment}
 
@@ -807,7 +817,24 @@ keyDelta sk vk ss vs = Set.fromList [ (sp, vp)  |  (s, sp) <- sps
 %%%
 \section{Conclusion}
 
-\TODO
+\TODO{This section needs some work.}
+
+When developing bidirectional transformations, changing the side from which the
+problem is tackled might provide additional power and flexibility. One of the
+cases is with the alignment of elements in containers. Alignment is inherent to
+the \emph{put} direction, so that one explicitely deals with it when using this
+approach.
+
+Other BX frameworks deal with alignment in very specific ways. One example is
+the matching lenses framework~\cite{Barbosa2010}, where new concepts are
+introduced in order to provide flexibility and power to BXs, but then users are
+dependent on the implementation of the alignment strategies by the same
+framework. Another example is the delta lenses over inductive
+types~\cite{Pacheco2012}, where lenses are also extended in order to cope with
+deltas. In both of these examples, the lens framework was extended so that new
+concepts could be reasoned about. In this paper, we have shown that, starting
+with a core language and without modifying it, it is possible to reason about
+new concepts that fall naturely in a different way of thinking.
 
 %\appendix
 %\section{Appendix Title}
