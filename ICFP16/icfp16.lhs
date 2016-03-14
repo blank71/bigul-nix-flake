@@ -136,15 +136,16 @@ import Prelude hiding (traverse)
 
 \section{Introduction}
 
-Bidirectional transformations (BXs for short) \cite{Foster2007,GRACE:09,HSST11},
+Bidirectional transformations are hot! They are 
 originated from the {\em view updating\/} mechanism in the
 database community~\cite{Bancilhon:81,Dayal:82,GoPZ88},
 have been recently attracting a lot of attention
 from researchers in the communities of programming languages and 
-software engineering since the pioneering work of Foster et al. on 
+software engineering \cite{GRACE:09,HSST11},
+since the pioneering work of Foster et al. on 
 a combinatorial language for bidirectional tree transformations \cite{Foster2007}.
 
-A bidirectional transformation consists of a pair of functions
+A bidirectional transformation (BX for short) consists of a pair of functions
 < get :: Source -> View
 < put :: Source -> View -> View
 where 
