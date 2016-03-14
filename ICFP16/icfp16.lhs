@@ -134,6 +134,140 @@ import Prelude hiding (traverse)
 
 \section{Introduction}
 
+Bidirectional transformations (BXs for short) \cite{Foster2007,GRACE:09,HSST11},
+originated from the {\em view updating\/} mechanism in the
+database community~\cite{Bancilhon:81,Dayal:82,GoPZ88},
+have been recently attracting a lot of attention
+from researchers in the communities of programming languages and 
+software engineering since the pioneering work of Foster et al. on 
+a combinatorial language for bidirectional tree transformations \cite{Foster2007}.
+
+A bidirectional transformation consists of a pair of functions
+< get :: Source -> View
+< put :: Source -> View -> View
+where 
+the \emph{get} function extracts a view from a source and the \emph{put}
+function updates the original source with information from the new view.
+As a simple example, consider that we wish to synchronize between
+rectangles and their heights, we can define
+< getHeight (height, width) = height
+< putHeight (height, width) height' = (height', width)
+where a rectangle is represented by a pair of its height and width.
+
+Certainly not any pair of |get| and |put| can form bidirectional
+transformations for synchronization. |get| and |put| should
+satisfy the {\em well-behavedness} laws:
+\begin{align*}
+\tag*{\textsc{GetPut}}
+\label{GetPut}
+|put s (get s)  = s|\\
+\tag*{\textsc{PutGet}}
+\label{PutGet}
+|get (put s v)  = v|
+\end{align*}
+%
+The \ref{GetPut} law requires that no changing on the view shall be reflected as
+ no changing on the source, while the \ref{PutGet} law requires all changes 
+in the view to be completely reflected to the source so that the changed
+view can be computed again by applying the forward transformation to
+the changed source.
+For instance, if we change the above |put| to
+< putHeight' (height, width) height' = (height'+1, width)
+|get| and |put'| will break the laws.
+
+A straightforward approach to developing well-behaved 
+BXs in order to solve various synchronization problems
+is to write both |get| and |put|. The approach
+has the practical problem that the programmer needs to show that the two transformations
+satisfy the well-behavedness laws,
+and a modification to
+one of the transformations requires a redefinition of the other
+transformation as well as a new well-behavedness proof.
+To ease and enable maintainable bidirectional programming,
+it is preferable to write 
+just a single program that can denote both transformations,
+which has motivated two different approaches:
+\begin{itemize}
+\item {\em Get-based Method}: allowing users to write |get|
+and derive a suitable |put| \cite{Foster07,MHNHT07,Bohannon:08,Barbosa2010,Hidaka:10,Hofmann2012,Pacheco2012};
+\item {\em Put-based Method}: allowing users to write |put|
+and derive the unique |get| if there is \cite{PaHF14,PachecoZH14,HuPF14,FischerHP15,Ko2016}.
+\end{itemize}
+
+The get-based method has got much appreciated, not only because it
+stems from the traditional updating problem (in the database community)
+where |get| is given as a query beforehand, but also because
+|get| is easy to write.
+However, a |get| function may not be injective, 
+so there may exist many possible |put| functions that can be
+combined with it to form a valid BX. For instance, for the same |getHeight|,
+each of the following is a valid |put|:
+
+< putHeight1 (height, weight) height'
+<      = (height', weight x (height' / height))
+
+< putHeight2 (height, weight) height'
+<      | height==height'  = (height, width)
+<      | otherwise        = (height', 1)
+
+In fact, it has been shown that it is impossible to automatically derive
+the most suitable valid |put| \cite{Jeremy-bx05}
+that can be paired with the |get| to form a bidirectional
+transformation.
+
+The put-based method, on the other hand, can solve the above problem,
+because for each |put|, if there exists a valid |get| then such |get|
+is unique. In other words, |put| can describe all intentions of bidirectional
+transformation since |get| is fully determined by |put|.
+However, the put-based method is less appreciated and not yet widely used.
+This is not without reason: as argued in \cite{Foster:09}, 
+it is far from being straightforward to
+construct a framework that can directly support putback-based
+bidirectional programming.
+
+In this pearl paper, we show that the put-based method should deserve
+more appreciation. ... the new libraries for
+matching lenses, editing/delta lenses,
+generic lenses ... become much more easier to constructed
+under the put-based framework ...
+
+
+%%%
+%%% Putback-Based Bidirectional Transformations
+%%%
+\section{Preparation: Putback-Based BX}
+
+An under-appreciated fact about well-behaved lenses is that \emph{put} completely determines the behavior of the corresponding \emph{get} --- that is, given a \emph{put} function and two \emph{get} functions each of which forms a well-behaved lens when paired with the \emph{put} function, it must be the case that the two \emph{get} functions are pointwise equal. This fact was already noted by Foster in his PhD thesis~\cite{Foster2009} but had remained neglected until people dug up this idea and started exploring the possibility of specifying BXs in terms of \emph{put} \TODO{citations}.
+
+Intuitively, think of a BiGUL program of type \lstinline{BiGUL s v} as describing how to manipulate a state consisting of a source component of type~\lstinline{s} and a view component of type~\lstinline{v}; the goal is to copy all information in the view to proper places in the source.
+In the simplest case, the view has type \lstinline{()} and contains no information, and we can use \lstinline{Skip :: BiGUL s ()} to leave the source unchanged;
+another simple case is when the view has the same type as the source, and we can use \lstinline{Replace :: BiGUL s s} to replace the entire source with the view.
+BiGUL programs compose --- for example, when both the source and the view are pairs, we can use
+\begin{lstlisting}
+Prod :: BiGUL s v -> BiGUL s' v' ->
+        BiGUL (s, s') (v, v')
+\end{lstlisting}
+to compose two BiGUL programs on the left and right components respectively.
+Of course, in most cases the source and view are in more complex forms, and we should somehow transform and decompose them into simpler forms before we can use \lstinline{Skip}, \lstinline{Replace}, or \lstinline{Prod}; this is usually done using two ``rearrangement'' operations on the source and view respectively:
+We can use the source rearranging operation
+\begin{lstlisting}
+$(rearrS [| f |]) :: BiGUL s' v -> BiGUL s v
+\end{lstlisting}
+where \lstinline{f}~is a ``simple'' $\lambda$-expression of type \lstinline{s -> s'} for extracting from the source of type~\lstinline{s} a (usually smaller) source of type~\lstinline{s'} before performing further updates on the extracted source, or dually the view rearranging operation
+\begin{lstlisting}
+$(rearrV [| g |]) :: BiGUL s v' -> BiGUL s v
+\end{lstlisting}
+where the ``simple'' $\lambda$-expression \lstinline{g} should have type \lstinline{v -> v'}, and is used to transform the view from type~\lstinline{v} to type~\lstinline{v'} before performing further updates.
+
+Most expressiveness of BiGUL comes from its \lstinline{Case} operation for performing case analysis:
+\begin{lstlisting}
+Case :: [(s -> b -> Bool, Branch s v)] -> BiGUL s v
+\end{lstlisting}
+\lstinline{Case} takes a list of pairs whose first component is a boolean predicate on both the source and the view, and whose second component is a ``branch''.
+A branch can be a ``normal'' branch, in which case it is a BiGUL program of type \lstinline{BiGUL s v}, or an ``adaptive'' branch, in which case it is a Haskell function of type \lstinline{s -> v -> s}.
+The semantics of \lstinline{Case} is largely as people would expect: executing the first branch whose associated predicate evaluates to true on the current state, and performing further updates when this branch is normal.
+More interestingly, when the chosen branch is adaptive, the source will be replaced by the result of evaluating the associated function on the current state and the whole \lstinline{Case} will be executed again.
+
 %%%
 %%% Positional Alignment
 %%%
@@ -664,43 +798,6 @@ this machinery, new laws are added (\textsc{GetChunks}, \textsc{ResChunks},
 }
 
 \end{comment}
-
-
-%%%
-%%% Putback-Based Bidirectional Transformations
-%%%
-\section{Putback-Based Bidirectional Transformations}
-
-An under-appreciated fact about well-behaved lenses is that \emph{put} completely determines the behavior of the corresponding \emph{get} --- that is, given a \emph{put} function and two \emph{get} functions each of which forms a well-behaved lens when paired with the \emph{put} function, it must be the case that the two \emph{get} functions are pointwise equal. This fact was already noted by Foster in his PhD thesis~\cite{Foster2009} but had remained neglected until people dug up this idea and started exploring the possibility of specifying BXs in terms of \emph{put} \TODO{citations}.
-
-Intuitively, think of a BiGUL program of type \lstinline{BiGUL s v} as describing how to manipulate a state consisting of a source component of type~\lstinline{s} and a view component of type~\lstinline{v}; the goal is to copy all information in the view to proper places in the source.
-In the simplest case, the view has type \lstinline{()} and contains no information, and we can use \lstinline{Skip :: BiGUL s ()} to leave the source unchanged;
-another simple case is when the view has the same type as the source, and we can use \lstinline{Replace :: BiGUL s s} to replace the entire source with the view.
-BiGUL programs compose --- for example, when both the source and the view are pairs, we can use
-\begin{lstlisting}
-Prod :: BiGUL s v -> BiGUL s' v' ->
-        BiGUL (s, s') (v, v')
-\end{lstlisting}
-to compose two BiGUL programs on the left and right components respectively.
-Of course, in most cases the source and view are in more complex forms, and we should somehow transform and decompose them into simpler forms before we can use \lstinline{Skip}, \lstinline{Replace}, or \lstinline{Prod}; this is usually done using two ``rearrangement'' operations on the source and view respectively:
-We can use the source rearranging operation
-\begin{lstlisting}
-$(rearrS [| f |]) :: BiGUL s' v -> BiGUL s v
-\end{lstlisting}
-where \lstinline{f}~is a ``simple'' $\lambda$-expression of type \lstinline{s -> s'} for extracting from the source of type~\lstinline{s} a (usually smaller) source of type~\lstinline{s'} before performing further updates on the extracted source, or dually the view rearranging operation
-\begin{lstlisting}
-$(rearrV [| g |]) :: BiGUL s v' -> BiGUL s v
-\end{lstlisting}
-where the ``simple'' $\lambda$-expression \lstinline{g} should have type \lstinline{v -> v'}, and is used to transform the view from type~\lstinline{v} to type~\lstinline{v'} before performing further updates.
-
-Most expressiveness of BiGUL comes from its \lstinline{Case} operation for performing case analysis:
-\begin{lstlisting}
-Case :: [(s -> b -> Bool, Branch s v)] -> BiGUL s v
-\end{lstlisting}
-\lstinline{Case} takes a list of pairs whose first component is a boolean predicate on both the source and the view, and whose second component is a ``branch''.
-A branch can be a ``normal'' branch, in which case it is a BiGUL program of type \lstinline{BiGUL s v}, or an ``adaptive'' branch, in which case it is a Haskell function of type \lstinline{s -> v -> s}.
-The semantics of \lstinline{Case} is largely as people would expect: executing the first branch whose associated predicate evaluates to true on the current state, and performing further updates when this branch is normal.
-More interestingly, when the chosen branch is adaptive, the source will be replaced by the result of evaluating the associated function on the current state and the whole \lstinline{Case} will be executed again.
 
 %%%
 %%% Alignment as a put Program
