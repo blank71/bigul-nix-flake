@@ -145,7 +145,8 @@ software engineering \cite{GRACE:09,HSST11},
 since the pioneering work of Foster et al. on 
 a combinatorial language for bidirectional tree transformations \cite{Foster2007}.
 
-A bidirectional transformation (BX for short) consists of a pair of functions
+A bidirectional transformation (BX for short) is simply
+a pair of functions
 < get :: Source -> View
 < put :: Source -> View -> View
 where 
@@ -197,26 +198,40 @@ and derive a suitable |put| \cite{Foster07,MHNHT07,Bohannon:08,Barbosa2010,Hidak
 and derive the unique |get| if there is \cite{PaHF14,PachecoZH14,HuPF14,FischerHP15,Ko2016}.
 \end{itemize}
 
-The get-based method has got much appreciated, not only because it
+The get-based method has been studied intensively for over ten years,
+whereas the put-based
+is rather new and under-appreciated.
+The get-based method is attractive, not only because it
 stems from the traditional updating problem (in the database community)
 where |get| is given as a query beforehand, but also because
 |get| is easy to write.
-However, a |get| function may not be injective, 
-so there may exist many possible |put| functions that can be
+However, the get-based method has one limitation that would
+prevent from it from being used in practice.
+First, for an non-injective |get|
+there usually exist many possible |put| functions that can be
 combined with it to form a valid BX. For instance, for the same |getHeight|,
-each of the following is a valid |put|:
-
+the following is a valid |put| too:
 < putHeight1 (height, weight) height'
 <      = (height', weight x (height' / height))
-
-< putHeight2 (height, weight) height'
-<      | height==height'  = (height, width)
-<      | otherwise        = (height', 1)
-
-In fact, it has been shown that it is impossible to automatically derive
-the most suitable valid |put| \cite{Jeremy-bx05}
+%< putHeight2 (height, weight) height'
+%<      | height==height'  = (height, width)
+%<      | otherwise        = (height', 1)
+In fact, it is impossible to automatically derive
+the most suitable valid |put| 
 that can be paired with the |get| to form a bidirectional
-transformation.
+transformation \cite{Jeremy-bx05}.
+This means that theoretically |get| does not contain
+sufficient information for a system to automatically
+derive intentional update policies of |put|,
+so in order to deal with various update policies of |put| in 
+different contexts, nontrivial extensions
+are necessary to make on the language for writing |get|.
+For instance, the original get-based bidirectional
+language |lenses| in \cite{Foster} is extended to the |matching lenses|
+to deal with alignment policies \cite{Barbosa2010},
+to the |delta lenses| to deal with operation-based update policies
+\cite{Diskin:2011,HoPW12}, and to the |generic lenses| to deal with
+any updates on inductive data structures \cite{Pacheco2012}.
 
 The put-based method, on the other hand, can solve the above problem,
 because for each |put|, if there exists a valid |get| then such |get|
@@ -230,7 +245,7 @@ bidirectional programming.
 
 In this pearl paper, we show that the put-based method should deserve
 more appreciation.
-\TODO{Shoudl continue revision from here}
+\TODO{Should continue revision from here}
 ... the new libraries for
 matching lenses, editing/delta lenses,
 generic lenses ... become much more easier to constructed
