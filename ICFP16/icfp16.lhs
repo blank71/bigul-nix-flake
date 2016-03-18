@@ -13,8 +13,13 @@
 %format V2="V_2"
 %format v1="v_1"
 %format v2="v_2"
+%format l0="l_0"
+%format r0="r_0"
+%format i0="i_0"
+%format i1="i_1"
 %format Prelude.map=map
 %format Prelude.filter=filter
+%format Prelude.fmap=fmap
 %format Set.map=map
 %format Set.findMin=findMin
 %format Set.fromList=
@@ -121,6 +126,7 @@ keyword1, keyword2
 \begin{comment}
 \begin{code}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE DeriveFunctor #-}
 module ICFP16 where
 
 import Data.Relation (rngOf)
@@ -131,6 +137,10 @@ import Generics.BiGUL.Interpreter.Unsafe (get, put)
 import Generics.BiGUL.TH
 import GHC.Generics
 import Prelude hiding (traverse)
+
+import Generics.Pointless.Combinators hiding (and)
+import Generics.Pointless.Functors hiding (Functor, (:+:), (:*:))
+import Generics.Pointless.HFunctors
 \end{code}
 \end{comment}
 
@@ -473,42 +483,17 @@ applied to the view. If we extract the relation of elements in the original
 view to the elements in the modified view, then the alignment performed when
 updating the source can be completely correct.
 
-%%% Containers as Shape and Data
-\subsection{Containers as Shape and Data}
-
-\citet{Pacheco2012} rely on types with explicit notion of shape and data in
-their delta-alignment over inductive types, a
-property provided by polymorphic data types in functional programming.
-Moreover, they applied a notation from \emph{shapely types}~\cite{jay1995} in
-order to have tools to work with these data types.
-Employing these concepts, one can abstract from the shapes of both source and
-view, and just take the data into account for the alignment process.
-
-Thus, a polymorphic type \(T~a\) can be characterized by three functions:
-|shape :: T a -> T ()| to extract the shape;
-|data_ :: T a -> [a]| to extract the data;
-and, |recover :: (T (), [a]) -> T a| to rebuild the type value
-from its shape and data.
-
-\begin{comment}
+The relation of elements in the original view with the ones in the modified view
+can be defined by a mapping from the location of the element in the original
+artifact to the location of the element in the modified artifact. The location
+can be defined as a integer index within the container
+%
 \begin{code}
 type Loc = Int
 \end{code}
-\end{comment}
 %
-On top of these functions, it is possible to define new ones, e.g., |locs ::
-T a -> Set Loc| to get a all the locations of the data elements within the
-container.
-
-%%% Delta Alignment
-\subsection{Delta Alignment}
-
-Before implemeting delta-based alignment, let us define what a delta is. Using
-the containers as specified in the previous section, each element is indexed by
-a location in the container. Moreover, it is easier to define a relation from
-elements in an artifact to an element in another element than describing which
-elements were added and which ones were deleted. Thus, we define a delta a set
-of pair of locations between two artifacts:
+and the mapping, i.e., the delta, can be defined as a set of pairs of these
+locations
 %
 \begin{code}
 type Delta = Set (Loc, Loc)
@@ -527,8 +512,8 @@ The |getId| function creates an identity delta based on the locations of the
 artifact:
 %
 \begin{code}
-getId :: [a] -> Delta
-getId = Set.map (\ l -> (l, l)) . locs
+getIdL :: [a] -> Delta
+getIdL = Set.map (\ l -> (l, l)) . locs
 \end{code}
 
 %%% Delta Alignment for Lists
@@ -549,14 +534,14 @@ However, the delta in the source introduces a bit more complexity to deal the
 additional information:
 %
 \begin{code}
-align'  ::  BiGUL s v -> (v -> s)
-        ->  BiGUL ([s], Delta) [v]
-align' b c = Case
-  [ $(normal [| \(_, d) v -> d == getId v |])
+alignL'  ::  BiGUL s v -> (v -> s)
+         ->  BiGUL ([s], Delta) [v]
+alignL' b c = Case
+  [ $(normal [| \(_, d) v -> d == getIdL v |])
       ==> $(rearrS [| \(s, _) -> s |]) (mapL c b)
   , $(adaptiveS [| const True |])
       ==> \(s,d) v ->  let s' = adaptDeltaL c s v d
-                       in (s', getId v) ]
+                       in (s', getIdL v) ]
 \end{code}
 %
 An alternative |Case| statement is used to check which of these two steps are to
@@ -577,23 +562,25 @@ adaptDeltaL c s v d = Prelude.map idOrCreate (Set.elems $ locs v)
                              else c (data_ v !! i)
 \end{code}
 %
-Note that in |align'| the create function |c| given to |mapL| is not required since
+Note that in |alignL'| the create function |c| given to |mapL| is not required since
 |adaptDeltaL| creates the missing elements.
 
 However, having the delta paired with the source might be inconvenient. To solve
 such situation, a wrapper is made that takes care of dealing with the delta:
 %
 \begin{code}
-align  :: Eq v
-       => BiGUL s v -> (s -> v) -> Delta
-       -> BiGUL [s] [v]
-align b c d = emb g p
-  where  g s    = get (align' b c) (s, getId s)
-         p s v  = fst $ put (align' b c) (s, d) v
+alignL  :: Eq v
+        => BiGUL s v -> (v -> s) -> Delta
+        -> BiGUL [s] [v]
+alignL b c d = emb g p
+  where  g s    = get (alignL' b c) (s, getIdL s)
+         p s v  = fst $ put (alignL' b c) (s, d) v
 \end{code}
 %
 This wrapper implements directly the |get| and |put| functions, and
 embeds them into a BiGUL program.
+
+\TODO{Well-behavedness proof of the get and put pair in the embedding}.
 
 The embedding of |get| and |put| functions can be defined as a BiGUL program:
 %
@@ -611,44 +598,25 @@ produce a source that when running |get| should return the view given to the
 former, as stated by the \textsc{GetPut} law and enforced by the case structure.
 Furthermore, the view should be completely defined by the source.
 
-
 %%%
 %%% Delta-Based Tree Alignment
 %%%
 \section{Delta-Based Tree Alignment}
 
-Delta-based alignment can also be implemented for other containers. The
-implementation for the list case is easily generalizable in some parts, and the
-structure of the |align'| can also be kept. Thus, two parts must be modified:
-the adaptation, and the positional update.
-
-Starting with the adaptation, we can make use of the functions resulting from
-the fact that we can see a container as a shape and data. Therefore, we recover
-a container with the shape of the view, but with the data of the original source
-or with created data when new elements were added:
-%
-\begin{code}
-adaptDelta  :: Shapely s
-            => (b -> a) -> s a -> s b -> Delta -> s a
-adaptDelta c s v d = recover (newShape, newData)
-  where  newShape = shape v
-         newData = Prelude.map idOrCreate (Set.elems $ locs v)
-         idOrCreate i =  let js = rngOf i d
-                         in  if js /= Set.empty
-                             then data_ s !! Set.findMin js
-                             else c (data_ v !! i)
-\end{code}
-%
-With this function, any shapely type can be adapted, including lists and trees.
-
-The other part is the positional update. Before implementing it, let us define
-a tree data structure:
+Another container where delta alignment can be implemented is a tree. Many kinds
+of trees exist, but we use binary tree with labels in the nodes:
 %
 \begin{code}
 data Tree a = Nil | Node a (Tree a) (Tree a)
+  deriving (Show, Functor)
 \end{code}
 \begin{comment}
 \begin{code}
+instance Eq a => Eq (Tree a) where
+  (==) Nil Nil = True
+  (==) (Node a al ar) (Node b bl br) = a == b && al == bl && ar == br
+  (==) _ _ = False
+
 instance Generic (Tree a) where
       type Rep (Tree a) = (:+:) U1 ((:*:) (K1 R a) ((:*:) (K1 R (Tree a)) (K1 R (Tree a))))
       from Nil = L1 U1
@@ -658,13 +626,73 @@ instance Generic (Tree a) where
       to (R1 ((:*:) (K1 var_arJr) ((:*:) (K1 var_arJs) (K1 var_arJt))))
         = Node var_arJr var_arJs var_arJt
 $(return [])
+
+instance Shapely Tree where
+    traverse f = (hinn >< id) . traverse f . (hout >< id)
+type instance HF Tree = HConst One :+~: HParam :*~: (HId :*~: HId)
+instance Hu Tree where
+    hout Nil = InlF $ ConsF _L
+    hout (Node x l r) = InrF $ ProdF (IdF x) (ProdF l r)
+    hinn (InlF (ConsF _)) = Nil
+    hinn (InrF (ProdF (IdF x) (ProdF l r))) = Node x l r
+instance FMonoid Tree where
+    fzero = Nil
+    fplus t Nil = t
+    fplus t (Node x l r) = Node x (fplus t l) r
+\end{code}
+\end{comment}
+
+Tree elements can also be indexed by locations, thus the |Delta| type used for
+lists can also be used for trees. A function
+%
+\begin{code}
+getIdT :: Tree a -> Delta
+\end{code}
+\begin{comment}
+\begin{code}
+getIdT = Set.map (\ l -> (l, l)) . locs
 \end{code}
 \end{comment}
 %
-This data structure presents similarities with lists, were both have only two
-constructors. However, trees have double recursion. Taking the positional
-mapping implemented for lists, a generic one for this tree data structure can be
-defined as:
+is required and can be implemented the same way as for lists.
+
+The approach to implement the delta-based alignment for trees is similar to the
+approach used in the other implementations:
+%
+\begin{enumerate}
+  \item modification of the source aligning to the view using a delta;
+  \item a positional update.
+\end{enumerate}
+
+\TODO{Introduction to |locsTree|.}
+
+\begin{code}
+locsTree :: Tree a -> Tree Loc
+locsTree = fst . aux 0
+  where  aux i0 Nil = (Nil, i0)
+         aux i0 (Node _ l0 r0) =
+           let  (l,i1  ) = aux i0 l0
+                (r,i   ) = aux (i1+1) r0
+           in (Node i1 l r, i)
+\end{code}
+
+The adaptation function for tree can be
+%
+\begin{code}
+adaptDeltaT :: (v -> s) -> Tree s -> Tree v -> Delta -> Tree s
+adaptDeltaT c s v d = Prelude.fmap idOrCreate (locsTree v)
+  where  idOrCreate i =  let js = rngOf i d
+                         in  if js /= Set.empty
+                             then data_ s !! Set.findMin js
+                             else c (data_ v !! i)
+\end{code}
+%
+where the core of the |fmap| function comes from the fact that |Tree| is a
+functor.
+
+The implementation of the positional tree update is similar to the one for
+lists, since both have only two data constructos. However, trees have double
+recursion which must be taken into account.
 %
 \begin{code}
 mapT  :: (v -> s) -> BiGUL s v
@@ -692,28 +720,140 @@ alignment for trees in a similar way as with lists:
 alignT'  ::  BiGUL a b -> (b -> a)
          ->  BiGUL (Tree a, Delta) (Tree b)
 alignT' b c = Case
-  [ $(normal [| \(_, d) v -> d == getId v |])
+  [ $(normal [| \(_, d) v -> d == getIdT v |])
       ==> $(rearrS [| \(s, _) -> s |]) (mapT c b)
   , $(adaptiveS [| const True |])
-      ==> \(s,d) v ->  let s' = adaptDelta c s v d
-                       in (s', getId v) ]
+      ==> \(s,d) v ->  let s' = adaptDeltaT c s v d
+                       in (s', getIdT v) ]
 \end{code}
 %
 and corresponding wrapper:
 %
 \begin{code}
 alignT  :: Eq v
-        => BiGUL s v -> (s -> v) -> Delta
+        => BiGUL s v -> (v -> s) -> Delta
         -> BiGUL (Tree s) (Tree v)
 alignT b c d = emb g p
-  where  g s    = get (alignT' b c) (s, getId s)
+  where  g s    = get (alignT' b c) (s, getIdT s)
          p s v  = fst $ put (alignT' b c) (s, d) v
 \end{code}
 
 %%%
-%%% Other Matching Algorithms Built Upon Deltas
+%%% Generic Delta-Based Alignment
 %%%
-\section{Other Matching Algorithms Built Upon Deltas}
+\section{Generic Delta-Based Alignment}
+
+Delta-based alignment can also be implemented for other containers. The
+implementations for the list and tree cases are generalizable to other
+containers.
+
+%%% Containers as Shape and Data
+\subsection{Containers as Shape and Data}
+
+\citet{Pacheco2012} rely on types with explicit notion of shape and data in
+their delta-alignment over inductive types, a
+property provided by polymorphic data types in functional programming.
+Moreover, they applied a notation from \emph{shapely types}~\cite{jay1995} in
+order to have tools to work with these data types.
+Employing these concepts, one can abstract from the shapes of both source and
+view, and just take the data into account for the alignment process.
+
+Thus, a polymorphic type \(T~a\) can be characterized by three functions:
+|shape :: T a -> T ()| to extract the shape;
+|data_ :: T a -> [a]| to extract the data;
+and, |recover :: (T (), [a]) -> T a| to rebuild the type value
+from its shape and data.
+For flexibility, these functions are defined in a type class
+%
+\begin{spec}
+class Shapely (t :: * -> *) where
+  shape :: t a -> t ()
+  data_ :: t a -> [a]
+  recover :: (t (), [a]) -> t a
+\end{spec}
+
+On top of these functions, it is possible to define new ones, e.g., |locs ::
+T a -> Set Loc| to get a all the locations of the data elements within the
+container.
+
+%%% Positional Mapping
+\subsection{Positional Mapping}
+
+The positional update is one of the aspects that is specific to each data type.
+To solve this issue in a simple manner, we introduce a new type class
+%
+\TODO{Find a better name fo the class.}
+%
+\begin{code}
+class Shapely t => Positional t where
+  positionalMap :: (v -> s) -> BiGUL s v -> BiGUL (t s) (t v)
+\end{code}
+%
+\begin{comment}
+\begin{code}
+instance Positional [] where
+  positionalMap = mapL
+instance Positional Tree where
+  positionalMap = mapT
+\end{code}
+\end{comment}
+%
+where the |positionalMap| function maps a BiGUL program element wise.
+For the list container |positionalMap = mapL|
+and for the tree container |positionalMap = mapT|.
+
+%%% Generic Delta Alignment
+\subsection{Generic Delta Alignment}
+
+\TODO{Generic description for getId.}
+%
+\begin{code}
+getId :: Shapely s => s a -> Delta
+getId = Set.map (\ l -> (l, l)) . locs
+\end{code}
+
+Starting with the adaptation, we can make use of the functions resulting from
+the fact that we can see a container as a shape and data. Therefore, we recover
+a container with the shape of the view, but with the data of the original source
+or with created data when new elements were added:
+%
+\begin{code}
+adaptDelta  :: Shapely s
+            => (b -> a) -> s a -> s b -> Delta -> s a
+adaptDelta c s v d = recover (newShape, newData)
+  where  newShape = shape v
+         newData = Prelude.map idOrCreate (Set.elems $ locs v)
+         idOrCreate i =  let js = rngOf i d
+                         in  if js /= Set.empty
+                             then data_ s !! Set.findMin js
+                             else c (data_ v !! i)
+\end{code}
+%
+With this function, any shapely type can be adapted, including lists and trees.
+
+\begin{code}
+align'  ::  (Shapely t, Positional t)
+        =>  BiGUL s v -> (v -> s)
+        ->  BiGUL (t s, Delta) (t v)
+align' b c = Case
+  [ $(normal [| \(_, d) v -> d == getId v |])
+      ==> $(rearrS [| \(s, _) -> s |]) (positionalMap c b)
+  , $(adaptiveS [| const True |])
+      ==> \(s,d) v ->  let s' = adaptDelta c s v d
+                       in (s', getId v) ]
+\end{code}
+%
+\begin{code}
+align  :: (Shapely t, Positional t, Eq (t v))
+       => BiGUL s v -> (v -> s) -> Delta
+       -> BiGUL (t s) (t v)
+align b c d = emb g p
+  where  g s    = get (align' b c) (s, getId s)
+         p s v  = fst $ put (align' b c) (s, d) v
+\end{code}
+
+%%% Other Matching Algorithms Built Upon Deltas
+\subsection{Other Matching Algorithms Built Upon Deltas}
 
 With the implementation of delta-based alignment, we can implement other
 alignment strategies upon the deltas without much work.
@@ -787,15 +927,15 @@ since the \emph{put} direction is usually the problematic one.
 
 \TODO{Start introducing BiGUL~\cite{Ko2016} with a very simple BX program.}
 %
-\begin{code}
+\begin{spec}
 type Source = (Int, (Char, Int))
 type View = (Int, Char)
-\end{code}
-\begin{code}
+\end{spec}
+\begin{spec}
 myBX :: BiGUL Source View
 myBX = Replace `Prod` $(rearrV   [| \ c -> (c, ()) |])
                                  (Replace `Prod` Skip)
-\end{code}
+\end{spec}
 
 \TODO{Simplify following code, specifying its types. Reuse this program in the
 alignment example, thus removing the need for parameters in aligment functions.}
@@ -817,7 +957,7 @@ the default \emph{put} usually derived from the \emph{get} function, i.e.,
 update elements positionally, adding or deleting elements at the end of the
 list:
 %
-\begin{code}
+\begin{spec}
 mapLExample  ::  (View -> Source)
              ->  BiGUL Source View
              ->  BiGUL [Source] [View]
@@ -832,10 +972,10 @@ mapLExample c u = Case
   , $(adaptiveV [p| (_ : _) |])$
     \ _ (v : _) -> [c v]
   ]
-\end{code}
+\end{spec}
 %
 \begin{comment}
-\begin{code}
+\begin{spec}
 mapL :: (v -> s)
      -> BiGUL s v
      -> BiGUL [s] [v]
@@ -848,7 +988,7 @@ mapL c u = Case
           u `Prod` mapL c u
   , $(adaptiveV [p| (_ : _) |])$ \ _ (v : _) -> [c v]
   ]
-\end{code}
+\end{spec}
 \end{comment}
 %
 This program is generic for any source of type \((K, (V_1, V_2))\) and view \(K,
@@ -871,7 +1011,7 @@ This provides information on how to align the elements in the \emph{put}
 direction, which is based on a key (\(K\)) in this example. A similar program
 can be written in the \emph{put} direction:
 %
-\begin{code}
+\begin{spec}
 keyMatch  ::  BiGUL [Source] [View]
 keyMatch  = Case
   [ $(normal [| isAligned |]) (mapL create myBX)
@@ -885,7 +1025,7 @@ keyMatch  = Case
              []        -> create ve
              (se : _ ) -> se
          create (k, v1) = (k, (v1, 0))
-\end{code}
+\end{spec}
 %
 This \emph{put} program makes use of BiGUL \emph{case} constructor, where an
 adaption of the source is made when the source is not aligned with the view.
@@ -1203,9 +1343,9 @@ and, |recover :: (T (), [a]) -> T a| to rebuild the type value
 from its shape and data.
 
 \begin{comment}
-\begin{code}
+\begin{spec}
 type Loc = Int
-\end{code}
+\end{spec}
 \end{comment}
 %
 On top of these functions, it is possible to define new ones, e.g., |locs ::
@@ -1222,9 +1362,9 @@ elements in an artifact to an element in another element than describing which
 elements were added and which ones were deleted. Thus, we define a delta a set
 of pair of locations between two artifacts:
 %
-\begin{code}
+\begin{spec}
 type Delta = Set (Loc, Loc)
-\end{code}
+\end{spec}
 
 Furthermore, we need a method to determine from a delta if some artifact has
 suffered any positional change (movement within the container, addition, or
@@ -1238,10 +1378,10 @@ delta == getId artifact
 The |getId| function creates an identity delta based on the locations of the
 artifact:
 %
-\begin{code}
+\begin{spec}
 getId :: [a] -> Delta
 getId = Set.map (\ l -> (l, l)) . locs
-\end{code}
+\end{spec}
 
 %%% Delta Alignment for Lists
 \subsection{Delta Alignment for Lists}
@@ -1250,7 +1390,7 @@ In order to implement such kind of alignment in BiGUL, the delta can be inserted
 into the source, since we are able to manipulate it using adaptation in
 \emph{case} branches.
 %
-\begin{code}
+\begin{spec}
 align'  ::  BiGUL a b -> (b -> a)
         ->  BiGUL ([a], Delta) [b]
 align' b c = Case
@@ -1259,7 +1399,7 @@ align' b c = Case
   , $(adaptiveS [| const True |])$
       \(s,d) v ->  let s' = putMapD c s v d
                    in (s', getId v) ]
-\end{code}
+\end{spec}
 %
 Note that the create function |c| given to |mapL| is not required since
 |putMapD| creates the missing elements.
@@ -1281,40 +1421,40 @@ transformation is performed on the source to rearrange the elements based on the
 delta, create missing view elements, and
 delete no longer existent view elements:
 %
-\begin{code}
+\begin{spec}
 putMapD :: (b -> a) -> [a] -> [b] -> Delta -> [a]
 putMapD c s v d = fst (traverse aux (v,0))
   where  aux (vi, i)  | Set.size js > 0 = (si, succ i)
                       | otherwise = (c vi, succ i)
            where  js = rngOf i d
                   si = data_(s) !! (Set.findMin js)
-\end{code}
+\end{spec}
 
 However, having the delta paired with the source might be inconvenient. To solve
 such situation, a wrapper is made that takes care of dealing with the delta:
 %
-\begin{code}
+\begin{spec}
 align  :: Eq b
        => BiGUL a b -> (b -> a) -> Delta
        -> BiGUL [a] [b]
 align b c d = emb g p
   where  g s    = get (align' b c) (s, getId s)
          p s v  = fst $ put (align' b c) (s, d) v
-\end{code}
+\end{spec}
 %
 This wrapper implements directly the \emph{get} and \emph{put} functions, and
 embeds them into a BiGUL program.
 
 The embedding of |get| and |put| functions can be defined as a BiGUL program:
 %
-\begin{code}
+\begin{spec}
 emb :: Eq v => (s -> v) -> (s -> v -> s) -> BiGUL s v
 emb g p = Case
   [ $(normal [| \x y -> g x == y |])$
       $(rearrV [| \x -> ((), x) |])$
         Dep Skip (\x () -> g x)
   , $(adaptive [| \_ _ -> True |]) p ]
-\end{code}
+\end{spec}
 %
 In order for an embedding to be well-behaved, running the |put| function should
 produce a source that when running |get| should return the view given to the
@@ -1371,7 +1511,7 @@ implement other kinds of alignments, e.g., key-based (for the special case of
 lists):
 
 %\begin{lstlisting}[caption={Key-based alignment function for lists.},label={lst:keyalign}]
-\begin{code}
+\begin{spec}
 keyAlign :: (Shapely s, s ~ [], Eq b, Eq k)
   => BiGUL a b -> (b -> a) -> (a -> k) -> (b -> k)
   -> BiGUL (s a) (s b)
@@ -1379,7 +1519,7 @@ keyAlign b c sk vk = emb g p
   where  g s    = get (align' b c) (s, getId s)
          p s v  = fst $ put  (align' b c)
                              (s, keyDelta sk vk s v) v
-\end{code}
+\end{spec}
 
 The |keyAlign| function, instead of receiving the delta, receives two
 functions to get the key component of the view and the source, respectively.
@@ -1387,7 +1527,7 @@ Then, using the original source and the modified view, another function is used
 to infer a delta --- |keyDelta|.
 
 %\begin{lstlisting}[caption={Calculation of deltas using key-based alignment.},label={lst:keydelta}]
-\begin{code}
+\begin{spec}
 keyDelta :: (Shapely s, Eq k)
   => (a -> k) -> (b -> k) -> s a -> s b -> Delta
 keyDelta sk vk ss vs = Set.fromList [ (sp, vp)  |  (s, sp) <- sps
@@ -1395,7 +1535,7 @@ keyDelta sk vk ss vs = Set.fromList [ (sp, vp)  |  (s, sp) <- sps
                                                 ,  sk s == vk v   ]
   where  sps  = zip (data_ ss) (Set.elems $ locs ss)
          vps  = zip (data_ vs) (Set.elems $ locs vs)
-\end{code}
+\end{spec}
 
 %%%
 %%% Conclusion
