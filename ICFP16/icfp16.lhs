@@ -193,19 +193,30 @@ just a single program that can denote both transformations,
 which has motivated two different approaches:
 \begin{itemize}
 \item {\em Get-based Method}: allowing users to write |get|
-and derive a suitable |put| \cite{Foster07,MHNHT07,Bohannon:08,Barbosa2010,Hidaka:10,Hofmann2012,Pacheco2012};
+and derive a suitable |put| \cite{Foster2007,MHNHT07,Bohannon:08,Barbosa2010,Hidaka:10,Hofmann2012,Pacheco2012};
 \item {\em Put-based Method}: allowing users to write |put|
 and derive the unique |get| if there is \cite{PaHF14,PachecoZH14,HuPF14,FischerHP15,Ko2016}.
 \end{itemize}
 
-The get-based method has been studied intensively for over ten years,
-whereas the put-based
-is rather new and under-appreciated.
-The get-based method is attractive, not only because it
-stems from the traditional updating problem (in the database community)
+The get-based method has been intensively studied for over ten years
+and got much appreciated mainly because |get| is easy to write.
+In contrast, the put-based method is new and far from being appreciated,
+and the main critism is two fold. First, that |put| is difficult to write
+
+
+The big advantage of the get-based method is that
+it is user-friendly; |get| is much easier to write than |put|.
+
+attractive, not only because it
+stems from the traditional view updating problem (in the database community)
 where |get| is given as a query beforehand, but also because
 |get| is easy to write.
-However, the get-based method has one limitation that would
+However, the get-based method cannot describe in general full behavior
+of bidirectional transformation, so automatically
+derived |put| limitation may not match the prgorammers' intension
+but the progammers have no ways to express their intension unless
+the |get| language 
+
 prevent from it from being used in practice.
 First, for an non-injective |get|
 there usually exist many possible |put| functions that can be
@@ -227,10 +238,10 @@ so in order to deal with various update policies of |put| in
 different contexts, nontrivial extensions
 are necessary to make on the language for writing |get|.
 For instance, the original get-based bidirectional
-language |lenses| in \cite{Foster} is extended to the |matching lenses|
+language |lenses| in \cite{Foster2007} is extended to the |matching lenses|
 to deal with alignment policies \cite{Barbosa2010},
 to the |delta lenses| to deal with operation-based update policies
-\cite{Diskin:2011,HoPW12}, and to the |generic lenses| to deal with
+\cite{Diskin:2011,Hofmann2012}, and to the |generic lenses| to deal with
 any updates on inductive data structures \cite{Pacheco2012}.
 
 The put-based method, on the other hand, can solve the above problem,
