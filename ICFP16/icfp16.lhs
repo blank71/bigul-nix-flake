@@ -32,18 +32,19 @@
 \usepackage{xspace}
 \usepackage{verbatim}
 \usepackage{listings}
+\newcommand{\lstcontinueline}{\ensuremath{\hookleftarrow}}
 \lstset{%
 	basicstyle=\scriptsize\ttfamily,
 	language={Haskell},
 	inputencoding=utf8,
 	breaklines=true,
-	prebreak = \raisebox{0ex}[0ex][0ex]{\ensuremath{\hookleftarrow}},
+	prebreak = \raisebox{0ex}[0ex][0ex]{\lstcontinueline},
 	morekeywords={},
 	deletekeywords={Num},
 	keywordstyle=\color[rgb]{0,0,1},             % keywords
 	commentstyle=\color[rgb]{0.133,0.545,0.133}, % comments
 	stringstyle=\color[rgb]{0.627,0.126,0.941},  % strings
-	% escapechar=@,
+	escapechar=@@,
 }
 \usepackage{array}
 \usepackage{tikz}
@@ -371,6 +372,37 @@ element is created from the source element at the head of the list. Then, the
 |Case| statement looks for a normal branch, entering in the one where both
 source and view have elements, updating the heads and recursing.
 
+Running the |get| function with this BiGUL program, we obtain the following
+result:
+%
+\begin{lstlisting}
+@@>@@ get myMapL [(0,('a',0)),(1,('b',1)),(2,('c',2))]
+[(0,'a'),(1,'b'),(2,'c')]
+\end{lstlisting}
+%
+We can perform the changes that we want to this view, e.g., modify the charaters
+to upper case, and put that view back into the original source:
+%
+\begin{lstlisting}
+@@>@@ put myMapL [(0,('a',0)),(1,('b',1)),(2,('c',2))] [(0,'A'),(1,'B'),(2,'C')]
+[(0,('A',0)),(1,('B',1)),(2,('C',2))]
+\end{lstlisting}
+%
+Moreover, we can see the limitations of positional update when removing an
+element \lstinline!(1,'b')!:
+%
+\begin{lstlisting}
+@@>@@ put myMapL [(0,('a',0)),(1,('b',1)),(2,('c',2))] [(0,'a'),(2,'c')]
+[(0,('a',0)),(2,('c',1))]
+\end{lstlisting}
+%
+or adding a new one \lstinline!(3,'d')! before the end:
+%
+\begin{lstlisting}
+@@>@@ put myMapL [(0,('a',0)),(1,('b',1)),(2,('c',2))] [(0,'a'),(1,'b'),(3,'d'),(2,'c')]
+[(0,('a',0)),(1,('b',1)),(3,('d',2)),(2,('c',0))]
+\end{lstlisting}
+
 The |myMapL| program can be generalized to work on lists with arbitrary values.
 For that, it must be parametrized with a \emph{create} function, to produce a
 source element from a view one, and with a BiGUL program to be run on the
@@ -450,6 +482,45 @@ myKeyMatch = Case
   [ $(normal [| isAligned |]) ==> myMapL
   , $(adaptive [| \ _ _ -> True |]) ==> keyMatchAdapt ]
 \end{code}
+
+The result of running the |get| function with |myKeyMatch| is the same as with
+|myMapL| since they only differ in the alignment strategy:
+%
+\begin{lstlisting}
+@@>@@ get myKeyMatch @@\lstcontinueline@@
+    [(0,('a',0)),(1,('b',1)),(2,('c',2))]
+[(0,'a'),(1,'b'),(2,'c')]
+\end{lstlisting}
+%
+Running the |put| function also has the same result when the elements are the
+same and the order did not change:
+%
+\begin{lstlisting}
+@@>@@ put myKeyMatch @@\lstcontinueline@@
+    [(0,('a',0)),(1,('b',1)), (2,('c',2))] @@\lstcontinueline@@
+    [(0,'A'),(1,'B'),(2,'C')]
+[(0,('A',0)),(1,('B',1)),(2,('C',2))]
+\end{lstlisting}
+%
+However, when removing elements \lstinline!(1,'b')! or adding new ones
+\lstinline!(3,'d')!, key-based alignment is more precise than positional:
+%
+\begin{lstlisting}
+@@>@@ put myKeyMatch @@\lstcontinueline@@
+    [(0,('a',0)),(1,('b',1)),(2,('c',2))] @@\lstcontinueline@@
+    [(0,'a'),(2,'c'),(3,'d')]
+[(0,('a',0)),(2,('c',2)),(3,('d',0))]
+\end{lstlisting}
+%
+Nonetheless, key-based alignment also has its limitations, e.g., when modifying
+the key of an element (\lstinline!(1,'b')! to \lstinline!(3,'b')!):
+%
+\begin{lstlisting}
+@@>@@ put myKeyMatch @@\lstcontinueline@@
+    [(0,('a',0)),(1,('b',1)),(2,('c',2))] @@\lstcontinueline@@
+    [(0,'a'),(3,'b'),(2,'c')]
+[(0,('a',0)),(3,('b',0)),(2,('c',2))]
+\end{lstlisting}
 
 As with the positional update, this program can be generalized for key-based
 alignment on lists with arbitrary contents. For that, the |keyMatch| function
