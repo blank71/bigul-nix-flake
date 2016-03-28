@@ -150,8 +150,9 @@ putSum2 = ((flip Compose) putSum
              lreverse)
 
 
-
+s :: [Int]
 s = [1, 2, 3]
+v :: Int
 v = 3
 
 putHelper  b s v = either (\ _ -> []) (map nat2Int) $ put b (map int2Nat s) (int2Nat v)
