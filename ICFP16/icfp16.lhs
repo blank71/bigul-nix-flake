@@ -209,7 +209,13 @@ and derive the unique |get| if there is \cite{PaHF14,PachecoZH14,HuPF14,FischerH
 \end{itemize}
 
 The get-based method has been intensively studied for over ten years
-and got much appreciated mainly because |get| is easy to write.
+and got much appreciated. This is very natural, |get| is easy to write
+and if the system knows how to derive a put, then no additional
+burdon would be needed for users to go from unidirectional to bidirectional.
+
+
+in devlopment of
+
 In contrast, the put-based method is new and far from being appreciated,
 and the main critism is two fold. First, that |put| is difficult to write
 
