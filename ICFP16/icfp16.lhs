@@ -286,38 +286,59 @@ are guaranteed to be well-behaved.
 %%%
 \section{Preparation: Putback-Based BX}
 
-\TODO{Will revise this part later}
+%\TODO{Will revise this part later}
 
-An under-appreciated fact about well-behaved lenses is that \emph{put} completely determines the behavior of the corresponding \emph{get} --- that is, given a \emph{put} function and two \emph{get} functions each of which forms a well-behaved lens when paired with the \emph{put} function, it must be the case that the two \emph{get} functions are pointwise equal. This fact was already noted by Foster in his PhD thesis~\cite{Foster2009} but had remained neglected until people dug up this idea and started exploring the possibility of specifying BXs in terms of \emph{put} \TODO{citations}.
+%An under-appreciated fact about well-behaved lenses is that \emph{put} completely determines the behavior of the corresponding \emph{get} --- that is, given a \emph{put} function and two \emph{get} functions each of which forms a well-behaved lens when paired with the \emph{put} function, it must be the case that the two \emph{get} functions are pointwise equal. This fact was already noted by Foster in his PhD thesis~\cite{Foster2009} but had remained neglected until people dug up this idea and started exploring the possibility of specifying BXs in terms of \emph{put} \TODO{citations}.
 
-Intuitively, think of a BiGUL program of type \lstinline{BiGUL s v} as describing how to manipulate a state consisting of a source component of type~\lstinline{s} and a view component of type~\lstinline{v}; the goal is to copy all information in the view to proper places in the source.
-In the simplest case, the view has type \lstinline{()} and contains no information, and we can use \lstinline{Skip :: BiGUL s ()} to leave the source unchanged;
-another simple case is when the view has the same type as the source, and we can use \lstinline{Replace :: BiGUL s s} to replace the entire source with the view.
+Intuitively, think of a BiGUL program of type |BiGUL s v| as describing how to manipulate a state consisting of a source component of type~|s| and a view component of type~|v|; the goal is to copy all information in the view to proper places in the source.
+In the simplest case, the view has type~|()| and contains no information, and we can use |Skip :: BiGUL s ()| to leave the source unchanged;
+another simple case is when the view has the same type as the source, and we can use |Replace :: BiGUL s s| to replace the entire source with the view.
 BiGUL programs compose --- for example, when both the source and the view are pairs, we can use
-\begin{lstlisting}
-Prod :: BiGUL s v -> BiGUL s' v' ->
-        BiGUL (s, s') (v, v')
-\end{lstlisting}
-to compose two BiGUL programs on the left and right components respectively.
-Of course, in most cases the source and view are in more complex forms, and we should somehow transform and decompose them into simpler forms before we can use \lstinline{Skip}, \lstinline{Replace}, or \lstinline{Prod}; this is usually done using two ``rearrangement'' operations on the source and view respectively:
+\begin{code}
+Prod ::  BiGUL s v -> BiGUL s' v' ->
+         BiGUL (s, s') (v, v')
+\end{code}
+to compose two BiGUL programs on the left and right components respectively; we will typeset the infix application of |Prod| as `|`Prod`|'.
+Of course, in most cases the source and view are in more complex forms, and we should somehow transform and decompose them into simpler forms before we can use |Skip|, |Replace|, or |Prod|; this is usually done using two ``rearrangement'' operations on the source and view respectively:
 We can use the source rearranging operation
-\begin{lstlisting}
+\begin{code}
 $(rearrS [| f |]) :: BiGUL s' v -> BiGUL s v
-\end{lstlisting}
-where \lstinline{f}~is a ``simple'' $\lambda$-expression of type \lstinline{s -> s'} for extracting from the source of type~\lstinline{s} a (usually smaller) source of type~\lstinline{s'} before performing further updates on the extracted source, or dually the view rearranging operation
-\begin{lstlisting}
+\end{code}
+where \lstinline{f}~is a ``simple'' $\lambda$-expression of type \lstinline{s -> s'} for extracting from the source of type~|s| a (usually smaller) source of type~|s'| before performing further updates on the extracted source, or dually the view rearranging operation
+\begin{code}
 $(rearrV [| g |]) :: BiGUL s v' -> BiGUL s v
-\end{lstlisting}
+\end{code}
 where the ``simple'' $\lambda$-expression \lstinline{g} should have type \lstinline{v -> v'}, and is used to transform the view from type~\lstinline{v} to type~\lstinline{v'} before performing further updates.
 
-Most expressiveness of BiGUL comes from its \lstinline{Case} operation for performing case analysis:
-\begin{lstlisting}
-Case :: [(s -> b -> Bool, Branch s v)] -> BiGUL s v
-\end{lstlisting}
-\lstinline{Case} takes a list of pairs whose first component is a boolean predicate on both the source and the view, and whose second component is a ``branch''.
-A branch can be a ``normal'' branch, in which case it is a BiGUL program of type \lstinline{BiGUL s v}, or an ``adaptive'' branch, in which case it is a Haskell function of type \lstinline{s -> v -> s}.
-The semantics of \lstinline{Case} is largely as people would expect: executing the first branch whose associated predicate evaluates to true on the current state, and performing further updates when this branch is normal.
-More interestingly, when the chosen branch is adaptive, the source will be replaced by the result of evaluating the associated function on the current state and the whole \lstinline{Case} will be executed again.
+Most expressiveness of BiGUL comes from its |Case| operation for performing case analysis:
+\begin{code}
+Case :: [(s -> v -> Bool, Branch s v)] -> BiGUL s v
+\end{code}
+|Case| takes a list of pairs whose first component is a boolean predicate on both the source and the view, and whose second component is a ``branch'', whose type is defined by
+\begin{code}
+data Branch s v  =  Normal    (BiGUL s v)
+                 |  Adaptive  (s -> v -> s)
+\end{code}
+A branch can be a ``normal'' branch, in which case it is a BiGUL program of type |BiGUL s v|, or an ``adaptive'' branch, in which case it is a Haskell function of type |s -> v -> s|.
+The semantics of |Case| is largely as people would expect: executing the first branch whose associated predicate evaluates to true on the current state, and performing further updates when this branch is normal.
+More interestingly, when the chosen branch is adaptive, the source will be replaced by the result of evaluating the associated function on the current state, and the whole |Case| will be executed again.
+
+We introduce some extra notations for writing branches more easily.
+The two basic ones are for constructing normal and adaptive branches in general:
+\begin{code}
+$(normal    [| p |]) ==> b  = (p, Normal    b)
+$(adaptive  [| p |]) ==> f  = (p, Adaptive  f)
+\end{code}
+Here the boolean predicate~|p| takes both a source and a view.
+Often this predicate is a conjunction of two unary predicates on the source and view respectively, so we introduce another set of notations:
+\begin{code}
+$(normalSV    [| pS |] [| pV |]) ==> b
+  = ((\s v -> pS s && pV v), Normal    b)
+$(adaptiveSV  [| pS |] [| pV |]) ==> f
+  = ((\s v -> pS s && pV v), Adaptive  f)
+\end{code}
+The unary predicates (|pS| and |pV|) can usually be conveniently expressed as patterns; |normalSV| and |adaptiveSV| can also accept patterns, which should be enclosed in pattern quotation brackets like |[p|| pat ||]|.
+There are also other variants of |normal| and |adaptive| that are suffixed with only |S| or~|V|, meaning that they accept only one unary predicate on either the source or the view.
 
 %%%
 %%% Positional Alignment
@@ -667,6 +688,8 @@ emb g p = Case
   , $(adaptive [| \_ _ -> True |]) p ]
 \end{code}
 %
+Here what the normal branch does is, roughly speaking, leaving the source~|x| as it is while ignoring the view, since we know that the view is necessarily |g x|.
+\TODO{The intention of having the above sentence is to avoid explaining |Dep|.}
 In order for an embedding to be well-behaved, running the |put| function should
 produce a source that when running |get| should return the view given to the
 former, as stated by the \textsc{GetPut} law and enforced by the case structure.
