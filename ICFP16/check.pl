@@ -65,7 +65,7 @@ sub runExample {
   my $i = shift;
   $examples++;
   # informative message
-  print "Checing \"$e\"";
+  print "Checking \"$e\"";
   STDOUT->flush();
   # run example
   my $result = `cd $haskelldir; $eval $extensions -e "$e" $paperdir/icfp16.lhs`;

@@ -294,49 +294,49 @@ Intuitively, think of a BiGUL program of type |BiGUL s v| as describing how to m
 In the simplest case, the view has type~|()| and contains no information, and we can use |Skip :: BiGUL s ()| to leave the source unchanged;
 another simple case is when the view has the same type as the source, and we can use |Replace :: BiGUL s s| to replace the entire source with the view.
 BiGUL programs compose --- for example, when both the source and the view are pairs, we can use
-\begin{code}
+\begin{spec}
 Prod ::  BiGUL s v -> BiGUL s' v' ->
          BiGUL (s, s') (v, v')
-\end{code}
+\end{spec}
 to compose two BiGUL programs on the left and right components respectively; we will typeset the infix application of |Prod| as `|`Prod`|'.
 Of course, in most cases the source and view are in more complex forms, and we should somehow transform and decompose them into simpler forms before we can use |Skip|, |Replace|, or |Prod|; this is usually done using two ``rearrangement'' operations on the source and view respectively:
 We can use the source rearranging operation
-\begin{code}
+\begin{spec}
 $(rearrS [| f |]) :: BiGUL s' v -> BiGUL s v
-\end{code}
+\end{spec}
 where \lstinline{f}~is a ``simple'' $\lambda$-expression of type \lstinline{s -> s'} for extracting from the source of type~|s| a (usually smaller) source of type~|s'| before performing further updates on the extracted source, or dually the view rearranging operation
-\begin{code}
+\begin{spec}
 $(rearrV [| g |]) :: BiGUL s v' -> BiGUL s v
-\end{code}
+\end{spec}
 where the ``simple'' $\lambda$-expression \lstinline{g} should have type \lstinline{v -> v'}, and is used to transform the view from type~\lstinline{v} to type~\lstinline{v'} before performing further updates.
 
 Most expressiveness of BiGUL comes from its |Case| operation for performing case analysis:
-\begin{code}
+\begin{spec}
 Case :: [(s -> v -> Bool, Branch s v)] -> BiGUL s v
-\end{code}
+\end{spec}
 |Case| takes a list of pairs whose first component is a boolean predicate on both the source and the view, and whose second component is a ``branch'', whose type is defined by
-\begin{code}
+\begin{spec}
 data Branch s v  =  Normal    (BiGUL s v)
                  |  Adaptive  (s -> v -> s)
-\end{code}
+\end{spec}
 A branch can be a ``normal'' branch, in which case it is a BiGUL program of type |BiGUL s v|, or an ``adaptive'' branch, in which case it is a Haskell function of type |s -> v -> s|.
 The semantics of |Case| is largely as people would expect: executing the first branch whose associated predicate evaluates to true on the current state, and performing further updates when this branch is normal.
 More interestingly, when the chosen branch is adaptive, the source will be replaced by the result of evaluating the associated function on the current state, and the whole |Case| will be executed again.
 
 We introduce some extra notations for writing branches more easily.
 The two basic ones are for constructing normal and adaptive branches in general:
-\begin{code}
+\begin{spec}
 $(normal    [| p |]) ==> b  = (p, Normal    b)
 $(adaptive  [| p |]) ==> f  = (p, Adaptive  f)
-\end{code}
+\end{spec}
 Here the boolean predicate~|p| takes both a source and a view.
 Often this predicate is a conjunction of two unary predicates on the source and view respectively, so we introduce another set of notations:
-\begin{code}
+\begin{spec}
 $(normalSV    [| pS |] [| pV |]) ==> b
   = ((\s v -> pS s && pV v), Normal    b)
 $(adaptiveSV  [| pS |] [| pV |]) ==> f
   = ((\s v -> pS s && pV v), Adaptive  f)
-\end{code}
+\end{spec}
 The unary predicates (|pS| and |pV|) can usually be conveniently expressed as patterns; |normalSV| and |adaptiveSV| can also accept patterns, which should be enclosed in pattern quotation brackets like |[p|| pat ||]|.
 There are also other variants of |normal| and |adaptive| that are suffixed with only |S| or~|V|, meaning that they accept only one unary predicate on either the source or the view.
 
@@ -345,18 +345,27 @@ There are also other variants of |normal| and |adaptive| that are suffixed with 
 %%%
 \section{Positional Alignment}
 
+The simplest alignment strategy is the positional one. The following types for
+source (|Source|) and view (|View|) are used for the running example.
+%
 \begin{code}
 type Source = (Int, (Char, Int))
 type View = (Int, Char)
 \end{code}
-
+%
+The first component of the pair should match the first component of the view,
+and the character component (|Char|) of the source should match the character
+component of the view. This relation between source and view can be expressed
+with the following BiGUL program:
+%
 \begin{code}
 myBX :: BiGUL Source View
 myBX = Replace `Prod` $(rearrV   [| \ c -> (c, ()) |])
                                  (Replace `Prod` Skip)
 \end{code}
 
-The simplest alignment strategy is the positional one. No moves are taken into
+Positional alignment for lists with elements of the above source and view types
+is pretty straightforward. No moves are taken into
 account, and elements are added or deleted at the end of the source. Just as
 with any other programming practice, the BiGUL program must take into account
 the several possibilities of source and view values in the update process:
@@ -739,19 +748,28 @@ instance FMonoid Tree where
 \end{code}
 \end{comment}
 
-Tree elements can also be indexed by locations, thus the |Delta| type used for
-lists can also be used for trees. A function
+Tree elements can also be indexed by locations. The position of tree elements
+can be established linearly in an inorder fashion:
 %
 \begin{code}
-getIdT :: Tree a -> Delta
+locsT :: Tree a -> Tree Loc
+locsT = fst . aux 0
+  where  aux i0 Nil = (Nil, i0)
+         aux i0 (Node _ l0 r0) =
+           let  (l,i1  ) = aux i0 l0
+                (r,i   ) = aux (i1+1) r0
+           in (Node i1 l r, i)
 \end{code}
+%
+Thus the |Delta| type used for lists can also be used for trees, and the
+identity delta can be obtained with the function |getIdT :: Tree a -> Delta|.
+%
 \begin{comment}
 \begin{code}
+getIdT :: Tree a -> Delta
 getIdT = Set.map (\ l -> (l, l)) . locs
 \end{code}
 \end{comment}
-%
-is required and can be implemented the same way as for lists.
 
 The approach to implement the delta-based alignment for trees is similar to the
 approach used in the other implementations:
@@ -761,30 +779,19 @@ approach used in the other implementations:
   \item a positional update.
 \end{enumerate}
 
-\TODO{Introduction to |locsTree|.}
-
-\begin{code}
-locsTree :: Tree a -> Tree Loc
-locsTree = fst . aux 0
-  where  aux i0 Nil = (Nil, i0)
-         aux i0 (Node _ l0 r0) =
-           let  (l,i1  ) = aux i0 l0
-                (r,i   ) = aux (i1+1) r0
-           in (Node i1 l r, i)
-\end{code}
-
 The adaptation function for tree can be
 %
 \begin{code}
-adaptDeltaT :: (v -> s) -> Tree s -> Tree v -> Delta -> Tree s
-adaptDeltaT c s v d = Prelude.fmap idOrCreate (locsTree v)
+adaptDeltaT  :: (v -> s) -> Tree s -> Tree v -> Delta
+             -> Tree s
+adaptDeltaT c s v d = Prelude.fmap idOrCreate (locsT v)
   where  idOrCreate i =  let js = rngOf i d
                          in  if js /= Set.empty
                              then data_ s !! Set.findMin js
                              else c (data_ v !! i)
 \end{code}
 %
-where the core of the |fmap| function comes from the fact that |Tree| is a
+where we take advantage of the |fmap| function, deriving from the fact that |Tree| is a
 functor.
 
 The implementation of the positional tree update is similar to the one for
@@ -883,7 +890,8 @@ To solve this issue in a simple manner, we introduce a new type class
 %
 \begin{code}
 class Shapely t => Positional t where
-  positionalMap :: (v -> s) -> BiGUL s v -> BiGUL (t s) (t v)
+  positionalMap  :: (v -> s) -> BiGUL s v
+                 -> BiGUL (t s) (t v)
 \end{code}
 %
 \begin{comment}
@@ -902,7 +910,8 @@ and for the tree container |positionalMap = mapT|.
 %%% Generic Delta Alignment
 \subsection{Generic Delta Alignment}
 
-\TODO{Generic description for getId.}
+A key component in delta alignemnt is the position of elements. Having access to
+element positions, we can obtain the identity delta:
 %
 \begin{code}
 getId :: Shapely s => s a -> Delta
@@ -959,7 +968,7 @@ implement other kinds of alignments, e.g., key-based (for the special case of
 lists):
 %
 \begin{code}
-keyAlign :: (Shapely s, s ~ [], Eq b, Eq k)
+keyAlign :: (Shapely s, Positional s, Eq (s b), Eq b, Eq k)
   => BiGUL a b -> (b -> a) -> (a -> k) -> (b -> k)
   -> BiGUL (s a) (s b)
 keyAlign b c sk vk = emb g p
