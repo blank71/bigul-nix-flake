@@ -17,6 +17,9 @@
 %format r0="r_0"
 %format i0="i_0"
 %format i1="i_1"
+%format d0="\delta_0"
+%format d1="\delta_1"
+%format d2="\delta_2"
 %format Prelude.map=map
 %format Prelude.filter=filter
 %format Prelude.fmap=fmap
@@ -683,6 +686,55 @@ This wrapper implements directly the |get| and |put| functions, and
 embeds them into a BiGUL program.
 
 \TODO{Well-behavedness proof of the get and put pair in the embedding}.
+
+To run the the delta alignment we thus need to provide a delta to the BiGUL
+program. With the running example, we can use the following deltas:
+%
+\begin{code}
+d1, d2, d3 :: Delta
+d1 = fromList [(0,0),(1,1),(2,2)]
+d2 = fromList [(0,0),(1,2),(2,1)]
+d3 = fromList [(0,0),(1,1)]
+\end{code}
+%
+For the \emph{get} direction, the delta is ignored, and the result is the same
+as for the previous kinds of alignment:
+%
+\begin{lstlisting}
+@@>@@ get (myAlignL d1) [(0,('a',0)),(1,('b',1)),(2,('c',2))]
+[(0,'a'),(1,'b'),(2,'c')]
+\end{lstlisting}
+%
+However, in the put direction, results may vary depending on the given delta,
+e.g., no changes are performed (using |d1|):
+%
+\begin{lstlisting}
+@@>@@ put (myAlignL d1) [(0,('a',0)),(1,('b',1)),(2,('c',2))] [(0,'A'),(1,'B'),(2,'C')]
+[(0,('A',0)),(1,('B',1)),(2,('C',2))]
+\end{lstlisting}
+%
+versus a swap between the last two elements (using |d2|):
+%
+\begin{lstlisting}
+@@>@@ put (myAlignL d2) [(0,('a',0)),(1,('b',1)),(2,('c',2))] [(0,'A'),(1,'B'),(2,'C')]
+[(0,('A',0)),(1,('B',2)),(2,('C',1))]
+\end{lstlisting}
+%
+Note that the elements were not swapped in the view, but the delta |d2|
+indicates that the elements were swapped. This is equivalent to swapping those
+elements and modifying the values to the ones at the same position in the
+original view.
+%
+A similar situation occurs when the view is not modified, but one element is not
+in the delta:
+%
+\begin{lstlisting}
+@@>@@ put (myAlignL d3) [(0,('a',0)),(1,('b',1)),(2,('c',2))] [(0,'A'),(1,'B'),(2,'C')]
+[(0,('A',0)),(1,('B',1)),(2,('C',0))]
+\end{lstlisting}
+%
+In this case, it is equivalent to remove the last element and inserting it
+again.
 
 The embedding of |get| and |put| functions can be defined as a BiGUL program:
 %
