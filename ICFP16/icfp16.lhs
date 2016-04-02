@@ -949,7 +949,7 @@ and for the tree container |positionalMap = mapT|.
 %%% Generic Delta Alignment
 \subsection{Generic Delta Alignment}
 
-A key component in delta alignemnt is the position of elements. Having access to
+A key component in delta alignment is the position of elements. Having access to
 element positions, we can obtain the identity delta:
 %
 \begin{code}
