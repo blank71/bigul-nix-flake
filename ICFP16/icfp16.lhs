@@ -635,16 +635,15 @@ The implementation of delta-based alignment is similar to the key-based one:
 \end{enumerate}
 %
 However, the delta in the source introduces a bit more complexity to deal the
-additional information:
+additional information. Implementing this in the running example:
 %
 \begin{code}
-alignL'  ::  BiGUL s v -> (v -> s)
-         ->  BiGUL ([s], Delta) [v]
-alignL' b c = Case
+myAlignL'  ::  BiGUL ([Source], Delta) [View]
+myAlignL' = Case
   [ $(normal [| \(_, d) v -> d == getIdL v |])
-      ==> $(rearrS [| \(s, _) -> s |]) (mapL c b)
+      ==> $(rearrS [| \(s, _) -> s |]) myMapL
   , $(adaptiveS [| const True |])
-      ==> \(s,d) v ->  let s' = adaptDeltaL c s v d
+      ==> \(s,d) v ->  let s' = myAdaptDeltaL s v d
                        in (s', getIdL v) ]
 \end{code}
 %
@@ -658,27 +657,26 @@ delta, create missing view elements, and
 delete no longer existent view elements:
 %
 \begin{code}
-adaptDeltaL :: (v -> s) -> [s] -> [v] -> Delta -> [s]
-adaptDeltaL c s v d = Prelude.map idOrCreate (Set.elems $ locs v)
-  where  idOrCreate i =  let js = rngOf i d
+myAdaptDeltaL :: [Source] -> [View] -> Delta -> [Source]
+myAdaptDeltaL s v d = Prelude.map idOrCreate (Set.elems $ locs v)
+  where  idOrCreate i =  let  js = rngOf i d
                          in  if js /= Set.empty
-                             then data_ s !! Set.findMin js
-                             else c (data_ v !! i)
+                             then s !! Set.findMin js
+                             else  let (k, v1) = v !! i
+                                   in (k, (v1, 0))
 \end{code}
 %
-Note that in |alignL'| the create function |c| given to |mapL| is not required since
-|adaptDeltaL| creates the missing elements.
+%Note that in |alignL'| the create function |c| given to |mapL| is not required since
+%|adaptDeltaL| creates the missing elements.
 
 However, having the delta paired with the source might be inconvenient. To solve
 such situation, a wrapper is made that takes care of dealing with the delta:
 %
 \begin{code}
-alignL  :: Eq v
-        => BiGUL s v -> (v -> s) -> Delta
-        -> BiGUL [s] [v]
-alignL b c d = emb g p
-  where  g s    = get (alignL' b c) (s, getIdL s)
-         p s v  = fst $ put (alignL' b c) (s, d) v
+myAlignL :: Delta -> BiGUL [Source] [View]
+myAlignL d = emb g p
+  where  g s    = get myAlignL' (s, getIdL s)
+         p s v  = fst $ put myAlignL' (s, d) v
 \end{code}
 %
 This wrapper implements directly the |get| and |put| functions, and
@@ -703,6 +701,47 @@ In order for an embedding to be well-behaved, running the |put| function should
 produce a source that when running |get| should return the view given to the
 former, as stated by the \textsc{GetPut} law and enforced by the case structure.
 Furthermore, the view should be completely defined by the source.
+
+The delta alignment implementation can be generalized for arbitrary list
+contents, resulting in the following equivalent functions with additional
+parameters for the create function and BiGUL update program to apply to the
+elements:
+%
+\begin{spec}
+adaptDeltaL :: (v -> s) -> [s] -> [v] -> Delta -> [s]
+alignL'  ::  BiGUL s v -> (v -> s)
+         ->  BiGUL ([s], Delta) [v]
+alignL  :: Eq v => BiGUL s v -> (v -> s) -> Delta
+        -> BiGUL [s] [v]
+\end{spec}
+\begin{comment}
+\begin{code}
+alignL'  ::  BiGUL s v -> (v -> s)
+         ->  BiGUL ([s], Delta) [v]
+alignL' b c = Case
+  [ $(normal [| \(_, d) v -> d == getIdL v |])
+      ==> $(rearrS [| \(s, _) -> s |]) (mapL c b)
+  , $(adaptiveS [| const True |])
+      ==> \(s,d) v ->  let s' = adaptDeltaL c s v d
+                       in (s', getIdL v) ]
+
+adaptDeltaL :: (v -> s) -> [s] -> [v] -> Delta -> [s]
+adaptDeltaL c s v d = Prelude.map idOrCreate (Set.elems $ locs v)
+  where  idOrCreate i =  let js = rngOf i d
+                         in  if js /= Set.empty
+                             then data_ s !! Set.findMin js
+                             else c (data_ v !! i)
+
+alignL  :: Eq v
+        => BiGUL s v -> (v -> s) -> Delta
+        -> BiGUL [s] [v]
+alignL b c d = emb g p
+  where  g s    = get (alignL' b c) (s, getIdL s)
+         p s v  = fst $ put (alignL' b c) (s, d) v
+\end{code}
+\end{comment}
+
+
 
 %%%
 %%% Delta-Based Tree Alignment
