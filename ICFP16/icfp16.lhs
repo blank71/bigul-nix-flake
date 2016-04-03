@@ -17,9 +17,10 @@
 %format r0="r_0"
 %format i0="i_0"
 %format i1="i_1"
-%format d0="\delta_0"
+%format delta="\delta"
 %format d1="\delta_1"
 %format d2="\delta_2"
+%format d3="\delta_3"
 %format Prelude.map=map
 %format Prelude.filter=filter
 %format Prelude.fmap=fmap
@@ -28,6 +29,7 @@
 %format Set.fromList=
 %format Set.elems=elems
 %format Set.empty=" \emptyset "
+%format def="\text{def.}"
 
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{graphicx}
@@ -427,8 +429,9 @@ result:
 [(0,'a'),(1,'b'),(2,'c')]
 \end{lstlisting}
 %
-We can perform the changes that we want to this view, e.g., modify the charaters
-to upper case, and put that view back into the original source:
+We can perform the changes that we want to this view, e.g., modify the characters
+to upper case, and put that view back into the original source\footnote{The
+symbol \lstcontinueline{} denotes line continuation.}:
 %
 \begin{lstlisting}
 @@>@@ put myMapL [(0,('a',0)),(1,('b',1)),(2,('c',2))] [(0,'A'),(1,'B'),(2,'C')]
@@ -660,8 +663,10 @@ delta, create missing view elements, and
 delete no longer existent view elements:
 %
 \begin{code}
-myAdaptDeltaL :: [Source] -> [View] -> Delta -> [Source]
-myAdaptDeltaL s v d = Prelude.map idOrCreate (Set.elems $ locs v)
+myAdaptDeltaL  :: [Source] -> [View] -> Delta
+               -> [Source]
+myAdaptDeltaL s v d =
+  Prelude.map idOrCreate (Set.elems $ locs v)
   where  idOrCreate i =  let  js = rngOf i d
                          in  if js /= Set.empty
                              then s !! Set.findMin js
@@ -683,58 +688,30 @@ myAlignL d = emb g p
 \end{code}
 %
 This wrapper implements directly the |get| and |put| functions, and
-embeds them into a BiGUL program.
-
-\TODO{Well-behavedness proof of the get and put pair in the embedding}.
-
-To run the the delta alignment we thus need to provide a delta to the BiGUL
-program. With the running example, we can use the following deltas:
+embeds them into a BiGUL program, since this pair of |get|/|put| functions is
+well-behaved:\\
 %
-\begin{code}
-d1, d2, d3 :: Delta
-d1 = fromList [(0,0),(1,1),(2,2)]
-d2 = fromList [(0,0),(1,2),(2,1)]
-d3 = fromList [(0,0),(1,1)]
-\end{code}
+\textsc{GetPut} -- this law states that if no changes to the view are performed,
+then putting it back into the source does not alter the source. Since no changes
+are performed, the delta is the identity delta. This leads that the
+well-behavedness of |myAlignL' delta| derives from the one of |myMapL|
 %
-For the \emph{get} direction, the delta is ignored, and the result is the same
-as for the previous kinds of alignment:
+\begin{spec}
+myAlignL' delta
+== {def myAlingL', delta = getIdL (get (myAlignL' delta) s)}
+myMapL
+\end{spec}
 %
-\begin{lstlisting}
-@@>@@ get (myAlignL d1) [(0,('a',0)),(1,('b',1)),(2,('c',2))]
-[(0,'a'),(1,'b'),(2,'c')]
-\end{lstlisting}
+which is well-behaved by definition.\\
 %
-However, in the put direction, results may vary depending on the given delta,
-e.g., no changes are performed (using |d1|):
+\textsc{PutGet} -- this law states that the view after updating a source is the
+same as the one used for the update.
 %
-\begin{lstlisting}
-@@>@@ put (myAlignL d1) [(0,('a',0)),(1,('b',1)),(2,('c',2))] [(0,'A'),(1,'B'),(2,'C')]
-[(0,('A',0)),(1,('B',1)),(2,('C',2))]
-\end{lstlisting}
+\begin{spec}
+get (myAlignL' delta) (put (myAlignL' delta) s v) = v
+\end{spec}
 %
-versus a swap between the last two elements (using |d2|):
-%
-\begin{lstlisting}
-@@>@@ put (myAlignL d2) [(0,('a',0)),(1,('b',1)),(2,('c',2))] [(0,'A'),(1,'B'),(2,'C')]
-[(0,('A',0)),(1,('B',2)),(2,('C',1))]
-\end{lstlisting}
-%
-Note that the elements were not swapped in the view, but the delta |d2|
-indicates that the elements were swapped. This is equivalent to swapping those
-elements and modifying the values to the ones at the same position in the
-original view.
-%
-A similar situation occurs when the view is not modified, but one element is not
-in the delta:
-%
-\begin{lstlisting}
-@@>@@ put (myAlignL d3) [(0,('a',0)),(1,('b',1)),(2,('c',2))] [(0,'A'),(1,'B'),(2,'C')]
-[(0,('A',0)),(1,('B',1)),(2,('C',0))]
-\end{lstlisting}
-%
-In this case, it is equivalent to remove the last element and inserting it
-again.
+\TODO{PutGet.}
 
 The embedding of |get| and |put| functions can be defined as a BiGUL program:
 %
@@ -753,6 +730,62 @@ In order for an embedding to be well-behaved, running the |put| function should
 produce a source that when running |get| should return the view given to the
 former, as stated by the \textsc{GetPut} law and enforced by the case structure.
 Furthermore, the view should be completely defined by the source.
+
+To run the delta alignment we thus need to provide a delta to the BiGUL
+program. With the running example, we can use the following deltas:
+%
+\begin{code}
+d1, d2, d3 :: Delta
+d1 = fromList [(0,0),(1,1),(2,2)]
+d2 = fromList [(0,0),(1,2),(2,1)]
+d3 = fromList [(0,0),(1,1)]
+\end{code}
+%
+For the \emph{get} direction, the delta is ignored, and the result is the same
+as for the previous kinds of alignment:
+%
+\begin{lstlisting}
+@@>@@ get (myAlignL @@|d1|@@) @@\lstcontinueline@@
+    [(0,('a',0)),(1,('b',1)),(2,('c',2))]
+[(0,'a'),(1,'b'),(2,'c')]
+\end{lstlisting}
+%
+However, in the put direction, results may vary depending on the given delta,
+e.g., no changes are performed (using |d1|):
+%
+\begin{lstlisting}
+@@>@@ put (myAlignL @@|d1|@@) @@\lstcontinueline@@
+  [(0,('a',0)),(1,('b',1)),(2,('c',2))] @@\lstcontinueline@@
+  [(0,'A'),(1,'B'),(2,'C')]
+[(0,('A',0)),(1,('B',1)),(2,('C',2))]
+\end{lstlisting}
+%
+versus a swap between the last two elements (using |d2|):
+%
+\begin{lstlisting}
+@@>@@ put (myAlignL @@|d2|@@) @@\lstcontinueline@@
+    [(0,('a',0)),(1,('b',1)),(2,('c',2))] @@\lstcontinueline@@
+    [(0,'A'),(1,'B'),(2,'C')]
+[(0,('A',0)),(1,('B',2)),(2,('C',1))]
+\end{lstlisting}
+%
+Note that the elements were not swapped in the view, but the delta |d2|
+indicates that the elements were swapped. This is equivalent to swapping those
+elements and modifying the values to the ones at the same position in the
+original view.
+%
+A similar situation occurs when the view is not modified, but one element is not
+in the delta:
+%
+\begin{lstlisting}
+@@>@@ put (myAlignL @@|d3|@@) @@\lstcontinueline@@
+    [(0,('a',0)),(1,('b',1)),(2,('c',2))] @@\lstcontinueline@@
+    [(0,'A'),(1,'B'),(2,'C')]
+[(0,('A',0)),(1,('B',1)),(2,('C',0))]
+\end{lstlisting}
+%
+In this case, it is equivalent to remove the last element and inserting it
+again.
 
 The delta alignment implementation can be generalized for arbitrary list
 contents, resulting in the following equivalent functions with additional
@@ -850,6 +883,10 @@ locsT = fst . aux 0
            let  (l,i1  ) = aux i0 l0
                 (r,i   ) = aux (i1+1) r0
            in (Node i1 l r, i)
+
+flattenT :: Tree a -> [a]
+flattenT Nil = []
+flattenT (Node a l r) = flattenT l ++ [a] ++ flattenT r
 \end{code}
 %
 Thus the |Delta| type used for lists can also be used for trees, and the
@@ -873,6 +910,109 @@ approach used in the other implementations:
 The adaptation function for tree can be
 %
 \begin{code}
+myAdaptDeltaT  :: Tree Source -> Tree View -> Delta
+               -> Tree Source
+myAdaptDeltaT s v d = Prelude.fmap idOrCreate (locsT v)
+  where  idOrCreate i =
+           let js = rngOf i d
+           in  if js /= Set.empty
+               then flattenT s !! Set.findMin js
+               else  let (k, v1) = flattenT v !! i
+                     in (k, (v1, 0))
+\end{code}
+%
+where we take advantage of the |fmap| function, deriving from the fact that |Tree| is a
+functor.
+
+The implementation of the positional tree update is similar to the one for
+lists, since both have only two data constructors. However, trees have double
+recursion which must be taken into account.
+%
+\begin{code}
+myMapT :: BiGUL (Tree Source) (Tree View)
+myMapT = Case
+  [ $(normalSV [p| Nil |] [p| Nil |])
+      ==> $(rearrV [| \ Nil -> () |]) Skip
+  , $(adaptiveV [p| Nil |])
+      ==> \ _ _ -> Nil
+  , $(normalSV [p| Node _ _ _ |] [p| Node _ _ _ |])
+      ==>  $(rearrV  [| \ (Node v vl vr)
+                       -> (v, (vl, vr)) |]) $
+             $(rearrS  [| \ (Node s sl sr)
+                         -> (s, (sl, sr)) |])$
+                  myBX `Prod` (myMapT `Prod` myMapT)
+  , $(adaptiveV [p| (Node _ _ _) |])
+      ==> \ _ (Node (k, v1) _ _) -> Node  (k, (v1, 0))
+                                          Nil    Nil
+  ]
+\end{code}
+
+Having the adaptation and the positional update, we can now define a delta-based
+alignment for trees in a similar way as with lists:
+%
+\begin{code}
+myAlignT' :: BiGUL (Tree Source, Delta) (Tree View)
+myAlignT' = Case
+  [ $(normal [| \(_, d) v -> d == getIdT v |])
+      ==> $(rearrS [| \(s, _) -> s |]) myMapT
+  , $(adaptiveS [| const True |])
+      ==> \(s,d) v ->  let s' = myAdaptDeltaT s v d
+                       in (s', getIdT v) ]
+\end{code}
+%
+and corresponding wrapper:
+%
+\begin{code}
+myAlignT :: Delta -> BiGUL (Tree Source) (Tree View)
+myAlignT d = emb g p
+  where  g s    = get myAlignT' (s, getIdT s)
+         p s v  = fst $ put myAlignT' (s, d) v
+\end{code}
+
+The application of |get| and |put| to trees is similar to the application of
+them to lists. The |get| functions takes the source tree and produces a view
+tree where its elements are the view of their correspondence in the source:
+%
+\begin{lstlisting}
+@@>@@ get (myAlignT @@|d1|@@) (Node (1,('b',1)) @@\lstcontinueline@@
+      (Node (0,('a',0)) Nil Nil) @@\lstcontinueline@@
+      (Node (2,('c',2)) Nil Nil))
+Node (1,'b')  (Node (0,'a') Nil Nil) @@\lstcontinueline@@
+              (Node (2,'c') Nil Nil)
+\end{lstlisting}
+%
+The delta specification in the |put| transformation is the same as with lists:
+%
+\begin{lstlisting}
+@@>@@ put (myAlignT @@|d1|@@) @@\lstcontinueline@@
+    (Node (1,('b',1)) @@\lstcontinueline@@
+      (Node (0,('a',0)) Nil Nil) @@\lstcontinueline@@
+      (Node (2,('c',2)) Nil Nil)) @@\lstcontinueline@@
+    (Node (1,'B') @@\lstcontinueline@@
+      (Node (0,'A') Nil Nil) @@\lstcontinueline@@
+      (Node (2,'C') Nil Nil))
+Node (1,'B')  (Node (0,'A') Nil Nil) @@\lstcontinueline@@
+              (Node (2,'C') Nil Nil)
+\end{lstlisting}
+
+The delta alignment implementation can be generalized for arbitrary tree
+contents, with the following equivalent functions. Similarly to the list
+version, the functions are parametrized with a \emph{create} function and a
+BiGUL program to apply to the specific elements.
+%
+\begin{spec}
+mapT  :: (v -> s) -> BiGUL s v
+      -> BiGUL (Tree s) (Tree v)
+adaptDeltaT  :: (v -> s) -> Tree s -> Tree v -> Delta
+             -> Tree s
+alignT'  ::  BiGUL a b -> (b -> a)
+         ->  BiGUL (Tree a, Delta) (Tree b)
+alignT  :: Eq v => BiGUL s v -> (v -> s) -> Delta
+        -> BiGUL (Tree s) (Tree v)
+\end{spec}
+%
+\begin{comment}
+\begin{code}
 adaptDeltaT  :: (v -> s) -> Tree s -> Tree v -> Delta
              -> Tree s
 adaptDeltaT c s v d = Prelude.fmap idOrCreate (locsT v)
@@ -880,16 +1020,7 @@ adaptDeltaT c s v d = Prelude.fmap idOrCreate (locsT v)
                          in  if js /= Set.empty
                              then data_ s !! Set.findMin js
                              else c (data_ v !! i)
-\end{code}
-%
-where we take advantage of the |fmap| function, deriving from the fact that |Tree| is a
-functor.
 
-The implementation of the positional tree update is similar to the one for
-lists, since both have only two data constructos. However, trees have double
-recursion which must be taken into account.
-%
-\begin{code}
 mapT  :: (v -> s) -> BiGUL s v
       -> BiGUL (Tree s) (Tree v)
 mapT c u = Case
@@ -906,12 +1037,7 @@ mapT c u = Case
   , $(adaptiveV [p| (Node _ _ _) |])
       ==> \ _ (Node v _ _) -> Node (c v) Nil Nil
   ]
-\end{code}
 
-Having the adaptation and the positional update, we can now define a delta-based
-alignment for trees in a similar way as with lists:
-%
-\begin{code}
 alignT'  ::  BiGUL a b -> (b -> a)
          ->  BiGUL (Tree a, Delta) (Tree b)
 alignT' b c = Case
@@ -920,11 +1046,7 @@ alignT' b c = Case
   , $(adaptiveS [| const True |])
       ==> \(s,d) v ->  let s' = adaptDeltaT c s v d
                        in (s', getIdT v) ]
-\end{code}
-%
-and corresponding wrapper:
-%
-\begin{code}
+
 alignT  :: Eq v
         => BiGUL s v -> (v -> s) -> Delta
         -> BiGUL (Tree s) (Tree v)
@@ -932,6 +1054,7 @@ alignT b c d = emb g p
   where  g s    = get (alignT' b c) (s, getIdT s)
          p s v  = fst $ put (alignT' b c) (s, d) v
 \end{code}
+\end{comment}
 
 %%%
 %%% Generic Delta-Based Alignment
