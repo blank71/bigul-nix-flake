@@ -24,6 +24,7 @@ my $wrong = 0;
 # internals
 my $state = 0;
 my $expr = '';
+my $res = '';
 my $i = 0;
 
 # file parsing
@@ -42,9 +43,14 @@ while (<STDIN>) {
   } elsif ($line =~ /^$prompt\s*(.*)$/) {
     $expr = $1;
     $state = 1;
+  } elsif ($state == 1 and $line =~ /^\s*(.*?)\s*$newline\s*$/) {
+    $res .= "$1 ";
   } elsif ($state == 1) {
-    runExample($expr, $line, $i);
+    $res .= $line;
+    $res =~ s/\s\s+/ /g;
+    runExample($expr, $res, $i);
     $expr = '';
+    $res = '';
     $state = 0;
   }
 
@@ -64,11 +70,14 @@ sub runExample {
   my $l = shift;
   my $i = shift;
   $examples++;
+  # clean code
+  $e = cleanCode($e);
   # informative message
   print "Checking \"$e\"";
   STDOUT->flush();
   # run example
   my $result = `cd $haskelldir; $eval $extensions -e "$e" $paperdir/icfp16.lhs`;
+  die "Error when evaluating expression.\n" if $?;
   chomp $result;
   # check result
   if ($result eq $l) { # OK
@@ -81,6 +90,12 @@ sub runExample {
     print STDERR "    Expected result: $l\n";
     print STDERR "    Actual result:   $result\n";
   }
+}
+
+# clean code, removing LaTeX/lstlisting specifics
+sub cleanCode {
+  my $l = shift;
+  $l =~ s/\@\@\|(.*?)\|\@\@/$1/gr;
 }
 
 1;
