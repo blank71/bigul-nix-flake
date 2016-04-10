@@ -146,7 +146,10 @@ bidirectional language.
 \begin{comment}
 \begin{code}
 {-# LANGUAGE TemplateHaskell #-}
+{-# LANGUAGE QuasiQuotes     #-}
 {-# LANGUAGE DeriveFunctor #-}
+{-# LANGUAGE TypeFamilies  #-}
+{-# LANGUAGE TypeOperators #-}
 module ICFP16 where
 
 import Data.Relation (rngOf)
@@ -391,20 +394,32 @@ the several possibilities of source and view values in the update process:
 These actions are packed into a |Case| statement which selects the correct
 action for each situation:
 %
+%%\begin{code}
+%%myMapL :: BiGUL [Source] [View]
+%%myMapL = Case
+%%  [ $(normalSV [p| [] |] [p| [] |])
+%%      ==> $(rearrV [| \ [] -> () |]) Skip
+%%  , $(adaptiveV [p| [] |])
+%%      ==> \ _ _ -> []
+%%  , $(normalSV [p| (_ : _) |] [p| (_ : _) |])
+%%      ==> $(rearrV [| \ (v:vs) -> (v, vs) |])$
+%%        $(rearrS [| \ (s:ss) -> (s, ss) |])$
+%%          myBX `Prod` myMapL
+%%  , $(adaptiveV [p| (_ : _) |])
+%%      ==> \ _ ((k,v1) : _) -> [(k,(v1,0))]
+%%  ]
+%%\end{code}
 \begin{code}
 myMapL :: BiGUL [Source] [View]
-myMapL = Case
-  [ $(normalSV [p| [] |] [p| [] |])
-      ==> $(rearrV [| \ [] -> () |]) Skip
-  , $(adaptiveV [p| [] |])
-      ==> \ _ _ -> []
-  , $(normalSV [p| (_ : _) |] [p| (_ : _) |])
-      ==> $(rearrV [| \ (v:vs) -> (v, vs) |])$
-        $(rearrS [| \ (s:ss) -> (s, ss) |])$
-          myBX `Prod` myMapL
-  , $(adaptiveV [p| (_ : _) |])
-      ==> \ _ ((k,v1) : _) -> [(k,(v1,0))]
-  ]
+myMapL = [bcase|
+  Normal [] [] -> skip
+  Adaptive _ [] -> \ _ _ -> []
+  Normal (_ : _) (_ : _) -> update
+  Adaptive _ (_ : _) -> \ _ ((k,v1) : _) -> [(k,(v1,0))] |]
+  where  skip = $(rearrV [| \ [] -> () |])
+         update = $(rearrV [| \ (v:vs) -> (v, vs) |])$
+           $(rearrS [| \ (s:ss) -> (s, ss) |])$
+             myBX `Prod` myMapL
 \end{code}
 
 When both source and view are empty, or both have elements, a BiGUL program can
