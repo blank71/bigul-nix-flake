@@ -280,7 +280,7 @@ In this paper, we put up
 the slogan ``One |put| for All'', in the sense that
 a good language for programming |put| cannot only
 give full control over the behavior of bidirectional transformations,
-but also enable us to systematially
+but also enable us to systematically
 develop various domain-specific bidirectional languages and use
 them seamlessly in one framework, which
 would be nontrivial with the get-based method as seen above.
@@ -312,11 +312,11 @@ We can use the source rearranging operation
 \begin{spec}
 $(rearrS [| f |]) :: BiGUL s' v -> BiGUL s v
 \end{spec}
-where \lstinline{f}~is a ``simple'' $\lambda$-expression of type \lstinline{s -> s'} for extracting from the source of type~|s| a (usually smaller) source of type~|s'| before performing further updates on the extracted source, or dually the view rearranging operation
+where |f| is a ``simple'' $\lambda$-expression of type |s -> s'| for extracting from the source of type~|s| a (usually smaller) source of type~|s'| before performing further updates on the extracted source, or dually the view rearranging operation
 \begin{spec}
 $(rearrV [| g |]) :: BiGUL s v' -> BiGUL s v
 \end{spec}
-where the ``simple'' $\lambda$-expression \lstinline{g} should have type \lstinline{v -> v'}, and is used to transform the view from type~\lstinline{v} to type~\lstinline{v'} before performing further updates.
+where the ``simple'' $\lambda$-expression |g| should have type |v -> v'|, and is used to transform the view from type~|v| to type~|v'| before performing further updates.
 
 Most expressiveness of BiGUL comes from its |Case| operation for performing case analysis:
 \begin{spec}
@@ -345,8 +345,8 @@ $(normalSV    [| pS |] [| pV |]) ==> b
 $(adaptiveSV  [| pS |] [| pV |]) ==> f
   = ((\s v -> pS s && pV v), Adaptive  f)
 \end{spec}
-The unary predicates (|pS| and |pV|) can usually be conveniently expressed as patterns; |normalSV| and |adaptiveSV| can also accept patterns, which should be enclosed in pattern quotation brackets like |[p|| pat ||]|.
-There are also other variants of |normal| and |adaptive| that are suffixed with only |S| or~|V|, meaning that they accept only one unary predicate on either the source or the view.
+The unary predicates (|pS| and |pV|) can usually be conveniently expressed as patterns; |normalSV| and |adaptiveSV| can also accept patterns, which should be enclosed in pattern quotation brackets like \([p||\;pat\;||]\).
+There are also other variants of |normal| and |adaptive| that are suffixed with only |S| or~|V|, meaning that they accept only one unary predicate on either the source or the view, respectively.
 
 %%%
 %%% Positional Alignment
@@ -502,7 +502,7 @@ key component from each of the elements.
 The idea to implement this strategy is to separate the program in two parts:
 %
 \begin{itemize}
-  \item aligment of the elements;
+  \item alignment of the elements;
   \item the actual update.
 \end{itemize}
 
@@ -523,7 +523,7 @@ elements, and that the keys match element wise.
 
 In the case that both lists are not aligned, we define a function that adapts a
 source such that then they are both aligned. This is performed by traversing the
-view and fecthing the first corresponding element in the original source. If
+view and fetching the first corresponding element in the original source. If
 such element is not present, we create it. At the end, source elements not
 present in view are discarded. The adaptation of the source can be implemented
 as:
