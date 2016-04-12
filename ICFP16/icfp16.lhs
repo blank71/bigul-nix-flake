@@ -236,13 +236,13 @@ and got much appreciated. It is attractive, because |get| is easy to write,
 and if the system knows how to derive a put, there would be no additional
 burden for users to go from unidirectional to bidirectional.
 In contrast, the put-based method is new and far from being appreciated.
-One main criticism is that |put| is more difficult to write that |get|.
+One main criticism is that |put| is more difficult to write than |get|.
 
-However, the get-based method hardly describes full behavior
-of bidirectional transformation, so automatically
+However, the get-based method hardly describes the full behavior
+of a bidirectional transformation, so automatically
 derived |put| may not match the programmers' intention, which
-would prevent from it from being used in practice.
-More specifically, for an non-injective |get|
+would prevent it from being used in practice.
+More specifically, for a non-injective |get|
 there usually exist many possible |put| functions that can be
 combined with it to form a valid BX. For instance, for the same |getHeight|,
 the following is a valid |put| too:
@@ -259,25 +259,25 @@ transformation \cite{CheneyGMS15}.
 Since |get| does not contain
 sufficient information for a system to automatically
 derive intentional update policies of |put|,
-so in order to deal with various update policies of |put| in 
+in order to deal with various update policies of |put| in
 different contexts, significant extensions
-are necessary to make on the language for writing |get|.
+to the language for writing |get| are necessary.
 As a matter of fact, from the original get-based bidirectional
-language |lenses| in \cite{Foster2007}, we have seen
-many such extensions, e.g., to the |matching lenses|
+language \emph{lenses} \cite{Foster2007}, we have seen
+many such extensions, e.g., the \emph{matching lenses}
 to deal with alignment policies \cite{Barbosa2010},
-to the |delta lenses| to deal with operation-based update policies
-\cite{Diskin:2011,Hofmann2012}, and to the |generic lenses| to deal with
+the \emph{delta lenses} to deal with operation-based update policies
+\cite{Diskin:2011,Hofmann2012}, and the \emph{generic lenses} to deal with
 any updates on inductive data structures \cite{Pacheco2012}.
 All these extensions, as seen in the related papers,
 are nontrivial, where one has to
-rework on all the original lens framework by adding new information
+rework all the original lens framework by adding new information
 to |get| to indirectly control of the behavior of |put|, and to prove
 that the extension is sound in the sense that the new |get| and |put|
 are well-behaved.
 
 In this paper, we put up
-the slogan "One |put| for All", in the sense that
+the slogan ``One |put| for All'', in the sense that
 a good language for programming |put| cannot only
 give full control over the behavior of bidirectional transformations,
 but also enable us to systematially
@@ -285,7 +285,7 @@ develop various domain-specific bidirectional languages and use
 them seamlessly in one framework, which
 would be nontrivial with the get-based method as seen above.
 After a brief review of BiGUL, a putback-based
-bidirectional language, we will demonstrate how it can be used to
+bidirectional language, we demonstrate how it can be used to
 concisely implement the matching/delta/generic lenses that
 are guaranteed to be well-behaved.
 
