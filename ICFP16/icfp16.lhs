@@ -102,7 +102,7 @@
 \authorinfo{}{}{}
 \else
 \authorinfo{Jorge Mendes}
-           {HASLab, INESC TEC \& Universidade do Minho, Portugal}
+           {\hspace{-.5cm}HASLab, INESC TEC \& Universidade do Minho, Portugal\hspace{-.5cm}}
            {jorgemendes@@di.uminho.pt}
 \authorinfo{Hsiang-Shang Ko \and Zhenjiang Hu}
            {National Institute of Informatics, Japan}
