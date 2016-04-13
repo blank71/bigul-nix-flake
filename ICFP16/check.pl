@@ -5,13 +5,13 @@ use warnings;
 use IO::Handle qw(flush);
 
 # environment
-my $haskelldir = '../../bigul-clone/Haskell';
+my $haskelldir = '../../bigul-dev/Haskell';
 my $paperdir = `pwd`;
 chomp $paperdir;
 
 # execution
-my $eval = 'stack ghc --';
 my $extensions = '-XTemplateHaskell -XTypeFamilies -XTypeOperators';
+my $eval = "cabal exec -- ghc $extensions -e";
 
 # contents
 my $prompt = qr|@@>@@|;
@@ -76,8 +76,8 @@ sub runExample {
   print "Checking \"$e\"";
   STDOUT->flush();
   # run example
-  my $result = `cd $haskelldir; $eval $extensions -e "$e" $paperdir/icfp16.lhs`;
-  die "Error when evaluating expression.\n" if $?;
+  my $result = `cd $haskelldir; $eval "$e" $paperdir/icfp16.lhs`;
+  die "\nError when evaluating expression.\n" if $?;
   chomp $result;
   # check result
   if ($result eq $l) { # OK
