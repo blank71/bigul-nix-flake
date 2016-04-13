@@ -661,7 +661,7 @@ additional information. Implementing this in the running example:
 \begin{code}
 myAlignL'  ::  BiGUL ([Source], Delta) [View]
 myAlignL' = Case
-  [ $(normal [| \(_, d) v   ->  d == getIdL v
+  [ $(normal [| \(s, d) v   ->  d == getIdL v
                             &&  d == getIdL s |])
       ==> $(rearrS [| \(s, _) -> s |]) myMapL
   , $(adaptiveS [| const True |])
@@ -825,7 +825,7 @@ alignL  :: Eq v => BiGUL s v -> (v -> s) -> Delta
 alignL'  ::  BiGUL s v -> (v -> s)
          ->  BiGUL ([s], Delta) [v]
 alignL' b c = Case
-  [ $(normal [| \(_, d) v  -> d == getIdL v
+  [ $(normal [| \(s, d) v  -> d == getIdL v
                            && d == getIdL s |])
       ==> $(rearrS [| \(s, _) -> s |]) (mapL c b)
   , $(adaptiveS [| const True |])
@@ -975,7 +975,7 @@ alignment for trees in a similar way as with lists:
 \begin{code}
 myAlignT' :: BiGUL (Tree Source, Delta) (Tree View)
 myAlignT' = Case
-  [ $(normal [| \(_, d) v  ->  d == getIdT v
+  [ $(normal [| \(s, d) v  ->  d == getIdT v
                            &&  d == getIdT s |])
       ==> $(rearrS [| \(s, _) -> s |]) myMapT
   , $(adaptiveS [| const True |])
@@ -1064,7 +1064,7 @@ mapT c u = Case
 alignT'  ::  BiGUL a b -> (b -> a)
          ->  BiGUL (Tree a, Delta) (Tree b)
 alignT' b c = Case
-  [ $(normal [| \(_, d) v  ->  d == getIdT v
+  [ $(normal [| \(s, d) v  ->  d == getIdT v
                            &&  d == getIdT s |])
       ==> $(rearrS [| \(s, _) -> s |]) (mapT c b)
   , $(adaptiveS [| const True |])
@@ -1180,7 +1180,7 @@ align'  ::  (Shapely t, Positional t)
         =>  BiGUL s v -> (v -> s)
         ->  BiGUL (t s, Delta) (t v)
 align' b c = Case
-  [ $(normal [| \(_, d) v  ->  d == getId v
+  [ $(normal [| \(s, d) v  ->  d == getId v
                            &&  d == getId s |])
       ==> $(rearrS [| \(s, _) -> s |]) (positionalMap c b)
   , $(adaptiveS [| const True |])
