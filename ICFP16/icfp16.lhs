@@ -45,7 +45,7 @@
 	breaklines=true,
 	prebreak = \raisebox{0ex}[0ex][0ex]{\lstcontinueline},
 	morekeywords={},
-	deletekeywords={Num},
+	deletekeywords={Num,fst},
 	keywordstyle=\color[rgb]{0,0,1},             % keywords
 	commentstyle=\color[rgb]{0.133,0.545,0.133}, % comments
 	stringstyle=\color[rgb]{0.627,0.126,0.941},  % strings
@@ -1203,8 +1203,7 @@ align b c d = emb g p
 With the implementation of delta-based alignment, we can implement other
 alignment strategies upon the deltas without much work.
 It is possible to make minor changes to the |align| function to
-implement other kinds of alignments, e.g., key-based (for the special case of
-lists):
+implement other kinds of alignments, e.g., key-based:
 %
 \begin{code}
 keyAlign :: (Shapely s, Positional s, Eq (s b), Eq b, Eq k)
@@ -1230,6 +1229,40 @@ keyDelta sk vk ss vs = Set.fromList [ (sp, vp)  |  (s, sp) <- sps
   where  sps  = zip (data_ ss) (Set.elems $ locs ss)
          vps  = zip (data_ vs) (Set.elems $ locs vs)
 \end{code}
+
+It is then possible to apply key-based alignment on any structure that has an
+implementation of delta-based alignment. The same function can be used for,
+e.g., lists:
+%
+\begin{lstlisting}
+@@>@@ put (keyAlign myBX myCreate fst fst) @@\lstcontinueline@@
+    [(0,('a',0)),(1,('b',1)),(2,('c',2))] @@\lstcontinueline@@
+    [(0,'A'),(1,'B'),(2,'C')]
+[(0,('A',0)),(1,('B',1)),(2,('C',2))]
+\end{lstlisting}
+%
+and for trees:
+%
+\begin{lstlisting}
+@@>@@ put (keyAlign myBX myCreate fst fst) @@\lstcontinueline@@
+    (Node (1,('b',1)) @@\lstcontinueline@@
+      (Node (0,('a',0)) Nil Nil) @@\lstcontinueline@@
+      (Node (2,('c',2)) Nil Nil)) @@\lstcontinueline@@
+    (Node (1,'B') @@\lstcontinueline@@
+      (Node (0,'A') Nil Nil) @@\lstcontinueline@@
+      (Node (2,'C') Nil Nil))
+Node (1,('B',1))  (Node (0,('A',0)) Nil Nil) @@\lstcontinueline@@
+                  (Node (2,('C',2)) Nil Nil)
+\end{lstlisting}
+%
+where |myCreate (k, v1) = (k, (v1, 0))|.
+%
+\begin{comment}
+\begin{code}
+myCreate :: View -> Source
+myCreate (k, v1) = (k, (v1, 0))
+\end{code}
+\end{comment}
 
 
 %%%
