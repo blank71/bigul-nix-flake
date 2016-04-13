@@ -1014,8 +1014,8 @@ The delta specification in the |put| transformation is the same as with lists:
     (Node (1,'B') @@\lstcontinueline@@
       (Node (0,'A') Nil Nil) @@\lstcontinueline@@
       (Node (2,'C') Nil Nil))
-Node (1,'B')  (Node (0,'A') Nil Nil) @@\lstcontinueline@@
-              (Node (2,'C') Nil Nil)
+Node (1,('B',1))  (Node (0,('A',0)) Nil Nil) @@\lstcontinueline@@
+                  (Node (2,('C',2)) Nil Nil)
 \end{lstlisting}
 
 The delta alignment implementation can be generalized for arbitrary tree
