@@ -18,6 +18,7 @@
 %format i0="i_0"
 %format i1="i_1"
 %format delta="\delta"
+%format delta1="\delta^\prime"
 %format d1="\delta_1"
 %format d2="\delta_2"
 %format d3="\delta_3"
@@ -30,6 +31,8 @@
 %format Set.elems=elems
 %format Set.empty=" \emptyset "
 %format def="\text{def.}"
+%format GetPut="\text{\textsc{GetPut}}"
+%format PutGet="\text{\textsc{PutGet}}"
 
 \usepackage{amsmath,amssymb,amsfonts}
 \usepackage{graphicx}
@@ -708,31 +711,40 @@ myAlignL d = emb g p
          p s v  = fst $ put myAlignL' (s, d) v
 \end{code}
 %
-This wrapper implements directly the |get| and |put| functions, and
+This wrapper implements directly the |get| and |put| functions (respectively |g|
+and |p|), and
 embeds them into a BiGUL program, since this pair of |get|/|put| functions is
 well-behaved:\\
 %
 \textsc{GetPut} -- this law states that if no changes to the view are performed,
 then putting it back into the source does not alter the source. Since no changes
-are performed, the delta is the identity delta. This leads that the
-well-behavedness of |myAlignL' delta| derives from the one of |myMapL|
+are performed, the delta is the identity delta of the view, i.e., |delta =
+getIdL v| where |v = g s|. Furthermore, |v| is consistent with |(s, getIdL s)|,
+so we know that |getIdL s = getIdL v|. Applying |fst| to both sides of the
+following equation gives us |GetPut|:
 %
 \begin{spec}
-myAlignL' delta
-== {def myAlingL', delta = getIdL (get (myAlignL' delta) s)}
-myMapL
+put myAlignL' (s, getIdL v) (get myAlignL' (s, getIdL s))
+== { getIdL v == getIdL s }
+put myAlignL' (s, getIdL s) (get myAlignL' (s, getIdL s))
+== { GetPut for myAlignL' }
+(s, getIdL s)
 \end{spec}
-%
-which is well-behaved by definition.\\
 %
 \textsc{PutGet} -- this law states that the view after updating a source is the
-same as the one used for the update.
+same as the one used for the update. As the result of the |put| function, let
+|(s', delta1) = put myAlignL' (s, delta) v|, thus |(s', delta1)| is consistent
+with |v| and |delta1 == getIdL s'|. Applying the |get| function~|g|:
 %
 \begin{spec}
-get (myAlignL' delta) (put (myAlignL' delta) s v) = v
+get myAlignL' (s', getIdl s')
+== { delta1 = getIdL s' }
+get myAlignL' (s', delta1)
+== { let binding }
+get myAlignL' (put myAlignL' (s, delta))
+== { PutGet for myAlignL' }
+v
 \end{spec}
-%
-\TODO{PutGet.}
 
 The embedding of |get| and |put| functions can be defined as a BiGUL program:
 %
@@ -746,7 +758,6 @@ emb g p = Case
 \end{code}
 %
 Here what the normal branch does is, roughly speaking, leaving the source~|x| as it is while ignoring the view, since we know that the view is necessarily |g x|.
-\TODO{The intention of having the above sentence is to avoid explaining |Dep|.}
 In order for an embedding to be well-behaved, running the |put| function should
 produce a source that when running |get| should return the view given to the
 former, as stated by the \textsc{GetPut} law and enforced by the case structure.
@@ -1123,8 +1134,6 @@ container.
 
 The positional update is one of the aspects that is specific to each data type.
 To solve this issue in a simple manner, we introduce a new type class
-%
-\TODO{Find a better name fo the class.}
 %
 \begin{code}
 class Shapely t => Positional t where
