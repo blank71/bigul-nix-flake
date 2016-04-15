@@ -1,0 +1,2401 @@
+\documentclass[preprint,numbers]{sigplanconf}
+
+\newif\ifanonymous
+
+%\anonymoustrue
+\anonymousfalse
+
+%% ODER: format ==         = "\mathrel{==}"
+%% ODER: format /=         = "\neq "
+%
+%
+\makeatletter
+\@ifundefined{lhs2tex.lhs2tex.sty.read}%
+  {\@namedef{lhs2tex.lhs2tex.sty.read}{}%
+   \newcommand\SkipToFmtEnd{}%
+   \newcommand\EndFmtInput{}%
+   \long\def\SkipToFmtEnd#1\EndFmtInput{}%
+  }\SkipToFmtEnd
+
+\newcommand\ReadOnlyOnce[1]{\@ifundefined{#1}{\@namedef{#1}{}}\SkipToFmtEnd}
+\usepackage{amstext}
+\usepackage{amssymb}
+\usepackage{stmaryrd}
+\DeclareFontFamily{OT1}{cmtex}{}
+\DeclareFontShape{OT1}{cmtex}{m}{n}
+  {<5><6><7><8>cmtex8
+   <9>cmtex9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmtex10}{}
+\DeclareFontShape{OT1}{cmtex}{m}{it}
+  {<-> ssub * cmtt/m/it}{}
+\newcommand{\texfamily}{\fontfamily{cmtex}\selectfont}
+\DeclareFontShape{OT1}{cmtt}{bx}{n}
+  {<5><6><7><8>cmtt8
+   <9>cmbtt9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmbtt10}{}
+\DeclareFontShape{OT1}{cmtex}{bx}{n}
+  {<-> ssub * cmtt/bx/n}{}
+\newcommand{\tex}[1]{\text{\texfamily#1}}	% NEU
+
+\newcommand{\Sp}{\hskip.33334em\relax}
+
+
+\newcommand{\Conid}[1]{\mathit{#1}}
+\newcommand{\Varid}[1]{\mathit{#1}}
+\newcommand{\anonymous}{\kern0.06em \vbox{\hrule\@width.5em}}
+\newcommand{\plus}{\mathbin{+\!\!\!+}}
+\newcommand{\bind}{\mathbin{>\!\!\!>\mkern-6.7mu=}}
+\newcommand{\rbind}{\mathbin{=\mkern-6.7mu<\!\!\!<}}% suggested by Neil Mitchell
+\newcommand{\sequ}{\mathbin{>\!\!\!>}}
+\renewcommand{\leq}{\leqslant}
+\renewcommand{\geq}{\geqslant}
+\usepackage{polytable}
+
+%mathindent has to be defined
+\@ifundefined{mathindent}%
+  {\newdimen\mathindent\mathindent\leftmargini}%
+  {}%
+
+\def\resethooks{%
+  \global\let\SaveRestoreHook\empty
+  \global\let\ColumnHook\empty}
+\newcommand*{\savecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\savecolumns[#1]}}
+\newcommand*{\restorecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\restorecolumns[#1]}}
+\newcommand*{\aligncolumn}[2]%
+  {\g@addto@macro\ColumnHook{\column{#1}{#2}}}
+
+\resethooks
+
+\newcommand{\onelinecommentchars}{\quad-{}- }
+\newcommand{\commentbeginchars}{\enskip\{-}
+\newcommand{\commentendchars}{-\}\enskip}
+
+\newcommand{\visiblecomments}{%
+  \let\onelinecomment=\onelinecommentchars
+  \let\commentbegin=\commentbeginchars
+  \let\commentend=\commentendchars}
+
+\newcommand{\invisiblecomments}{%
+  \let\onelinecomment=\empty
+  \let\commentbegin=\empty
+  \let\commentend=\empty}
+
+\visiblecomments
+
+\newlength{\blanklineskip}
+\setlength{\blanklineskip}{0.66084ex}
+
+\newcommand{\hsindent}[1]{\quad}% default is fixed indentation
+\let\hspre\empty
+\let\hspost\empty
+\newcommand{\NB}{\textbf{NB}}
+\newcommand{\Todo}[1]{$\langle$\textbf{To do:}~#1$\rangle$}
+
+\EndFmtInput
+\makeatother
+%
+%
+%
+%
+%
+%
+% This package provides two environments suitable to take the place
+% of hscode, called "plainhscode" and "arrayhscode". 
+%
+% The plain environment surrounds each code block by vertical space,
+% and it uses \abovedisplayskip and \belowdisplayskip to get spacing
+% similar to formulas. Note that if these dimensions are changed,
+% the spacing around displayed math formulas changes as well.
+% All code is indented using \leftskip.
+%
+% Changed 19.08.2004 to reflect changes in colorcode. Should work with
+% CodeGroup.sty.
+%
+\ReadOnlyOnce{polycode.fmt}%
+\makeatletter
+
+\newcommand{\hsnewpar}[1]%
+  {{\parskip=0pt\parindent=0pt\par\vskip #1\noindent}}
+
+% can be used, for instance, to redefine the code size, by setting the
+% command to \small or something alike
+\newcommand{\hscodestyle}{}
+
+% The command \sethscode can be used to switch the code formatting
+% behaviour by mapping the hscode environment in the subst directive
+% to a new LaTeX environment.
+
+\newcommand{\sethscode}[1]%
+  {\expandafter\let\expandafter\hscode\csname #1\endcsname
+   \expandafter\let\expandafter\endhscode\csname end#1\endcsname}
+
+% "compatibility" mode restores the non-polycode.fmt layout.
+
+\newenvironment{compathscode}%
+  {\par\noindent
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \let\hspre\(\let\hspost\)%
+   \pboxed}%
+  {\endpboxed\)%
+   \par\noindent
+   \ignorespacesafterend}
+
+\newcommand{\compaths}{\sethscode{compathscode}}
+
+% "plain" mode is the proposed default.
+% It should now work with \centering.
+% This required some changes. The old version
+% is still available for reference as oldplainhscode.
+
+\newenvironment{plainhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\hspre\(\let\hspost\)%
+   \pboxed}%
+  {\endpboxed%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+\newenvironment{oldplainhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \(\pboxed}%
+  {\endpboxed\)%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+% Here, we make plainhscode the default environment.
+
+\newcommand{\plainhs}{\sethscode{plainhscode}}
+\newcommand{\oldplainhs}{\sethscode{oldplainhscode}}
+\plainhs
+
+% The arrayhscode is like plain, but makes use of polytable's
+% parray environment which disallows page breaks in code blocks.
+
+\newenvironment{arrayhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \(\parray}%
+  {\endparray\)%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+\newcommand{\arrayhs}{\sethscode{arrayhscode}}
+
+% The mathhscode environment also makes use of polytable's parray 
+% environment. It is supposed to be used only inside math mode 
+% (I used it to typeset the type rules in my thesis).
+
+\newenvironment{mathhscode}%
+  {\parray}{\endparray}
+
+\newcommand{\mathhs}{\sethscode{mathhscode}}
+
+% texths is similar to mathhs, but works in text mode.
+
+\newenvironment{texthscode}%
+  {\(\parray}{\endparray\)}
+
+\newcommand{\texths}{\sethscode{texthscode}}
+
+% The framed environment places code in a framed box.
+
+\def\codeframewidth{\arrayrulewidth}
+\RequirePackage{calc}
+
+\newenvironment{framedhscode}%
+  {\parskip=\abovedisplayskip\par\noindent
+   \hscodestyle
+   \arrayrulewidth=\codeframewidth
+   \tabular{@{}|p{\linewidth-2\arraycolsep-2\arrayrulewidth-2pt}|@{}}%
+   \hline\framedhslinecorrect\\{-1.5ex}%
+   \let\endoflinesave=\\
+   \let\\=\@normalcr
+   \(\pboxed}%
+  {\endpboxed\)%
+   \framedhslinecorrect\endoflinesave{.5ex}\hline
+   \endtabular
+   \parskip=\belowdisplayskip\par\noindent
+   \ignorespacesafterend}
+
+\newcommand{\framedhslinecorrect}[2]%
+  {#1[#2]}
+
+\newcommand{\framedhs}{\sethscode{framedhscode}}
+
+% The inlinehscode environment is an experimental environment
+% that can be used to typeset displayed code inline.
+
+\newenvironment{inlinehscode}%
+  {\(\def\column##1##2{}%
+   \let\>\undefined\let\<\undefined\let\\\undefined
+   \newcommand\>[1][]{}\newcommand\<[1][]{}\newcommand\\[1][]{}%
+   \def\fromto##1##2##3{##3}%
+   \def\nextline{}}{\) }%
+
+\newcommand{\inlinehs}{\sethscode{inlinehscode}}
+
+% The joincode environment is a separate environment that
+% can be used to surround and thereby connect multiple code
+% blocks.
+
+\newenvironment{joincode}%
+  {\let\orighscode=\hscode
+   \let\origendhscode=\endhscode
+   \def\endhscode{\def\hscode{\endgroup\def\@currenvir{hscode}\\}\begingroup}
+   %\let\SaveRestoreHook=\empty
+   %\let\ColumnHook=\empty
+   %\let\resethooks=\empty
+   \orighscode\def\hscode{\endgroup\def\@currenvir{hscode}}}%
+  {\origendhscode
+   \global\let\hscode=\orighscode
+   \global\let\endhscode=\origendhscode}%
+
+\makeatother
+\EndFmtInput
+%
+%
+
+\usepackage{amsmath,amssymb,amsfonts}
+\usepackage{graphicx}
+\usepackage{xcolor}
+\usepackage{xspace}
+\usepackage{verbatim}
+\usepackage{listings}
+\newcommand{\lstcontinueline}{\ensuremath{\hookleftarrow}}
+\lstset{%
+	basicstyle=\scriptsize\ttfamily,
+	language={Haskell},
+	inputencoding=utf8,
+	breaklines=true,
+	prebreak = \raisebox{0ex}[0ex][0ex]{\lstcontinueline},
+	morekeywords={},
+	deletekeywords={Num,fst},
+	keywordstyle=\color[rgb]{0,0,1},             % keywords
+	commentstyle=\color[rgb]{0.133,0.545,0.133}, % comments
+	stringstyle=\color[rgb]{0.627,0.126,0.941},  % strings
+	escapechar=@,
+}
+\usepackage{array}
+\usepackage{tikz}
+\usetikzlibrary{arrows,positioning,
+  shapes.multipart,
+  matrix,
+  positioning,
+  shapes.callouts,
+  shapes.arrows,
+  calc}
+
+\newcommand{\TODO}[1]{{\color{black!10!blue}TODO #1}}
+\newcommand{\mydraft}[1]{{\color{black!50!green}#1}}
+\newcommand{\mywrong}[1]{{\color{black!10!red}#1}}
+
+\DeclareMathOperator{\where}{where}
+\DeclareMathOperator{\bxget}{get}
+\DeclareMathOperator{\bxput}{put}
+\DeclareMathOperator{\bxcreate}{create}
+\DeclareMathOperator{\dput}{dput}
+\DeclareMathOperator{\dcreate}{dcreate}
+\DeclareMathOperator{\data}{data}
+\DeclareMathOperator{\shape}{shape}
+\DeclareMathOperator{\recover}{recover}
+\DeclareMathOperator{\locs}{locs}
+
+%----------------------------------------------------------------------
+% Include the METR.sty file 
+\usepackage{GRACE-TR}
+
+% Fill in the following cover-page information correctly
+\GRACETRtitle{The Under-Appreciated Put: Implementing Delta-Alignment in BiGUL\\
+           -- Functional Pearl --}
+\GRACETRauthor{Jorge Mendes \quad Hsiang-Shang Ko \quad  Zhenjiang HU}
+\GRACETRdate{April 2016}
+\GRACETRid{GRACE-TR 2016--03}
+\begin{document}
+% Generate the METR cover
+\GRACETRmakecover
+%----------------------------------------------------------------------
+
+%\begin{document}
+
+\special{papersize=8.5in,11in}
+\setlength{\pdfpageheight}{\paperheight}
+\setlength{\pdfpagewidth}{\paperwidth}
+
+\conferenceinfo{CONF 'yy}{Month d--d, 20yy, City, ST, Country}
+\copyrightyear{20yy}
+\copyrightdata{978-1-nnnn-nnnn-n/yy/mm}
+\copyrightdoi{nnnnnnn.nnnnnnn}
+
+% Uncomment the publication rights you want to use.
+%\publicationrights{transferred}
+%\publicationrights{licensed}     % this is the default
+%\publicationrights{author-pays}
+
+%\titlebanner{banner above paper title}        % These are ignored unless
+%\preprintfooter{short description of paper}   % 'preprint' option specified.
+
+\title{The Under-Appreciated Put: Implementing Delta-Alignment in BiGUL}
+\subtitle{Functional Pearl}
+
+\ifanonymous
+\authorinfo{}{}{}
+\else
+\authorinfo{Jorge Mendes}
+           {\hspace{-.5cm}HASLab, INESC TEC \& Universidade do Minho, Portugal\hspace{-.5cm}}
+           {jorgemendes@di.uminho.pt}
+\authorinfo{Hsiang-Shang Ko \and Zhenjiang Hu}
+           {National Institute of Informatics, Japan}
+           {\{hsiang-shang,hu\}@nii.ac.jp}
+\fi
+
+\maketitle
+
+\begin{abstract}
+There are two approaches to bidirectional programming.
+One is the get-based method where one writes \ensuremath{\Varid{get}} and
+\ensuremath{\Varid{put}} is automatically derived, and the other is
+the put-based method where one writes \ensuremath{\Varid{put}} and
+\ensuremath{\Varid{get}} is automatically derived.
+In this paper, we argue that the put-based method
+deserves more attention, because a
+a good language for programming \ensuremath{\Varid{put}} cannot only
+give full control over the behavior of bidirectional transformations,
+but also enable us to efficiently
+develop various domain-specific bidirectional languages and use
+them seamlessly in one framework, which
+would be nontrivial with the get-based method.
+We demonstrate how the matching/delta/generic lenses can be
+implemented in BiGUL, a putback-based
+bidirectional language.
+\end{abstract}
+
+%\category{CR-number}{subcategory}{third-level}
+
+% general terms are not compulsory anymore,
+% you may leave them out
+%\terms
+%term1, term2
+
+%\keywords
+%keyword1, keyword2
+
+%%%
+%%% Haskell Preamble
+%%%
+\begin{comment}
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mbox{\enskip\{-\# LANGUAGE TemplateHaskell  \#-\}\enskip}{}\<[E]%
+\\
+\>[B]{}\mbox{\enskip\{-\# LANGUAGE QuasiQuotes      \#-\}\enskip}{}\<[E]%
+\\
+\>[B]{}\mbox{\enskip\{-\# LANGUAGE DeriveFunctor  \#-\}\enskip}{}\<[E]%
+\\
+\>[B]{}\mbox{\enskip\{-\# LANGUAGE TypeFamilies   \#-\}\enskip}{}\<[E]%
+\\
+\>[B]{}\mbox{\enskip\{-\# LANGUAGE TypeOperators  \#-\}\enskip}{}\<[E]%
+\\
+\>[B]{}\mathbf{module}\;\Conid{ICFP16}\;\mathbf{where}{}\<[E]%
+\\[\blanklineskip]%
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Data}.Relation}\;(\Varid{rngOf}){}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Data}.Set}\;\Varid{as}\;\Conid{Set}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Data}.Shape}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Generics}.\Conid{BiGUL}.AST}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Generics}.\Conid{BiGUL}.\Conid{Interpreter}.Unsafe}\;(\Varid{get},\Varid{put}){}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Generics}.\Conid{BiGUL}.TH}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{GHC}.Generics}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{Prelude}\;\Varid{hiding}\;(\Varid{traverse}){}\<[E]%
+\\[\blanklineskip]%
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Generics}.\Conid{Pointless}.Combinators}\;\Varid{hiding}\;(\Varid{and}){}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Generics}.\Conid{Pointless}.Functors}\;\Varid{hiding}\;(\Conid{Functor},(\mathbin{:+:}),(\mathbin{:*:})){}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Generics}.\Conid{Pointless}.HFunctors}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\end{comment}
+
+\section{Introduction}
+
+Bidirectional transformations are hot! They are 
+originated from the {\em view updating\/} mechanism in the
+database community~\cite{Bancilhon:81,Dayal:82,GoPZ88},
+have been recently attracting a lot of attention
+from researchers in the communities of programming languages and 
+software engineering \cite{GRACE:09,HSST11},
+since the pioneering work of Foster et al. on 
+a combinatorial language for bidirectional tree transformations \cite{Foster2007}.
+
+A bidirectional transformation (BX for short) is simply
+a pair of functions\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Varid{get}\mathbin{::}\Conid{Source}\to \Conid{View}{}\<[E]%
+\\
+\>[3]{}\Varid{put}\mathbin{::}\Conid{Source}\to \Conid{View}\to \Conid{View}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+where 
+the \emph{get} function extracts a view from a source and the \emph{put}
+function updates the original source with information from the new view.
+As a simple example, consider that we wish to synchronize between
+rectangles and their heights, we can define\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Varid{getHeight}\;(\Varid{height},\Varid{width})\mathrel{=}\Varid{height}{}\<[E]%
+\\
+\>[3]{}\Varid{putHeight}\;(\Varid{height},\Varid{width})\;\Varid{height'}\mathrel{=}(\Varid{height'},\Varid{width}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+where a rectangle is represented by a pair of its height and width.
+
+Certainly not any pair of \ensuremath{\Varid{get}} and \ensuremath{\Varid{put}} can form bidirectional
+transformations for synchronization. \ensuremath{\Varid{get}} and \ensuremath{\Varid{put}} should
+satisfy the {\em well-behavedness} laws:
+\begin{align*}
+\tag*{\textsc{GetPut}}
+\label{GetPut}
+\ensuremath{\Varid{put}\;\Varid{s}\;(\Varid{get}\;\Varid{s})\mathrel{=}\Varid{s}}\\
+\tag*{\textsc{PutGet}}
+\label{PutGet}
+\ensuremath{\Varid{get}\;(\Varid{put}\;\Varid{s}\;\Varid{v})\mathrel{=}\Varid{v}}
+\end{align*}
+%
+The \ref{GetPut} law requires that no changing on the view shall be reflected as
+ no changing on the source, while the \ref{PutGet} law requires all changes 
+in the view to be completely reflected to the source so that the changed
+view can be computed again by applying the forward transformation to
+the changed source.
+For instance, if we change the above \ensuremath{\Varid{put}} to\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Varid{putHeight'}\;(\Varid{height},\Varid{width})\;\Varid{height'}\mathrel{=}(\Varid{height'}\mathbin{+}\mathrm{1},\Varid{width}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\ensuremath{\Varid{get}} and \ensuremath{\Varid{put'}} will break the laws.
+
+A straightforward approach to developing well-behaved 
+BXs in order to solve various synchronization problems
+is to write both \ensuremath{\Varid{get}} and \ensuremath{\Varid{put}}. The approach
+has the practical problem that the programmer needs to show that the two transformations
+satisfy the well-behavedness laws,
+and a modification to
+one of the transformations requires a redefinition of the other
+transformation as well as a new well-behavedness proof.
+To ease and enable maintainable bidirectional programming,
+it is preferable to write 
+just a single program that can denote both transformations,
+which has motivated two different approaches:
+\begin{itemize}
+\item {\em Get-based Method}: allowing users to write \ensuremath{\Varid{get}}
+and derive a suitable \ensuremath{\Varid{put}} \cite{Foster2007,MHNHT07,Bohannon:08,Barbosa2010,Hidaka:10,Hofmann2012,Pacheco2012};
+\item {\em Put-based Method}: allowing users to write \ensuremath{\Varid{put}}
+and derive the unique \ensuremath{\Varid{get}} if there is \cite{PaHF14,PachecoZH14,HuPF14,FischerHP15,Ko2016}.
+\end{itemize}
+
+The get-based method has been intensively studied for over ten years
+and got much appreciated. It is attractive, because \ensuremath{\Varid{get}} is easy to write,
+and if the system knows how to derive a put, there would be no additional
+burden for users to go from unidirectional to bidirectional.
+In contrast, the put-based method is new and far from being appreciated.
+One main criticism is that \ensuremath{\Varid{put}} is more difficult to write than \ensuremath{\Varid{get}}.
+
+However, the get-based method hardly describes the full behavior
+of a bidirectional transformation, so automatically
+derived \ensuremath{\Varid{put}} may not match the programmers' intention, which
+would prevent it from being used in practice.
+More specifically, for a non-injective \ensuremath{\Varid{get}}
+there usually exist many possible \ensuremath{\Varid{put}} functions that can be
+combined with it to form a valid BX. For instance, for the same \ensuremath{\Varid{getHeight}},
+the following is a valid \ensuremath{\Varid{put}} too:\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{8}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Varid{putHeight''}\;(\Varid{height},\Varid{weight})\;\Varid{height'}{}\<[E]%
+\\
+\>[3]{}\hsindent{5}{}\<[8]%
+\>[8]{}\mathrel{=}(\Varid{height'},\Varid{weight}\;\Varid{x}\;(\Varid{height'}\mathbin{/}\Varid{height})){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+%< putHeight2 (height, weight) height'
+%<      | height==height'  = (height, width)
+%<      | otherwise        = (height', 1)
+In fact, it is impossible in general to automatically derive
+the most suitable valid \ensuremath{\Varid{put}} 
+that can be paired with the \ensuremath{\Varid{get}} to form a bidirectional
+transformation \cite{CheneyGMS15}.
+
+Since \ensuremath{\Varid{get}} does not contain
+sufficient information for a system to automatically
+derive intentional update policies of \ensuremath{\Varid{put}},
+in order to deal with various update policies of \ensuremath{\Varid{put}} in
+different contexts, significant extensions
+to the language for writing \ensuremath{\Varid{get}} are necessary.
+As a matter of fact, from the original get-based bidirectional
+language \emph{lenses} \cite{Foster2007}, we have seen
+many such extensions, e.g., the \emph{matching lenses}
+to deal with alignment policies \cite{Barbosa2010},
+the \emph{delta lenses} to deal with operation-based update policies
+\cite{Diskin:2011,Hofmann2012}, and the \emph{generic lenses} to deal with
+any updates on inductive data structures \cite{Pacheco2012}.
+All these extensions, as seen in the related papers,
+are nontrivial, where one has to
+rework all the original lens framework by adding new information
+to \ensuremath{\Varid{get}} to indirectly control of the behavior of \ensuremath{\Varid{put}}, and to prove
+that the extension is sound in the sense that the new \ensuremath{\Varid{get}} and \ensuremath{\Varid{put}}
+are well-behaved.
+
+In this paper, we put up
+the slogan ``One \ensuremath{\Varid{put}} for All'', in the sense that
+a good language for programming \ensuremath{\Varid{put}} cannot only
+give full control over the behavior of bidirectional transformations,
+but also enable us to systematically
+develop various domain-specific bidirectional languages and use
+them seamlessly in one framework, which
+would be nontrivial with the get-based method as seen above.
+After a brief review of BiGUL, a putback-based
+bidirectional language, we demonstrate how it can be used to
+concisely implement the matching/delta/generic lenses that
+are guaranteed to be well-behaved.
+
+%%%
+%%% Putback-Based Bidirectional Transformations
+%%%
+\section{Preparation: Putback-Based BX}
+
+%\TODO{Will revise this part later}
+
+%An under-appreciated fact about well-behaved lenses is that \emph{put} completely determines the behavior of the corresponding \emph{get} --- that is, given a \emph{put} function and two \emph{get} functions each of which forms a well-behaved lens when paired with the \emph{put} function, it must be the case that the two \emph{get} functions are pointwise equal. This fact was already noted by Foster in his PhD thesis~\cite{Foster2009} but had remained neglected until people dug up this idea and started exploring the possibility of specifying BXs in terms of \emph{put} \TODO{citations}.
+
+Intuitively, think of a BiGUL program of type \ensuremath{\Conid{BiGUL}\;\Varid{s}\;\Varid{v}} as describing how to manipulate a state consisting of a source component of type~\ensuremath{\Varid{s}} and a view component of type~\ensuremath{\Varid{v}}; the goal is to copy all information in the view to proper places in the source.
+In the simplest case, the view has type~\ensuremath{()} and contains no information, and we can use \ensuremath{\Conid{Skip}\mathbin{::}\Conid{BiGUL}\;\Varid{s}\;()} to leave the source unchanged;
+another simple case is when the view has the same type as the source, and we can use \ensuremath{\Conid{Replace}\mathbin{::}\Conid{BiGUL}\;\Varid{s}\;\Varid{s}} to replace the entire source with the view.
+BiGUL programs compose --- for example, when both the source and the view are pairs, we can use
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Conid{Prod}\mathbin{::}{}\<[10]%
+\>[10]{}\Conid{BiGUL}\;\Varid{s}\;\Varid{v}\to \Conid{BiGUL}\;\Varid{s'}\;\Varid{v'}\to {}\<[E]%
+\\
+\>[10]{}\Conid{BiGUL}\;(\Varid{s},\Varid{s'})\;(\Varid{v},\Varid{v'}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+to compose two BiGUL programs on the left and right components respectively; we will typeset the infix application of \ensuremath{\Conid{Prod}} as `\ensuremath{ \times }'.
+Of course, in most cases the source and view are in more complex forms, and we should somehow transform and decompose them into simpler forms before we can use \ensuremath{\Conid{Skip}}, \ensuremath{\Conid{Replace}}, or \ensuremath{\Conid{Prod}}; this is usually done using two ``rearrangement'' operations on the source and view respectively:
+We can use the source rearranging operation
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \Varid{f}\mid \mskip1.5mu])\mathbin{::}\Conid{BiGUL}\;\Varid{s'}\;\Varid{v}\to \Conid{BiGUL}\;\Varid{s}\;\Varid{v}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+where \ensuremath{\Varid{f}} is a ``simple'' $\lambda$-expression of type \ensuremath{\Varid{s}\to \Varid{s'}} for extracting from the source of type~\ensuremath{\Varid{s}} a (usually smaller) source of type~\ensuremath{\Varid{s'}} before performing further updates on the extracted source, or dually the view rearranging operation
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \Varid{g}\mid \mskip1.5mu])\mathbin{::}\Conid{BiGUL}\;\Varid{s}\;\Varid{v'}\to \Conid{BiGUL}\;\Varid{s}\;\Varid{v}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+where the ``simple'' $\lambda$-expression \ensuremath{\Varid{g}} should have type \ensuremath{\Varid{v}\to \Varid{v'}}, and is used to transform the view from type~\ensuremath{\Varid{v}} to type~\ensuremath{\Varid{v'}} before performing further updates.
+
+Most expressiveness of BiGUL comes from its \ensuremath{\Conid{Case}} operation for performing case analysis:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Conid{Case}\mathbin{::}[\mskip1.5mu (\Varid{s}\to \Varid{v}\to \Conid{Bool},\Conid{Branch}\;\Varid{s}\;\Varid{v})\mskip1.5mu]\to \Conid{BiGUL}\;\Varid{s}\;\Varid{v}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\ensuremath{\Conid{Case}} takes a list of pairs whose first component is a boolean predicate on both the source and the view, and whose second component is a ``branch'', whose type is defined by
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{18}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{18E}{@{}l@{}}%
+\column{21}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{31}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathbf{data}\;\Conid{Branch}\;\Varid{s}\;\Varid{v}{}\<[18]%
+\>[18]{}\mathrel{=}{}\<[18E]%
+\>[21]{}\Conid{Normal}\;{}\<[31]%
+\>[31]{}(\Conid{BiGUL}\;\Varid{s}\;\Varid{v}){}\<[E]%
+\\
+\>[18]{}\mid {}\<[18E]%
+\>[21]{}\Conid{Adaptive}\;{}\<[31]%
+\>[31]{}(\Varid{s}\to \Varid{v}\to \Varid{s}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+A branch can be a ``normal'' branch, in which case it is a BiGUL program of type \ensuremath{\Conid{BiGUL}\;\Varid{s}\;\Varid{v}}, or an ``adaptive'' branch, in which case it is a Haskell function of type \ensuremath{\Varid{s}\to \Varid{v}\to \Varid{s}}.
+The semantics of \ensuremath{\Conid{Case}} is largely as people would expect: executing the first branch whose associated predicate evaluates to true on the current state, and performing further updates when this branch is normal.
+More interestingly, when the chosen branch is adaptive, the source will be replaced by the result of evaluating the associated function on the current state, and the whole \ensuremath{\Conid{Case}} will be executed again.
+
+We introduce some extra notations for writing branches more easily.
+The two basic ones are for constructing normal and adaptive branches in general:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{13}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{29}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{45}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathbin{\$}(\Varid{normal}\;{}\<[13]%
+\>[13]{}[\mskip1.5mu \mid \Varid{p}\mid \mskip1.5mu])\Longrightarrow\Varid{b}{}\<[29]%
+\>[29]{}\mathrel{=}(\Varid{p},\Conid{Normal}\;{}\<[45]%
+\>[45]{}\Varid{b}){}\<[E]%
+\\
+\>[B]{}\mathbin{\$}(\Varid{adaptive}\;{}\<[13]%
+\>[13]{}[\mskip1.5mu \mid \Varid{p}\mid \mskip1.5mu])\Longrightarrow\Varid{f}{}\<[29]%
+\>[29]{}\mathrel{=}(\Varid{p},\Conid{Adaptive}\;{}\<[45]%
+\>[45]{}\Varid{f}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+Here the boolean predicate~\ensuremath{\Varid{p}} takes both a source and a view.
+Often this predicate is a conjunction of two unary predicates on the source and view respectively, so we introduce another set of notations:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{15}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{40}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathbin{\$}(\Varid{normalSV}\;{}\<[15]%
+\>[15]{}[\mskip1.5mu \mid \Varid{pS}\mid \mskip1.5mu]\;[\mskip1.5mu \mid \Varid{pV}\mid \mskip1.5mu])\Longrightarrow\Varid{b}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathrel{=}((\lambda \Varid{s}\;\Varid{v}\to \Varid{pS}\;\Varid{s}\mathrel{\wedge}\Varid{pV}\;\Varid{v}),\Conid{Normal}\;{}\<[40]%
+\>[40]{}\Varid{b}){}\<[E]%
+\\
+\>[B]{}\mathbin{\$}(\Varid{adaptiveSV}\;{}\<[15]%
+\>[15]{}[\mskip1.5mu \mid \Varid{pS}\mid \mskip1.5mu]\;[\mskip1.5mu \mid \Varid{pV}\mid \mskip1.5mu])\Longrightarrow\Varid{f}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathrel{=}((\lambda \Varid{s}\;\Varid{v}\to \Varid{pS}\;\Varid{s}\mathrel{\wedge}\Varid{pV}\;\Varid{v}),\Conid{Adaptive}\;{}\<[40]%
+\>[40]{}\Varid{f}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+The unary predicates (\ensuremath{\Varid{pS}} and \ensuremath{\Varid{pV}}) can usually be conveniently expressed as patterns; \ensuremath{\Varid{normalSV}} and \ensuremath{\Varid{adaptiveSV}} can also accept patterns, which should be enclosed in pattern quotation brackets like \([p|\;pat\;|]\).
+There are also other variants of \ensuremath{\Varid{normal}} and \ensuremath{\Varid{adaptive}} that are suffixed with only \ensuremath{\Conid{S}} or~\ensuremath{\Conid{V}}, meaning that they accept only one unary predicate on either the source or the view, respectively.
+
+%%%
+%%% Positional Alignment
+%%%
+\section{Positional Alignment}
+
+The simplest alignment strategy is the positional one. The following types for
+source (\ensuremath{\Conid{Source}}) and view (\ensuremath{\Conid{View}}) are used for the running example.
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathbf{type}\;\Conid{Source}\mathrel{=}(\Conid{Int},(\Conid{Char},\Conid{Int})){}\<[E]%
+\\
+\>[B]{}\mathbf{type}\;\Conid{View}\mathrel{=}(\Conid{Int},\Conid{Char}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+%
+The first component of the pair should match the first component of the view,
+and the character component (\ensuremath{\Conid{Char}}) of the source should match the character
+component of the view. This relation between source and view can be expressed
+with the following BiGUL program:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{34}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{myBX}\mathbin{::}\Conid{BiGUL}\;\Conid{Source}\;\Conid{View}{}\<[E]%
+\\
+\>[B]{}\Varid{myBX}\mathrel{=}\Conid{Replace} \times \mathbin{\$}(\Varid{rearrV}\;{}\<[34]%
+\>[34]{}[\mskip1.5mu \mid \lambda \Varid{c}\to (\Varid{c},())\mid \mskip1.5mu])\;{}\<[E]%
+\\
+\>[34]{}(\Conid{Replace} \times \Conid{Skip}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+Positional alignment for lists with elements of the above source and view types
+is pretty straightforward. No moves are taken into
+account, and elements are added or deleted at the end of the source. Just as
+with any other programming practice, the BiGUL program must take into account
+the several possibilities of source and view values in the update process:
+%
+\begin{itemize}
+  \item both source and view are empty, and we just
+    \ensuremath{\Conid{Skip}};
+  \item all elements of the view were processed, so we adapt the source removing
+    the extra elements
+    \ensuremath{\lambda \anonymous \;\anonymous \to [\mskip1.5mu \mskip1.5mu]};
+    \item both source and view have elements, then we update with the head of both
+    source and view, and then recurse
+    \ensuremath{\Varid{u} \times \Varid{myMapL}\;\Varid{c}\;\Varid{u}};
+  \item the source does not have enough elements and create new ones
+    \ensuremath{\lambda \anonymous \;((\Varid{k},v_1)\mathbin{:}\anonymous )\to [\mskip1.5mu (\Varid{k},(v_1,\mathrm{0}))\mskip1.5mu]}.
+\end{itemize}
+%
+These actions are packed into a \ensuremath{\Conid{Case}} statement which selects the correct
+action for each situation:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{7}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{11}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{myMapL}\mathbin{::}\Conid{BiGUL}\;[\mskip1.5mu \Conid{Source}\mskip1.5mu]\;[\mskip1.5mu \Conid{View}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{myMapL}\mathrel{=}\Conid{Case}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}[\mskip1.5mu \mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\Longrightarrow\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda [\mskip1.5mu \mskip1.5mu]\to ()\mid \mskip1.5mu])\;\Conid{Skip}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{adaptiveV}\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\Longrightarrow\lambda \anonymous \;\anonymous \to [\mskip1.5mu \mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid (\anonymous \mathbin{:}\anonymous )\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid (\anonymous \mathbin{:}\anonymous )\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\Longrightarrow\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda (\Varid{v}\mathbin{:}\Varid{vs})\to (\Varid{v},\Varid{vs})\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\\
+\>[7]{}\hsindent{2}{}\<[9]%
+\>[9]{}\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{s}\mathbin{:}\Varid{ss})\to (\Varid{s},\Varid{ss})\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\\
+\>[9]{}\hsindent{2}{}\<[11]%
+\>[11]{}\Varid{myBX} \times \Varid{myMapL}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{adaptiveV}\;[\mskip1.5mu \Varid{p}\mid (\anonymous \mathbin{:}\anonymous )\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\Longrightarrow\lambda \anonymous \;((\Varid{k},v_1)\mathbin{:}\anonymous )\to [\mskip1.5mu (\Varid{k},(v_1,\mathrm{0}))\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+%%\begin{code}
+%%myMapL :: BiGUL [Source] [View]
+%%myMapL = [bcase|
+%%  Normal [] [] -> skip
+%%  Adaptive _ [] -> \ _ _ -> []
+%%  Normal (_ : _) (_ : _) -> update
+%%  Adaptive _ (_ : _) -> \ _ ((k,v1) : _) -> [(k,(v1,0))] |]
+%%  where  skip = $(rearrV [| \ [] -> () |]) Skip
+%%         update = $(rearrV [| \ (v:vs) -> (v, vs) |])$
+%%           $(rearrS [| \ (s:ss) -> (s, ss) |])$
+%%             myBX `Prod` myMapL
+%%\end{code}
+
+When both source and view are empty, or both have elements, a BiGUL program can
+be applied. When both are empty is the terminal case, yielding the empty list.
+When both have values, the head of the source is updated with the head of the
+view, and then recursion is performed.
+
+In the other two cases, adaptation of the source is required. The first one is
+when the view is empty, and the source is modified to be the empty list. After
+this adaption, the \ensuremath{\Conid{Case}} statement looks for a normal branch to apply, entering
+in the one where both source and view are empty. The second case is when the
+view still has elements, but the source is empty. In this case, a new source
+element is created from the source element at the head of the list. Then, the
+\ensuremath{\Conid{Case}} statement looks for a normal branch, entering in the one where both
+source and view have elements, updating the heads and recursing.
+
+Running the \ensuremath{\Varid{get}} function with this BiGUL program, we obtain the following
+result:
+%
+\begin{lstlisting}
+@>@ get myMapL [(0,('a',0)),(1,('b',1)),(2,('c',2))]
+[(0,'a'),(1,'b'),(2,'c')]
+\end{lstlisting}
+%
+We can perform the changes that we want to this view, e.g., modify the characters
+to upper case, and put that view back into the original source\footnote{The
+symbol \lstcontinueline{} denotes line continuation.}:
+%
+\begin{lstlisting}
+@>@ put myMapL [(0,('a',0)),(1,('b',1)),(2,('c',2))] [(0,'A'),(1,'B'),(2,'C')]
+[(0,('A',0)),(1,('B',1)),(2,('C',2))]
+\end{lstlisting}
+%
+Moreover, we can see the limitations of positional update when removing an
+element \lstinline!(1,'b')!:
+%
+\begin{lstlisting}
+@>@ put myMapL [(0,('a',0)),(1,('b',1)),(2,('c',2))] [(0,'a'),(2,'c')]
+[(0,('a',0)),(2,('c',1))]
+\end{lstlisting}
+%
+or adding a new one \lstinline!(3,'d')! before the end:
+%
+\begin{lstlisting}
+@>@ put myMapL [(0,('a',0)),(1,('b',1)),(2,('c',2))] [(0,'a'),(1,'b'),(3,'d'),(2,'c')]
+[(0,('a',0)),(1,('b',1)),(3,('d',2)),(2,('c',0))]
+\end{lstlisting}
+
+The \ensuremath{\Varid{myMapL}} program can be generalized to work on lists with arbitrary values.
+For that, it must be parametrized with a \emph{create} function, to produce a
+source element from a view one, and with a BiGUL program to be run on the
+elements:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{mapL}\mathbin{::}(\Varid{v}\to \Varid{s})\to \Conid{BiGUL}\;\Varid{s}\;\Varid{v}\to \Conid{BiGUL}\;[\mskip1.5mu \Varid{s}\mskip1.5mu]\;[\mskip1.5mu \Varid{v}\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+%
+\begin{comment}
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{7}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{11}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{mapL}\;\Varid{c}\;\Varid{u}\mathrel{=}\Conid{Case}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}[\mskip1.5mu \mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu])\mathbin{\$}\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda [\mskip1.5mu \mskip1.5mu]\to ()\mid \mskip1.5mu])\;\Conid{Skip}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{adaptiveV}\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu])\mathbin{\$}\lambda \anonymous \;\anonymous \to [\mskip1.5mu \mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid (\anonymous \mathbin{:}\anonymous )\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid (\anonymous \mathbin{:}\anonymous )\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda (\Varid{v}\mathbin{:}\Varid{vs})\to (\Varid{v},\Varid{vs})\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\\
+\>[7]{}\hsindent{2}{}\<[9]%
+\>[9]{}\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{s}\mathbin{:}\Varid{ss})\to (\Varid{s},\Varid{ss})\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\\
+\>[9]{}\hsindent{2}{}\<[11]%
+\>[11]{}\Varid{u} \times \Varid{mapL}\;\Varid{c}\;\Varid{u}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{adaptiveV}\;[\mskip1.5mu \Varid{p}\mid (\anonymous \mathbin{:}\anonymous )\mid \mskip1.5mu])\mathbin{\$}\lambda \anonymous \;(\Varid{v}\mathbin{:}\anonymous )\to [\mskip1.5mu \Varid{c}\;\Varid{v}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\end{comment}
+
+%%%
+%%% Key-Based Alignment
+%%%
+\section{Key-Based Alignment}
+
+More complex alignment strategies can be implemented using BiGUL. One example is
+a key-based one, where elements of the source and the view are paired based on a
+key component from each of the elements.
+
+The idea to implement this strategy is to separate the program in two parts:
+%
+\begin{itemize}
+  \item alignment of the elements;
+  \item the actual update.
+\end{itemize}
+
+To align the elements, we must first be able to extract a key from source and
+view elements. For our running example, we use the first component of the
+source, and the same for the view. Thus, we can use the \ensuremath{\Varid{fst}} function to
+extract the key from either elements. In order to help with the implementation,
+we define a function to check if the source and the view are aligned:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{18}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{isAligned}\;\Varid{s}\;\Varid{v}\mathrel{=}{}\<[18]%
+\>[18]{}\Varid{length}\;\Varid{s}\equiv \Varid{length}\;\Varid{v}{}\<[E]%
+\\
+\>[18]{}\mathrel{\wedge}\Varid{and}\;(\Varid{zipWith}\;\Varid{kmatch}\;\Varid{s}\;\Varid{v}){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbf{where}\;\Varid{kmatch}\;\Varid{se}\;\Varid{ve}\mathrel{=}\Varid{fst}\;\Varid{se}\equiv \Varid{fst}\;\Varid{ve}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+%
+We consider that source and view are aligned if both have the same number of
+elements, and that the keys match element wise.
+
+In the case that both lists are not aligned, we define a function that adapts a
+source such that then they are both aligned. This is performed by traversing the
+view and fetching the first corresponding element in the original source. If
+such element is not present, we create it. At the end, source elements not
+present in view are discarded. The adaptation of the source can be implemented
+as:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{12}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{14}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{24}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{keyMatchAdapt}\;\Varid{s}\;\Varid{v}\mathrel{=}\Varid{map}\;\Varid{getSourceElement}\;\Varid{v}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbf{where}\;{}\<[10]%
+\>[10]{}\Varid{getSourceElement}\;\Varid{ve}\mathrel{=}{}\<[E]%
+\\
+\>[10]{}\hsindent{2}{}\<[12]%
+\>[12]{}\mathbf{case}\;\Varid{filter}\;((\equiv \Varid{fst}\;\Varid{ve})\mathbin{\circ}\Varid{fst})\;\Varid{s}\;\mathbf{of}{}\<[E]%
+\\
+\>[12]{}\hsindent{2}{}\<[14]%
+\>[14]{}[\mskip1.5mu \mskip1.5mu]{}\<[24]%
+\>[24]{}\to \Varid{create}\;\Varid{ve}{}\<[E]%
+\\
+\>[12]{}\hsindent{2}{}\<[14]%
+\>[14]{}(\Varid{se}\mathbin{:}\anonymous )\to \Varid{se}{}\<[E]%
+\\
+\>[10]{}\Varid{create}\;(\Varid{k},v_1)\mathrel{=}(\Varid{k},(v_1,\mathrm{0})){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+When the source and the view are aligned, a simple positional update, as defined
+in the previous section, can be used. Thus, putting it all together, we obtain a
+the following BiGUL program:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{16}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{myKeyMatch}\mathbin{::}{}\<[16]%
+\>[16]{}\Conid{BiGUL}\;[\mskip1.5mu \Conid{Source}\mskip1.5mu]\;[\mskip1.5mu \Conid{View}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{myKeyMatch}\mathrel{=}\Conid{Case}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}[\mskip1.5mu \mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \Varid{isAligned}\mid \mskip1.5mu])\Longrightarrow\Varid{myMapL}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \lambda \anonymous \;\anonymous \to \Conid{True}\mid \mskip1.5mu])\Longrightarrow\Varid{keyMatchAdapt}\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+The result of running the \ensuremath{\Varid{get}} function with \ensuremath{\Varid{myKeyMatch}} is the same as with
+\ensuremath{\Varid{myMapL}} since they only differ in the alignment strategy:
+%
+\begin{lstlisting}
+@>@ get myKeyMatch @\lstcontinueline@
+    [(0,('a',0)),(1,('b',1)),(2,('c',2))]
+[(0,'a'),(1,'b'),(2,'c')]
+\end{lstlisting}
+%
+Running the \ensuremath{\Varid{put}} function also has the same result when the elements are the
+same and the order did not change:
+%
+\begin{lstlisting}
+@>@ put myKeyMatch @\lstcontinueline@
+    [(0,('a',0)),(1,('b',1)), (2,('c',2))] @\lstcontinueline@
+    [(0,'A'),(1,'B'),(2,'C')]
+[(0,('A',0)),(1,('B',1)),(2,('C',2))]
+\end{lstlisting}
+%
+However, when removing elements \lstinline!(1,'b')! or adding new ones
+\lstinline!(3,'d')!, key-based alignment is more precise than positional:
+%
+\begin{lstlisting}
+@>@ put myKeyMatch @\lstcontinueline@
+    [(0,('a',0)),(1,('b',1)),(2,('c',2))] @\lstcontinueline@
+    [(0,'a'),(2,'c'),(3,'d')]
+[(0,('a',0)),(2,('c',2)),(3,('d',0))]
+\end{lstlisting}
+%
+Nonetheless, key-based alignment also has its limitations, e.g., when modifying
+the key of an element (\lstinline!(1,'b')! to \lstinline!(3,'b')!):
+%
+\begin{lstlisting}
+@>@ put myKeyMatch @\lstcontinueline@
+    [(0,('a',0)),(1,('b',1)),(2,('c',2))] @\lstcontinueline@
+    [(0,'a'),(3,'b'),(2,'c')]
+[(0,('a',0)),(3,('b',0)),(2,('c',2))]
+\end{lstlisting}
+
+As with the positional update, this program can be generalized for key-based
+alignment on lists with arbitrary contents. For that, the \ensuremath{\Varid{keyMatch}} function
+must be parametrized with function to get a key component from the source, another
+function to get the key component from the view, and the create and BiGUL update
+program as with \ensuremath{\Varid{mapL}}:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{11}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{keyMatch}{}\<[11]%
+\>[11]{}\mathbin{::}\Conid{Eq}\;\Varid{k}\Rightarrow (\Varid{s}\to \Varid{k})\to (\Varid{b}\to \Varid{k}){}\<[E]%
+\\
+\>[11]{}\to (\Varid{v}\to \Varid{s})\to \Conid{BiGUL}\;\Varid{s}\;\Varid{v}\to \Conid{BiGUL}\;[\mskip1.5mu \Varid{s}\mskip1.5mu]\;[\mskip1.5mu \Varid{v}\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+%%%
+%%% Delta-Based List Alignment
+%%%
+\section{Delta-Based List Alignment}
+
+Alignment can be made more precise using information about the operations
+applied to the view. If we extract the relation of elements in the original
+view to the elements in the modified view, then the alignment performed when
+updating the source can be completely correct.
+
+The relation of elements in the original view with the ones in the modified view
+can be defined by a mapping from the location of the element in the original
+artifact to the location of the element in the modified artifact. The location
+can be defined as a integer index within the container
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathbf{type}\;\Conid{Loc}\mathrel{=}\Conid{Int}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+%
+and the mapping, i.e., the delta, can be defined as a set of pairs of these
+locations
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathbf{type}\;\Conid{Delta}\mathrel{=}\Conid{Set}\;(\Conid{Loc},\Conid{Loc}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+Furthermore, we need a method to determine from a delta if some artifact has
+suffered any positional change (movement within the container, addition, or
+removal), which can be accomplished by checking if all elements are in the delta
+and that each location in the delta is related to the same location:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\delta\equiv \Varid{getId}\;\Varid{artifact}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+%
+The \ensuremath{\Varid{getId}} function creates an identity delta based on the locations of the
+artifact:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{getIdL}\mathbin{::}[\mskip1.5mu \Varid{a}\mskip1.5mu]\to \Conid{Delta}{}\<[E]%
+\\
+\>[B]{}\Varid{getIdL}\mathrel{=}\Varid{map}\;(\lambda \Varid{l}\to (\Varid{l},\Varid{l}))\mathbin{\circ}\Varid{locs}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+%%% Delta Alignment for Lists
+\subsection{Delta Alignment for Lists}
+
+In order to implement such kind of alignment in BiGUL, the delta can be inserted
+into the source, since we are able to manipulate it using adaptation in
+\ensuremath{\Conid{Case}} branches.
+
+The implementation of delta-based alignment is similar to the key-based one:
+%
+\begin{enumerate}
+  \item modification of the source aligning to the view using a delta;
+  \item a positional update.
+\end{enumerate}
+%
+However, the delta in the source introduces a bit more complexity to deal the
+additional information. Implementing this in the running example:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{7}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{12}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{12E}{@{}l@{}}%
+\column{16}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{24}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{29}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{29E}{@{}l@{}}%
+\column{33}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{myAlignL'}{}\<[12]%
+\>[12]{}\mathbin{::}{}\<[12E]%
+\>[16]{}\Conid{BiGUL}\;([\mskip1.5mu \Conid{Source}\mskip1.5mu],\Conid{Delta})\;[\mskip1.5mu \Conid{View}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{myAlignL'}\mathrel{=}\Conid{Case}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}[\mskip1.5mu \mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda (\Varid{s},\Varid{d})\;\Varid{v}{}\<[29]%
+\>[29]{}\to {}\<[29E]%
+\>[33]{}\Varid{d}\equiv \Varid{getIdL}\;\Varid{v}{}\<[E]%
+\\
+\>[29]{}\mathrel{\wedge}{}\<[29E]%
+\>[33]{}\Varid{d}\equiv \Varid{getIdL}\;\Varid{s}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\Longrightarrow\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{s},\anonymous )\to \Varid{s}\mid \mskip1.5mu])\;\Varid{myMapL}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{adaptiveS}\;[\mskip1.5mu \mid \Varid{const}\;\Conid{True}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\Longrightarrow\lambda (\Varid{s},\Varid{d})\;\Varid{v}\to {}\<[24]%
+\>[24]{}\mathbf{let}\;\Varid{s'}\mathrel{=}\Varid{myAdaptDeltaL}\;\Varid{s}\;\Varid{v}\;\Varid{d}{}\<[E]%
+\\
+\>[24]{}\mathbf{in}\;(\Varid{s'},\Varid{getIdL}\;\Varid{v})\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+%
+An alternative \ensuremath{\Conid{Case}} statement is used to check which of these two steps are to
+be performed. This is done based on the changes performed on the view: if no
+changes were performed, the delta maps each element's position to the same
+position, i.e., the identity delta. However, the delta being the same as \ensuremath{\Varid{getIdL}\;\Varid{v}} doesn't mean that no changes were performed to the view, e.g., some values
+were deleted, thus not present in the view with nor in the delta relation. To
+solve this situation, we ensure that the delta is also equal identity delta of
+the source, i.e., both source and view contain the same positions and the update
+can be safely performed.
+Otherwise, a
+transformation is performed on the source to rearrange the elements based on the
+delta, create missing view elements, and
+delete no longer existent view elements:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{16}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{26}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{30}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{31}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{36}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{myAdaptDeltaL}{}\<[16]%
+\>[16]{}\mathbin{::}[\mskip1.5mu \Conid{Source}\mskip1.5mu]\to [\mskip1.5mu \Conid{View}\mskip1.5mu]\to \Conid{Delta}{}\<[E]%
+\\
+\>[16]{}\to [\mskip1.5mu \Conid{Source}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{myAdaptDeltaL}\;\Varid{s}\;\Varid{v}\;\Varid{d}\mathrel{=}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Varid{map}\;\Varid{idOrCreate}\;(\Varid{elems}\mathbin{\$}\Varid{locs}\;\Varid{v}){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbf{where}\;{}\<[10]%
+\>[10]{}\Varid{idOrCreate}\;\Varid{i}\mathrel{=}{}\<[26]%
+\>[26]{}\mathbf{let}\;{}\<[31]%
+\>[31]{}\Varid{js}\mathrel{=}\Varid{rngOf}\;\Varid{i}\;\Varid{d}{}\<[E]%
+\\
+\>[26]{}\mathbf{in}\;{}\<[30]%
+\>[30]{}\mathbf{if}\;\Varid{js}\not\equiv  \emptyset {}\<[E]%
+\\
+\>[30]{}\mathbf{then}\;\Varid{s}\mathbin{!!}\Varid{findMin}\;\Varid{js}{}\<[E]%
+\\
+\>[30]{}\mathbf{else}\;{}\<[36]%
+\>[36]{}\mathbf{let}\;(\Varid{k},v_1)\mathrel{=}\Varid{v}\mathbin{!!}\Varid{i}{}\<[E]%
+\\
+\>[36]{}\mathbf{in}\;(\Varid{k},(v_1,\mathrm{0})){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+%
+%Note that in |alignL'| the create function |c| given to |mapL| is not required since
+%|adaptDeltaL| creates the missing elements.
+
+However, having the delta paired with the source might be inconvenient. To solve
+such situation, a wrapper is made that takes care of dealing with the delta:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{17}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{myAlignL}\mathbin{::}\Conid{Delta}\to \Conid{BiGUL}\;[\mskip1.5mu \Conid{Source}\mskip1.5mu]\;[\mskip1.5mu \Conid{View}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{myAlignL}\;\Varid{d}\mathrel{=}\Varid{emb}\;\Varid{g}\;\Varid{p}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbf{where}\;{}\<[10]%
+\>[10]{}\Varid{g}\;\Varid{s}{}\<[17]%
+\>[17]{}\mathrel{=}\Varid{get}\;\Varid{myAlignL'}\;(\Varid{s},\Varid{getIdL}\;\Varid{s}){}\<[E]%
+\\
+\>[10]{}\Varid{p}\;\Varid{s}\;\Varid{v}{}\<[17]%
+\>[17]{}\mathrel{=}\Varid{fst}\mathbin{\$}\Varid{put}\;\Varid{myAlignL'}\;(\Varid{s},\Varid{d})\;\Varid{v}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+%
+This wrapper implements directly the \ensuremath{\Varid{get}} and \ensuremath{\Varid{put}} functions (respectively \ensuremath{\Varid{g}}
+and \ensuremath{\Varid{p}}), and
+embeds them into a BiGUL program, since this pair of \ensuremath{\Varid{get}}/\ensuremath{\Varid{put}} functions is
+well-behaved:\\
+%
+\textsc{GetPut} -- this law states that if no changes to the view are performed,
+then putting it back into the source does not alter the source. Since no changes
+are performed, the delta is the identity delta of the view, i.e., \ensuremath{\delta\mathrel{=}\Varid{getIdL}\;\Varid{v}} where \ensuremath{\Varid{v}\mathrel{=}\Varid{g}\;\Varid{s}}. Furthermore, \ensuremath{\Varid{v}} is consistent with \ensuremath{(\Varid{s},\Varid{getIdL}\;\Varid{s})},
+so we know that \ensuremath{\Varid{getIdL}\;\Varid{s}\mathrel{=}\Varid{getIdL}\;\Varid{v}}. Applying \ensuremath{\Varid{fst}} to both sides of the
+following equation gives us \ensuremath{\text{\textsc{GetPut}}}:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{put}\;\Varid{myAlignL'}\;(\Varid{s},\Varid{getIdL}\;\Varid{v})\;(\Varid{get}\;\Varid{myAlignL'}\;(\Varid{s},\Varid{getIdL}\;\Varid{s})){}\<[E]%
+\\
+\>[B]{}\equiv \{\mskip1.5mu \Varid{getIdL}\;\Varid{v}\equiv \Varid{getIdL}\;\Varid{s}\mskip1.5mu\}{}\<[E]%
+\\
+\>[B]{}\Varid{put}\;\Varid{myAlignL'}\;(\Varid{s},\Varid{getIdL}\;\Varid{s})\;(\Varid{get}\;\Varid{myAlignL'}\;(\Varid{s},\Varid{getIdL}\;\Varid{s})){}\<[E]%
+\\
+\>[B]{}\equiv \{\mskip1.5mu \text{\textsc{GetPut}}\;\Varid{for}\;\Varid{myAlignL'}\mskip1.5mu\}{}\<[E]%
+\\
+\>[B]{}(\Varid{s},\Varid{getIdL}\;\Varid{s}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+%
+\textsc{PutGet} -- this law states that the view after updating a source is the
+same as the one used for the update. As the result of the \ensuremath{\Varid{put}} function, let
+\ensuremath{(\Varid{s'},\delta^\prime)\mathrel{=}\Varid{put}\;\Varid{myAlignL'}\;(\Varid{s},\delta)\;\Varid{v}}, thus \ensuremath{(\Varid{s'},\delta^\prime)} is consistent
+with \ensuremath{\Varid{v}} and \ensuremath{\delta^\prime\equiv \Varid{getIdL}\;\Varid{s'}}. Applying the \ensuremath{\Varid{get}} function~\ensuremath{\Varid{g}}:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{get}\;\Varid{myAlignL'}\;(\Varid{s'},\Varid{getIdl}\;\Varid{s'}){}\<[E]%
+\\
+\>[B]{}\equiv \{\mskip1.5mu \delta^\prime\mathrel{=}\Varid{getIdL}\;\Varid{s'}\mskip1.5mu\}{}\<[E]%
+\\
+\>[B]{}\Varid{get}\;\Varid{myAlignL'}\;(\Varid{s'},\delta^\prime){}\<[E]%
+\\
+\>[B]{}\equiv \{\mskip1.5mu \mathbf{let}\;\Varid{binding}\mskip1.5mu\}{}\<[E]%
+\\
+\>[B]{}\Varid{get}\;\Varid{myAlignL'}\;(\Varid{put}\;\Varid{myAlignL'}\;(\Varid{s},\delta)){}\<[E]%
+\\
+\>[B]{}\equiv \{\mskip1.5mu \text{\textsc{PutGet}}\;\Varid{for}\;\Varid{myAlignL'}\mskip1.5mu\}{}\<[E]%
+\\
+\>[B]{}\Varid{v}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+The embedding of \ensuremath{\Varid{get}} and \ensuremath{\Varid{put}} functions can be defined as a BiGUL program:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{7}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{emb}\mathbin{::}\Conid{Eq}\;\Varid{v}\Rightarrow (\Varid{s}\to \Varid{v})\to (\Varid{s}\to \Varid{v}\to \Varid{s})\to \Conid{BiGUL}\;\Varid{s}\;\Varid{v}{}\<[E]%
+\\
+\>[B]{}\Varid{emb}\;\Varid{g}\;\Varid{p}\mathrel{=}\Conid{Case}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}[\mskip1.5mu \mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda \Varid{x}\;\Varid{y}\to \Varid{g}\;\Varid{x}\equiv \Varid{y}\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda \Varid{x}\to ((),\Varid{x})\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\\
+\>[7]{}\hsindent{2}{}\<[9]%
+\>[9]{}\Conid{Dep}\;\Conid{Skip}\;(\lambda \Varid{x}\;()\to \Varid{g}\;\Varid{x}){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \mathbin{\char92 \char95 }\anonymous \to \Conid{True}\mid \mskip1.5mu])\;\Varid{p}\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+%
+Here what the normal branch does is, roughly speaking, leaving the source~\ensuremath{\Varid{x}} as it is while ignoring the view, since we know that the view is necessarily \ensuremath{\Varid{g}\;\Varid{x}}.
+In order for an embedding to be well-behaved, running the \ensuremath{\Varid{put}} function should
+produce a source that when running \ensuremath{\Varid{get}} should return the view given to the
+former, as stated by the \textsc{GetPut} law and enforced by the case structure.
+Furthermore, the view should be completely defined by the source.
+
+To run the delta alignment we thus need to provide a delta to the BiGUL
+program. With the running example, we can use the following deltas:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\delta_1,\delta_2,\delta_3\mathbin{::}\Conid{Delta}{}\<[E]%
+\\
+\>[B]{}\delta_1\mathrel{=}\Varid{fromList}\;[\mskip1.5mu (\mathrm{0},\mathrm{0}),(\mathrm{1},\mathrm{1}),(\mathrm{2},\mathrm{2})\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\delta_2\mathrel{=}\Varid{fromList}\;[\mskip1.5mu (\mathrm{0},\mathrm{0}),(\mathrm{1},\mathrm{2}),(\mathrm{2},\mathrm{1})\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\delta_3\mathrel{=}\Varid{fromList}\;[\mskip1.5mu (\mathrm{0},\mathrm{0}),(\mathrm{1},\mathrm{1})\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+%
+For the \emph{get} direction, the delta is ignored, and the result is the same
+as for the previous kinds of alignment:
+%
+\begin{lstlisting}
+@>@ get (myAlignL @\ensuremath{\delta_1}@) @\lstcontinueline@
+    [(0,('a',0)),(1,('b',1)),(2,('c',2))]
+[(0,'a'),(1,'b'),(2,'c')]
+\end{lstlisting}
+%
+However, in the put direction, results may vary depending on the given delta,
+e.g., no changes are performed (using \ensuremath{\delta_1}):
+%
+\begin{lstlisting}
+@>@ put (myAlignL @\ensuremath{\delta_1}@) @\lstcontinueline@
+  [(0,('a',0)),(1,('b',1)),(2,('c',2))] @\lstcontinueline@
+  [(0,'A'),(1,'B'),(2,'C')]
+[(0,('A',0)),(1,('B',1)),(2,('C',2))]
+\end{lstlisting}
+%
+versus a swap between the last two elements (using \ensuremath{\delta_2}):
+%
+\begin{lstlisting}
+@>@ put (myAlignL @\ensuremath{\delta_2}@) @\lstcontinueline@
+    [(0,('a',0)),(1,('b',1)),(2,('c',2))] @\lstcontinueline@
+    [(0,'A'),(1,'B'),(2,'C')]
+[(0,('A',0)),(1,('B',2)),(2,('C',1))]
+\end{lstlisting}
+%
+Note that the elements were not swapped in the view, but the delta \ensuremath{\delta_2}
+indicates that the elements were swapped. This is equivalent to swapping those
+elements and modifying the values to the ones at the same position in the
+original view.
+%
+A similar situation occurs when the view is not modified, but one element is not
+in the delta:
+%
+\begin{lstlisting}
+@>@ put (myAlignL @\ensuremath{\delta_3}@) @\lstcontinueline@
+    [(0,('a',0)),(1,('b',1)),(2,('c',2))] @\lstcontinueline@
+    [(0,'A'),(1,'B'),(2,'C')]
+[(0,('A',0)),(1,('B',1)),(2,('C',0))]
+\end{lstlisting}
+%
+In this case, it is equivalent to remove the last element and inserting it
+again.
+
+The delta alignment implementation can be generalized for arbitrary list
+contents, resulting in the following equivalent functions with additional
+parameters for the create function and BiGUL update program to apply to the
+elements:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{10E}{@{}l@{}}%
+\column{14}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{adaptDeltaL}\mathbin{::}(\Varid{v}\to \Varid{s})\to [\mskip1.5mu \Varid{s}\mskip1.5mu]\to [\mskip1.5mu \Varid{v}\mskip1.5mu]\to \Conid{Delta}\to [\mskip1.5mu \Varid{s}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{alignL'}{}\<[10]%
+\>[10]{}\mathbin{::}{}\<[10E]%
+\>[14]{}\Conid{BiGUL}\;\Varid{s}\;\Varid{v}\to (\Varid{v}\to \Varid{s}){}\<[E]%
+\\
+\>[10]{}\to {}\<[10E]%
+\>[14]{}\Conid{BiGUL}\;([\mskip1.5mu \Varid{s}\mskip1.5mu],\Conid{Delta})\;[\mskip1.5mu \Varid{v}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{alignL}{}\<[9]%
+\>[9]{}\mathbin{::}\Conid{Eq}\;\Varid{v}\Rightarrow \Conid{BiGUL}\;\Varid{s}\;\Varid{v}\to (\Varid{v}\to \Varid{s})\to \Conid{Delta}{}\<[E]%
+\\
+\>[9]{}\to \Conid{BiGUL}\;[\mskip1.5mu \Varid{s}\mskip1.5mu]\;[\mskip1.5mu \Varid{v}\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\begin{comment}
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{7}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{14}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{17}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{24}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{26}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{28}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{30}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{alignL'}{}\<[10]%
+\>[10]{}\mathbin{::}{}\<[14]%
+\>[14]{}\Conid{BiGUL}\;\Varid{s}\;\Varid{v}\to (\Varid{v}\to \Varid{s}){}\<[E]%
+\\
+\>[10]{}\to {}\<[14]%
+\>[14]{}\Conid{BiGUL}\;([\mskip1.5mu \Varid{s}\mskip1.5mu],\Conid{Delta})\;[\mskip1.5mu \Varid{v}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{alignL'}\;\Varid{b}\;\Varid{c}\mathrel{=}\Conid{Case}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}[\mskip1.5mu \mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda (\Varid{s},\Varid{d})\;\Varid{v}{}\<[28]%
+\>[28]{}\to \Varid{d}\equiv \Varid{getIdL}\;\Varid{v}{}\<[E]%
+\\
+\>[28]{}\mathrel{\wedge}\Varid{d}\equiv \Varid{getIdL}\;\Varid{s}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\Longrightarrow\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{s},\anonymous )\to \Varid{s}\mid \mskip1.5mu])\;(\Varid{mapL}\;\Varid{c}\;\Varid{b}){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{adaptiveS}\;[\mskip1.5mu \mid \Varid{const}\;\Conid{True}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\Longrightarrow\lambda (\Varid{s},\Varid{d})\;\Varid{v}\to {}\<[24]%
+\>[24]{}\mathbf{let}\;\Varid{s'}\mathrel{=}\Varid{adaptDeltaL}\;\Varid{c}\;\Varid{s}\;\Varid{v}\;\Varid{d}{}\<[E]%
+\\
+\>[24]{}\mathbf{in}\;(\Varid{s'},\Varid{getIdL}\;\Varid{v})\mskip1.5mu]{}\<[E]%
+\\[\blanklineskip]%
+\>[B]{}\Varid{adaptDeltaL}\mathbin{::}(\Varid{v}\to \Varid{s})\to [\mskip1.5mu \Varid{s}\mskip1.5mu]\to [\mskip1.5mu \Varid{v}\mskip1.5mu]\to \Conid{Delta}\to [\mskip1.5mu \Varid{s}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{adaptDeltaL}\;\Varid{c}\;\Varid{s}\;\Varid{v}\;\Varid{d}\mathrel{=}\Varid{map}\;\Varid{idOrCreate}\;(\Varid{elems}\mathbin{\$}\Varid{locs}\;\Varid{v}){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbf{where}\;{}\<[10]%
+\>[10]{}\Varid{idOrCreate}\;\Varid{i}\mathrel{=}{}\<[26]%
+\>[26]{}\mathbf{let}\;\Varid{js}\mathrel{=}\Varid{rngOf}\;\Varid{i}\;\Varid{d}{}\<[E]%
+\\
+\>[26]{}\mathbf{in}\;{}\<[30]%
+\>[30]{}\mathbf{if}\;\Varid{js}\not\equiv  \emptyset {}\<[E]%
+\\
+\>[30]{}\mathbf{then}\;\Varid{data\char95 }\;\Varid{s}\mathbin{!!}\Varid{findMin}\;\Varid{js}{}\<[E]%
+\\
+\>[30]{}\mathbf{else}\;\Varid{c}\;(\Varid{data\char95 }\;\Varid{v}\mathbin{!!}\Varid{i}){}\<[E]%
+\\[\blanklineskip]%
+\>[B]{}\Varid{alignL}{}\<[9]%
+\>[9]{}\mathbin{::}\Conid{Eq}\;\Varid{v}{}\<[E]%
+\\
+\>[9]{}\Rightarrow \Conid{BiGUL}\;\Varid{s}\;\Varid{v}\to (\Varid{v}\to \Varid{s})\to \Conid{Delta}{}\<[E]%
+\\
+\>[9]{}\to \Conid{BiGUL}\;[\mskip1.5mu \Varid{s}\mskip1.5mu]\;[\mskip1.5mu \Varid{v}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{alignL}\;\Varid{b}\;\Varid{c}\;\Varid{d}\mathrel{=}\Varid{emb}\;\Varid{g}\;\Varid{p}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbf{where}\;{}\<[10]%
+\>[10]{}\Varid{g}\;\Varid{s}{}\<[17]%
+\>[17]{}\mathrel{=}\Varid{get}\;(\Varid{alignL'}\;\Varid{b}\;\Varid{c})\;(\Varid{s},\Varid{getIdL}\;\Varid{s}){}\<[E]%
+\\
+\>[10]{}\Varid{p}\;\Varid{s}\;\Varid{v}{}\<[17]%
+\>[17]{}\mathrel{=}\Varid{fst}\mathbin{\$}\Varid{put}\;(\Varid{alignL'}\;\Varid{b}\;\Varid{c})\;(\Varid{s},\Varid{d})\;\Varid{v}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\end{comment}
+
+
+
+%%%
+%%% Delta-Based Tree Alignment
+%%%
+\section{Delta-Based Tree Alignment}
+
+Another container where delta alignment can be implemented is a tree. Many kinds
+of trees exist, but we use binary tree with labels in the nodes:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathbf{data}\;\Conid{Tree}\;\Varid{a}\mathrel{=}\Conid{Nil}\mid \Conid{Node}\;\Varid{a}\;(\Conid{Tree}\;\Varid{a})\;(\Conid{Tree}\;\Varid{a}){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbf{deriving}\;(\Conid{Show},\Conid{Functor}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\begin{comment}
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{7}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathbf{instance}\;\Conid{Eq}\;\Varid{a}\Rightarrow \Conid{Eq}\;(\Conid{Tree}\;\Varid{a})\;\mathbf{where}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}(\equiv )\;\Conid{Nil}\;\Conid{Nil}\mathrel{=}\Conid{True}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}(\equiv )\;(\Conid{Node}\;\Varid{a}\;\Varid{al}\;\Varid{ar})\;(\Conid{Node}\;\Varid{b}\;\Varid{bl}\;\Varid{br})\mathrel{=}\Varid{a}\equiv \Varid{b}\mathrel{\wedge}\Varid{al}\equiv \Varid{bl}\mathrel{\wedge}\Varid{ar}\equiv \Varid{br}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}(\equiv )\;\anonymous \;\anonymous \mathrel{=}\Conid{False}{}\<[E]%
+\\[\blanklineskip]%
+\>[B]{}\mathbf{instance}\;\Conid{Generic}\;(\Conid{Tree}\;\Varid{a})\;\mathbf{where}{}\<[E]%
+\\
+\>[B]{}\hsindent{7}{}\<[7]%
+\>[7]{}\mathbf{type}\;\Conid{Rep}\;(\Conid{Tree}\;\Varid{a})\mathrel{=}(\mathbin{:+:})\;\Conid{U1}\;((\mathbin{:*:})\;(\Conid{K1}\;\Conid{R}\;\Varid{a})\;((\mathbin{:*:})\;(\Conid{K1}\;\Conid{R}\;(\Conid{Tree}\;\Varid{a}))\;(\Conid{K1}\;\Conid{R}\;(\Conid{Tree}\;\Varid{a})))){}\<[E]%
+\\
+\>[B]{}\hsindent{7}{}\<[7]%
+\>[7]{}\Varid{from}\;\Conid{Nil}\mathrel{=}\Conid{L1}\;\Conid{U1}{}\<[E]%
+\\
+\>[B]{}\hsindent{7}{}\<[7]%
+\>[7]{}\Varid{from}\;(\Conid{Node}\;\Varid{var\char95 arJr}\;\Varid{var\char95 arJs}\;\Varid{var\char95 arJt}){}\<[E]%
+\\
+\>[7]{}\hsindent{2}{}\<[9]%
+\>[9]{}\mathrel{=}\Conid{R1}\;((\mathbin{:*:})\;(\Conid{K1}\;\Varid{var\char95 arJr})\;((\mathbin{:*:})\;(\Conid{K1}\;\Varid{var\char95 arJs})\;(\Conid{K1}\;\Varid{var\char95 arJt}))){}\<[E]%
+\\
+\>[B]{}\hsindent{7}{}\<[7]%
+\>[7]{}\Varid{to}\;(\Conid{L1}\;\Conid{U1})\mathrel{=}\Conid{Nil}{}\<[E]%
+\\
+\>[B]{}\hsindent{7}{}\<[7]%
+\>[7]{}\Varid{to}\;(\Conid{R1}\;((\mathbin{:*:})\;(\Conid{K1}\;\Varid{var\char95 arJr})\;((\mathbin{:*:})\;(\Conid{K1}\;\Varid{var\char95 arJs})\;(\Conid{K1}\;\Varid{var\char95 arJt})))){}\<[E]%
+\\
+\>[7]{}\hsindent{2}{}\<[9]%
+\>[9]{}\mathrel{=}\Conid{Node}\;\Varid{var\char95 arJr}\;\Varid{var\char95 arJs}\;\Varid{var\char95 arJt}{}\<[E]%
+\\
+\>[B]{}\mathbin{\$}(\Varid{return}\;[\mskip1.5mu \mskip1.5mu]){}\<[E]%
+\\[\blanklineskip]%
+\>[B]{}\mathbf{instance}\;\Conid{Shapely}\;\Conid{Tree}\;\mathbf{where}{}\<[E]%
+\\
+\>[B]{}\hsindent{5}{}\<[5]%
+\>[5]{}\Varid{traverse}\;\Varid{f}\mathrel{=}(\Varid{hinn}\mathbin{><}\Varid{id})\mathbin{\circ}\Varid{traverse}\;\Varid{f}\mathbin{\circ}(\Varid{hout}\mathbin{><}\Varid{id}){}\<[E]%
+\\
+\>[B]{}\mathbf{type}\;\mathbf{instance}\;\Conid{HF}\;\Conid{Tree}\mathrel{=}\Conid{HConst}\;\Conid{One}\mathbin{:+\char126 :}\Conid{HParam}\mathbin{:*\char126 :}(\Conid{HId}\mathbin{:*\char126 :}\Conid{HId}){}\<[E]%
+\\
+\>[B]{}\mathbf{instance}\;\Conid{Hu}\;\Conid{Tree}\;\mathbf{where}{}\<[E]%
+\\
+\>[B]{}\hsindent{5}{}\<[5]%
+\>[5]{}\Varid{hout}\;\Conid{Nil}\mathrel{=}\Conid{InlF}\mathbin{\$}\Conid{ConsF}\;\Varid{\char95 L}{}\<[E]%
+\\
+\>[B]{}\hsindent{5}{}\<[5]%
+\>[5]{}\Varid{hout}\;(\Conid{Node}\;\Varid{x}\;\Varid{l}\;\Varid{r})\mathrel{=}\Conid{InrF}\mathbin{\$}\Conid{ProdF}\;(\Conid{IdF}\;\Varid{x})\;(\Conid{ProdF}\;\Varid{l}\;\Varid{r}){}\<[E]%
+\\
+\>[B]{}\hsindent{5}{}\<[5]%
+\>[5]{}\Varid{hinn}\;(\Conid{InlF}\;(\Conid{ConsF}\;\anonymous ))\mathrel{=}\Conid{Nil}{}\<[E]%
+\\
+\>[B]{}\hsindent{5}{}\<[5]%
+\>[5]{}\Varid{hinn}\;(\Conid{InrF}\;(\Conid{ProdF}\;(\Conid{IdF}\;\Varid{x})\;(\Conid{ProdF}\;\Varid{l}\;\Varid{r})))\mathrel{=}\Conid{Node}\;\Varid{x}\;\Varid{l}\;\Varid{r}{}\<[E]%
+\\
+\>[B]{}\mathbf{instance}\;\Conid{FMonoid}\;\Conid{Tree}\;\mathbf{where}{}\<[E]%
+\\
+\>[B]{}\hsindent{5}{}\<[5]%
+\>[5]{}\Varid{fzero}\mathrel{=}\Conid{Nil}{}\<[E]%
+\\
+\>[B]{}\hsindent{5}{}\<[5]%
+\>[5]{}\Varid{fplus}\;\Varid{t}\;\Conid{Nil}\mathrel{=}\Varid{t}{}\<[E]%
+\\
+\>[B]{}\hsindent{5}{}\<[5]%
+\>[5]{}\Varid{fplus}\;\Varid{t}\;(\Conid{Node}\;\Varid{x}\;\Varid{l}\;\Varid{r})\mathrel{=}\Conid{Node}\;\Varid{x}\;(\Varid{fplus}\;\Varid{t}\;\Varid{l})\;\Varid{r}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\end{comment}
+
+Tree elements can also be indexed by locations. The position of tree elements
+can be established linearly in an inorder fashion:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{12}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{17}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{24}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{locsT}\mathbin{::}\Conid{Tree}\;\Varid{a}\to \Conid{Tree}\;\Conid{Loc}{}\<[E]%
+\\
+\>[B]{}\Varid{locsT}\mathrel{=}\Varid{fst}\mathbin{\circ}\Varid{aux}\;\mathrm{0}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbf{where}\;{}\<[10]%
+\>[10]{}\Varid{aux}\;i_0\;\Conid{Nil}\mathrel{=}(\Conid{Nil},i_0){}\<[E]%
+\\
+\>[10]{}\Varid{aux}\;i_0\;(\Conid{Node}\;\anonymous \;l_0\;r_0)\mathrel{=}{}\<[E]%
+\\
+\>[10]{}\hsindent{2}{}\<[12]%
+\>[12]{}\mathbf{let}\;{}\<[17]%
+\>[17]{}(\Varid{l},i_1{}\<[24]%
+\>[24]{})\mathrel{=}\Varid{aux}\;i_0\;l_0{}\<[E]%
+\\
+\>[17]{}(\Varid{r},\Varid{i}{}\<[24]%
+\>[24]{})\mathrel{=}\Varid{aux}\;(i_1\mathbin{+}\mathrm{1})\;r_0{}\<[E]%
+\\
+\>[10]{}\hsindent{2}{}\<[12]%
+\>[12]{}\mathbf{in}\;(\Conid{Node}\;i_1\;\Varid{l}\;\Varid{r},\Varid{i}){}\<[E]%
+\\[\blanklineskip]%
+\>[B]{}\Varid{flattenT}\mathbin{::}\Conid{Tree}\;\Varid{a}\to [\mskip1.5mu \Varid{a}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{flattenT}\;\Conid{Nil}\mathrel{=}[\mskip1.5mu \mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{flattenT}\;(\Conid{Node}\;\Varid{a}\;\Varid{l}\;\Varid{r})\mathrel{=}\Varid{flattenT}\;\Varid{l}\plus [\mskip1.5mu \Varid{a}\mskip1.5mu]\plus \Varid{flattenT}\;\Varid{r}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+%
+Thus the \ensuremath{\Conid{Delta}} type used for lists can also be used for trees, and the
+identity delta can be obtained with the function \ensuremath{\Varid{getIdT}\mathbin{::}\Conid{Tree}\;\Varid{a}\to \Conid{Delta}}.
+%
+\begin{comment}
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{getIdT}\mathbin{::}\Conid{Tree}\;\Varid{a}\to \Conid{Delta}{}\<[E]%
+\\
+\>[B]{}\Varid{getIdT}\mathrel{=}\Varid{map}\;(\lambda \Varid{l}\to (\Varid{l},\Varid{l}))\mathbin{\circ}\Varid{locs}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\end{comment}
+
+The approach to implement the delta-based alignment for trees is similar to the
+approach used in the other implementations:
+%
+\begin{enumerate}
+  \item modification of the source aligning to the view using a delta;
+  \item a positional update.
+\end{enumerate}
+
+The adaptation function for tree can be
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{12}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{16}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{22}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{myAdaptDeltaT}{}\<[16]%
+\>[16]{}\mathbin{::}\Conid{Tree}\;\Conid{Source}\to \Conid{Tree}\;\Conid{View}\to \Conid{Delta}{}\<[E]%
+\\
+\>[16]{}\to \Conid{Tree}\;\Conid{Source}{}\<[E]%
+\\
+\>[B]{}\Varid{myAdaptDeltaT}\;\Varid{s}\;\Varid{v}\;\Varid{d}\mathrel{=}\Varid{fmap}\;\Varid{idOrCreate}\;(\Varid{locsT}\;\Varid{v}){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbf{where}\;{}\<[10]%
+\>[10]{}\Varid{idOrCreate}\;\Varid{i}\mathrel{=}{}\<[E]%
+\\
+\>[10]{}\hsindent{2}{}\<[12]%
+\>[12]{}\mathbf{let}\;\Varid{js}\mathrel{=}\Varid{rngOf}\;\Varid{i}\;\Varid{d}{}\<[E]%
+\\
+\>[10]{}\hsindent{2}{}\<[12]%
+\>[12]{}\mathbf{in}\;{}\<[16]%
+\>[16]{}\mathbf{if}\;\Varid{js}\not\equiv  \emptyset {}\<[E]%
+\\
+\>[16]{}\mathbf{then}\;\Varid{flattenT}\;\Varid{s}\mathbin{!!}\Varid{findMin}\;\Varid{js}{}\<[E]%
+\\
+\>[16]{}\mathbf{else}\;{}\<[22]%
+\>[22]{}\mathbf{let}\;(\Varid{k},v_1)\mathrel{=}\Varid{flattenT}\;\Varid{v}\mathbin{!!}\Varid{i}{}\<[E]%
+\\
+\>[22]{}\mathbf{in}\;(\Varid{k},(v_1,\mathrm{0})){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+%
+where we take advantage of the \ensuremath{\Varid{fmap}} function, deriving from the fact that \ensuremath{\Conid{Tree}} is a
+functor.
+
+The implementation of the positional tree update is similar to the one for
+lists, since both have only two data constructors. However, trees have double
+recursion which must be taken into account.
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{7}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{12}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{14}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{19}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{22}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{24}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{26}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{43}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{50}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{myMapT}\mathbin{::}\Conid{BiGUL}\;(\Conid{Tree}\;\Conid{Source})\;(\Conid{Tree}\;\Conid{View}){}\<[E]%
+\\
+\>[B]{}\Varid{myMapT}\mathrel{=}\Conid{Case}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}[\mskip1.5mu \mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \Conid{Nil}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Nil}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\Longrightarrow\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda \Conid{Nil}\to ()\mid \mskip1.5mu])\;\Conid{Skip}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{adaptiveV}\;[\mskip1.5mu \Varid{p}\mid \Conid{Nil}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\Longrightarrow\lambda \anonymous \;\anonymous \to \Conid{Nil}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \Conid{Node}\;\anonymous \;\anonymous \;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Node}\;\anonymous \;\anonymous \;\anonymous \mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\Longrightarrow{}\<[12]%
+\>[12]{}\mathbin{\$}(\Varid{rearrV}\;{}\<[22]%
+\>[22]{}[\mskip1.5mu \mid \lambda (\Conid{Node}\;\Varid{v}\;\Varid{vl}\;\Varid{vr}){}\<[E]%
+\\
+\>[22]{}\hsindent{2}{}\<[24]%
+\>[24]{}\to (\Varid{v},(\Varid{vl},\Varid{vr}))\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\\
+\>[12]{}\hsindent{2}{}\<[14]%
+\>[14]{}\mathbin{\$}(\Varid{rearrS}\;{}\<[24]%
+\>[24]{}[\mskip1.5mu \mid \lambda (\Conid{Node}\;\Varid{s}\;\Varid{sl}\;\Varid{sr}){}\<[E]%
+\\
+\>[24]{}\hsindent{2}{}\<[26]%
+\>[26]{}\to (\Varid{s},(\Varid{sl},\Varid{sr}))\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\\
+\>[14]{}\hsindent{5}{}\<[19]%
+\>[19]{}\Varid{myBX} \times (\Varid{myMapT} \times \Varid{myMapT}){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{adaptiveV}\;[\mskip1.5mu \Varid{p}\mid (\Conid{Node}\;\anonymous \;\anonymous \;\anonymous )\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\Longrightarrow\lambda \anonymous \;(\Conid{Node}\;(\Varid{k},v_1)\;\anonymous \;\anonymous )\to \Conid{Node}\;{}\<[43]%
+\>[43]{}(\Varid{k},(v_1,\mathrm{0}))\;{}\<[E]%
+\\
+\>[43]{}\Conid{Nil}\;{}\<[50]%
+\>[50]{}\Conid{Nil}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+Having the adaptation and the positional update, we can now define a delta-based
+alignment for trees in a similar way as with lists:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{7}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{24}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{28}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{28E}{@{}l@{}}%
+\column{32}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{myAlignT'}\mathbin{::}\Conid{BiGUL}\;(\Conid{Tree}\;\Conid{Source},\Conid{Delta})\;(\Conid{Tree}\;\Conid{View}){}\<[E]%
+\\
+\>[B]{}\Varid{myAlignT'}\mathrel{=}\Conid{Case}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}[\mskip1.5mu \mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda (\Varid{s},\Varid{d})\;\Varid{v}{}\<[28]%
+\>[28]{}\to {}\<[28E]%
+\>[32]{}\Varid{d}\equiv \Varid{getIdT}\;\Varid{v}{}\<[E]%
+\\
+\>[28]{}\mathrel{\wedge}{}\<[28E]%
+\>[32]{}\Varid{d}\equiv \Varid{getIdT}\;\Varid{s}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\Longrightarrow\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{s},\anonymous )\to \Varid{s}\mid \mskip1.5mu])\;\Varid{myMapT}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{adaptiveS}\;[\mskip1.5mu \mid \Varid{const}\;\Conid{True}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\Longrightarrow\lambda (\Varid{s},\Varid{d})\;\Varid{v}\to {}\<[24]%
+\>[24]{}\mathbf{let}\;\Varid{s'}\mathrel{=}\Varid{myAdaptDeltaT}\;\Varid{s}\;\Varid{v}\;\Varid{d}{}\<[E]%
+\\
+\>[24]{}\mathbf{in}\;(\Varid{s'},\Varid{getIdT}\;\Varid{v})\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+%
+and corresponding wrapper:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{17}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{myAlignT}\mathbin{::}\Conid{Delta}\to \Conid{BiGUL}\;(\Conid{Tree}\;\Conid{Source})\;(\Conid{Tree}\;\Conid{View}){}\<[E]%
+\\
+\>[B]{}\Varid{myAlignT}\;\Varid{d}\mathrel{=}\Varid{emb}\;\Varid{g}\;\Varid{p}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbf{where}\;{}\<[10]%
+\>[10]{}\Varid{g}\;\Varid{s}{}\<[17]%
+\>[17]{}\mathrel{=}\Varid{get}\;\Varid{myAlignT'}\;(\Varid{s},\Varid{getIdT}\;\Varid{s}){}\<[E]%
+\\
+\>[10]{}\Varid{p}\;\Varid{s}\;\Varid{v}{}\<[17]%
+\>[17]{}\mathrel{=}\Varid{fst}\mathbin{\$}\Varid{put}\;\Varid{myAlignT'}\;(\Varid{s},\Varid{d})\;\Varid{v}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+The application of \ensuremath{\Varid{get}} and \ensuremath{\Varid{put}} to trees is similar to the application of
+them to lists. The \ensuremath{\Varid{get}} functions takes the source tree and produces a view
+tree where its elements are the view of their correspondence in the source:
+%
+\begin{lstlisting}
+@>@ get (myAlignT @\ensuremath{\delta_1}@) (Node (1,('b',1)) @\lstcontinueline@
+      (Node (0,('a',0)) Nil Nil) @\lstcontinueline@
+      (Node (2,('c',2)) Nil Nil))
+Node (1,'b')  (Node (0,'a') Nil Nil) @\lstcontinueline@
+              (Node (2,'c') Nil Nil)
+\end{lstlisting}
+%
+The delta specification in the \ensuremath{\Varid{put}} transformation is the same as with lists:
+%
+\begin{lstlisting}
+@>@ put (myAlignT @\ensuremath{\delta_1}@) @\lstcontinueline@
+    (Node (1,('b',1)) @\lstcontinueline@
+      (Node (0,('a',0)) Nil Nil) @\lstcontinueline@
+      (Node (2,('c',2)) Nil Nil)) @\lstcontinueline@
+    (Node (1,'B') @\lstcontinueline@
+      (Node (0,'A') Nil Nil) @\lstcontinueline@
+      (Node (2,'C') Nil Nil))
+Node (1,('B',1))  (Node (0,('A',0)) Nil Nil) @\lstcontinueline@
+                  (Node (2,('C',2)) Nil Nil)
+\end{lstlisting}
+
+The delta alignment implementation can be generalized for arbitrary tree
+contents, with the following equivalent functions. Similarly to the list
+version, the functions are parametrized with a \emph{create} function and a
+BiGUL program to apply to the specific elements.
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{7}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{10E}{@{}l@{}}%
+\column{14}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{mapT}{}\<[7]%
+\>[7]{}\mathbin{::}(\Varid{v}\to \Varid{s})\to \Conid{BiGUL}\;\Varid{s}\;\Varid{v}{}\<[E]%
+\\
+\>[7]{}\to \Conid{BiGUL}\;(\Conid{Tree}\;\Varid{s})\;(\Conid{Tree}\;\Varid{v}){}\<[E]%
+\\
+\>[B]{}\Varid{adaptDeltaT}{}\<[14]%
+\>[14]{}\mathbin{::}(\Varid{v}\to \Varid{s})\to \Conid{Tree}\;\Varid{s}\to \Conid{Tree}\;\Varid{v}\to \Conid{Delta}{}\<[E]%
+\\
+\>[14]{}\to \Conid{Tree}\;\Varid{s}{}\<[E]%
+\\
+\>[B]{}\Varid{alignT'}{}\<[10]%
+\>[10]{}\mathbin{::}{}\<[10E]%
+\>[14]{}\Conid{BiGUL}\;\Varid{a}\;\Varid{b}\to (\Varid{b}\to \Varid{a}){}\<[E]%
+\\
+\>[10]{}\to {}\<[10E]%
+\>[14]{}\Conid{BiGUL}\;(\Conid{Tree}\;\Varid{a},\Conid{Delta})\;(\Conid{Tree}\;\Varid{b}){}\<[E]%
+\\
+\>[B]{}\Varid{alignT}{}\<[9]%
+\>[9]{}\mathbin{::}\Conid{Eq}\;\Varid{v}\Rightarrow \Conid{BiGUL}\;\Varid{s}\;\Varid{v}\to (\Varid{v}\to \Varid{s})\to \Conid{Delta}{}\<[E]%
+\\
+\>[9]{}\to \Conid{BiGUL}\;(\Conid{Tree}\;\Varid{s})\;(\Conid{Tree}\;\Varid{v}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+%
+\begin{comment}
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{7}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{12}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{14}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{17}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{19}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{22}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{24}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{26}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{28}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{28E}{@{}l@{}}%
+\column{30}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{32}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{adaptDeltaT}{}\<[14]%
+\>[14]{}\mathbin{::}(\Varid{v}\to \Varid{s})\to \Conid{Tree}\;\Varid{s}\to \Conid{Tree}\;\Varid{v}\to \Conid{Delta}{}\<[E]%
+\\
+\>[14]{}\to \Conid{Tree}\;\Varid{s}{}\<[E]%
+\\
+\>[B]{}\Varid{adaptDeltaT}\;\Varid{c}\;\Varid{s}\;\Varid{v}\;\Varid{d}\mathrel{=}\Varid{fmap}\;\Varid{idOrCreate}\;(\Varid{locsT}\;\Varid{v}){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbf{where}\;{}\<[10]%
+\>[10]{}\Varid{idOrCreate}\;\Varid{i}\mathrel{=}{}\<[26]%
+\>[26]{}\mathbf{let}\;\Varid{js}\mathrel{=}\Varid{rngOf}\;\Varid{i}\;\Varid{d}{}\<[E]%
+\\
+\>[26]{}\mathbf{in}\;{}\<[30]%
+\>[30]{}\mathbf{if}\;\Varid{js}\not\equiv  \emptyset {}\<[E]%
+\\
+\>[30]{}\mathbf{then}\;\Varid{data\char95 }\;\Varid{s}\mathbin{!!}\Varid{findMin}\;\Varid{js}{}\<[E]%
+\\
+\>[30]{}\mathbf{else}\;\Varid{c}\;(\Varid{data\char95 }\;\Varid{v}\mathbin{!!}\Varid{i}){}\<[E]%
+\\[\blanklineskip]%
+\>[B]{}\Varid{mapT}{}\<[7]%
+\>[7]{}\mathbin{::}(\Varid{v}\to \Varid{s})\to \Conid{BiGUL}\;\Varid{s}\;\Varid{v}{}\<[E]%
+\\
+\>[7]{}\to \Conid{BiGUL}\;(\Conid{Tree}\;\Varid{s})\;(\Conid{Tree}\;\Varid{v}){}\<[E]%
+\\
+\>[B]{}\Varid{mapT}\;\Varid{c}\;\Varid{u}\mathrel{=}\Conid{Case}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}[\mskip1.5mu \mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \Conid{Nil}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Nil}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\Longrightarrow\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda \Conid{Nil}\to ()\mid \mskip1.5mu])\;\Conid{Skip}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{adaptiveV}\;[\mskip1.5mu \Varid{p}\mid \Conid{Nil}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\Longrightarrow\lambda \anonymous \;\anonymous \to \Conid{Nil}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \Conid{Node}\;\anonymous \;\anonymous \;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Node}\;\anonymous \;\anonymous \;\anonymous \mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\Longrightarrow{}\<[12]%
+\>[12]{}\mathbin{\$}(\Varid{rearrV}\;{}\<[22]%
+\>[22]{}[\mskip1.5mu \mid \lambda (\Conid{Node}\;\Varid{v}\;\Varid{vl}\;\Varid{vr}){}\<[E]%
+\\
+\>[22]{}\hsindent{2}{}\<[24]%
+\>[24]{}\to (\Varid{v},(\Varid{vl},\Varid{vr}))\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\\
+\>[12]{}\hsindent{2}{}\<[14]%
+\>[14]{}\mathbin{\$}(\Varid{rearrS}\;{}\<[24]%
+\>[24]{}[\mskip1.5mu \mid \lambda (\Conid{Node}\;\Varid{s}\;\Varid{sl}\;\Varid{sr}){}\<[E]%
+\\
+\>[24]{}\hsindent{2}{}\<[26]%
+\>[26]{}\to (\Varid{s},(\Varid{sl},\Varid{sr}))\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\\
+\>[14]{}\hsindent{5}{}\<[19]%
+\>[19]{}\Varid{u} \times (\Varid{mapT}\;\Varid{c}\;\Varid{u} \times \Varid{mapT}\;\Varid{c}\;\Varid{u}){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{adaptiveV}\;[\mskip1.5mu \Varid{p}\mid (\Conid{Node}\;\anonymous \;\anonymous \;\anonymous )\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\Longrightarrow\lambda \anonymous \;(\Conid{Node}\;\Varid{v}\;\anonymous \;\anonymous )\to \Conid{Node}\;(\Varid{c}\;\Varid{v})\;\Conid{Nil}\;\Conid{Nil}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mskip1.5mu]{}\<[E]%
+\\[\blanklineskip]%
+\>[B]{}\Varid{alignT'}{}\<[10]%
+\>[10]{}\mathbin{::}{}\<[14]%
+\>[14]{}\Conid{BiGUL}\;\Varid{a}\;\Varid{b}\to (\Varid{b}\to \Varid{a}){}\<[E]%
+\\
+\>[10]{}\to {}\<[14]%
+\>[14]{}\Conid{BiGUL}\;(\Conid{Tree}\;\Varid{a},\Conid{Delta})\;(\Conid{Tree}\;\Varid{b}){}\<[E]%
+\\
+\>[B]{}\Varid{alignT'}\;\Varid{b}\;\Varid{c}\mathrel{=}\Conid{Case}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}[\mskip1.5mu \mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda (\Varid{s},\Varid{d})\;\Varid{v}{}\<[28]%
+\>[28]{}\to {}\<[28E]%
+\>[32]{}\Varid{d}\equiv \Varid{getIdT}\;\Varid{v}{}\<[E]%
+\\
+\>[28]{}\mathrel{\wedge}{}\<[28E]%
+\>[32]{}\Varid{d}\equiv \Varid{getIdT}\;\Varid{s}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\Longrightarrow\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{s},\anonymous )\to \Varid{s}\mid \mskip1.5mu])\;(\Varid{mapT}\;\Varid{c}\;\Varid{b}){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{adaptiveS}\;[\mskip1.5mu \mid \Varid{const}\;\Conid{True}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\Longrightarrow\lambda (\Varid{s},\Varid{d})\;\Varid{v}\to {}\<[24]%
+\>[24]{}\mathbf{let}\;\Varid{s'}\mathrel{=}\Varid{adaptDeltaT}\;\Varid{c}\;\Varid{s}\;\Varid{v}\;\Varid{d}{}\<[E]%
+\\
+\>[24]{}\mathbf{in}\;(\Varid{s'},\Varid{getIdT}\;\Varid{v})\mskip1.5mu]{}\<[E]%
+\\[\blanklineskip]%
+\>[B]{}\Varid{alignT}{}\<[9]%
+\>[9]{}\mathbin{::}\Conid{Eq}\;\Varid{v}{}\<[E]%
+\\
+\>[9]{}\Rightarrow \Conid{BiGUL}\;\Varid{s}\;\Varid{v}\to (\Varid{v}\to \Varid{s})\to \Conid{Delta}{}\<[E]%
+\\
+\>[9]{}\to \Conid{BiGUL}\;(\Conid{Tree}\;\Varid{s})\;(\Conid{Tree}\;\Varid{v}){}\<[E]%
+\\
+\>[B]{}\Varid{alignT}\;\Varid{b}\;\Varid{c}\;\Varid{d}\mathrel{=}\Varid{emb}\;\Varid{g}\;\Varid{p}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbf{where}\;{}\<[10]%
+\>[10]{}\Varid{g}\;\Varid{s}{}\<[17]%
+\>[17]{}\mathrel{=}\Varid{get}\;(\Varid{alignT'}\;\Varid{b}\;\Varid{c})\;(\Varid{s},\Varid{getIdT}\;\Varid{s}){}\<[E]%
+\\
+\>[10]{}\Varid{p}\;\Varid{s}\;\Varid{v}{}\<[17]%
+\>[17]{}\mathrel{=}\Varid{fst}\mathbin{\$}\Varid{put}\;(\Varid{alignT'}\;\Varid{b}\;\Varid{c})\;(\Varid{s},\Varid{d})\;\Varid{v}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\end{comment}
+
+%%%
+%%% Generic Delta-Based Alignment
+%%%
+\section{Generic Delta-Based Alignment}
+
+Delta-based alignment can also be implemented for other containers. The
+implementations for the list and tree cases are generalizable to other
+containers.
+
+%%% Containers as Shape and Data
+\subsection{Containers as Shape and Data}
+
+\citet{Pacheco2012} rely on types with explicit notion of shape and data in
+their delta-alignment over inductive types, a
+property provided by polymorphic data types in functional programming.
+Moreover, they applied a notation from \emph{shapely types}~\cite{jay1995} in
+order to have tools to work with these data types.
+Employing these concepts, one can abstract from the shapes of both source and
+view, and just take the data into account for the alignment process.
+
+Thus, a polymorphic type \(T~a\) can be characterized by three functions:
+\ensuremath{\Varid{shape}\mathbin{::}\Conid{T}\;\Varid{a}\to \Conid{T}\;()} to extract the shape;
+\ensuremath{\Varid{data\char95 }\mathbin{::}\Conid{T}\;\Varid{a}\to [\mskip1.5mu \Varid{a}\mskip1.5mu]} to extract the data;
+and, \ensuremath{\Varid{recover}\mathbin{::}(\Conid{T}\;(),[\mskip1.5mu \Varid{a}\mskip1.5mu])\to \Conid{T}\;\Varid{a}} to rebuild the type value
+from its shape and data.
+For flexibility, these functions are defined in a type class
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathbf{class}\;\Conid{Shapely}\;(\Varid{t}\mathbin{::}\mathbin{*}\to \mathbin{*})\;\mathbf{where}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Varid{shape}\mathbin{::}\Varid{t}\;\Varid{a}\to \Varid{t}\;(){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Varid{data\char95 }\mathbin{::}\Varid{t}\;\Varid{a}\to [\mskip1.5mu \Varid{a}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Varid{recover}\mathbin{::}(\Varid{t}\;(),[\mskip1.5mu \Varid{a}\mskip1.5mu])\to \Varid{t}\;\Varid{a}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+On top of these functions, it is possible to define new ones, e.g., \ensuremath{\Varid{locs}\mathbin{::}\Conid{T}\;\Varid{a}\to \Conid{Set}\;\Conid{Loc}} to get a all the locations of the data elements within the
+container.
+
+%%% Positional Mapping
+\subsection{Positional Mapping}
+
+The positional update is one of the aspects that is specific to each data type.
+To solve this issue in a simple manner, we introduce a new type class
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{18}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathbf{class}\;\Conid{Shapely}\;\Varid{t}\Rightarrow \Conid{Positional}\;\Varid{t}\;\mathbf{where}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Varid{positionalMap}{}\<[18]%
+\>[18]{}\mathbin{::}(\Varid{v}\to \Varid{s})\to \Conid{BiGUL}\;\Varid{s}\;\Varid{v}{}\<[E]%
+\\
+\>[18]{}\to \Conid{BiGUL}\;(\Varid{t}\;\Varid{s})\;(\Varid{t}\;\Varid{v}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+%
+\begin{comment}
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathbf{instance}\;\Conid{Positional}\;[\mskip1.5mu \mskip1.5mu]\;\mathbf{where}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Varid{positionalMap}\mathrel{=}\Varid{mapL}{}\<[E]%
+\\
+\>[B]{}\mathbf{instance}\;\Conid{Positional}\;\Conid{Tree}\;\mathbf{where}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Varid{positionalMap}\mathrel{=}\Varid{mapT}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\end{comment}
+%
+where the \ensuremath{\Varid{positionalMap}} function maps a BiGUL program element wise.
+For the list container \ensuremath{\Varid{positionalMap}\mathrel{=}\Varid{mapL}}
+and for the tree container \ensuremath{\Varid{positionalMap}\mathrel{=}\Varid{mapT}}.
+
+%%% Generic Delta Alignment
+\subsection{Generic Delta Alignment}
+
+A key component in delta alignment is the position of elements. Having access to
+element positions, we can obtain the identity delta:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{getId}\mathbin{::}\Conid{Shapely}\;\Varid{s}\Rightarrow \Varid{s}\;\Varid{a}\to \Conid{Delta}{}\<[E]%
+\\
+\>[B]{}\Varid{getId}\mathrel{=}\Varid{map}\;(\lambda \Varid{l}\to (\Varid{l},\Varid{l}))\mathbin{\circ}\Varid{locs}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+Starting with the adaptation, we can make use of the functions resulting from
+the fact that we can see a container as a shape and data. Therefore, we recover
+a container with the shape of the view, but with the data of the original source
+or with created data when new elements were added:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{13}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{26}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{30}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{adaptDelta}{}\<[13]%
+\>[13]{}\mathbin{::}\Conid{Shapely}\;\Varid{s}{}\<[E]%
+\\
+\>[13]{}\Rightarrow (\Varid{b}\to \Varid{a})\to \Varid{s}\;\Varid{a}\to \Varid{s}\;\Varid{b}\to \Conid{Delta}\to \Varid{s}\;\Varid{a}{}\<[E]%
+\\
+\>[B]{}\Varid{adaptDelta}\;\Varid{c}\;\Varid{s}\;\Varid{v}\;\Varid{d}\mathrel{=}\Varid{recover}\;(\Varid{newShape},\Varid{newData}){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbf{where}\;{}\<[10]%
+\>[10]{}\Varid{newShape}\mathrel{=}\Varid{shape}\;\Varid{v}{}\<[E]%
+\\
+\>[10]{}\Varid{newData}\mathrel{=}\Varid{map}\;\Varid{idOrCreate}\;(\Varid{elems}\mathbin{\$}\Varid{locs}\;\Varid{v}){}\<[E]%
+\\
+\>[10]{}\Varid{idOrCreate}\;\Varid{i}\mathrel{=}{}\<[26]%
+\>[26]{}\mathbf{let}\;\Varid{js}\mathrel{=}\Varid{rngOf}\;\Varid{i}\;\Varid{d}{}\<[E]%
+\\
+\>[26]{}\mathbf{in}\;{}\<[30]%
+\>[30]{}\mathbf{if}\;\Varid{js}\not\equiv  \emptyset {}\<[E]%
+\\
+\>[30]{}\mathbf{then}\;\Varid{data\char95 }\;\Varid{s}\mathbin{!!}\Varid{findMin}\;\Varid{js}{}\<[E]%
+\\
+\>[30]{}\mathbf{else}\;\Varid{c}\;(\Varid{data\char95 }\;\Varid{v}\mathbin{!!}\Varid{i}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+%
+With this function, any shapely type can be adapted, including lists and trees.
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{7}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{9E}{@{}l@{}}%
+\column{13}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{24}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{28}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{28E}{@{}l@{}}%
+\column{32}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{align'}{}\<[9]%
+\>[9]{}\mathbin{::}{}\<[9E]%
+\>[13]{}(\Conid{Shapely}\;\Varid{t},\Conid{Positional}\;\Varid{t}){}\<[E]%
+\\
+\>[9]{}\Rightarrow {}\<[9E]%
+\>[13]{}\Conid{BiGUL}\;\Varid{s}\;\Varid{v}\to (\Varid{v}\to \Varid{s}){}\<[E]%
+\\
+\>[9]{}\to {}\<[9E]%
+\>[13]{}\Conid{BiGUL}\;(\Varid{t}\;\Varid{s},\Conid{Delta})\;(\Varid{t}\;\Varid{v}){}\<[E]%
+\\
+\>[B]{}\Varid{align'}\;\Varid{b}\;\Varid{c}\mathrel{=}\Conid{Case}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}[\mskip1.5mu \mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda (\Varid{s},\Varid{d})\;\Varid{v}{}\<[28]%
+\>[28]{}\to {}\<[28E]%
+\>[32]{}\Varid{d}\equiv \Varid{getId}\;\Varid{v}{}\<[E]%
+\\
+\>[28]{}\mathrel{\wedge}{}\<[28E]%
+\>[32]{}\Varid{d}\equiv \Varid{getId}\;\Varid{s}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\Longrightarrow\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{s},\anonymous )\to \Varid{s}\mid \mskip1.5mu])\;(\Varid{positionalMap}\;\Varid{c}\;\Varid{b}){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{adaptiveS}\;[\mskip1.5mu \mid \Varid{const}\;\Conid{True}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{4}{}\<[7]%
+\>[7]{}\Longrightarrow\lambda (\Varid{s},\Varid{d})\;\Varid{v}\to {}\<[24]%
+\>[24]{}\mathbf{let}\;\Varid{s'}\mathrel{=}\Varid{adaptDelta}\;\Varid{c}\;\Varid{s}\;\Varid{v}\;\Varid{d}{}\<[E]%
+\\
+\>[24]{}\mathbf{in}\;(\Varid{s'},\Varid{getId}\;\Varid{v})\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{8}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{17}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{align}{}\<[8]%
+\>[8]{}\mathbin{::}(\Conid{Shapely}\;\Varid{t},\Conid{Positional}\;\Varid{t},\Conid{Eq}\;(\Varid{t}\;\Varid{v})){}\<[E]%
+\\
+\>[8]{}\Rightarrow \Conid{BiGUL}\;\Varid{s}\;\Varid{v}\to (\Varid{v}\to \Varid{s})\to \Conid{Delta}{}\<[E]%
+\\
+\>[8]{}\to \Conid{BiGUL}\;(\Varid{t}\;\Varid{s})\;(\Varid{t}\;\Varid{v}){}\<[E]%
+\\
+\>[B]{}\Varid{align}\;\Varid{b}\;\Varid{c}\;\Varid{d}\mathrel{=}\Varid{emb}\;\Varid{g}\;\Varid{p}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbf{where}\;{}\<[10]%
+\>[10]{}\Varid{g}\;\Varid{s}{}\<[17]%
+\>[17]{}\mathrel{=}\Varid{get}\;(\Varid{align'}\;\Varid{b}\;\Varid{c})\;(\Varid{s},\Varid{getId}\;\Varid{s}){}\<[E]%
+\\
+\>[10]{}\Varid{p}\;\Varid{s}\;\Varid{v}{}\<[17]%
+\>[17]{}\mathrel{=}\Varid{fst}\mathbin{\$}\Varid{put}\;(\Varid{align'}\;\Varid{b}\;\Varid{c})\;(\Varid{s},\Varid{d})\;\Varid{v}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+%%% Other Matching Algorithms Built Upon Deltas
+\subsection{Other Matching Algorithms Built Upon Deltas}
+
+With the implementation of delta-based alignment, we can implement other
+alignment strategies upon the deltas without much work.
+It is possible to make minor changes to the \ensuremath{\Varid{align}} function to
+implement other kinds of alignments, e.g., key-based:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{17}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{30}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{keyAlign}\mathbin{::}(\Conid{Shapely}\;\Varid{s},\Conid{Positional}\;\Varid{s},\Conid{Eq}\;(\Varid{s}\;\Varid{b}),\Conid{Eq}\;\Varid{b},\Conid{Eq}\;\Varid{k}){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Rightarrow \Conid{BiGUL}\;\Varid{a}\;\Varid{b}\to (\Varid{b}\to \Varid{a})\to (\Varid{a}\to \Varid{k})\to (\Varid{b}\to \Varid{k}){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\to \Conid{BiGUL}\;(\Varid{s}\;\Varid{a})\;(\Varid{s}\;\Varid{b}){}\<[E]%
+\\
+\>[B]{}\Varid{keyAlign}\;\Varid{b}\;\Varid{c}\;\Varid{sk}\;\Varid{vk}\mathrel{=}\Varid{emb}\;\Varid{g}\;\Varid{p}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbf{where}\;{}\<[10]%
+\>[10]{}\Varid{g}\;\Varid{s}{}\<[17]%
+\>[17]{}\mathrel{=}\Varid{get}\;(\Varid{align'}\;\Varid{b}\;\Varid{c})\;(\Varid{s},\Varid{getId}\;\Varid{s}){}\<[E]%
+\\
+\>[10]{}\Varid{p}\;\Varid{s}\;\Varid{v}{}\<[17]%
+\>[17]{}\mathrel{=}\Varid{fst}\mathbin{\$}\Varid{put}\;{}\<[30]%
+\>[30]{}(\Varid{align'}\;\Varid{b}\;\Varid{c})\;{}\<[E]%
+\\
+\>[30]{}(\Varid{s},\Varid{keyDelta}\;\Varid{sk}\;\Varid{vk}\;\Varid{s}\;\Varid{v})\;\Varid{v}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+The \ensuremath{\Varid{keyAlign}} function, instead of receiving the delta, receives two
+functions to get the key component of the view and the source, respectively.
+Then, using the original source and the modified view, another function is used
+to infer a delta:
+%
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{15}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{49}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{49E}{@{}l@{}}%
+\column{52}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{67}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{67E}{@{}l@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{keyDelta}\mathbin{::}(\Conid{Shapely}\;\Varid{s},\Conid{Eq}\;\Varid{k}){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Rightarrow (\Varid{a}\to \Varid{k})\to (\Varid{b}\to \Varid{k})\to \Varid{s}\;\Varid{a}\to \Varid{s}\;\Varid{b}\to \Conid{Delta}{}\<[E]%
+\\
+\>[B]{}\Varid{keyDelta}\;\Varid{sk}\;\Varid{vk}\;\Varid{ss}\;\Varid{vs}\mathrel{=}\;[\mskip1.5mu (\Varid{sp},\Varid{vp}){}\<[49]%
+\>[49]{}\mid {}\<[49E]%
+\>[52]{}(\Varid{s},\Varid{sp})\leftarrow \Varid{sps}{}\<[E]%
+\\
+\>[49]{},{}\<[49E]%
+\>[52]{}(\Varid{v},\Varid{vp})\leftarrow \Varid{vps}{}\<[E]%
+\\
+\>[49]{},{}\<[49E]%
+\>[52]{}\Varid{sk}\;\Varid{s}\equiv \Varid{vk}\;\Varid{v}{}\<[67]%
+\>[67]{}\mskip1.5mu]{}\<[67E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbf{where}\;{}\<[10]%
+\>[10]{}\Varid{sps}{}\<[15]%
+\>[15]{}\mathrel{=}\Varid{zip}\;(\Varid{data\char95 }\;\Varid{ss})\;(\Varid{elems}\mathbin{\$}\Varid{locs}\;\Varid{ss}){}\<[E]%
+\\
+\>[10]{}\Varid{vps}{}\<[15]%
+\>[15]{}\mathrel{=}\Varid{zip}\;(\Varid{data\char95 }\;\Varid{vs})\;(\Varid{elems}\mathbin{\$}\Varid{locs}\;\Varid{vs}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+It is then possible to apply key-based alignment on any structure that has an
+implementation of delta-based alignment. The same function can be used for,
+e.g., lists:
+%
+\begin{lstlisting}
+@>@ put (keyAlign myBX myCreate fst fst) @\lstcontinueline@
+    [(0,('a',0)),(1,('b',1)),(2,('c',2))] @\lstcontinueline@
+    [(0,'A'),(1,'B'),(2,'C')]
+[(0,('A',0)),(1,('B',1)),(2,('C',2))]
+\end{lstlisting}
+%
+and for trees:
+%
+\begin{lstlisting}
+@>@ put (keyAlign myBX myCreate fst fst) @\lstcontinueline@
+    (Node (1,('b',1)) @\lstcontinueline@
+      (Node (0,('a',0)) Nil Nil) @\lstcontinueline@
+      (Node (2,('c',2)) Nil Nil)) @\lstcontinueline@
+    (Node (1,'B') @\lstcontinueline@
+      (Node (0,'A') Nil Nil) @\lstcontinueline@
+      (Node (2,'C') Nil Nil))
+Node (1,('B',1))  (Node (0,('A',0)) Nil Nil) @\lstcontinueline@
+                  (Node (2,('C',2)) Nil Nil)
+\end{lstlisting}
+%
+where \ensuremath{\Varid{myCreate}\;(\Varid{k},v_1)\mathrel{=}(\Varid{k},(v_1,\mathrm{0}))}.
+%
+\begin{comment}
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{myCreate}\mathbin{::}\Conid{View}\to \Conid{Source}{}\<[E]%
+\\
+\>[B]{}\Varid{myCreate}\;(\Varid{k},v_1)\mathrel{=}(\Varid{k},(v_1,\mathrm{0})){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\end{comment}
+
+
+%%%
+%%% Conclusion
+%%%
+\section{Conclusion}
+
+We hope to send the following two messages through
+this pearl paper. One is that putback-based programming is not that 
+difficult in BiGUL, a simple but powerful put-based bidirectional
+language. The other is that a well-defined putback-based
+bidirectional programming language can serve as basis for developing
+many useful domain specific bidirectional languages/libraries that
+allow both get-based and put-based bidirectional programming.
+
+%\appendix
+%\section{Appendix Title}
+%
+%This is the text of the appendix, if you need one.
+
+%\acks
+%
+%Acknowledgments, if needed.
+
+% We recommend abbrvnat bibliography style.
+
+\bibliographystyle{abbrvnat}
+\bibliography{references}
+
+%% The bibliography should be embedded for final submission.
+%
+%\begin{thebibliography}{}
+%\softraggedright
+%
+%\bibitem[Smith et~al.(2009)Smith, Jones]{smith02}
+%P. Q. Smith, and X. Y. Jones. ...reference text...
+%
+%\end{thebibliography}
+
+\end{document}

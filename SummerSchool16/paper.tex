@@ -1,0 +1,59 @@
+\documentclass{llncs}
+
+\title{Principle and Practice of Bidirectional Programming in BiGUL}
+
+\author{Zhenjiang Hu,  Hsiang-Shang Ko}
+\institute{
+National Institute of Informatics, Japan\\
+{\{hu,hsiang-shang\}@nii.ac.jp}
+}
+
+\usepackage{lhs2TeX-polycode}
+\def\commentbegin{\quad\{\ }
+\def\commentend{\}}
+
+\usepackage{color}
+\usepackage{cite}
+\usepackage{comment}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{amsmath}
+%\usepackage{amsthm}
+\usepackage{enumerate}
+\usepackage{xspace}
+
+\DeclareMathSymbol\lbag\mathopen{stmry}{"2A}
+\DeclareMathSymbol\rbag\mathclose{stmry}{"2B}
+
+\usepackage{textcomp}
+\newtheorem{maintheorem}[theorem]{Main Theorem}
+\newtheorem{algorithm}{\bf Algorithm}
+
+%\newcommand\todo[1]{{\color{red} Todo: #1}}
+
+%\usepackage{natbib}
+
+\input{macros}
+
+\begin{document}
+\frontmatter
+\mainmatter
+
+\maketitle
+
+\begin{abstract}
+This material will be used as 
+the lecture notes for the Summer School on Bidirectional
+Transformation to be held in Oxford in July, 2016.
+\end{abstract}
+
+\input{PBasic}
+\input{PList}
+\input{PSet}
+
+\bibliographystyle{splncs03}
+%\bibliographystyle{abbrvnat}
+% The bibliography should be embedded for final submission.
+\bibliography{references}
+
+\end{document}

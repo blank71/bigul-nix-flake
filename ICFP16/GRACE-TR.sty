@@ -1,0 +1,183 @@
+%% This is file `GRACE-TR.sty'. 
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{GRACE-TR}[2009/06/11 v1.2]
+\message{GRACE-TR style 2009/06/11 v1.2 by Zhenjiang Hu (being adapted from METR.sty created by Kiminori Matsuzaki)}
+%% History
+% 2009/06/11 v1.2   added ISSN
+% 2008/08/08 v1.1   added the GRACE logo
+% 2008/04/30 v1.0   created the first version
+\ProcessOptions\relax
+
+\usepackage[dvips]{graphics}
+
+%% Cover
+\def\GRACETRtitle#1{\gdef\@GRACETR@title{#1}}
+\def\GRACETRauthor#1{\gdef\@GRACETR@author{#1}}
+\def\GRACETRdate#1{\gdef\@GRACETR@date{#1}}
+\def\GRACETRid#1{\gdef\@GRACETR@id{#1}}
+\def\GRACETRcommunicatedBy#1{\gdef\@GRACE@communicated{#1}}
+\def\@GRACE@date{\today}
+\def\@GRACE@title{Please Set GRACETRtitle}
+\def\@GRACE@author{Please Set GRACETRauthor}
+\def\@GRACE@id{Please Set GRACETRid}
+
+\def\GRACETRmakecover{%
+\bgroup%
+  % save original dimension
+  \newdimen\dimen@orgtextheight
+  \dimen@orgtextheight=\textheight
+  % set layout for title pages
+  \setlength{\parindent}     { 0pt}
+  \setlength{\voffset}       {-1in}        % ... this is not recommended
+  \setlength{\topmargin}     { 0pt}
+  \setlength{\headheight}    { 0pt}
+  \setlength{\headsep}       { 0pt}
+  \setlength{\footskip}      { 0pt}
+  \setlength{\textheight}    {\paperheight}
+  \setlength{\hoffset}       {-1in}             % ... this is not recommended
+  \setlength{\evensidemargin}{ 0pt}
+  \setlength{\oddsidemargin} { 0pt}
+  \setlength{\textwidth}     {\paperwidth}
+  \setlength{\marginparsep}  { 0pt}
+  \setlength{\marginparwidth}{ 0pt}
+  % set font size for title pages
+  \def\sizeHEADER      {\@setfontsize{\HEADER}      {\@xviipt}{20}}
+  \def\sizeTITLE       {\@setfontsize{\TITLE}       {\@xviipt}{20}}
+  \def\sizeAUTHOR      {\@setfontsize{\AUTHOR}      {\@xivpt} {16}}
+  \def\sizeCOMMUNICATED{\@setfontsize{\COMMUNICATED}{\@xiipt} {14}}
+  \def\sizeDATE        {\@setfontsize{\DATE}        {\@xiipt} {14}}
+  \def\sizeORGANIZATION{\@setfontsize{\ORGANIZATION}{\@xipt}  {13}}
+  \def\sizeURL         {\@setfontsize{\URL}         {\@xipt}  {12}}
+  \def\sizeCOPYRIGHT   {\@setfontsize{\COPYRIGHT}   {\@xipt}  {14}}
+  % definition of boxes
+  % ISSN 
+  \newbox\ISSNbox\setbox\ISSNbox=%
+      \vtop{\hsize=17cm\sffamily\sizeDATE\begin{flushright}%
+      ISSN\ 1884-0760%
+      \end{flushright}}
+  % header
+  \newbox\HEADERbox\setbox\HEADERbox=%
+      \vtop{\hsize=14cm\sffamily\bfseries\sizeHEADER\begin{center}%
+      GRACE TECHNICAL REPORTS%
+      \end{center}}
+  % title
+  \newbox\TITLEbox\setbox\TITLEbox=%
+      \vtop{\hsize=14cm\bfseries\sizeTITLE%
+      \begin{center}\@GRACETR@title\end{center}}
+  % author
+  \newbox\AUTHORbox\setbox\AUTHORbox=%
+      \vtop{\hsize=12cm\begin{center}%
+      \sizeAUTHOR\@GRACETR@author%
+      \@ifundefined{@GRACETR@communicated}%
+         {}%
+         {\\\vspace{10pt}\sizeCOMMUNICATED%
+          (Communicated by \@GRACETR@communicated)}%
+      \end{center}}
+  % number and date
+  \newbox\DATEbox\setbox\DATEbox=%
+      \vtop{\hsize=100mm
+      \parfillskip=0pt\noindent\sizeDATE\@GRACETR@id\hfill\@GRACETR@date\par}
+  % organization and url
+  \newbox\ORGANIZATIONbox\setbox\ORGANIZATIONbox=%
+      \vtop{\hsize=200mm\begin{center}%
+	{\sffamily \sizeORGANIZATION
+	CENTER FOR GLOBAL RESEARCH IN\\
+	ADVANCED SOFTWARE SCIENCE AND ENGINEERING\\
+	NATIONAL INSTITUTE OF INFORMATICS\\
+	2-1-2 HITOTSUBASHI, CHIYODA-KU, TOKYO, JAPAN\\
+	\vspace{5mm}}
+        {\sffamily\bfseries \sizeURL
+        WWW page: http://grace-center.jp/
+	}
+      \end{center}}
+  % copyright
+  \newbox\COPYRIGHTbox\setbox\COPYRIGHTbox=%
+      \vtop{\hsize=140mm\sffamily\sizeCOPYRIGHT
+
+\smallskip
+
+      The GRACE technical reports are published as a means to ensure timely
+      dissemination of scholarly and technical work on a non-commercial
+      basis. Copyright and all rights therein are maintained by the authors
+      or by other copyright holders, notwithstanding that they have offered
+      their works here electronically. It is understood that all persons
+      copying this information will adhere to the terms and constraints
+      invoked by each author's copyright. These works may not be reposted
+      without the explicit permission of the copyright holder.}
+  % some important lengths
+  % length between leftside and center
+  \newdimen\dimen@covercenter
+      \dimen@covercenter=105mm
+  % length between top and issn part (fixed point)
+  \newdimen\dimen@coverissn
+      \dimen@coverissn=5mm
+  % length between top and header (fixed point)
+  \newdimen\dimen@coverheader 
+      \dimen@coverheader=30mm
+  % length between header and title (fixed point)
+  \newdimen\dimen@covertitle  
+      \dimen@covertitle=75mm
+      \advance\dimen@covertitle  -\dimen@coverheader
+      \advance\dimen@covertitle  -\ht\HEADERbox
+      \advance\dimen@covertitle  -\dp\HEADERbox
+  % length between title and author, between author and date (fixed length)
+  \newdimen\dimen@coverauthor
+      \dimen@coverauthor=10mm
+  \newdimen\dimen@coverdate
+      \dimen@coverdate=13mm
+ % length between date and logo
+  \newdimen\dimen@logo
+      \dimen@logo=25mm
+  % length between date and organization (fixed point)
+  \newdimen\dimen@organization 
+      \dimen@organization=160mm
+      \advance\dimen@organization  -\dimen@coverissn
+      \advance\dimen@organization  -\dimen@coverheader
+      \advance\dimen@organization  -\ht\HEADERbox
+      \advance\dimen@organization  -\dp\HEADERbox
+      \advance\dimen@organization  -\dimen@covertitle
+      \advance\dimen@organization  -\ht\TITLEbox
+      \advance\dimen@organization  -\dp\TITLEbox
+      \advance\dimen@organization  -\dimen@coverauthor
+      \advance\dimen@organization  -\ht\AUTHORbox
+      \advance\dimen@organization  -\dp\AUTHORbox
+      \advance\dimen@organization  -\dimen@coverdate
+      \advance\dimen@organization  -\ht\DATEbox
+      \advance\dimen@organization  -\dp\DATEbox
+  % length between top and copyright (fixed point)
+  \newdimen\dimen@copyright
+      \dimen@copyright=220mm
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  % title page
+  \thispagestyle{empty}
+  \vbox{\hsize=\textwidth
+  \vspace*{\dimen@coverissn}
+      \hspace*\dimen@covercenter\hspace*{-.5\wd\ISSNbox}\box\ISSNbox\par
+  \vspace*{\dimen@coverheader}
+      \hspace*\dimen@covercenter\hspace*{-.5\wd\HEADERbox}\box\HEADERbox\par
+  \vspace*{\dimen@covertitle}
+      \hspace*\dimen@covercenter\hspace*{-.5\wd\TITLEbox}\box\TITLEbox\par
+  \vspace*{\dimen@coverauthor}
+      \hspace*\dimen@covercenter\hspace*{-.5\wd\AUTHORbox}\box\AUTHORbox\par
+  \vspace*{\dimen@coverdate}
+      \hspace*\dimen@covercenter\hspace*{-.5\wd\DATEbox}\box\DATEbox\par
+  \vspace*{\dimen@logo}
+      \centerline{\includegraphics{logo.eps}}
+  \vspace*{\dimen@organization}
+      \hspace*\dimen@covercenter\hspace*{-.5\wd\ORGANIZATIONbox}\box\ORGANIZATIONbox\par
+  }\vspace*{-\textheight}\vfill % this is needed for the 1st page
+  \clearpage
+  %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+  % Copyright Page
+  \thispagestyle{empty}
+  \vbox{\hsize=\textwidth
+  \vspace*{\dimen@copyright}
+      \hspace*\dimen@covercenter\hspace*{-.5\wd\COPYRIGHTbox}\box\COPYRIGHTbox
+  }
+  % set \textheight before clearpage for main paper
+  \setlength{\textheight}{\dimen@orgtextheight} 
+  \clearpage%
+  \setcounter{page}{1}%
+\egroup%
+}
+%% End of file
