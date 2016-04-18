@@ -1,4 +1,4 @@
-\documentclass[preprint,numbers]{sigplanconf}
+\documentclass[numbers]{sigplanconf}
 
 \newif\ifanonymous
 
@@ -85,10 +85,12 @@
 \setlength{\pdfpageheight}{\paperheight}
 \setlength{\pdfpagewidth}{\paperwidth}
 
-\conferenceinfo{CONF 'yy}{Month d--d, 20yy, City, ST, Country}
-\copyrightyear{20yy}
-\copyrightdata{978-1-nnnn-nnnn-n/yy/mm}
-\copyrightdoi{nnnnnnn.nnnnnnn}
+\toappear{}
+
+%\conferenceinfo{CONF 'yy}{Month d--d, 20yy, City, ST, Country}
+%\copyrightyear{20yy}
+%\copyrightdata{978-1-nnnn-nnnn-n/yy/mm}
+%\copyrightdoi{nnnnnnn.nnnnnnn}
 
 % Uncomment the publication rights you want to use.
 %\publicationrights{transferred}
@@ -99,7 +101,7 @@
 %\preprintfooter{short description of paper}   % 'preprint' option specified.
 
 \title{The Under-Appreciated Put: Implementing Delta-Alignment in BiGUL}
-\subtitle{Functional Pearl}
+%\subtitle{Functional Pearl}
 
 \ifanonymous
 \authorinfo{}{}{}
@@ -121,8 +123,8 @@ One is the get-based method where one writes |get| and
 the put-based method where one writes |put| and
 |get| is automatically derived.
 In this paper, we argue that the put-based method
-deserves more attention, because a
-a good language for programming |put| cannot only
+deserves more attention, because
+a good language for programming |put| can not only
 give full control over the behavior of bidirectional transformations,
 but also enable us to efficiently
 develop various domain-specific bidirectional languages and use
@@ -172,26 +174,26 @@ import Generics.Pointless.HFunctors
 
 \section{Introduction}
 
-Bidirectional transformations are hot! They are 
+Bidirectional transformations are hot! They
 originated from the {\em view updating\/} mechanism in the
 database community~\cite{Bancilhon:81,Dayal:82,GoPZ88},
-have been recently attracting a lot of attention
+and have been recently attracting a lot of attention
 from researchers in the communities of programming languages and 
 software engineering \cite{GRACE:09,HSST11},
-since the pioneering work of Foster et al. on 
+since the pioneering work of Foster {et al.} on 
 a combinatorial language for bidirectional tree transformations \cite{Foster2007}.
 
 A bidirectional transformation (BX for short) is simply
 a pair of functions
-< get :: Source -> View
-< put :: Source -> View -> View
+< get  :: Source -> View
+< put  :: Source -> View -> Source
 where 
 the \emph{get} function extracts a view from a source and the \emph{put}
 function updates the original source with information from the new view.
-As a simple example, consider that we wish to synchronize between
-rectangles and their heights, we can define
-< getHeight (height, width) = height
-< putHeight (height, width) height' = (height', width)
+As a simple example, suppose that we wish to synchronize between
+rectangles and their heights. We can define
+< getHeight  (height, width)          = height
+< putHeight  (height, width) height'  = (height', width)
 where a rectangle is represented by a pair of its height and width.
 
 Certainly not any pair of |get| and |put| can form bidirectional
@@ -231,12 +233,12 @@ which has motivated two different approaches:
 \item {\em Get-based Method}: allowing users to write |get|
 and derive a suitable |put| \cite{Foster2007,MHNHT07,Bohannon:08,Barbosa2010,Hidaka:10,Hofmann2012,Pacheco2012};
 \item {\em Put-based Method}: allowing users to write |put|
-and derive the unique |get| if there is \cite{PaHF14,PachecoZH14,HuPF14,FischerHP15,Ko2016}.
+and derive the unique |get| if there is one \cite{PaHF14,PachecoZH14,HuPF14,FischerHP15,Ko2016}.
 \end{itemize}
 
 The get-based method has been intensively studied for over ten years
 and got much appreciated. It is attractive, because |get| is easy to write,
-and if the system knows how to derive a put, there would be no additional
+and if the system knows how to derive a |put|, there would be no additional
 burden for users to go from unidirectional to bidirectional.
 In contrast, the put-based method is new and far from being appreciated.
 One main criticism is that |put| is more difficult to write than |get|.
@@ -269,7 +271,7 @@ As a matter of fact, from the original get-based bidirectional
 language \emph{lenses} \cite{Foster2007}, we have seen
 many such extensions, e.g., the \emph{matching lenses}
 to deal with alignment policies \cite{Barbosa2010},
-the \emph{delta lenses} to deal with operation-based update policies
+the \emph{delta lenses} to deal with modification-sensitive update policies
 \cite{Diskin:2011,Hofmann2012}, and the \emph{generic lenses} to deal with
 any updates on inductive data structures \cite{Pacheco2012}.
 All these extensions, as seen in the related papers,
@@ -281,13 +283,13 @@ are well-behaved.
 
 In this paper, we put up
 the slogan ``One |put| for All'', in the sense that
-a good language for programming |put| cannot only
+a good language for programming |put| can not only
 give full control over the behavior of bidirectional transformations,
 but also enable us to systematically
 develop various domain-specific bidirectional languages and use
 them seamlessly in one framework, which
 would be nontrivial with the get-based method as seen above.
-After a brief review of BiGUL, a putback-based
+After a brief review of BiGUL~\cite{Ko2016}, a putback-based
 bidirectional language, we demonstrate how it can be used to
 concisely implement the matching/delta/generic lenses that
 are guaranteed to be well-behaved.
@@ -360,12 +362,12 @@ The simplest alignment strategy is the positional one. The following types for
 source (|Source|) and view (|View|) are used for the running example.
 %
 \begin{code}
-type Source = (Int, (Char, Int))
-type View = (Int, Char)
+type Source  = (Int, (Char, Int))
+type View    = (Int, Char)
 \end{code}
 %
-The first component of the pair should match the first component of the view,
-and the character component (|Char|) of the source should match the character
+The first |Int| component of the pair should match the first |Int| component of the view,
+and the |Char| component of the source should match the |Char|
 component of the view. This relation between source and view can be expressed
 with the following BiGUL program:
 %
@@ -384,7 +386,7 @@ the several possibilities of source and view values in the update process:
 \begin{itemize}
   \item both source and view are empty, and we just
     |Skip|;
-  \item all elements of the view were processed, so we adapt the source removing
+  \item all elements of the view were processed, so we adapt the source by removing
     the extra elements
     |\ _ _ -> []|;
     \item both source and view have elements, then we update with the head of both
@@ -426,8 +428,8 @@ myMapL = Case
 %%\end{code}
 
 When both source and view are empty, or both have elements, a BiGUL program can
-be applied. When both are empty is the terminal case, yielding the empty list.
-When both have values, the head of the source is updated with the head of the
+be applied: When both are empty, the empty list is produced;
+when both have elements, the head of the source is updated with the head of the
 view, and then recursion is performed.
 
 In the other two cases, adaptation of the source is required. The first one is
@@ -522,10 +524,10 @@ isAligned s v =  length s == length v
 \end{code}
 %
 We consider that source and view are aligned if both have the same number of
-elements, and that the keys match element wise.
+elements, and that the keys match element-wise.
 
-In the case that both lists are not aligned, we define a function that adapts a
-source such that then they are both aligned. This is performed by traversing the
+In the case that the two lists are not aligned, we define a function that adapts a
+source such that then they are aligned. This is performed by traversing the
 view and fetching the first corresponding element in the original source. If
 such element is not present, we create it. At the end, source elements not
 present in view are discarded. The adaptation of the source can be implemented
@@ -592,7 +594,7 @@ the key of an element (\lstinline!(1,'b')! to \lstinline!(3,'b')!):
 
 As with the positional update, this program can be generalized for key-based
 alignment on lists with arbitrary contents. For that, the |keyMatch| function
-must be parametrized with function to get a key component from the source, another
+must be parametrized with a function to get a key component from the source, another
 function to get the key component from the view, and the create and BiGUL update
 program as with |mapL|:
 %
@@ -606,15 +608,15 @@ keyMatch  :: Eq k => (s -> k) -> (b -> k)
 %%%
 \section{Delta-Based List Alignment}
 
-Alignment can be made more precise using information about the operations
-applied to the view. If we extract the relation of elements in the original
+Alignment can be made more precise using information about how the view is modified.
+If we extract the relation of elements in the original
 view to the elements in the modified view, then the alignment performed when
 updating the source can be completely correct.
 
 The relation of elements in the original view with the ones in the modified view
 can be defined by a mapping from the location of the element in the original
 artifact to the location of the element in the modified artifact. The location
-can be defined as a integer index within the container
+can be defined as an integer index within the container
 %
 \begin{code}
 type Loc = Int
@@ -628,7 +630,7 @@ type Delta = Set (Loc, Loc)
 \end{code}
 
 Furthermore, we need a method to determine from a delta if some artifact has
-suffered any positional change (movement within the container, addition, or
+undergone any positional change (movement within the container, addition, or
 removal), which can be accomplished by checking if all elements are in the delta
 and that each location in the delta is related to the same location:
 %
@@ -648,7 +650,7 @@ getIdL = Set.map (\ l -> (l, l)) . locs
 \subsection{Delta Alignment for Lists}
 
 In order to implement such kind of alignment in BiGUL, the delta can be inserted
-into the source, since we are able to manipulate it using adaptation in
+into the source, since we can manipulate it using adaptation in
 |Case| branches.
 
 The implementation of delta-based alignment is similar to the key-based one:
@@ -658,7 +660,7 @@ The implementation of delta-based alignment is similar to the key-based one:
   \item a positional update.
 \end{enumerate}
 %
-However, the delta in the source introduces a bit more complexity to deal the
+However, the delta in the source introduces a bit more complexity to deal with the
 additional information. Implementing this in the running example:
 %
 \begin{code}
@@ -676,9 +678,9 @@ An alternative |Case| statement is used to check which of these two steps are to
 be performed. This is done based on the changes performed on the view: if no
 changes were performed, the delta maps each element's position to the same
 position, i.e., the identity delta. However, the delta being the same as |getIdL
-v| doesn't mean that no changes were performed to the view, e.g., some values
-were deleted, thus not present in the view with nor in the delta relation. To
-solve this situation, we ensure that the delta is also equal identity delta of
+v| does not mean that no changes were performed to the view, e.g., some values
+were deleted, thus not present in the view nor in the delta relation. To
+deal with this situation, we ensure that the delta is also equal to the identity delta of
 the source, i.e., both source and view contain the same positions and the update
 can be safely performed.
 Otherwise, a
@@ -701,7 +703,7 @@ myAdaptDeltaL s v d =
 %Note that in |alignL'| the create function |c| given to |mapL| is not required since
 %|adaptDeltaL| creates the missing elements.
 
-However, having the delta paired with the source might be inconvenient. To solve
+However, having the delta paired with the source might be inconvenient. To deal with
 such situation, a wrapper is made that takes care of dealing with the delta:
 %
 \begin{code}
@@ -746,7 +748,7 @@ get myAlignL' (put myAlignL' (s, delta))
 v
 \end{spec}
 
-The embedding of |get| and |put| functions can be defined as a BiGUL program:
+As an aside, the embedding of |get| and |put| functions can be defined as a BiGUL program:
 %
 \begin{code}
 emb :: Eq v => (s -> v) -> (s -> v -> s) -> BiGUL s v
@@ -763,7 +765,7 @@ produce a source that when running |get| should return the view given to the
 former, as stated by the \textsc{GetPut} law and enforced by the case structure.
 Furthermore, the view should be completely defined by the source.
 
-To run the delta alignment we thus need to provide a delta to the BiGUL
+To run the delta alignment, we thus need to provide a delta to the BiGUL
 program. With the running example, we can use the following deltas:
 %
 \begin{code}
@@ -906,7 +908,7 @@ instance FMonoid Tree where
 \end{comment}
 
 Tree elements can also be indexed by locations. The position of tree elements
-can be established linearly in an inorder fashion:
+can be established linearly in an in-order fashion:
 %
 \begin{code}
 locsT :: Tree a -> Tree Loc
@@ -1106,7 +1108,7 @@ containers.
 \citet{Pacheco2012} rely on types with explicit notion of shape and data in
 their delta-alignment over inductive types, a
 property provided by polymorphic data types in functional programming.
-Moreover, they applied a notation from \emph{shapely types}~\cite{jay1995} in
+Moreover, they apply a notation from \emph{shapely types}~\cite{jay1995} in
 order to have tools to work with these data types.
 Employing these concepts, one can abstract from the shapes of both source and
 view, and just take the data into account for the alignment process.
@@ -1150,7 +1152,7 @@ instance Positional Tree where
 \end{code}
 \end{comment}
 %
-where the |positionalMap| function maps a BiGUL program element wise.
+where the |positionalMap| function maps a BiGUL program element-wise.
 For the list container |positionalMap = mapL|
 and for the tree container |positionalMap = mapT|.
 
@@ -1279,13 +1281,13 @@ myCreate (k, v1) = (k, (v1, 0))
 %%%
 \section{Conclusion}
 
-We hope to send the following two messages through
-this pearl paper. One is that putback-based programming is not that 
+We hope to send the following two messages through this %pearl
+paper. One is that putback-based programming is not that 
 difficult in BiGUL, a simple but powerful put-based bidirectional
-language. The other is that a well-defined putback-based
+language. The other is that a \emph{single} well-designed putback-based
 bidirectional programming language can serve as basis for developing
-many useful domain specific bidirectional languages/libraries that
-allow both get-based and put-based bidirectional programming.
+many useful domain-specific bidirectional languages/libraries.
+%that allow both get-based and put-based bidirectional programming.
 
 %\appendix
 %\section{Appendix Title}
