@@ -165,10 +165,10 @@ Right [1,2,3,100,5,6,7,8,9,10]
 --                             (\s -> s /= [] && hasLeftHead s) )
 --                  , ( (\s _ -> s /= [] && not (hasLeftHead s)),
 --                      Normal ( RearrS (PIn $ PRight (PRight PVar `PProd` PVar))
---                                      (ERight (EDir (DLeft DVar)) `EProd` EDir (DRight DVar))
+--                                      (EDir (DRight DVar))
 --                                      (RearrV (PIn $ PRight (PVar `PProd` PVar))
---                                              (EConst () `EProd` (EIn $ ERight $ EDir (DLeft DVar) `EProd` EDir (DRight DVar)))
---                                              (Skip `Prod` uLefts))
+--                                              (EIn $ ERight $ EDir (DLeft DVar) `EProd` EDir (DRight DVar))
+--                                              (uLefts))
 --                             )
 --                             (\s -> s /= [] && not (hasLeftHead s)) )
 --                  , (\s _ -> s == [], Adaptive (\_ _-> undefined))
@@ -190,7 +190,7 @@ uLefts = Case [ $(normalV [p| [] |]) $
                                         [p| Left x : xs |]
                                         [d| x  = Replace; xs = uLefts |])
                            , $(normalS [p| Right _ : _ |]) $
-                               $(rearrV [| \(x:xs) -> ((), x:xs) |]) $
+                               $(rearrV [| \xs -> ((), xs) |]) $
                                  $(update [p| ((), xs) |] [p| _ : xs |] [d| xs = uLefts |])
                            , $(adaptiveS [p| [] |]) $
                                \_ _ -> [Left undefined]
