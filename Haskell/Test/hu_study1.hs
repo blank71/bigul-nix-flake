@@ -2,11 +2,16 @@
    It would be better to read this together with the paper
    submitted to PEPM'16 .
 -}
+
 import GHC.Generics
-import Generics.BiGUL
+import Generics.BiGUL.Interpreter
 import Generics.BiGUL.AST
 import Language.Haskell.TH as TH hiding(Name)
 import Generics.BiGUL.TH
+
+import Data.Maybe (catMaybes)
+import Data.List (find, delete)
+
 -----------------------------------------------
 --  Test on basic combinators of BiGul
 -----------------------------------------------
@@ -15,11 +20,11 @@ import Generics.BiGUL.TH
 -- a bigul lens; it will give the result if it succeeds and
 -- shows an error message if it fails.
 
-testPut :: BiGUL (Either ErrorInfo) s v -> s -> v -> Either ErrorInfo s
-testPut u s v = catchBind (put u s v) (\s' -> Right s') (\e -> Left e)
+testPut :: BiGUL s v -> s -> v -> s
+testPut u s v = either (error . show) id (put u s v)
 
-testGet :: BiGUL (Either ErrorInfo) s v -> s -> Either ErrorInfo v
-testGet u s = catchBind (get u s) (\v' -> Right v') (\e -> Left e)
+testGet :: BiGUL s v -> s -> v
+testGet u s = either (error . show) id (get u s)
 
 ---------------------------------
 -- testing Fail, Skip and Replace
@@ -50,9 +55,9 @@ Right 2
 -- testing source update: Update
 ---------------------------------
 
---upat1 = UVar Replace `UProd` UVar Skip
---update1 = Update upat1
-update1 = $(update [p| (x,_) |] [d| x = Replace |])
+update1 :: BiGUL (a, b) (a, ())
+-- update1 = Replace `Prod` Skip
+update1 = $(update [p| (x,()) |] [p| (x,_) |] [d| x = Replace |])
 
 
 {-
@@ -64,12 +69,9 @@ Right (100,2)
 
 -}
 
--- UProd is left associative
---upat2 = UVar Replace `UProd` UVar Skip `UProd` UVar Skip
---update2 = Update upat2
-
 -- (x,_ ,_ ...) in new syntax is right associative by default
-update2 = $(update [p| ((x,_),_) |] [d| x = Replace |])
+--update2 = (Replace `Prod` Skip) `Prod` Skip
+update2 = $(update [p| ((x, ()), ()) |]  [p| ((x,_),_) |] [d| x = Replace |])
 
 {-
 
@@ -80,12 +82,15 @@ Right ((100,2),3)
 
 -}
 
---upat3 = ULeft upat1
---update3 = Update upat3
 
 -- !!!!!!!!! if you use data constructors , you need add type declaration explicitly
-update3 :: BiGUL m (Either (a,b) c) (a,())
-update3 = $(update [p| Left (x,_) |] [d| x = Replace|])
+update3 :: BiGUL (Either (a,b) c) (a,())
+--update3 = RearrS
+--            (PLeft $ PVar' `PProd` PVar')
+--            (EDir (DLeft DVar) `EProd` EDir (DRight DVar))
+--            (Replace `Prod` Skip)
+update3 = $(update [p| (x,()) |] [p| Left (x,_) |] [d| x = Replace|])
+
 
 {-
 
@@ -149,13 +154,13 @@ Right [100,200,300,400]
 --   the soruce and the intemediate view.
 ---------------------------------------------------
 
-rearr1 :: (Eq a0, Eq b0) => BiGUL m (b0, a0) (a0, b0)
---rearr1 = Rearr rp1 ep1 Replace
+rearr1 :: (Eq a0, Eq b0) => BiGUL (b0, a0) (a0, b0)
+--rearr1 = RearrV rp1 ep1 Replace
 --  where
---    rp1 = RVar `RProd` RVar
+--    rp1 = PVar `PProd` PVar
 --    ep1 = EDir (DRight DVar) `EProd` EDir (DLeft DVar)
 
-rearr1 = $(rearr [| \(x,y) -> (y,x) |]) Replace
+rearr1 = $(update [p| (x,y) |] [p| (y,x) |] [d| x = Replace; y = Replace |])
 
 {-
 
@@ -166,14 +171,14 @@ Right (200,100)
 
 -}
 
-rearr2 :: (Eq a0, Eq b0) => BiGUL m ((b0, ()), a0) (a0, b0)
---rearr2 = Rearr rp1 ep2 Replace
+rearr2 :: (Eq a0, Eq b0) => BiGUL ((b0, ()), a0) (a0, b0)
+--rearr2 = RearrV rp1 ep2 Replace
 --  where
---    rp1 = RVar `RProd` RVar
+--    rp1 = PVar `PProd` PVar
 --    ep2 = (EDir (DRight DVar) `EProd` EConst ()) `EProd` EDir (DLeft DVar)
-    -- u = Update ((UVar Replace `UProd` UVar Skip) `UProd` UVar Replace)
+--    u   = (Replace `Prod` Skip) `Prod` Replace
 
-rearr2 = $(rearr [| \(x,y) -> ((y,()),x)|]) $(update [p| ((x,_),y) |] [d| x = Replace ; y = Replace|])
+rearr2 = $(update [p| (y,x) |] [p| ((x,_),y) |] [d| x = Replace ; y = Replace|])
 
 {-
 
@@ -190,8 +195,8 @@ Right ((200,()),100)
 -- Testing dependency in the view: Dep
 ---------------------------------------
 
-dep1 :: BiGUL m Int (Int, Int)
-dep1 = Dep (\v -> v+1) Replace
+dep1 :: BiGUL Int (Int, Int)
+dep1 = Dep Replace (\_ v -> v+1)
 
 {-
 
@@ -201,7 +206,7 @@ Right 5
 Right 10
 
 *Main> testPut dep1 5 (5,10)
-Left (ErrorInfo "view dependency not match")
+Left dependency mismatch
 
 -}
 
@@ -209,15 +214,14 @@ Left (ErrorInfo "view dependency not match")
 -- Testing analysis on the soruce: CaseS
 -----------------------------------------
 
-cases1 :: Monad m => BiGUL m Int Int
---cases1 = CaseS [ (return . (>=100), Normal $ Fail),
---                 (return . (\s -> s>=0 && s<100), Normal Replace),
---                 (return . (<0), Adaptive (\s v -> return (-s))) ]
+cases1 :: BiGUL Int Int
+--cases1 = Case [ (\s _ -> s >= 100, Normal (Fail "source should not exceed 100" ) (>= 100) )
+--              , (\s _ -> s >= 0 && s < 100, Normal Replace (\s -> s >= 0 && s < 100) )
+--              , (\s _ -> s < 0, Adaptive (\s v -> -s)) ]
 
-cases1 = CaseS [ $(normal' [| \s -> s>=100 |]) Fail,
-                 $(normal' [| \s -> s>=0 && s<100 |]) Replace,
-                 $(adaptive' [| \s -> s<0 |]) (\s v -> return (-s))
-               ]
+cases1 = Case [ $(normalS [| \s -> s >= 100 |]) (Fail "source should not exceed 100")
+              , $(normalS [| \s -> s >= 0 && s < 100 |]) Replace
+              , $(adaptiveS [|\s -> s < 0 |]) (\s v -> -s) ]
 
 {-
 
@@ -225,13 +229,20 @@ cases1 = CaseS [ $(normal' [| \s -> s>=100 |]) Fail,
 Right 90
 *Main> testGet cases1 120
 Left (ErrorInfo "get failed")
-*Main> testGet cases1 (-10)
-Left (ErrorInfo "Get: caseS shall not match adaptive branch")
+*Main> errorTrace $ get cases1 (-10)
+Left error
+case exhausted
+branch 0
+  branch unmatched
+branch 1
+  branch unmatched
+branch 2
+  adaptive branch matched
 
 *Main> testPut cases1 20 50
 Right 50
 *Main> testPut cases1 120 50
-Left (ErrorInfo "update fails")
+Left "source should not exceed 100"
 *Main> testPut cases1 (-12) 50
 Right 50
 
@@ -243,18 +254,16 @@ Right 50
 -- testing analysis on the view: CaseV
 ---------------------------------------
 
-casev1 :: (Eq b',Monad m) => BiGUL m (Either b' b) (Either b' ())
---casev1 = CaseV [
---           CaseVBranch (PLeft PVar)  $ Update (ULeft (UVar Replace)),
---           CaseVBranch (PRight PVar) $ Update (URight (UVar Skip))
---         ]
-casev1 = CaseV [
-            $(branch [p| Left _ |]) 
-               ($(rearr [| \(Left x') -> x' |])
-                     ($(update [p| Left x |] [d| x = Replace |]))),
-            $(branch [p| Right _ |]) 
-               ($(rearr [| \(Right y') -> y' |])
-                     ($(update [p| Right _ |] [d| |])))
+casev1 :: (Eq b, Eq b') => BiGUL (Either b' b) (Either b' ())
+--casev1 = Case [ (\_ v  -> case v of Left _ -> True; _ -> False; ,
+--                Normal (RearrS (PLeft PVar) (EDir DVar) (RearrV (PLeft PVar) (EDir DVar) Replace) ) (const True))
+--              , (\_ v -> case v of Right _ -> True; _ -> False; ,
+--                Normal (RearrS (PRight PVar) (EDir DVar) (RearrV (PRight (PConst ())) (EConst ()) Skip)) (const True)) ]
+
+casev1 = Case [ $(normalV [p| Left _ |])
+                  ($(update [p| Left x |] [p| Left x |] [d| x = Replace |]))
+              , $(normalV [p| Right _ |])
+                  ($(update [p| Right () |] [p| Right _ |] [d| |]))
          ]
 
 {-
@@ -281,15 +290,16 @@ type Salary = Int
 -- Suppose the view contains those persons
 -- who have salary greater than 10.
 
-align1 :: Monad m => BiGUL m [(String, Int)] [(String, Int)]
-align1 = Align (\s -> return (salary s > 10))
-               (\s v -> return (name s == name v))
-               {- case matched -}  Replace
-               {- case unmatchS -} return
-               {- case unmatchV -} (\s -> return Nothing)
+align1 :: BiGUL [(String, Int)] [(String, Int)]
+align1 = align (\s -> salary s > 10)
+               (\s v -> name s == name v)
+               Replace {- case matched -}
+               id {- case unmatchS -}
+               (\s -> Nothing) {- case unmatchV -}
   where
     salary (n,s) = s
     name (n,s) = n
+
 
 {-
 
@@ -306,5 +316,28 @@ Right [("a",1),("c",60)]
 -}
 
 
+align :: (Eq a, Eq b)
+      => (a -> Bool)
+      -> (a -> b -> Bool)
+      -> BiGUL a b
+      -> (b -> a)
+      -> (a -> Maybe a)
+      -> BiGUL [a] [b]
+align p match b create conceal =
+  Case [ $(normalSV [| null . filter p |] [p| [] |]) $
+           $(rearrV [| \ [] -> () |]) Skip
+       , $(adaptiveSV [| not . null . filter p |] [p| [] |]) $ -- conceal == delete
+           \ss _ -> catMaybes (map (\s -> if p s then conceal s else Just s) ss)
+
+         -- preserve the items not satisfying predicate p in the source
+       , $(normalSV [| \ss -> not (null (filter p ss)) && not (p (head ss)) |] [p| _:_ |]) $
+           $(update [p| vs |] [p| _:vs |] [d| vs = align p match b create conceal |])
+       , $(normal' [| \ss vs -> not (null (filter p ss)) && p (head ss) && match (head ss) (head vs) |]
+                   [| \ss -> not (null (filter p ss)) && p (head ss) |]) $
+           $(update [p| v : vs |] [p| v : vs |] [d| v  = b; vs = align p match b create conceal |])
+       , $(adaptiveV [p| _:_ |]) $
+           \ss (v:_) -> case find (flip match v) (filter p ss) of
+                          Nothing -> create v:ss
+                          Just s  -> s: delete s ss ]
 
 

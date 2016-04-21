@@ -1,7 +1,7 @@
 module BiYaccDef where
 
 import GHC.Generics
-import Generics.BiGUL hiding (Expr, Pat)
+--import Generics.BiGUL hiding (Expr, Pat)
 import Generics.BiGUL.AST hiding (Expr, Pat)
 import Generics.BiGUL.TH
 import Language.Haskell.TH

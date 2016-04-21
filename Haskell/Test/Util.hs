@@ -5,7 +5,7 @@ module Util where
 import Generics.BiGUL.AST
 import Generics.BiGUL.Interpreter
 import Generics.BiGUL.TH
-import Generics.BiGUL.MonadBiGULError
+import Generics.BiGUL.Error
 import Control.Monad
 import Control.Monad.Except
 
@@ -13,39 +13,50 @@ import Control.Monad.Except
 -- a bigul lens; it will give the result if it succeeds and
 -- shows an error message if it fails.
 
-testPut :: BiGUL (Either ErrorInfo) s v -> s -> v -> Either ErrorInfo s
-testPut u s v = catchBind (put u s v) (\s' -> Right s') (\e -> Left e)
+testPut :: BiGUL s v -> s -> v -> PutResult s v
+testPut = put
 
-testGet :: BiGUL (Either ErrorInfo) s v -> s -> Either ErrorInfo v
-testGet u s = catchBind (get u s) (\v' -> Right v') (\e -> Left e)
+testGet :: BiGUL s v -> s -> GetResult s v
+testGet = get
 
--- Composion of two put lenses.
 
-(@@) :: MonadError' ErrorInfo m => BiGUL m s x -> BiGUL m x v -> BiGUL m s v
-u1 @@ u2 = Emb getc putc
+-- Composition is now a basic lenses.
+-- Composition of two put lenses.
+(@@) :: (Eq v) => BiGUL s x -> BiGUL x v -> BiGUL s v
+u1 @@ u2 = emb getc putc
   where
-    getc s = do x <- get u1 s
-                get u2 x
-    putc s v = do x <- get u1 s
-                  x' <- put u2 x v
-                  put u1 s x'
+    getc = fromEither . get u2 . fromEither . get u1
+    putc s v = let x  = fromEither (get u1 s)
+                   x' = fromEither (put u2 x v)
+               in  fromEither (put u1 s x')
+    fromEither :: (Show e) => Either e a -> a
+    fromEither = either (error. show) id
+
+emb :: Eq v => (s -> v) -> (s -> v -> s) -> BiGUL s v
+emb g p = Case
+  [ $(normal [| \x y -> g x == y |])$
+      $(rearrV [| \x -> ((), x) |])$
+        Dep Skip (\x () -> g x)
+  , $(adaptive [| \_ _ -> True |])
+      p
+  ]
 
 -- We define a new lens to wrap Fail with additional error messages.
-
-failMsg :: MonadError' ErrorInfo m => String -> BiGUL m s v
-failMsg msg = Emb getf putf
-  where
-    getf s = throwError $ ErrorInfo msg
-    putf s v = throwError $ ErrorInfo msg
+-- now Fail is a basic lens combinator
+--failMsg :: String -> BiGUL s v
+--failMsg msg = Emb getf putf
+--  where
+--    getf s = throwError $ ErrorInfo msg
+--    putf s v = throwError $ ErrorInfo msg
 
 -- Useful higher order lenses
 
-mapU :: (Eq s, Eq v, Show v,  Monad m) => BiGUL m s v -> BiGUL m [s] [v]
+mapU :: (Eq s, Eq v, Show v) => BiGUL s v -> BiGUL [s] [v]
 mapU bigul =
   Case [ $(normalSV [p| [] |] [p| [] |]) $
-           $(rearrAndUpdate [p| [] |] [p| [] |] [d| |])
+           $(update [p| [] |] [p| [] |] [d| |])
        , $(normalSV [p| _:_ |] [p| _:_ |]) $
-           $(rearrAndUpdate [p| x:xs |] [p| x:xs |] [d| x = bigul; xs = mapU bigul |])
+           $(update [p| x:xs |] [p| x:xs |] [d| x = bigul; xs = mapU bigul |])
        , $(adaptiveSV [p| _:_ |] [p| [] |]) $
            \_ _ -> []
        , $(adaptiveSV [p| [] |] [p| _:_ |]) $
