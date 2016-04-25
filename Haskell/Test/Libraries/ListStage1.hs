@@ -29,6 +29,17 @@ secondMax :: (Ord a) => [a] -> a
 secondMax [x] = x
 secondMax xs = maximum (removeMaximum xs)
 
+removeMinimum :: (Ord a) => [a] -> [a]
+removeMinimum [x] = []
+removeMinimum xs = let m = minimum xs in takeWhile (/= m) xs ++ tail (dropWhile (/= m) xs)
+
+secondMin :: (Ord a) => [a] -> a
+secondMin [x] = x
+secondMin xs = minimum (removeMinimum xs)
+
+
+
+
 fromJust (Just x) = x
 fromJust Nothing = error "the value \"Nothing\" detected."
 
@@ -36,3 +47,11 @@ fromJust Nothing = error "the value \"Nothing\" detected."
 fromRight :: Either a b -> b
 fromRight (Right x) = x
 fromRight (Left _)  = error "Left detected!"
+
+sameElems :: (Eq a) => a -> [a] -> Bool
+sameElems _ [] = True
+sameElems x xs = and $ map (== x) xs
+
+sameElems' :: (Eq a) => [a] -> Bool
+sameElems' [] = True
+sameElems' (x:xs) = sameElems x xs

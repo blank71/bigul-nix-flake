@@ -60,6 +60,17 @@ bLensMaximum  = get lensMaximum
 bpLensMaximum :: (Ord a) => [a] -> a -> PutResult [a] a
 bpLensMaximum  = put lensMaximum
 
+bReplicate :: (Eq a) => Int -> a -> GetResult a [a]
+bReplicate n = get (lensReplicate n)
+
+bpReplicate :: (Eq a) => Int -> a -> [a] -> PutResult a [a]
+bpReplicate n = put (lensReplicate n)
+
+bRotate  = get lensGetRotate
+bpRotate = put lensGetRotate
+
+bReverse  = get lensReverse
+bpReverse = put lensReverse
 
 -- put semantics: replace the first element in list with the provided one
 -- work only with non-empty list
@@ -205,41 +216,111 @@ lensDrop n =
         ]
 
 
--- takeWhile :: (a -> Bool) -> [a] -> [a]
-
--- dropWhile :: (a -> Bool) -> [a] -> [a]
-
+-- work on non-empty list
 -- put semantics: replacet he maximum value with a new one
 -- pre condition: in general, the view should be no less than the second large element in the source
 -- however, we enforce the view should be larger than the second largest element. The following situation is prohibited:
 -- put [4,5,6,1] 5 -> [4,5,5,1]. the first 5 is choosed when performing get. though the result is the same, the branch is different.
 lensMaximum :: (Ord a) => BiGUL [a] a
 lensMaximum =
-    Case  [ $(normal [| \s v -> v <= secondMax s |] )
-              (Fail "the view should be greater than the second smallest element in the list")
-          , $(normal [| \s v -> head s == maximum s |] ) $
-               $(update [p| v |] [p| v:_ |] [d| v = Replace |])
-          -- overlapped pattern. be careful.
-          , $(normalS [p| _ |] ) $
-              $(update [p| v |] [p| _:v |] [d| v = lensMaximum |])
-          ]
+  Case  [ -- since secondMax [x] = x while replace a singleton list is always safe. we should exclude this condition.
+          $(normal [| \s v -> (length s > 1) && v <= secondMax s |] )
+            (Fail "the view should be greater than the second smallest element in the list")
+        , $(normal [| \s v -> head s == maximum s |] ) $
+             $(update [p| v |] [p| v:_ |] [d| v = Replace |])
+        -- overlapped pattern. be careful.
+        , $(normalS [p| _ |] ) $
+            $(update [p| v |] [p| _:v |] [d| v = lensMaximum |])
+        ]
 
 
+-- work on non-empty list
+-- put semantics: replacet he minimum value with a new one
+-- explanation: the same as the maximum functions.
+lensMinimum :: (Ord a) => BiGUL [a] a
+lensMinimum =
+  Case  [ $(normal [| \s v -> (length s > 1) && v >= secondMin s |] )
+            (Fail "the view should be less than the second smallest element in the list")
+        , $(normal [| \s v -> head s == minimum s |] ) $
+            $(update [p| v |] [p| v:_ |] [d| v = Replace |])
+        -- overlapped pattern. be careful.
+        , $(normalS [p| _ |] ) $
+            $(update [p| v |] [p| _:v |] [d| v = lensMinimum |])
+        ]
 
--- minimum
+-- put semantics: check if the elements in view list are all the same. if not, report error.
+-- if the predicate holds, replace the source with any (in fact all) element in the view list.
+lensReplicate :: (Eq a) => Int -> BiGUL a [a]
+lensReplicate n =
+  Case  [ $(normal [| \s v -> length v /= n || not (sameElems' v) |] ) $
+            (Fail $ "the length of the v is not the same as parameter n. Or elements in view are not the same.")
+        , $(normal [|\_ v -> null v && n == 0  |] ) $
+            $(update [p| [] |] [p| _ |] [d| |])
+        , $(normal [|\_ v -> length v == 1 && n == 1  |] ) $
+            $(update [p| [v] |] [p| v |] [d| v = Replace;|])
+        , $(normalSV [p| _ |] [p| _:_ |] ) $
+            $(rearrS [|\s -> (s,s) |]) $
+              $(update [p| v:vs |] [p| (v,vs) |] [d| v=Replace; vs = lensReplicate (n-1) |])
+        ]
 
--- repeat :: a -> [a]
 
--- replicate :: Int -> a -> [a]
+-- put direction is rorate: put [] [1,2,3] -> [2,3,1]; get [1,2,3] = [3,1,2]
+lensPutRotate :: BiGUL [a] [a]
+lensPutRotate =
+  Case  [ $(adaptive [|\s v -> length s /= length v |]) (\_ v -> v) -- just for convenience.
+        , $(normalSV [p| [] |] [p| [] |] ) $
+            $(update [p| [] |] [p| [] |] [d| |])
+        , $(normalSV [p| [x] |] [p| [x] |] ) $
+             $(update [p| [x]  |] [p| [x] |] [d| x = Replace |])
+        , $(normalSV [p| x1:x2:r |] [p| x1:x2:r |]) $
+            $(rearrV [| \(x1:x2:r) -> (x2,(x1:r)) |]) $
+             $(update [p| (x2,r) |] [p| x2:r |] [d| x2=Replace; r = lensPutRotate |])
+        ]
 
--- cycle :: [a] -> [a]
 
--- reverse :: [a] -> [a]
+-- get direction is rotate: put [] [1,2,3] -> [3,1,2]; get [1,2,3] -> [2,3,1]
+lensGetRotate :: BiGUL [a] [a]
+lensGetRotate =
+  Case  [ $(adaptive [|\s v -> length s /= length v |]) (\_ v -> v) -- just for convenience. generate a source of length v
+        , $(normalSV [p| [] |] [p| [] |] ) $
+            $(update [p| [] |] [p| [] |] [d| |])
+        , $(normalSV [p| [x] |] [p| [x] |] ) $
+             $(update [p| [x]  |] [p| [x] |] [d| x = Replace |])
+        , $(normalSV [p| x1:x2:r |] [p| x1:x2:r |]) $
+            ($(rearrV [| \(x1:x2:r) -> (x2,(x1:r)) |]) $
+               $(update [p| (x2,r) |] [p| x2:r |] [d| x2=Replace; r = replaceByPosition |])) --replace for simplicity
+            `Compose`
+            ( $(rearrV [| \(x1:x2:r) -> (x1,(x2:r)) |]) $
+                $(update [p| (x1,r) |] [p| x1:r |] [d| x1=Replace; r = lensGetRotate |]) --replace for simplicity
+              :: BiGUL [a] [a] )
+        ]
+
+
+lensReverse :: BiGUL [a] [a]
+lensReverse =
+  Case  [ $(adaptive [| \s v -> not (length s == length v) |]) (\_ v -> v) -- for simplicity
+        , $(normalSV [p| [] |] [p| [] |])
+            $(update [p| [] |] [p| [] |] [d|  |])
+        , $(normalSV [p| _:_ |] [p| _:_ |] ) $
+            ($(update [p| x:xs |] [p| x:xs |] [d| x = Replace; xs = lensReverse |]))
+              `Compose` lensGetRotate
+        ]
+
 
 
 -- inits :: [a] -> [[a]]
 
 -- tails :: [a] -> [[a]]
+
+-- takeWhile :: (a -> Bool) -> [a] -> [a]
+
+-- dropWhile :: (a -> Bool) -> [a] -> [a]
+
+
+-- can bigul handle infinite data?
+-- repeat :: a -> [a]
+-- cycle :: [a] -> [a]
+
 
 
 ---- trivial well-behaved wrapper
