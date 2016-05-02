@@ -21,40 +21,6 @@ import Data.List (find, delete)
 
 
 
--- foldr ::   (a -> b -> b)   ->   b -> [a] -> b
--- lensFoldr :: (BiGUL (x, xs) result) -> (BiGUL ([x], e) result)
-lensFoldr :: (BiGUL (a, b) b) -> (BiGUL ([a], b) b)
-lensFoldr bx =
-  Case  [ $(normalS [| \(s, e) -> length s == 0 |] ) $
-            $(rearrV [| \v -> ((),v) |]) $
-              $(update [p| ((),v ) |] [p| (_, v) |] [d| v = Replace |])
-        , $(normalSV [p| _ |] [p| _ |] ) $
-            $(rearrS [| \((x:xs), e) -> (x, (xs,e))  |])
-              $(update [p| (x, v) |] [p| (x, v) |] [d| x = Replace; v = lensFoldr bx |])
-              `Compose`
-              bx
-        ]
-
--- the wrong version but the same as List.foldr1.
-lensFoldr1 :: (BiGUL (a, a) a) -> (BiGUL ([a], a) a)
-lensFoldr1 bx =
-  Case  [ $(normalS [| \(s, e) -> length s == 1 |] ) $
-            $(rearrV [| \v -> (v,()) |]) $
-              $(update [p| (v, ()) |] [p| ([v], _) |] [d| v = Replace |])
-        , $(normalSV [p| _ |] [p| _ |] ) $
-            $(rearrS [| \((x:xs), e) -> (x, (xs,e))  |])
-              $(update [p| (x, v) |] [p| (x, v) |] [d| x = Replace; v = lensFoldr bx |])
-              `Compose`
-              bx
-        ]
-
--- works only when (length s == length v) holds
-lensMap :: BiGUL a b -> BiGUL [a] [b]
-lensMap bx = $(rearrS [| \s -> (s, []) |])
-  (lensFoldr ($(rearrV [| \(v:vs) -> (v,vs) |]) $ bx `Prod` Replace))
-
-
-
 -- get (lensFoldr (+) 0) [1,2,3,4]  ==  10
 -- put (lensFoldr plusl) ([1,2,3], 0) 8 -> ([3,2,3], 0)
 -- \([1,2,3],0) -> (1, ([2,3], 0))
@@ -68,42 +34,165 @@ lensMap bx = $(rearrS [| \s -> (s, []) |])
 -- (2, sum(3,4)) 9    = (2 , 7) 9 = (2, 7)
 -- ...
 
+
 -- put semantics. composition.
--- map composition
 -- higher order function
--- map fold
 -- linear time complexity fold
 
 
--- work with non-empty list
-lensMinimum :: BiGUL [Int] Int
-lensMinimum = $(rearrS [| \(x:xs) -> (xs, x) |]) $ lensFoldr1 minInner
-  where
-    minInner :: BiGUL (Int, Int) Int
-    minInner =
-      Case  [ $(normal [| \(elem, acc) v -> elem <= acc && v < acc |] ) $
-                $(rearrV [| \v -> (v,()) |]) $
-                  $(update [p| (elem,()) |] [p| (elem, _) |] [d| elem = Replace |])
-            , $(normal [| \(elem, acc) v -> elem > acc && v < elem |] ) $
-                $(rearrV [| \v -> ((),v) |]) $
-                  $(update [p| ((), acc) |] [p| (_, acc) |] [d| acc = Replace  |])
-            , $(normal [| \ _ _ -> True |] ) (Fail "Possible reason: the view is larger than the second least elements in source")
-            ]
+-- foldr ::   (a -> b -> b)   ->   b -> [a] -> b
+-- lensFoldr :: (BiGUL (x, xs) result) -> (BiGUL ([x], e) result)
+lensFoldr :: (BiGUL (a, b) b) -> (BiGUL ([a], b) b)
+lensFoldr bx =
+  Case  [ $(normalS [| \(s, e) -> length s == 0 |] ) $
+            $(rearrV [| \v -> ((),v) |]) $
+              $(update [p| ((),v ) |] [p| (_, v) |] [d| v = Replace |])
+        , $(normalSV [p| _ |] [p| _ |] ) $
+            $(rearrS [| \((x:xs), e) -> (x, (xs,e))  |])
+              (Replace `Prod` lensFoldr bx)
+              `Compose`
+              bx
+        ]
+
+-- the wrong version but the same as List.foldr1.
+lensFoldr1 :: (BiGUL (a, a) a) -> (BiGUL [a] a)
+lensFoldr1 bx =
+  Case  [ $(normalS [| \s -> length s == 1 |] ) $
+            $(update [p| v |] [p| [v] |] [d| v = Replace |])
+        , $(normalSV [p| _ |] [p| _ |] ) $
+            $(rearrS [| \(x:xs) -> (x,xs)  |])
+              (Replace `Prod` lensFoldr1 bx)
+              `Compose`
+              bx
+        ]
+
+-- correct version.
+lensFoldr1C :: BiGUL a b -> BiGUL (a, b) b -> (BiGUL [a] b)
+lensFoldr1C f bx =
+  Case  [ $(normalS [| \s -> length s == 1 |] ) $
+            $(update [p| v |] [p| [v] |] [d| v = f `Compose` Replace |])
+        , $(normalSV [p| _ |] [p| _ |] ) $
+            $(rearrS [| \(x:xs) -> (x,xs)  |])
+              (Replace `Prod` lensFoldr1C f bx)
+              `Compose`
+              bx
+        ]
+
+-- works only when (length s == length v) holds
+lensMap :: BiGUL a b -> BiGUL [a] [b]
+lensMap bx = $(rearrS [| \s -> (s, []) |])
+  (lensFoldr ($(rearrV [| \(v:vs) -> (v,vs) |]) $ bx `Prod` Replace))
+
+
+lensFoldrMapFusion :: (BiGUL a c) -> (BiGUL (c, b) b) -> (BiGUL ([a], b) b)
+lensFoldrMapFusion mapBX foldBx =
+  Case  [ $(normalS [| \(s, e) -> length s == 0 |] ) $
+            $(rearrV [| \v -> ((),v) |]) $
+              $(update [p| ((),v ) |] [p| (_, v) |] [d| v = Replace |])
+        , $(normalSV [p| _ |] [p| _ |] ) $
+            $(rearrS [| \((x:xs), e) -> (x, (xs,e))  |])
+              ((mapBX `Compose` Replace) `Prod` lensFoldrMapFusion mapBX foldBx)
+              `Compose`
+              foldBx
+        ]
+
+lensFoldr1MapFusion :: BiGUL a c -> BiGUL (c, c) c -> BiGUL [a] c
+lensFoldr1MapFusion mapBX foldBX =
+  Case  [ $(normalS [| \s -> length s == 1 |] ) $
+            $(update [p| v |] [p| [v] |] [d| v = mapBX `Compose` Replace |])
+        , $(normalSV [p| _ |] [p| _ |] ) $
+            $(rearrS [| \(x:xs) -> (x, xs)  |])
+              ((mapBX `Compose` Replace) `Prod` lensFoldr1MapFusion mapBX foldBX)
+              `Compose`
+              foldBX
+        ]
+
+--                       map ->  change the last element -> foldr  -> fused foldr
+lensFoldr1CMapFusion :: BiGUL a c -> BiGUL c b -> BiGUL (c, b) b -> BiGUL [a] b
+lensFoldr1CMapFusion mapBX f foldBX =
+  Case  [ $(normalS [| \s -> length s == 1 |] ) $
+            $(update [p| v |] [p| [v] |] [d| v = mapBX `Compose` f `Compose` Replace |])
+        , $(normalSV [p| _ |] [p| _ |] ) $
+            $(rearrS [| \(x:xs) -> (x, xs)  |])
+              ((mapBX `Compose` Replace) `Prod` lensFoldr1CMapFusion mapBX f foldBX)
+              `Compose`
+              foldBX
+        ]
+
+
+lensMapMapFusion :: BiGUL a b -> BiGUL b c -> BiGUL [a] [c]
+lensMapMapFusion bx1 bx2 = $(rearrS [| \s -> (s, []) |])
+  (lensFoldr ($(rearrV [| \(v:vs) -> (v,vs) |]) $ (bx1 `Compose` bx2) `Prod` Replace))
+
+
+
+lensHead :: BiGUL [a] a
+lensHead = lensFoldr1 ($(update [p| v |] [p| (v,_) |] [d| v = Replace |]))
+
 
 -- work with non-empty list
-lensMaximumum :: BiGUL [Int] Int
-lensMaximumum = $(rearrS [| \(x:xs) -> (xs, x) |]) $ lensFoldr1 maxInner
-  where
-    maxInner :: BiGUL (Int, Int) Int
-    maxInner =
-      Case  [ $(normal [| \(elem, acc) v -> elem >= acc && v > acc |] ) $
-                $(rearrV [| \v -> (v,()) |]) $
-                  $(update [p| (elem,()) |] [p| (elem, _) |] [d| elem = Replace |])
-            , $(normal [| \(elem, acc) v -> elem < acc && v > elem |] ) $
-                $(rearrV [| \v -> ((),v) |]) $
-                  $(update [p| ((), acc) |] [p| (_, acc) |] [d| acc = Replace  |])
-            , $(normal [| \ _ _ -> True |] ) (Fail "Possible reason: the view is less than the second largest elements in source")
-            ]
+lensMinimum :: (Ord a) => BiGUL [a] a
+lensMinimum = lensFoldr1 lensMinInner
+
+lensMinInner :: (Ord a) => BiGUL (a, a) a
+lensMinInner =
+  Case  [ $(normal [| \(elem, acc) v -> elem <= acc && v < acc |] ) $
+            $(rearrV [| \v -> (v,()) |]) $
+              Replace `Prod` Skip
+        , $(normal [| \(elem, acc) v -> elem > acc && elem > v |] ) $
+            $(rearrV [| \v -> ((),v) |]) $
+              Skip `Prod` Replace
+        , $(normal [| \ _ _ -> True |] ) (Fail "Possible reason: the view is larger than the second least elements in source")
+        ]
+
+-- work with non-empty list
+lensMaximum :: (Ord a) => BiGUL [a] a
+lensMaximum = lensFoldr1 lensMaxInner
+
+lensMaxInner :: (Ord a) => BiGUL (a, a) a
+lensMaxInner =
+  Case  [ $(normal [| \(elem, acc) v -> elem >= acc && v > acc |] ) $
+            $(rearrV [| \v -> (v,()) |]) $
+              Replace `Prod` Skip
+        , $(normal [| \(elem, acc) v -> elem < acc && v > elem |] ) $
+            $(rearrV [| \v -> ((),v) |]) $
+              Skip `Prod` Replace
+        , $(normal [| \ _ _ -> True |] ) (Fail "Possible reason: the view is less than the second largest elements in source")
+        ]
+
+
+t10g = get ((lensMap uleft) `Compose` lensMaximum) [Left 2, Left 7, Left 5]
+t10p = put ((lensMap uleft) `Compose` lensMaximum) [Left 2, Left 7, Left 5] 999
+
+t11g = get (lensFoldr1MapFusion uleft lensMaxInner) [Left 2, Left 7, Left 5]
+t11p = put (lensFoldr1MapFusion uleft lensMaxInner) [Left 2, Left 7, Left 5] 999
+
+
+-- map, map, foldr1,
+t12g = get (lensMap (lensMap uleft) `Compose` lensMap lensMaximum `Compose` lensFoldr1 lensHead_test)
+           ([[Left 1, Left 3, Left 2], [Left 6, Left 4, Left 5]])
+t12p = put (lensMap (lensMap uleft) `Compose` lensMap lensMaximum `Compose` lensFoldr1 lensHead_test)
+           ([[Left 1, Left 3, Left 2], [Left 6, Left 4, Left 5]])  999
+
+-- map map fusion
+t13g = get ( lensMap (lensMap uleft `Compose` lensMaximum) `Compose` lensFoldr1 lensHead_test)
+           ([[Left 1, Left 3, Left 2], [Left 6, Left 4, Left 5]])
+t13p = put ( lensMap (lensMap uleft `Compose` lensMaximum) `Compose` lensFoldr1 lensHead_test)
+           ([[Left 1, Left 3, Left 2], [Left 6, Left 4, Left 5]]) 999
+
+-- map fold fusion
+t14g = get ( lensFoldr1MapFusion (lensMap uleft `Compose` lensMaximum) lensHead_test)
+           ([[Left 1, Left 3, Left 2], [Left 6, Left 4, Left 5]])
+t14p = put ( lensFoldr1MapFusion (lensMap uleft `Compose` lensMaximum) lensHead_test)
+           ([[Left 1, Left 3, Left 2], [Left 6, Left 4, Left 5]]) 999
+
+lensHead_test = ($(update [p| v |] [p| (v,_) |] [d| v = Replace |]))
+
+
+
+uleft :: BiGUL (Either a b) a
+uleft = $(update [p| x |] [p| Left x |] [d| x = Replace |])
+
 
 
 -- adaptive is used for reshaping source.
@@ -154,6 +243,3 @@ lensInits =
                     Replace `Prod` xd1
             ]
 
-
-uleft :: BiGUL (Either a b) a
-uleft = $(update [p| x |] [p| Left x |] [d| x = Replace |])

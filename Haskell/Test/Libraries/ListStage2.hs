@@ -3,6 +3,8 @@
 {-# LANGUAGE TypeFamilies #-}
 {-# LANGUAGE ExistentialQuantification, ScopedTypeVariables #-}
 
+module ListStage2 where
+
 import ListStage1
 
 import GHC.Generics

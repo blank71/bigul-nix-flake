@@ -62,3 +62,4 @@ isInits _            = False
 
 inits2list :: (Eq a) => [[a]] -> [a]
 inits2list xss = if isInits xss then last xss else error "the view is not a valid inits"
+
