@@ -30,8 +30,6 @@ secondMin [x] = x
 secondMin xs = minimum (removeMinimum xs)
 
 
-
-
 fromJust (Just x) = x
 fromJust Nothing = error "the value \"Nothing\" detected."
 
@@ -63,3 +61,11 @@ isInits _            = False
 inits2list :: (Eq a) => [[a]] -> [a]
 inits2list xss = if isInits xss then last xss else error "the view is not a valid inits"
 
+
+-- yet another isomorphism
+lensCons :: BiGUL (a, [a]) [a]
+lensCons =
+  Case  [ $(adaptive  [|\ (_, b) v -> 1 + length b /= length v |])  (\_ v -> (undefined, replicate (length v - 1) undefined))
+        , $(normal [| \s v -> True |] ) $
+            $(update [p| (v:vs) |] [p| (v,vs) |] [d| v = Replace; vs = Replace |])
+        ]

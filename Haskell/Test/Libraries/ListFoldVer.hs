@@ -54,6 +54,7 @@ lensFoldr bx =
               bx
         ]
 
+
 -- the wrong version but the same as List.foldr1.
 lensFoldr1 :: (BiGUL (a, a) a) -> (BiGUL [a] a)
 lensFoldr1 bx =
@@ -161,40 +162,6 @@ lensMaxInner =
         ]
 
 
-t10g = get ((lensMap uleft) `Compose` lensMaximum) [Left 2, Left 7, Left 5]
-t10p = put ((lensMap uleft) `Compose` lensMaximum) [Left 2, Left 7, Left 5] 999
-
-t11g = get (lensFoldr1MapFusion uleft lensMaxInner) [Left 2, Left 7, Left 5]
-t11p = put (lensFoldr1MapFusion uleft lensMaxInner) [Left 2, Left 7, Left 5] 999
-
-
--- map, map, foldr1,
-t12g = get (lensMap (lensMap uleft) `Compose` lensMap lensMaximum `Compose` lensFoldr1 lensHead_test)
-           ([[Left 1, Left 3, Left 2], [Left 6, Left 4, Left 5]])
-t12p = put (lensMap (lensMap uleft) `Compose` lensMap lensMaximum `Compose` lensFoldr1 lensHead_test)
-           ([[Left 1, Left 3, Left 2], [Left 6, Left 4, Left 5]])  999
-
--- map map fusion
-t13g = get ( lensMap (lensMap uleft `Compose` lensMaximum) `Compose` lensFoldr1 lensHead_test)
-           ([[Left 1, Left 3, Left 2], [Left 6, Left 4, Left 5]])
-t13p = put ( lensMap (lensMap uleft `Compose` lensMaximum) `Compose` lensFoldr1 lensHead_test)
-           ([[Left 1, Left 3, Left 2], [Left 6, Left 4, Left 5]]) 999
-
--- map fold fusion
-t14g = get ( lensFoldr1MapFusion (lensMap uleft `Compose` lensMaximum) lensHead_test)
-           ([[Left 1, Left 3, Left 2], [Left 6, Left 4, Left 5]])
-t14p = put ( lensFoldr1MapFusion (lensMap uleft `Compose` lensMaximum) lensHead_test)
-           ([[Left 1, Left 3, Left 2], [Left 6, Left 4, Left 5]]) 999
-
-lensHead_test = ($(update [p| v |] [p| (v,_) |] [d| v = Replace |]))
-
-
-
-uleft :: BiGUL (Either a b) a
-uleft = $(update [p| x |] [p| Left x |] [d| x = Replace |])
-
-
-
 -- adaptive is used for reshaping source.
 -- initial value
 -- (rearranged)source ( 1 , [[2,3,4],[3,4],[4],[]] )
@@ -242,4 +209,58 @@ lensInits =
                   $(rearrV [| \(v:vs) -> (v,vs) |]) $          -- [[1],[1,2],[1,2,3],[1,2,3,4]]  --> ([1]  , [[1,2],[1,2,3],[1,2,3,4]])
                     Replace `Prod` xd1
             ]
+
+
+
+-- compose hell. I am not clear about the put semantics ... and the time complexity
+lensScanr :: (Eq b) => (BiGUL (a, b) b) -> (BiGUL ([a], b) [b])
+lensScanr bx =
+  Case  [ $(normalS [| \(s, e) -> length s == 0 |] ) $
+            $(rearrV [| \[v] -> ((),v) |]) $
+              $(update [p| ((),v ) |] [p| (_, v) |] [d| v = Replace |])
+        , $(normalSV [p| _ |] [p| _ |] ) $
+            $(rearrS [| \((x:xs), e) -> (x, (xs,e))  |]) $
+              (((Replace `Prod` lensScanr bx) -- source (x, xs) --> (x, done)
+                  `Compose`
+                    $(rearrS [| \(a, b) -> (a, (b, b))  |]) (Replace `Prod` lensHead `Prod` Replace)) -- (x, (done, done)) --> (x, (head done, done))
+                      `Compose`
+                      $(rearrS [| \(a, (hb, b)) -> ((a, hb), b)  |]) (bx `Prod` Replace)) -- ((x, head done), done) --> (f x (head done), done)
+                        `Compose`
+                        lensCons -- f x (head done) : done
+        ]
+
+
+
+----------------------
+t10g = get ((lensMap uleft) `Compose` lensMaximum) [Left 2, Left 7, Left 5]
+t10p = put ((lensMap uleft) `Compose` lensMaximum) [Left 2, Left 7, Left 5] 999
+
+t11g = get (lensFoldr1MapFusion uleft lensMaxInner) [Left 2, Left 7, Left 5]
+t11p = put (lensFoldr1MapFusion uleft lensMaxInner) [Left 2, Left 7, Left 5] 999
+
+
+-- map, map, foldr1,
+t12g = get (lensMap (lensMap uleft) `Compose` lensMap lensMaximum `Compose` lensFoldr1 lensHead_test)
+           ([[Left 1, Left 3, Left 2], [Left 6, Left 4, Left 5]])
+t12p = put (lensMap (lensMap uleft) `Compose` lensMap lensMaximum `Compose` lensFoldr1 lensHead_test)
+           ([[Left 1, Left 3, Left 2], [Left 6, Left 4, Left 5]])  999
+
+-- map map fusion
+t13g = get ( lensMap (lensMap uleft `Compose` lensMaximum) `Compose` lensFoldr1 lensHead_test)
+           ([[Left 1, Left 3, Left 2], [Left 6, Left 4, Left 5]])
+t13p = put ( lensMap (lensMap uleft `Compose` lensMaximum) `Compose` lensFoldr1 lensHead_test)
+           ([[Left 1, Left 3, Left 2], [Left 6, Left 4, Left 5]]) 999
+
+-- map fold fusion
+t14g = get ( lensFoldr1MapFusion (lensMap uleft `Compose` lensMaximum) lensHead_test)
+           ([[Left 1, Left 3, Left 2], [Left 6, Left 4, Left 5]])
+t14p = put ( lensFoldr1MapFusion (lensMap uleft `Compose` lensMaximum) lensHead_test)
+           ([[Left 1, Left 3, Left 2], [Left 6, Left 4, Left 5]]) 999
+
+lensHead_test = ($(update [p| v |] [p| (v,_) |] [d| v = Replace |]))
+
+
+
+uleft :: BiGUL (Either a b) a
+uleft = $(update [p| x |] [p| Left x |] [d| x = Replace |])
 
