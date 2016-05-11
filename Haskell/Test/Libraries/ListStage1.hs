@@ -10,14 +10,6 @@ import Language.Haskell.TH as TH hiding (Name)
 import Generics.BiGUL.TH
 
 
-replaceByPosition :: BiGUL [a] [a]
-replaceByPosition = Case  [ $(normalSV [p| [] |] [p| [] |] )
-                              $(update [p| [] |] [p| [] |] [d| |])
-                          , $(normalSV [p| _:_ |] [p| _:_ |] )
-                              $(update [p| x:xs |] [p| x:xs |] [d| x = Replace; xs = replaceByPosition |])
-                     ]
-
-
 
 
 -- work on non-empty list, remove the first maximum value
@@ -38,8 +30,6 @@ secondMin [x] = x
 secondMin xs = minimum (removeMinimum xs)
 
 
-
-
 fromJust (Just x) = x
 fromJust Nothing = error "the value \"Nothing\" detected."
 
@@ -55,3 +45,27 @@ sameElems x xs = and $ map (== x) xs
 sameElems' :: (Eq a) => [a] -> Bool
 sameElems' [] = True
 sameElems' (x:xs) = sameElems x xs
+
+isTails :: Eq a => [[a]] -> Bool
+isTails [[]]         = True
+isTails (xs:ys:[])   = if tail xs == ys then True else False
+isTails (xs:ys:xyss) = if tail xs == ys then isTails (ys:xyss) else False
+isTails _            = False
+
+isInits :: Eq a => [[a]] -> Bool
+isInits [[]]         = True
+isInits (xs:ys:[])   = if xs == init ys then True else False
+isInits (xs:ys:xyss) = if xs == init ys then isInits (ys:xyss) else False
+isInits _            = False
+
+inits2list :: (Eq a) => [[a]] -> [a]
+inits2list xss = if isInits xss then last xss else error "the view is not a valid inits"
+
+
+-- yet another isomorphism
+lensCons :: BiGUL (a, [a]) [a]
+lensCons =
+  Case  [ $(adaptive  [|\ (_, b) v -> 1 + length b /= length v |])  (\_ v -> (undefined, replicate (length v - 1) undefined))
+        , $(normal [| \s v -> True |] ) $
+            $(update [p| (v:vs) |] [p| (v,vs) |] [d| v = Replace; vs = Replace |])
+        ]
