@@ -1,0 +1,88 @@
+\documentclass{llncs}
+
+\title{Principle and Practice of Bidirectional Programming in BiGUL}
+
+\author{Zhenjiang Hu,  Hsiang-Shang Ko}
+\institute{
+National Institute of Informatics, Japan\\
+{\{hu,hsiang-shang\}@nii.ac.jp}
+}
+
+\usepackage{lhs2TeX-polycode}
+\def\commentbegin{\quad\{\ }
+\def\commentend{\}}
+
+\usepackage{color}
+\usepackage{cite}
+\usepackage{comment}
+\usepackage{graphicx}
+\usepackage{amssymb}
+\usepackage{amsmath}
+%\usepackage{amsthm}
+\usepackage{enumerate}
+\usepackage{xspace}
+
+\DeclareMathSymbol\lbag\mathopen{stmry}{"2A}
+\DeclareMathSymbol\rbag\mathclose{stmry}{"2B}
+
+\usepackage{textcomp}
+\newtheorem{maintheorem}[theorem]{Main Theorem}
+\newtheorem{algorithm}{\bf Algorithm}
+
+%\newcommand\todo[1]{{\color{red} Todo: #1}}
+
+%\usepackage{natbib}
+
+\input{macros}
+
+\begin{document}
+\frontmatter
+\mainmatter
+
+\maketitle
+
+\begin{abstract}
+This material will be used as 
+the lecture notes for the Summer School on Bidirectional
+Transformation to be held in Oxford in July, 2016.
+\end{abstract}
+
+\section{Installation}
+
+The lastest versuon of BiGUL is released to Hackage. 
+To install the package, just run the following two commands.
+\begin{verbatim}
+> cabal update
+> cabal install bigul
+\end{verbatim}
+
+Now you can easily check whether BiGUL is correctly installed.
+First, create a simple file called ``test.hs'' with the following 
+content for importing BiGUL modules.
+\begin{verbatim}
+import Generics.BiGUL.Error
+import Generics.BiGUL.AST
+import Generics.BiGUL.Interpreter
+import Generics.BiGUL.TH
+\end{verbatim}
+Then load it with the the GHC interactive interpreter as follows.
+\begin{verbatim}
+> ghci test.hs
+GHCi, version 7.10.3: http://www.haskell.org/ghc/  :? for help
+Prelude>~/Repositories/prl_tokyo/bigul/SummerSchool16> ghci test.hs
+GHCi, version 7.10.3: http://www.haskell.org/ghc/  :? for help
+[1 of 1] Compiling Main             ( test.hs, interpreted )
+Ok, modules loaded: Main.
+\end{verbatim}
+If you see the above message, congratulations for your successful installation.
+
+\input{PBasic}
+\input{PList}
+\input{PSet}
+
+\bibliographystyle{splncs03}
+%\bibliographystyle{abbrvnat}
+% The bibliography should be embedded for final submission.
+\bibliography{references}
+
+\end{document}
