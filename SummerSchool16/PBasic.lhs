@@ -139,10 +139,10 @@ We may go further to define a general putback transformation
 to replace the |i|th element of a source list with a view |v|.
 \begin{code}
 pNth :: Int -> BiGUL [s] s
-pNth i = if i == 0 then pHead
-         else $(rearrS [| \(x:xs) -> (x,xs) |]) $
-                 $(rearrV [| \v -> ((), v) |]) $
-                    Skip `Prod` pNth (i-1) 
+pNth i =  if i == 0 then pHead
+          else  $(rearrS [| \(x:xs) -> (x,xs) |]) $
+                   $(rearrV [| \v -> ((), v) |]) $
+                      Skip `Prod` pNth (i-1) 
 \end{code}
 \begin{verbatim}
 *PBasic> put (pNth 3) [1..10] 100
@@ -182,16 +182,16 @@ As a simple example, consider using the view to update all
 the elements in the source list. To do so, we can use |Case|.
 \begin{code}
 replaceAll :: Eq s => BiGUL [s] s
-replaceAll = Case [
-        $(normal [| \s v -> length s == 1 |]) $
-          $(rearrS [| \[x] -> x |]) Replace,
-        $(normal [| \s v -> length s > 1 |]) $
-           $(rearrS [| \(x:xs) -> (x,xs) |]) $
-              $(rearrV [| \v -> (v, v) |]) $
-                  Replace `Prod` replaceAll,
-        $(adaptive [| \s v -> length s == 0 |]) $
-           \s v -> [undefined]
-      ]
+replaceAll = Case  [
+                     $(normal [| \s v -> length s == 1 |]) $
+                         $(rearrS [| \[x] -> x |]) Replace,
+                     $(normal [| \s v -> length s > 1 |]) $
+                          $(rearrS [| \(x:xs) -> (x,xs) |]) $
+                              $(rearrV [| \v -> (v, v) |]) $
+                                  Replace `Prod` replaceAll,
+                     $(adaptive [| \s v -> length s == 0 |]) $
+                           \s v -> [undefined]
+                   ]
 \end{code}
 \begin{verbatim}
 *PBasic> put replaceAll [] 100
@@ -251,13 +251,12 @@ One interesting one is |emb| that can safely embed a pair of well-behaved
 |emb| itself is defined as follows.
 \begin{code}
 emb :: Eq v => (s -> v) -> (s -> v -> s) -> BiGUL s v
-emb g p = Case
-  [ $(normal [| \x y -> g x == y |])$
-      $(rearrV [| \x -> ((), x) |])$
-        Dep Skip (\x () -> g x)
-  , $(adaptive [| \_ _ -> True |])
-      p
-  ]
+emb g p = Case   [  $(normal [| \x y -> g x == y |])$
+                        $(rearrV [| \x -> ((), x) |])$
+                           Dep Skip (\x () -> g x)
+                 ,  $(adaptive [| \_ _ -> True |])
+                        p
+                 ]
 \end{code}
 
 As an application of |emb|, we may define a useful putback functions
@@ -265,8 +264,8 @@ for reflecting the sum to a pair.
 \begin{code}
 distSum :: BiGUL (Int, Int) Int
 distSum = emb g p
-  where g (x,y) = x+y
-        p (x,y) v = (v-y,y)
+  where  g (x,y) = x+y
+         p (x,y) v = (v-y,y)
 \end{code}
 \begin{verbatim}
 *PBasic> put distSum (1,2) 100
