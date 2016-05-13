@@ -1,6 +1,17 @@
-{-# LANGUAGE TemplateHaskell, TupleSections, DeriveDataTypeable, TypeSynonymInstances, FlexibleInstances #-}
+-- |
+module Generics.BiGUL.TH (
+  -- * 'Generic' instance derivation
+    deriveBiGULGeneric
+  -- * Rearrangement
+  , rearrS
+  , rearrV
+  , update
+  -- * 'Case' branch construction
+  , normal
+  , normalSV
+  , adaptive
+  , adaptiveSV) where
 
-module Generics.BiGUL.TH( normal, normal', normalS, normalV, normalV', normalSV, adaptive, adaptiveS, adaptiveV, adaptiveSV, update, deriveBiGULGeneric, rearrS, rearrV) where
 import Data.Data
 import Data.Maybe
 import Data.List as List
@@ -9,13 +20,13 @@ import qualified Data.Map as Map
 import Language.Haskell.TH as TH
 import qualified Language.Haskell.TH.Syntax as THS
 import Language.Haskell.TH.Quote
-import Generics.BiGUL.AST
+import Generics.BiGUL
 import Control.Monad
 
 
 
 data ConTag = L | R
-    deriving (Show, Data, Typeable)
+  deriving (Show, Data, Typeable)
 
 
 data PatTag = RTag   -- ^ view pattern
@@ -71,9 +82,9 @@ deriveBiGULGeneric name = do
   let fromClauses = map (constructFuncFromClause (vK1, vU1, vL1, vR1, vProd, vM1)) env
   let toClauses   = map (constructFuncToClause (vK1, vU1, vL1, vR1, vProd, vM1)) env
   --conTagsClause <- toconTagsClause env
-  return $ listMaybe2Just selectorDataDMaybeList ++
-           listMaybe2Just (concat selectorDataTypeMaybeList) ++
-           listMaybe2Just (concat selectorInstanceDecList) ++
+  return $ catMaybes selectorDataDMaybeList ++
+           catMaybes (concat selectorDataTypeMaybeList) ++
+           catMaybes (concat selectorInstanceDecList) ++
            [InstanceD []
                      (AppT (ConT nGeneric) (generateTypeVarsType name typeVars))
                      [TySynInstD nRep
@@ -83,9 +94,6 @@ deriveBiGULGeneric name = do
                       FunD vFrom fromClauses,
                       FunD vTo toClauses ]
             ]
-
-listMaybe2Just :: [Maybe a] -> [a]
-listMaybe2Just xs = foldr (\a b -> case a of {Just v -> v:b; Nothing -> b}) [] xs
 
 
 toconTagsClause :: [(Bool, Name, [ConTag], [Name])] -> Q Clause
@@ -236,12 +244,12 @@ lookupRecordField conName fieldName = do
 
 
 mkConstrutorFromLRs :: [ConTag] -> PatTag -> Q (Exp -> Exp)
-mkConstrutorFromLRs lrs patTag = do (_, [gin, gleft, gright]) <- lookupNames [] [ "Generics.BiGUL.AST." ++ show patTag ++ s | s <- ["In", "Left", "Right"] ] "cannot find data constructors *what* from Generic.BiGUL.AST"
+mkConstrutorFromLRs lrs patTag = do (_, [gin, gleft, gright]) <- lookupNames [] [ "Generics.BiGUL." ++ show patTag ++ s | s <- ["In", "Left", "Right"] ] "cannot find data constructors *what* from Generic.BiGUL"
                                     return $ foldl (.) (AppE (ConE gin)) (map (AppE . ConE . contag gleft gright) lrs)
 
 
 astNameSpace :: String
-astNameSpace = "Generics.BiGUL.AST."
+astNameSpace = "Generics.BiGUL."
 
 -- |
 mkPat :: TH.Pat -> PatTag -> [Name] -> Q TH.Exp
@@ -636,7 +644,7 @@ rearrSV qsp qvp qpp qpd = do
 
 
 update  :: Q TH.Pat -> Q TH.Pat -> Q [TH.Dec] -> Q TH.Exp
-update = \pv ps d -> rearrSV ps pv (ps >>= mkProdPatFromS) d
+update pv ps d = rearrSV ps pv (ps >>= mkProdPatFromS) d
 
 mkEnvForUpdate :: [TH.Dec] -> Q (Map String TH.Exp)
 mkEnvForUpdate []                                     = return Map.empty
@@ -659,22 +667,17 @@ update qp qds = do
 
 
 
-patToFunc :: TH.Pat -> Q TH.Exp
-patToFunc p =  do
-  (_, [htrue,hfalse]) <- lookupNames [] ["True","False"] (notFoundMsg "True,False")
-  name                        <-  newName "x"
-  case p of
-    TH.WildP -> return $ LamE [VarP name] (ConE htrue)
-    _        -> return $ LamE [VarP name] (CaseE (VarE name)
-                        [Match p (NormalB (ConE htrue)) [], Match WildP (NormalB (ConE hfalse)) []])
+patCond :: TH.Pat -> TH.ExpQ
+patCond p = do
+  (_, [htrue,hfalse]) <- lookupNames [] ["True","False"] (notFoundMsg "True, False")
+  var <- newName "x"
+  return $ case p of
+             TH.WildP -> LamE [VarP var] (ConE htrue)
+             _        -> LamE [VarP var] (CaseE (VarE var)
+                              [Match p (NormalB (ConE htrue)) [], Match WildP (NormalB (ConE hfalse)) []])
 
-
-
-
-
---
 notFoundMsg :: String -> String
-notFoundMsg s = "cannot find data constructors " ++ s ++ " from Generic.BiGUL.AST"
+notFoundMsg s = "cannot find data constructors " ++ s ++ " from Generic.BiGUL."
 
 withPatTag :: PatTag -> String -> String
 withPatTag tag con = show tag ++ con
@@ -691,60 +694,57 @@ instance ExpOrPat (TH.ExpQ) where
   toExp = id
 
 instance ExpOrPat (TH.PatQ) where
-  toExp = (>>= patToFunc)
+  toExp = (>>= patCond)
 
--- $(normal [| predicateOnSV |]) b
---   ~>  (predicateOnSV, Normal b (const True))
-normal :: TH.ExpQ -> TH.ExpQ
-normal psv = [|\b -> ($psv, $(nameNormal) b (const True))|]
+unaryPatLambdaToPred :: TH.Exp -> TH.ExpQ
+unaryPatLambdaToPred p =
+  case p of
+    LamE [VarP _] _ -> return p
+    LamE [pat] body -> do
+      var <- newName "x"
+      (_, [hfalse]) <-lookupNames [] ["False"] (notFoundMsg "False")
+      return (LamE [VarP var]
+                (CaseE (VarE var)
+                   [Match pat (NormalB body) [],
+                    Match WildP (NormalB (ConE hfalse)) []]))
+    _ -> return p
 
+binaryPatLambdaToPred :: TH.Exp -> TH.ExpQ
+binaryPatLambdaToPred p =
+  case p of
+    LamE [VarP _, VarP _] _ -> return p
+    LamE [spat, vpat] body -> do
+      svar <- newName "s"
+      vvar <- newName "v"
+      (_, [hfalse]) <-lookupNames [] ["False"] (notFoundMsg "False")
+      return (LamE [VarP svar, VarP vvar]
+                (CaseE (TupE [VarE svar, VarE vvar])
+                   [Match (TupP [spat, vpat]) (NormalB body) [],
+                    Match WildP (NormalB (ConE hfalse)) []]))
+    _ -> return p
 
--- $(normal' [| predicateOnSV |] [| predictionPredicate |]) b
---   ~>  (predicateOnSV, Normal b predictionPredicate)
-normal' :: ExpOrPat a => TH.ExpQ -> a -> TH.ExpQ
-normal' psv pp = [|\b -> ($psv, $(nameNormal) b $(toExp pp)) |]
+-- $(normal [| predicateOnSV |] [| predicateOnS |]) b
+--   ~>  (predicateOnSV, Normal b predicateOnS)
+normal :: ExpOrPat a => TH.ExpQ -> a -> TH.ExpQ
+normal mp mq =
+  [| \b -> ($(mp >>= binaryPatLambdaToPred), $(nameNormal) b $(toExp mq >>= unaryPatLambdaToPred)) |]
 
-
--- $(normalS [| predicateOnS |]) b
---   ~>  ((\s _ -> predicateOnS s), Normal b predicateOnS)
-normalS :: ExpOrPat a => a -> TH.ExpQ
-normalS ps = [|\b -> (\s _ -> $(toExp ps) s, $(nameNormal) b $(toExp ps)) |]
-
--- $(normalV [| predicateOnV |]) b
---   ~>  ((\_ v -> predicateOnV v), Normal b (const True))
-normalV :: ExpOrPat a => a -> TH.ExpQ
-normalV pv = [|\b -> (\_ v -> $(toExp pv) v, $(nameNormal) b (const True)) |]
-
--- $(normalV' [| predicateOnV |] [| predictionPredicate |]) b
---   ~>  ((\_ v -> predicateOnV v), Normal b predictionPredicate)
-normalV' :: (ExpOrPat a, ExpOrPat b) => a -> b -> TH.ExpQ
-normalV' pv pp = [|\b -> (\_ v -> $(toExp pv) v, $(nameNormal) b $(toExp pp)) |]
-
--- $(normalSV [| predicateOnS |] [| predicateOnV |]) b
---   ~>  ((\s v -> predicateOnS s && predicateOnV v), Normal b predicateOnS)
-normalSV :: (ExpOrPat a, ExpOrPat b) => a -> b -> TH.ExpQ
-normalSV ps pv = [|\b -> (\s v -> $(toExp ps) s && $(toExp pv) v, $(nameNormal) b $(toExp ps)) |]
+-- $(normalSV [| predicateOnS |] [| predicateOnV |] [| predicateOnS' |]) b
+--   ~>  ((\s v -> predicateOnS s && predicateOnV v), Normal b predicateOnS')
+normalSV :: (ExpOrPat a, ExpOrPat b, ExpOrPat c) => a -> b -> c -> TH.ExpQ
+normalSV mps mpv mq =
+  [|\b -> (\s v -> $(toExp mps) s && $(toExp mpv) v, $(nameNormal) b $(toExp mq >>= unaryPatLambdaToPred)) |]
 
 -- $(adaptive [| predicateOnSV |]) f
 --   ~> (predicateOnSV, Adaptive f)
 adaptive :: TH.ExpQ -> TH.ExpQ
-adaptive psv = [| \f -> ($psv, $(nameAdaptive) f) |]
-
--- $(adaptiveS [| predicateOnS |]) f
---   ~> ((\s _ -> predicateOnS s), Adaptive f)
-adaptiveS :: ExpOrPat a => a -> TH.ExpQ
-adaptiveS ps = [| \f -> (\s _ -> $(toExp ps) s, $(nameAdaptive) f) |]
-
--- $(adaptiveV [| predicateOnV |]) f
---   ~> ((\_ v -> predicateOnV v), Adaptive f)
-adaptiveV :: ExpOrPat a => a -> TH.ExpQ
-adaptiveV pv = [| \f -> (\_ v -> $(toExp pv) v, $(nameAdaptive) f) |]
+adaptive mp = [| \f -> ($(mp >>= binaryPatLambdaToPred), $(nameAdaptive) f) |]
 
 -- $(adaptiveSV [| predicateOnS |] [| predicateOnV |]) f
 --   ~> ((\s v -> predicateOnS s && predicateOnV v), Adaptive f)
 adaptiveSV :: (ExpOrPat a, ExpOrPat b) => a -> b -> TH.ExpQ
-adaptiveSV ps pv = [| \f -> (\s v -> $(toExp ps) s && $(toExp pv) v, $(nameAdaptive) f) |]
-
+adaptiveSV ps pv =
+  [| \f -> (\s v -> $(toExp ps >>= unaryPatLambdaToPred) s && $(toExp pv >>= unaryPatLambdaToPred) v, $(nameAdaptive) f) |]
 
 nameAdaptive :: TH.ExpQ
 nameAdaptive = lookupNames [] [astNameSpace ++ "Adaptive"] (notFoundMsg "Adaptive") >>= \(_, [badaptive]) -> conE badaptive

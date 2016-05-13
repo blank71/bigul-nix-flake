@@ -1,9 +1,8 @@
-{-# LANGUAGE GADTs #-}
-
 module Generics.BiGUL.Interpreter (put, get, PutResult, GetResult, errorTrace) where
 
+import Generics.BiGUL
 import Generics.BiGUL.Error
-import Generics.BiGUL.AST
+import Generics.BiGUL.PatternMatching
 import Control.Monad.Except
 import Text.PrettyPrint
 
@@ -18,7 +17,7 @@ type PutResult s v = Either (PutError s v) s
 
 put :: BiGUL s v -> s -> v -> PutResult s v
 put (Fail str)              s       v       = throwError (PFail str)
-put Skip                    s       v       = return s
+put (Skip f)                s       v       = if f s == v then return s else throwError PSkipMismatch
 put Replace                 s       v       = return v
 put (Prod bigul bigul')     (s, s') (v, v') = liftM2 (,) (liftE (PProdLeft  s  v ) (put bigul  s  v ))
                                                          (liftE (PProdRight s' v') (put bigul' s' v'))
@@ -30,10 +29,8 @@ put (RearrS pat expr bigul) s       v       = do env <- liftE PSourcePatternMism
 put (RearrV pat expr bigul) s       v       = do v' <- liftE PViewPatternMismatch (deconstruct pat v)
                                                  let m = eval expr v'
                                                  liftE (PRearrV s m) (put bigul s m)
-put (Dep bigul f)           s       (v, v') = do s' <- liftE (PDep s v) (put bigul s v)
-                                                 if f s' v == v'
-                                                 then return s'
-                                                 else throwError (PDependencyMismatch s')
+put (Dep f b)               s       (v, v') = if f v == v' then liftE (PDep s v) (put b s v)
+                                                          else throwError PDependencyMismatch
 put (Case branches)         s       v       = putCase branches s v
 put (Compose bigul bigul')  s       v       = do m  <- liftE PNoIntermediateSource (get bigul s)
                                                  m' <- liftE (PComposeRight m v) (put bigul' m v)
@@ -84,7 +81,7 @@ type GetResult s v = Either (GetError s v) v
 
 get :: BiGUL s v -> s -> GetResult s v
 get (Fail str)              s       = throwError (GFail str)
-get Skip                    s       = return ()
+get (Skip f)                s       = return (f s)
 get Replace                 s       = return s
 get (Prod bigul bigul')     (s, s') = liftM2 (,) (liftE (GProdLeft  s ) (get bigul  s ))
                                                  (liftE (GProdRight s') (get bigul' s'))
@@ -95,8 +92,8 @@ get (RearrV pat expr bigul) s       = do v'  <- liftE (GRearrV s) (get bigul s)
                                          con <- liftE GUnevalFailed (uneval pat expr v' (emptyContainer pat))
                                          env <- liftE GViewRecoveringIncomplete (fromContainerV pat con)
                                          return (construct pat env)
-get (Dep bigul f)           s       = do v <- liftE (GDep s) (get bigul s)
-                                         return (v, f s v)
+get (Dep f b)               s       = do v <- liftE (GDep s) (get b s)
+                                         return (v, f v)
 get (Case branches)         s       = getCase branches s
 get (Compose bigul bigul')  s       = do m <- liftE (GComposeLeft s) (get bigul s)
                                          liftE (GComposeRight m) (get bigul' m)

@@ -1,5 +1,3 @@
-{-# LANGUAGE UndecidableInstances, KindSignatures, GADTs, FlexibleInstances #-}
-
 module Generics.BiGUL.Error where
 
 import GHC.InOut
@@ -11,10 +9,11 @@ class PrettyPrintable a where
 
 data PutError :: * -> * -> * where
   PFail                      :: String -> PutError s v
+  PSkipMismatch              :: PutError s v
   PSourcePatternMismatch     :: PatExprDirError s -> PutError s v
   PViewPatternMismatch       :: PatExprDirError v -> PutError s v
   PUnevalFailed              :: PatExprDirError s' -> PutError s v
-  PDependencyMismatch        :: s -> PutError s (v, v')
+  PDependencyMismatch        :: PutError s (v, v')
   PNoIntermediateSource      :: GetError s v' -> PutError s v
   PCaseExhausted             :: PutError s v
   PAdaptiveBranchRevisited   :: PutError s v
@@ -42,7 +41,7 @@ instance Show (PutError s v) where
   show (PSourcePatternMismatch e)    = show e
   show (PViewPatternMismatch e)      = show e
   show (PUnevalFailed e)             = show e
-  show (PDependencyMismatch _)       = "dependency mismatch"
+  show  PDependencyMismatch          = "dependency mismatch"
   show (PNoIntermediateSource e)     = show e
   show  PCaseExhausted               = "case exhausted"
   show  PAdaptiveBranchRevisited     = "adaptive branch revisited"
@@ -68,7 +67,7 @@ instance PrettyPrintable (PutError s v) where
   toDoc (PSourcePatternMismatch e)   = text "source pattern mismatch" $+$ indent (toDoc e)
   toDoc (PViewPatternMismatch e)     = text "view pattern mismatch" $+$ indent (toDoc e)
   toDoc (PUnevalFailed e)            = text "inverse evaluation failed" $+$ indent (toDoc e)
-  toDoc e@(PDependencyMismatch _)    = text (show e)
+  toDoc e@PDependencyMismatch        = text (show e)
   toDoc (PNoIntermediateSource e)    = text "computation of intermediate source failed" $+$ indent (toDoc e)
   toDoc e@PCaseExhausted             = text (show e)
   toDoc e@PAdaptiveBranchRevisited   = text (show e)
