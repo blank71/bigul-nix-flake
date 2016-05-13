@@ -36,7 +36,7 @@ and backwardly by calling |put|.
 where |get bx| is a function mapping a source to a view, while |put bx|
 accepts an original source and an update view and returns an updated source.
 
-The core of BiGUL consists of only six basic combinators for constructing
+The core of BiGUL consists of a small number of combinators for constructing
 bidirectional transformation through development of well-behaved putback
 transformations. 
 
@@ -97,8 +97,8 @@ Right ((5,100),200)
 So far, the source and the view must be of the same structure. What if we
 wish to putback a pair view |(v1,v2)| to a complicated source,
 say |((s0,s1),s2))|, where we hope to replace |s1| by |v1| and
-|s2| by |v2|? BiGUL provide a way of preprocessing of
-rearranging either the soruce
+|s2| by |v2|? BiGUL provide a way of prepossessing of
+rearranging either the source
 or the view through a natural transformation |tau|.
 
 < $(rearrS [| tau :: s1 -> s2 |]) :: BiGUL s2 v -> BiGUL s1 v
@@ -122,7 +122,7 @@ putPairOverNPair' =  $(rearrV [| \(v1,v2) -> (((),v1),v2) |]) $
                        (Skip `Prod` Replace) `Prod` Replace
 \end{code}
 
-The machanism of source/view rearrangement makes it possible
+The mechanism of source/view rearrangement makes it possible
 to process algebraic data structures such as
 lists and trees. The following example describes using view |v| to
 replace the first element of a nonempty source.
@@ -135,7 +135,7 @@ pHead = $(rearrS [| \(s:_) -> s |]) Replace
 Right [100,2,3,4]
 \end{verbatim}
 
-We may go further to define a general putback transforamtion 
+We may go further to define a general putback transformation 
 to replace the |i|th element of a source list with a view |v|.
 \begin{code}
 pNth :: Int -> BiGUL [s] s
@@ -158,27 +158,119 @@ Right 4
 
 \subsection{Case}
 
-The |Case| combintor is for case analysis. The basic structure is as follows.
-\begin{code}
-Case  [  $(normal [| cond1 :: s -> v -> Bool |]) (bx1 :: BiGUL s v),
-         $(normal [| cond2 :: s -> v -> Bool |]) (bx2 :: BiGUL s v),
-         ...,
-         $(normal [| condn :: s -> v -> Bool |]) (bxn :: BiGUL s v),
-         $(adaptive [| cond1' :: s -> v -> Bool |]) $ (f1 :: s -> v -> s),
-         $(adaptive [| cond2' :: s -> v -> Bool |]) $ (f2 :: s -> v -> s),
-         ...,
-         $(adaptive [| condm' :: s -> v -> Bool |]) $ (fm :: s -> v -> s)
-      ]
-  :: BiGUL s v
-\end{code}
+The |Case| combinator is for case analysis.
+The basic structure is as follows.
+< Case  [  $(normal [| cond1 :: s -> v -> Bool |]) (bx1 :: BiGUL s v),
+<          $(normal [| cond2 :: s -> v -> Bool |]) (bx2 :: BiGUL s v),
+<          ...,
+<          $(normal [| condn :: s -> v -> Bool |]) (bxn :: BiGUL s v),
+<          $(adaptive [| cond1' :: s -> v -> Bool |]) $ (f1 :: s -> v -> s),
+<          $(adaptive [| cond2' :: s -> v -> Bool |]) $ (f2 :: s -> v -> s),
+<          ...,
+<          $(adaptive [| condm' :: s -> v -> Bool |]) $ (fm :: s -> v -> s)
+<       ]
+<  :: BiGUL s v
 It contains a sequence of cases. For each case, it is either |normal| or
 |adaptive|. For the normal case, if the condition is satisfied, a
 corresponding putback transformation is applied. For the  adaptive case,
 if the condition is satisfied, a function is used to update the source
 with the view so that for the next step one of the normal cases can
-be applied.
+be applied. Note that if adaptation does not lead the source and the view
+to a normal case, an error will be reported at runtime.
+
+As a simple example, consider using the view to update all
+the elements in the source list. To do so, we can use |Case|.
+\begin{code}
+replaceAll :: Eq s => BiGUL [s] s
+replaceAll = Case [
+        $(normal [| \s v -> length s == 1 |]) $
+          $(rearrS [| \[x] -> x |]) Replace,
+        $(normal [| \s v -> length s > 1 |]) $
+           $(rearrS [| \(x:xs) -> (x,xs) |]) $
+              $(rearrV [| \v -> (v, v) |]) $
+                  Replace `Prod` replaceAll,
+        $(adaptive [| \s v -> length s == 0 |]) $
+           \s v -> [undefined]
+      ]
+\end{code}
+\begin{verbatim}
+*PBasic> put replaceAll [] 100
+Right [100]
+*PBasic> put replaceAll [1..10] 100
+Right [100,100,100,100,100,100,100,100,100,100]
+\end{verbatim}
+
+\subsection{Dependency: Dep}
+
+Sometimes, a view may contain derived value that is computed from
+other part of the view and not allowed
+to be changed. For instance, for the view |(x, x+1)|, the second
+component can be computed from the first by increasing it by |1|.
+To capture this, BiGUL provides
+
+< Dep :: Eq v' => BiGUL a v -> (a -> v -> v') -> BiGUL a (v, v')
+
+to describe this intention. We may, for example, define
+\begin{code}
+replaceAll2 :: BiGUL [Int] (Int,Int)
+replaceAll2 = Dep replaceAll (\s v -> v+1) 
+\end{code}
+to replace all elements of the source by the
+first component of the view, while the second component
+of the view is a derived one that should be one bigger than the first one.
+\begin{verbatim}
+*PBasic> put replaceAll2 [1..10] (100,101)
+Right [100,100,100,100,100,100,100,100,100,100]
+*PBasic> put replaceAll2 [1..10] (100,200)
+Left dependency mismatch
+\end{verbatim}
+As seen in the last running of |put|, it reports an error because in the view |(100,200)|, |200| is not one bigger than |100|.
 
 \subsection{Composition}
 
- 
-\subsection{Utilites}
+Composition of two putback transformations follows that of two
+bidirectional transformations This is because each putback transformation is essentially a bidirectional transformation.
+
+< Compose :: BiGUL a u -> BiGUL u b -> BiGUL a b
+
+As an example, consider
+\begin{code}
+pHead2 :: BiGUL [[a]] a
+pHead2 = pHead `Compose` pHead
+\end{code}
+\begin{verbatim}
+*PBasic> put pHead2 [[1,2],[3,4,5],[]] 100
+Right [[100,2],[3,4,5],[]]
+\end{verbatim}
+
+\subsection{Utilities}
+
+BiGUL provides some useful functions for building putback transformations.
+One interesting one is |emb| that can safely embed a pair of well-behaved
+|get| and |put| a putback transformation into our context.
+|emb| itself is defined as follows.
+\begin{code}
+emb :: Eq v => (s -> v) -> (s -> v -> s) -> BiGUL s v
+emb g p = Case
+  [ $(normal [| \x y -> g x == y |])$
+      $(rearrV [| \x -> ((), x) |])$
+        Dep Skip (\x () -> g x)
+  , $(adaptive [| \_ _ -> True |])
+      p
+  ]
+\end{code}
+
+As an application of |emb|, we may define a useful putback functions
+for reflecting the sum to a pair.
+\begin{code}
+distSum :: BiGUL (Int, Int) Int
+distSum = emb g p
+  where g (x,y) = x+y
+        p (x,y) v = (v-y,y)
+\end{code}
+\begin{verbatim}
+*PBasic> put distSum (1,2) 100
+Right (98,2)
+*PBasic> get distSum (1,2)
+Right 3
+\end{verbatim}
