@@ -101,3 +101,46 @@ unevalDir (PLeft  patl    ) dir           a' con          = unevalDir patl dir a
 unevalDir (PRight patr    ) dir           a' con          = unevalDir patr dir a' con
 unevalDir (PIn pat        ) dir           a' con          = unevalDir pat  dir a' con
 
+-- TODO: static check of full embedding
+-- checkFullEmbed :: BiGUL m s v -> Bool
+-- checkFullEmbed Fail                    = True
+-- checkFullEmbed Skip                    = True
+-- checkFullEmbed Replace                 = True
+-- checkFullEmbed (RearrS pat expr bigul) = checkFullEmbed bigul
+-- checkFullEmbed (RearrV pat expr bigul) = checkRearr expr pat && checkFullEmbed bigul
+-- checkFullEmbed (Dep bigul f)           = checkFullEmbed bigul
+-- checkFullEmbed (Case branches)         = and (map checkBranch branches)
+
+-- checkBranch :: (s -> v -> Bool, CaseBranch m s v)  -> Bool
+-- checkBranch (cond, Normal bigul _) = checkFullEmbed bigul
+-- checkBranch (cond, _)              = True
+
+-- checkRearr :: Expr env v' -> Pat v env con -> Bool
+-- checkRearr expr pat = checkCon pat (abstractUpdateCon expr pat (emptyContainer pat))
+
+-- abstractUpdateCon :: Expr env a' -> Pat a env con -> con -> con
+-- abstractUpdateCon (EDir dir)          pat con = abstractUpdateDir pat dir con
+-- abstractUpdateCon (EConst c)          pat con = con
+-- abstractUpdateCon (EIn expr)          pat con = abstractUpdateCon expr pat con
+-- abstractUpdateCon (EProd exprl exprr) pat con = abstractUpdateCon exprr pat (abstractUpdateCon exprl pat con)
+-- abstractUpdateCon (ELeft expr)        pat con = abstractUpdateCon expr  pat con
+-- abstractUpdateCon (ERight expr)       pat con = abstractUpdateCon expr  pat con
+
+-- abstractUpdateDir :: Pat a env con -> Direction env a' -> con -> con
+-- abstractUpdateDir PVar              DVar         Nothing      = Just undefined
+-- abstractUpdateDir PVar              DVar         (Just _)     = Just undefined
+-- abstractUpdateDir (PConst c)        _            con          = con
+-- abstractUpdateDir (PProd patl patr) (DLeft dir)  (conl, conr) = (abstractUpdateDir patl dir conl, conr)
+-- abstractUpdateDir (PProd patl patr) (DRight dir) (conl, conr) = (conl, abstractUpdateDir patr dir conr)
+-- abstractUpdateDir (PLeft patl     ) dir          con          = abstractUpdateDir patl dir con
+-- abstractUpdateDir (PRight patr    ) dir          con          = abstractUpdateDir patr dir con
+-- abstractUpdateDir (PIn pat        ) dir          con          = abstractUpdateDir pat  dir con
+
+-- checkCon :: Pat v env con -> con -> Bool
+-- checkCon PVar               (Just _)     = True
+-- checkCon PVar               Nothing      = False
+-- checkCon (PConst c)         _            = True
+-- checkCon (PProd patl patr)  (conl, conr) = checkCon patl conl && checkCon patr conr
+-- checkCon (PLeft  patl)      con          = checkCon patl con
+-- checkCon (PRight patr)      con          = checkCon patr con
+-- checkCon (PIn pat    )      con          = checkCon pat  con

@@ -1,19 +1,33 @@
 -- | This is the main module defining the syntax of BiGUL.
 --   To execute BiGUL programs, use 'Generics.BiGUL.Interpreter.put' and 'Generics.BiGUL.Interpreter.get'
 --   from "Generics.BiGUL.Interpreter".
---   For a more detailed introduction to programming in BiGUL, see "Generics.BiGUL.Lib.Tutorial".
+--   For a more detailed introduction to BiGUL programming, see "Generics.BiGUL.Lib.Tutorial".
 
-module Generics.BiGUL where
+module Generics.BiGUL(
+  -- * Main syntax
+    BiGUL(..)
+  , CaseBranch(..)
+  -- * Rearrangement syntax
+  -- | The following pattern and expression syntax for rearrangement operations are designed to be type-safe
+  --   but not intended to be programmer-friendly. The programmer is expected to use the higher-level syntax
+  --   from "Generics.BiGUL.TH", which desugars into the following raw syntax.
+  --   For more detail about patterns and expressions, see "Generics.BiGUL.PatternMatching".
+  , Pat(..)
+  , Var(..)
+  , Direction(..)
+  , Expr(..)) where
+
 
 import GHC.InOut
 
+import Control.Monad.State
 import Text.PrettyPrint
 
 
 -- | This is the datatype of BiGUL programs, as a GADT indexed with the source and view types.
 --   Before the advent of GHC 8, haddock does not support documentation for GADT constructors;
 --   for now, see the source for the description of each constructor and its arguments.
-data BiGUL :: * -> * -> * where
+data BiGUL s v where
 
   -- Abort computation and emit an error message.
   Fail    :: String  -- error message
@@ -25,7 +39,7 @@ data BiGUL :: * -> * -> * where
           => (s -> v)  -- how the view can be computed from the source
           -> BiGUL s v
 
-  -- Replace the source with the view (which is required to have the same type as the source).
+  -- Replace the source with the view (which should have the same type as the source).
   Replace :: BiGUL s s
 
   -- When the source and view are both pairs, perform update on the first/second source and view components
@@ -35,7 +49,7 @@ data BiGUL :: * -> * -> * where
           -> BiGUL (s, s') (v, v')
 
   -- Rearrange the source into an intermediate form, which is updated by the inner program,
-  -- and then revert the rearrangement.
+  -- and then invert the rearrangement.
   -- /The inner program should make sure that the updated source still retains the intermediate form
   -- (so the reversion can succeed)./
   RearrS  :: Pat s env con  -- pattern for the original source
@@ -57,7 +71,9 @@ data BiGUL :: * -> * -> * where
           -> BiGUL s (v, v')
 
   -- Case analysis on both the source and view.
-  Case    :: [(s -> v -> Bool, CaseBranch s v)]
+  Case    :: [(s -> v -> Bool, CaseBranch s v)]  -- branches, each of which consists of
+                                                 -- an entry condition (on both the source and view)
+                                                 -- and an inner action
           -> BiGUL s v
 
   -- Standard composition of bidirectional transformations.
@@ -66,116 +82,99 @@ data BiGUL :: * -> * -> * where
           -> BiGUL s v
 
 infixr 1 `Prod`
+infixr 1 `Compose`
 
-instance Show (BiGUL s v) where
-  show (Fail s)  = "Fail: " ++ s
-  show (Skip _)  = "Skip <dependency function>"
-  show Replace   = "Replace"
-  show (Dep _ b) = "(Dep <dependency function> " ++ show b ++ ")"
-  -- show (Case bs) = "(Case [" ++ unwords (intersperse "\n" (map (\(_,b) -> "(predicate, " ++ show b ++ ")") bs)) ++ " ])"
-  show _         = "Unknown BiGUL program in show"
+-- | A branch used in 'Case' (whose type is parametrised by the source and view types)
+--   can be either 'Normal' or 'Adaptive'.
+--   The exit conditions specified in 'Normal' branches should (ideally) be disjoint.
+data CaseBranch s v =
+    -- | A 'Normal' branch contains an inner program, which should update the source such that
+    --   both the entry condition (on both the source and view) and the exit condition (on the source) are satisfied.
+    Normal (BiGUL s v) (s -> Bool)
+    -- | An 'Adaptive' branch contains an adaptation function, which should modify the source such that
+    --   a 'Normal' branch is applicable.
+  | Adaptive (s -> v -> s)
 
-data CaseBranch s v = Normal (BiGUL s v) (s -> Bool)
-                    | Adaptive (s -> v -> s)
 
-instance Show (CaseBranch s v) where
-  show (Normal bigul _) = "Normal " ++ show bigul
-  show (Adaptive _    ) = "Adaptive <function>"
+-- | The datatype of patterns is indexed by three types: the type of values to which a pattern is applicable,
+--   the type of environments resulting from pattern matching, and the type of containers used during
+--   inverse evaluation of expressions.
+data Pat a env con where
 
+  -- Variable pattern, the value extracted from which can be duplicated.
+  PVar   :: Eq a
+         => Pat a (Var a) (Maybe a)
+
+  -- Variable pattern, the value extracted from which cannot be duplicated.
+  PVar'  :: Pat a (Var a) (Maybe a)
+
+  -- Constant pattern.
+  PConst :: (Eq a)
+         => a  -- constant to be matched
+         -> Pat a () ()
+
+  -- Product pattern.
+  PProd  :: Pat a a' a''  -- left-hand side pattern
+         -> Pat b b' b''  -- right-hand side pattern
+         -> Pat (a, b) (a', b') (a'', b'')
+
+  -- Left pattern, matching values of shape `Left x :: Either a b` for some `x :: a`.
+  PLeft  :: Pat a a' a''  -- inner pattern
+         -> Pat (Either a b) a' a''
+
+  -- Right pattern, matching values of shape `Right y :: Either a b` for some `y :: b`.
+  PRight :: Pat b b' b''  -- inner pattern
+         -> Pat (Either a b) b' b''
+
+  -- Constructor pattern, unwrapping a value to its sum-of-products representation.
+  -- (Invoke 'Generics.BiGUL.TH.deriveBiGULGenerics' on the datatype involved first.)
+  PIn    :: InOut a
+         => Pat (F a) b c  -- inner pattern
+         -> Pat a b c
+
+-- | A marker for variable positions in environment types.
 newtype Var a = Var a
 
-instance Show a => Show (Var a) where
-  show (Var a) = "Var: " ++ show a
+-- | Directions point to a variable position (marked by 'Var') in an environment.
+--   Their type is indexed by the environment type and the type of the variable position being pointed to.
+data Direction env a where
 
--- Pat (view type) (environment type) (container type)
-data Pat :: * -> * -> * -> * where
-  PVar   :: Eq a => Pat a (Var a) (Maybe a)
-  PVar'  :: Pat a (Var a) (Maybe a)
-  PConst :: (Eq a) => a -> Pat a () ()
-  PProd  :: Pat a a' a'' -> Pat b b' b'' -> Pat (a, b) (a', b') (a'', b'')
-  PLeft  :: Pat a a' a'' -> Pat (Either a b) a' a''
-  PRight :: Pat b b' b'' -> Pat (Either a b) b' b''
-  PIn    :: InOut a => Pat (F a) b c -> Pat a b c
-
-instance Show (Pat v e c) where
-  show  PVar           = "PVar"
-  show  PVar'          = "PVar'"
-  show (PConst c)      = "PConst"
-  show (PProd rp1 rp2) = "(PProd " ++ show rp1 ++ " " ++ show rp2 ++ ")"
-  show (PLeft rp)      = "(PLeft " ++ show rp ++ ")"
-  show (PRight rp)     = "(PRight " ++ show rp ++ ")"
-  show (PIn rp)        = "(PIn " ++ show rp ++ ")"
-  -- show _               = "show error in Pat"
-
--- You need to explicitly specify the type arguments at the type level when using the Direction type.
--- From type, you could know the type of the data you want.
--- !comment: DMaybe did not used.
-data Direction :: * -> * -> * where
+  -- Point to the current variable position.
   DVar    :: Direction (Var a) a
-  DLeft   :: Direction a t -> Direction (a, b) t
+
+  -- Point to the left part of the environment.
+  DLeft   :: Direction a t
+          -> Direction (a, b) t
+
+  -- Point to the right part of the environment.
   DRight  :: Direction b t -> Direction (a, b) t
 
-instance Show (Direction a t) where
-  show  DVar = "DVar"
-  show (DLeft dir)  = "(DLeft " ++ show dir ++ ")"
-  show (DRight dir) = "(DRight " ++ show dir ++ ")"
+-- | Expressions are patterns whose variable positions contain directions pointing into some environment.
+--   Their type is indexed by the environment type and the type of the expressed value.
+data Expr env a where
 
-data Expr :: * -> * -> * where
-  EDir   :: Direction orig a -> Expr orig a
-  EConst :: Eq a =>  a -> Expr orig a
-  EIn    :: InOut a => Expr orig (F a) -> Expr orig a
-  EProd  :: Expr orig a -> Expr orig b -> Expr orig (a, b)
-  ELeft  :: Expr orig a -> Expr orig (Either a b)
-  ERight :: Expr orig b -> Expr orig (Either a b)
+  -- Direction expression, referring to a value in the environment.
+  EDir   :: Direction env a
+         -> Expr env a
 
-instance Show (Expr orig a) where
-  show (EDir dir)      = "(EDir " ++ show dir ++ ")"
-  show (EConst c)      = "EConst"
-  show (EProd e1 e2)   = "(EProd " ++ show e1 ++ " " ++ show e2 ++ ")"
-  show (ELeft e)       = "(ELeft " ++ show e ++ ")"
-  show (ERight e)      = "(ERight " ++ show e ++ ")"
-  show (EIn e)         = "(EIn " ++ show e ++ ")"
+  -- Constant expression.
+  EConst :: Eq a
+         => a  -- constant
+         -> Expr env a
 
--- TODO: static check of full embedding
--- checkFullEmbed :: BiGUL m s v -> Bool
--- checkFullEmbed Fail                    = True
--- checkFullEmbed Skip                    = True
--- checkFullEmbed Replace                 = True
--- checkFullEmbed (RearrS pat expr bigul) = checkFullEmbed bigul
--- checkFullEmbed (RearrV pat expr bigul) = checkRearr expr pat && checkFullEmbed bigul
--- checkFullEmbed (Dep bigul f)           = checkFullEmbed bigul
--- checkFullEmbed (Case branches)         = and (map checkBranch branches)
+  -- Product expression.
+  EProd  :: Expr env a  -- left-hand side expression
+         -> Expr env b  -- right-hand side expression
+         -> Expr env (a, b)
 
--- checkBranch :: (s -> v -> Bool, CaseBranch m s v)  -> Bool
--- checkBranch (cond, Normal bigul _) = checkFullEmbed bigul
--- checkBranch (cond, _)              = True
+  -- Left expression (producing an 'Either'-value).
+  ELeft  :: Expr env a
+         -> Expr env (Either a b)
 
--- checkRearr :: Expr env v' -> Pat v env con -> Bool
--- checkRearr expr pat = checkCon pat (abstractUpdateCon expr pat (emptyContainer pat))
+  -- Right expression (producing an 'Either'-value).
+  ERight :: Expr env b
+         -> Expr env (Either a b)
 
--- abstractUpdateCon :: Expr env a' -> Pat a env con -> con -> con
--- abstractUpdateCon (EDir dir)          pat con = abstractUpdateDir pat dir con
--- abstractUpdateCon (EConst c)          pat con = con
--- abstractUpdateCon (EIn expr)          pat con = abstractUpdateCon expr pat con
--- abstractUpdateCon (EProd exprl exprr) pat con = abstractUpdateCon exprr pat (abstractUpdateCon exprl pat con)
--- abstractUpdateCon (ELeft expr)        pat con = abstractUpdateCon expr  pat con
--- abstractUpdateCon (ERight expr)       pat con = abstractUpdateCon expr  pat con
-
--- abstractUpdateDir :: Pat a env con -> Direction env a' -> con -> con
--- abstractUpdateDir PVar              DVar         Nothing      = Just undefined
--- abstractUpdateDir PVar              DVar         (Just _)     = Just undefined
--- abstractUpdateDir (PConst c)        _            con          = con
--- abstractUpdateDir (PProd patl patr) (DLeft dir)  (conl, conr) = (abstractUpdateDir patl dir conl, conr)
--- abstractUpdateDir (PProd patl patr) (DRight dir) (conl, conr) = (conl, abstractUpdateDir patr dir conr)
--- abstractUpdateDir (PLeft patl     ) dir          con          = abstractUpdateDir patl dir con
--- abstractUpdateDir (PRight patr    ) dir          con          = abstractUpdateDir patr dir con
--- abstractUpdateDir (PIn pat        ) dir          con          = abstractUpdateDir pat  dir con
-
--- checkCon :: Pat v env con -> con -> Bool
--- checkCon PVar               (Just _)     = True
--- checkCon PVar               Nothing      = False
--- checkCon (PConst c)         _            = True
--- checkCon (PProd patl patr)  (conl, conr) = checkCon patl conl && checkCon patr conr
--- checkCon (PLeft  patl)      con          = checkCon patl con
--- checkCon (PRight patr)      con          = checkCon patr con
--- checkCon (PIn pat    )      con          = checkCon pat  con
+  -- Constructor expression, wrapping a sum-of-products representation into data.
+  -- (Invoke 'Generics.BiGUL.TH.deriveBiGULGenerics' on the datatype involved first.)
+  EIn    :: InOut a => Expr env (F a) -> Expr env a

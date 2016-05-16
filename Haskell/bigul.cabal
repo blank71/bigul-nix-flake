@@ -1,5 +1,5 @@
 name:                BiGUL
-version:             1.0.0.0
+version:             1.0.0
 synopsis:            The Bidirectional Generic Update Language
 description:
   Putback-based bidirectional programming allows the programmer to
@@ -26,6 +26,7 @@ maintainer:          Josh Ko <hsiang-shang@nii.ac.jp> and Zirun Zhu <zhu@nii.ac.
 category:            Language, Generics, Lenses
 build-type:          Simple
 cabal-version:       >=1.22
+extra-source-files:  CHANGELOG.md
 
 library
   exposed-modules:     Generics.BiGUL
@@ -38,7 +39,7 @@ library
                        Generics.BiGUL.Lib.List
                        Generics.BiGUL.Lib.Tutorial
   other-modules:       GHC.InOut
-  default-extensions:  TupleSections, GADTs, KindSignatures, TemplateHaskell, DeriveDataTypeable, FlexibleInstances, FlexibleContexts, UndecidableInstances
+  default-extensions:  TupleSections, GADTs, TemplateHaskell, DeriveDataTypeable, FlexibleInstances, FlexibleContexts, UndecidableInstances
   other-extensions:    ViewPatterns
   build-depends:       base >=4.8 && < 4.9, mtl >=2.2, pretty >=1.1, containers >=0.5, template-haskell >=2.10
   hs-source-dirs:      src

@@ -8,7 +8,7 @@ import Text.PrettyPrint
 
 
 errorTrace :: PrettyPrintable e => Either e a -> Either Doc a
-errorTrace = either (Left . (text "error" $+$) . toDoc) Right
+errorTrace = either (Left . (text "error" $+$) . pPrint) Right
 
 catchBind :: Either e a -> (a -> Either e b) -> (e -> Either e b) -> Either e b
 catchBind ma f g = either g f ma
