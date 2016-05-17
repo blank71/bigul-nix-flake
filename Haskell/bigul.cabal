@@ -36,8 +36,8 @@ library
                        Generics.BiGUL.Interpreter.Unsafe
                        Generics.BiGUL.TH
                        Generics.BiGUL.Lib
+                       Generics.BiGUL.Lib.HuStudies
                        Generics.BiGUL.Lib.List
-                       Generics.BiGUL.Lib.Tutorial
   other-modules:       GHC.InOut
   default-extensions:  TupleSections, GADTs, TemplateHaskell, DeriveDataTypeable, FlexibleInstances, FlexibleContexts, UndecidableInstances
   other-extensions:    ViewPatterns

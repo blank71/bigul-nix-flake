@@ -1,7 +1,7 @@
 -- | This is the main module defining the syntax of BiGUL.
 --   To execute BiGUL programs, use 'Generics.BiGUL.Interpreter.put' and 'Generics.BiGUL.Interpreter.get'
 --   from "Generics.BiGUL.Interpreter".
---   For a more detailed introduction to BiGUL programming, see "Generics.BiGUL.Lib.Tutorial".
+--   See "Generics.BiGUL.Lib.HuStudies" for some small, illustrative examples.
 
 module Generics.BiGUL(
   -- * Main syntax
