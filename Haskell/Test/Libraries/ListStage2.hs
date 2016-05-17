@@ -102,6 +102,7 @@ replaceByPosition = Case  [ $(normalSV [p| [] |] [p| [] |] )
 lensHead :: BiGUL [a] a
 lensHead = $(update [p| x |] [p| x:_ |]  [d| x = Replace |])
 
+
 -- work only with non-empty list
 lensLast :: BiGUL [a] a
 lensLast = Case [$(normalS [p| [_] |])
@@ -136,17 +137,18 @@ lensTailStrict = Case [ $(normal [|\s v -> length s /= 1 + length v |])
 
 
 lensInitNonStrict :: (Typeable a, Defaultable a) => BiGUL [a] [a]
-lensInitNonStrict = Case  [ $(adaptive [|\s v -> length s /= 1 + length v |])
-                                (\s v ->  if length s > length v
-                                            then take (1 + length v) s -- try to preserve the source (the front part). especially the last element.
-                                            else replicate (1 + length v) defaultVal)  -- all the elements in source should be replaced by view later. and we need a default element as the last element in the source.
-                          , $(normalSV [p| _:_ |] [p| _:_ |] )
-                              $(update [p| x:xs |] [p| x:xs |] [d| x = Replace; xs = lensInitStrict |])
-                          , $(normalSV [p| [_] |] [p| [] |] )
-                              $(update [p| [] |] [p| [_] |] [d| |])
-                          , $(normalS [| null |])
-                               (Fail "empty source list detected")
-                          ]
+lensInitNonStrict =
+  Case  [ $(adaptive [|\s v -> length s /= 1 + length v |])
+              (\s v ->  if length s > length v
+                          then take (1 + length v) s -- try to preserve the source (the front part). especially the last element.
+                          else replicate (1 + length v) defaultVal)  -- all the elements in source should be replaced by view later. and we need a default element as the last element in the source.
+        , $(normalSV [p| _:_ |] [p| _:_ |] )
+            $(update [p| x:xs |] [p| x:xs |] [d| x = Replace; xs = lensInitStrict |])
+        , $(normalSV [p| [_] |] [p| [] |] )
+            $(update [p| [] |] [p| [_] |] [d| |])
+        , $(normalS [| null |])
+             (Fail "empty source list detected")
+        ]
 
 
 -- given a non-empty source list of length n,
@@ -241,11 +243,13 @@ lensDrop n =
 -- pre condition: in general, the view should be no less than the second large element in the source
 -- however, we enforce the view should be larger than the second largest element. The following situation is prohibited:
 -- put [4,5,6,1] 5 -> [4,5,5,1]. the first 5 is choosed when performing get. though the result is the same, the branch is different.
+-- however after revison. put [6,6,6] 7 is valid - TODO
 lensMaximum :: (Ord a) => BiGUL [a] a
 lensMaximum =
   Case  [ -- since secondMax [x] = x while replace a singleton list is always safe. we should exclude this condition.
-          $(normal [| \s v -> (length s > 1) && v <= secondMax s |] )
-            (Fail "the view should be greater than the second smallest element in the list")
+         -- $(normal [| \s v -> (length s > 1) && v <= secondMax s |] )
+          $(normal [| \s v -> (length s > 1) && ( not (secondMax s == maximum s && v >= maximum s  || secondMax s < maximum s && v > secondMax s)  ) |] )
+            (Fail "the view should be greater than the second largest element in the list")
         , $(normal [| \s v -> head s == maximum s |] ) $
              $(update [p| v |] [p| v:_ |] [d| v = Replace |])
         -- overlapped pattern. be careful.
@@ -391,29 +395,64 @@ lensDropWhile__ p =
 -- put semantics: check if view is a valid inits. Then generate the original list from view only
 -- source <-> view is just isomorphism. data could be fully recovered from either side. tedious.
 -- the general framework for isomorphisms is: adaptive + recursively Replace
-lensInits :: (Eq a) => BiGUL [a] [[a]]
+--lensInits :: (Eq a) => BiGUL [a] [[a]]
+--lensInits =
+--  Case  [ $(adaptive  [| \s v -> isInits v && length s /= length v - 1 |]) (\_ v -> inits2list v) -- sorry. I cannot use undefined here...
+--        , $(normalSV [p| _ |] [p| _ |] ) $
+--            $(update [p| v |] [p| v |] [d| v = recover 0 |])
+--        ]
+--  where
+--    recover :: (Eq a) => Int -> BiGUL [a] [[a]]
+--    recover n =
+--      Case  [ $(normalV [p| _:_:_ |]) $
+--                $(rearrS [| \s -> (s,s) |]) $
+--                  $(update [p| s:ss |] [p| (s,ss) |] [d| s = recoverSingle n; ss = recover (n+1) |])
+--            , $(normalV [p| _:_ |] ) $ -- [[]] . or the last element ([1,2]:[]) of [[],[1],[1,2]]
+--                $(update [p| [s] |] [p| s |] [d| s = recoverSingle n |])
+--            ]
+--    recoverSingle :: (Eq a) => Int -> BiGUL [a] [a]
+--    recoverSingle n =
+--      Case  [ $(normal [| \s v -> n /= 0 && not (null v) |] ) $
+--               $(update [p| x:xs |] [p| x:xs |] [d| x = Replace; xs = recoverSingle (n-1) |])
+--            , $(normal [| \ s v -> null v && n== 0 |] ) $
+--                $(rearrV [| \[] -> () |]) $
+--                  Skip
+--            ]
+
+
+-- initial value
+-- (rearranged)source ( 1, [[],[2],[2,3],[2,3,4]] ) -> ([ [], [1],[2],[2,3],[2,3,4]] )
+-- view       [[],[1],[1,2],[1,2,3],[1,2,3,4]]
+lensInits :: Eq a => BiGUL [a] [[a]]
 lensInits =
-  Case  [ $(adaptive  [| \s v -> isInits v && length s /= length v - 1 |]) (\_ v -> inits2list v) -- sorry. I cannot use undefined here...
+  Case  [ $(adaptive  [| \s v -> isInits v && length s /= length v - 1 |]) (\_ v -> replicate (length v - 1) undefined)
         , $(normalSV [p| _ |] [p| _ |] ) $
-            $(update [p| v |] [p| v |] [d| v = recover 0 |])
+            $(rearrS [| \s -> (s, [[]]) |]) (lensFoldr xd)
         ]
   where
-    recover :: (Eq a) => Int -> BiGUL [a] [[a]]
-    recover n =
-      Case  [ $(normalV [p| _:_:_ |]) $
-                $(rearrS [| \s -> (s,s) |]) $
-                  $(update [p| s:ss |] [p| (s,ss) |] [d| s = recoverSingle n; ss = recover (n+1) |])
-            , $(normalV [p| _:_ |] ) $ -- [[]] . or the last element ([1,2]:[]) of [[],[1],[1,2]]
-                $(update [p| [s] |] [p| s |] [d| s = recoverSingle n |])
+    -- seperate three conditions into two functions for simplicity
+    -- the view has one more element thant the source. so the first function handle the first element in the view, which is always an empty list ([]).
+    -- after that, pass the remaining data to the second function.
+    xd :: Eq a => BiGUL (a, [[a]]) [[a]]
+    xd =
+      Case  [ $(normalSV [p| (_, []:_) |] [p| []:_ |] ) $ -- view is [[],[1],[1,2] ...] there is at least one element, and the first element is []
+                $(update [p| ([]:vs) |] [p| vs |] [d| vs = xd1 |])
             ]
-    recoverSingle :: (Eq a) => Int -> BiGUL [a] [a]
-    recoverSingle n =
-      Case  [ $(normal [| \s v -> n /= 0 && not (null v) |] ) $
-               $(update [p| x:xs |] [p| x:xs |] [d| x = Replace; xs = recoverSingle (n-1) |])
-            , $(normal [| \ s v -> null v && n== 0 |] ) $
-                $(rearrV [| \[] -> () |]) $
-                  Skip
+    xd1 :: Eq a => BiGUL (a, [[a]]) [[a]]
+    xd1 =
+      Case  [ $(normalSV [p| (_, [_]) |] [p| [_:_] |] ) $ -- there is only one element left.
+                $(rearrS [| \(s, [t]) -> s:t |]) $        -- ( 1, [[2,3,4]] )  --> 1:[2,3,4]
+                  $(rearrV [| \[v] -> v |]) $             -- [[1,2,3,4]]       --> [1,2,3,4]
+                    Replace
+
+            , $(normal' [| \s v -> case (s, v) of ( (_, _:_) , (_:_):_) -> True; _ -> False |] [p| (_, _:_:_) |]) $
+                $(rearrS [| \(s, t:ts) -> (s:t, (s,ts) ) |]) $ -- ( 1, [[],[2],[2,3],[2,3,4]] )  --> ( 1:[], (1, [[2],[2,3],[2,3,4]]) )
+                  $(rearrV [| \(v:vs) -> (v,vs) |]) $          -- [[1],[1,2],[1,2,3],[1,2,3,4]]  --> ([1]  , [[1,2],[1,2,3],[1,2,3,4]])
+                    Replace `Prod` xd1
             ]
+
+
+
 
 
 -- put semantics: check if view is a valid tails. then generate the original list from view only
@@ -442,6 +481,114 @@ lensTails =
 -- can bigul handle infinite data?
 -- repeat :: a -> [a]
 -- cycle :: [a] -> [a]
+
+
+--test1 = lensMaximum `Compose` lensMap lensMaximum `Compose` lensMap (lensMap plusl) `Compose` lensMap lensInits `Compose` lensTails
+--test1 =
+
+--test2 = lensTails `Compose` lensMap lensInits `Compose` lensMap (lensMap plusl)  `Compose` lensMap lensMaximum `Compose` lensMaximum
+test2 = lensTails `Compose` lensMap (lensInits `Compose` lensMap plusl `Compose` lensMaximum) `Compose` lensMaximum
+test3 = lensTails `Compose` lensMap lensInits `Compose` lensMap (lensMap plusl)
+-- [1,3,-3,4]
+--maximum  . map maximum  . map (map sum) . map inits . tails [1,2,3,4]
+
+test4 = lensTails `Compose` lensMap (lensInits `Compose` lensMap plusr `Compose` lensMaximum) `Compose` lensMaximum
+
+plusl :: BiGUL [Int] Int
+plusl = emb (\s -> sum s) (\s v -> v - sum (tail s) : tail s )
+
+plusr :: BiGUL [Int] Int
+plusr = emb (\s -> sum s) (\s v -> init s  ++  [(v - sum (init s))] )
+
+----------log-----------
+-- get (lensTails `Compose` lensMap lensInits `Compose` lensMap (lensMap plusl)  `Compose` lensMap lensMaximum `Compose` lensMaximum)  [1,2,-3,4]
+-- Right 4
+
+--get (lensTails `Compose` lensMap lensInits `Compose` lensMap (lensMap plusl)  `Compose` lensMap lensMaximum)  [1,2,-3,4]
+--Right [4,3,1,4,0]
+--put lensMaximum  [4,3,1,4,0] 5
+--Right [5,3,1,4,0]
+
+--get (lensTails `Compose` lensMap lensInits `Compose` lensMap (lensMap plusl))  [1,2,-3,4]
+--Right [[0,1,3,0,4],[0,2,-1,3],[0,-3,1],[0,4],[0]]
+--put (lensMap lensMaximum) [[0,1,3,0,4],[0,2,-1,3],[0,-3,1],[0,4],[0]] [5,3,1,4,0]
+--Right [[0,1,3,0,5],[0,2,-1,3],[0,-3,1],[0,4],[0]]
+
+--get (lensTails `Compose` lensMap lensInits) [1,2,-3,4]
+--Right [[[],[1],[1,2],[1,2,-3],[1,2,-3,4]],[[],[2],[2,-3],[2,-3,4]],[[],[-3],[-3,4]],[[],[4]],[[]]]
+--put (lensMap (lensMap plusl)) [[[],[1],[1,2],[1,2,-3],[1,2,-3,4]],   [[],[2],[2,-3],[2,-3,4]],[[],[-3],[-3,4]],[[],[4]],[[]]] [[0,1,3,0,5],   [0,2,-1,3],[0,-3,1],[0,4],[0]]
+--Right [[[],[1],[1,2],[1,2,-3],[2,2,-3,4]],   [[],[2],[2,-3],[2,-3,4]],[[],[-3],[-3,4]],[[],[4]],[[]]]
+
+-- note that [[],[1],[1,2],[1,2,-3],   [1,2,-3,4]] becomes [[[],[1],[1,2],[1,2,-3],  [2,2,-3,4]], which is not a inits !
+-- because plusl changes the first element !
+-- guess: plusr should works fine ? (turns out to be not)
+
+--get lensTails [1,2,-3,4]
+--Right [[1,2,-3,4],[2,-3,4],[-3,4],[4],[]]
+--put (lensMap lensInits) [[1,2,-3,4],[2,-3,4],[-3,4],[4],[]] [[[],[1],[1,2],[1,2,-3],[2,2,-3,4]],[[],[2],[2,-3],[2,-3,4]],[[],[-3],[-3,4]],[[],[4]],[[]]]
+--Left incompatible updates
+
+--[ [1,2,-3,4],                        [2,-3,4],                [-3,4],          [4],      []]
+--[ [[],[1],[1,2],[1,2,-3],[2,2,-3,4]],[[],[2],[2,-3],[2,-3,4]],[[],[-3],[-3,4]],[[],[4]],[[]]]
+-- view is not inits!
+
+
+------------------log 2 with plusr -------------
+--get (lensTails `Compose` lensMap lensInits `Compose` lensMap (lensMap plusl)  `Compose` lensMap lensMaximum)  [1,2,-3,4]
+--Right [4,3,1,4,0]
+--put lensMaximum  [4,3,1,4,0] 5
+--Right [5,3,1,4,0]
+
+--get (lensTails `Compose` lensMap lensInits `Compose` lensMap (lensMap plusl))  [1,2,-3,4]
+--Right [[0,1,3,0,4],[0,2,-1,3],[0,-3,1],[0,4],[0]]
+--put (lensMap lensMaximum) [[0,1,3,0,4],[0,2,-1,3],[0,-3,1],[0,4],[0]]   [5,3,1,4,0]
+--Right [[0,1,3,0,5],[0,2,-1,3],[0,-3,1],[0,4],[0]]
+
+--get (lensTails `Compose` lensMap lensInits) [1,2,-3,4]
+--Right [[[],[1],[1,2],[1,2,-3],[1,2,-3,4]], [[],[2],[2,-3],[2,-3,4]],  [[],[-3],[-3,4]],[[],[4]],[[]]]
+--put (lensMap (lensMap plusr)) [ [[],[1],[1,2],[1,2,-3],[1,2,-3,4]],   [[],[2],[2,-3],[2,-3,4]], [[],[-3],[-3,4]], [[],[4]], [[]] ]
+--                              [ [0,1,3,0,5],                          [0,2,-1,3],               [0,-3,1],         [0,4],    [0] ]
+--Right [[[],[1],[1,2],[1,2,-3],[1,2,-3, 5 ]],[[],[2],[2,-3],[2,-3,  4 ]],  [[],[-3],[-3, 4 ]],[[],[ 4 ]],[[]]] -- 4 is not changed to 5
+
+
+--get lensTails [1,2,-3,4]
+--Right [[1,2,-3,4],[2,-3,4],[-3,4],[4],[]]
+--put (lensMap lensInits) [[1,2,-3,4],[2,-3,4],[-3,4],[4],[]]    [[[],[1],[1,2],[1,2,-3],[1,2,-3,5]],[[],[2],[2,-3],[2,-3,4]],[[],[-3],[-3,4]],[[],[4]],[[]]]
+--Right [[1,2,-3,5],  [2,-3,4],[-3,4],[4],[]]
+-- note that the view is still not tails!
+
+
+--put lensTails [1,2,-3,4] [[1,2,-3,5],  [2,-3,4],[-3,4],[4],[]]
+--Left incompatible updates
+
+
+
+
+
+------------------log 3 with plusr -------------
+--get (lensTails `Compose` lensMap lensInits `Compose` lensMap (lensMap plusl)  `Compose` lensMap lensMaximum)  [1,-1]
+--Right [1,0,0]
+--put lensMaximum  [1,0,0] 5
+--Right [5,0,0]
+
+--get (lensTails `Compose` lensMap lensInits `Compose` lensMap (lensMap plusl))  [1,-1]
+--Right [[0,1,0],[0,-1],[0]]
+--put (lensMap lensMaximum) [[0,1,0],[0,-1],[0]]   [5,0,0]
+--Right [[0,5,0],[0,-1],[0]]
+
+--get (lensTails `Compose` lensMap lensInits) [1,-1]
+--Right [[[],[1],[1,-1]],[[],[-1]],[[]]]
+--put (lensMap (lensMap plusr)) [[ [], [1], [1,-1] ], [[],[-1]], [[]]]   [[0, 5, 0],[0,-1],[0]]
+--Right [[[],[5],[1,-1]],[[],[-1]],[[]]]
+
+
+--get lensTails [1,-1]
+--Right [[1,-1],[-1],[]]
+--put (lensMap lensInits) [[1,-1],[-1],[]]    [ [[],[ 5 ],[1,-1]],  [[],[-1]], [[]]]
+-- Left incompatible updates
+-- note that the view is not tails!
+
+
 
 
 

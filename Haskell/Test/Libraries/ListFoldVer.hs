@@ -230,7 +230,6 @@ lensScanr bx =
         ]
 
 
-
 ----------------------
 t10g = get ((lensMap uleft) `Compose` lensMaximum) [Left 2, Left 7, Left 5]
 t10p = put ((lensMap uleft) `Compose` lensMaximum) [Left 2, Left 7, Left 5] 999
