@@ -39,8 +39,20 @@ library
                        Generics.BiGUL.Lib.HuStudies
                        Generics.BiGUL.Lib.List
   other-modules:       GHC.InOut
-  default-extensions:  TupleSections, GADTs, TemplateHaskell, DeriveDataTypeable, FlexibleInstances, FlexibleContexts, UndecidableInstances
-  other-extensions:    ViewPatterns
-  build-depends:       base >=4.8 && < 4.9, mtl >=2.2, pretty >=1.1, containers >=0.5, template-haskell >=2.10
+  default-extensions:  TupleSections,
+                       ViewPatterns,
+                       GADTs,
+                       TypeFamilies,
+                       TemplateHaskell,
+                       DeriveDataTypeable,
+                       FlexibleInstances,
+                       FlexibleContexts,
+                       UndecidableInstances
+  build-depends:       base >=4.8 && < 4.9,
+                       mtl >=2.2,
+                       pretty >=1.1,
+                       containers >=0.5,
+                       template-haskell >=2.10,
+                       th-extras >= 0.0.0.4
   hs-source-dirs:      src
   default-language:    Haskell2010

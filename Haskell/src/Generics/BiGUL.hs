@@ -72,7 +72,7 @@ data BiGUL s v where
 
   -- Case analysis on both the source and view.
   Case    :: [(s -> v -> Bool, CaseBranch s v)]  -- branches, each of which consists of
-                                                 -- an entry condition (on both the source and view)
+                                                 -- a main condition (on both the source and view)
                                                  -- and an inner action
           -> BiGUL s v
 
@@ -89,7 +89,7 @@ infixr 1 `Compose`
 --   The exit conditions specified in 'Normal' branches should (ideally) be disjoint.
 data CaseBranch s v =
     -- | A 'Normal' branch contains an inner program, which should update the source such that
-    --   both the entry condition (on both the source and view) and the exit condition (on the source) are satisfied.
+    --   both the main condition (on both the source and view) and the exit condition (on the source) are satisfied.
     Normal (BiGUL s v) (s -> Bool)
     -- | An 'Adaptive' branch contains an adaptation function, which should modify the source such that
     --   a 'Normal' branch is applicable.
@@ -132,8 +132,10 @@ data Pat a env con where
          => Pat (F a) b c  -- inner pattern
          -> Pat a b c
 
+infixr 1 `PProd`
+
 -- | A marker for variable positions in environment types.
-newtype Var a = Var a
+newtype Var a = Var a deriving (Show, Eq)
 
 -- | Directions point to a variable position (marked by 'Var') in an environment.
 --   Their type is indexed by the environment type and the type of the variable position being pointed to.
@@ -178,3 +180,5 @@ data Expr env a where
   -- Constructor expression, wrapping a sum-of-products representation into data.
   -- (Invoke 'Generics.BiGUL.TH.deriveBiGULGenerics' on the datatype involved first.)
   EIn    :: InOut a => Expr env (F a) -> Expr env a
+
+infixr 1 `EProd`
