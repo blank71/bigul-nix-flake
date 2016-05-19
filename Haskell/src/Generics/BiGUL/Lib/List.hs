@@ -17,13 +17,13 @@ align :: (a -> Bool)
       -> (a -> Maybe a)
       -> BiGUL [a] [b]
 align p match b create conceal = Case
-  [ $(normalSV [| null . filter p |] [p| [] |] [p| [] |])
+  [ $(normalSV [| null . filter p |] [p| [] |] [| null . filter p |])
     ==> $(rearrV [| \[] -> () |])$
           skip ()
   , $(adaptiveSV [p| _ |] [p| [] |])
     ==> \ss _ -> catMaybes (map (\s -> if p s then conceal s else Just s) ss)
   -- view is necessarily nonempty in the cases below
-  , $(normalSV [p| (p -> False):_ |] [p| _ |] [p| (p -> False):_ |])
+  , $(normalSV [p| (p -> False):_ |] [p| _ |] [p| (p -> False):(null . filter p -> False) |])
     ==> $(rearrS [| \(s:ss) -> ss |])$
           align p match b create conceal
   , $(normal [| \(s:ss) (v:vs) -> p s && match s v |] [p| (p -> True):_ |])

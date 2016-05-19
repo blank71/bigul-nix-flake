@@ -33,10 +33,11 @@ module Generics.BiGUL.TH (
   --         will fail to compute if one of its inputs is an empty list; when used in branch construction, however,
   --         the lambda-expression will compute to 'False' upon encountering an empty list.
   --
-  --   * An argument whose type is an instance of 'ExpOrPat' can be either a quoted expression, which should describe
-  --         a unary or binary predicate (boolean-valued function), or a quoted pattern, which is translated into
+  --   * An argument whose type is an instance of 'ExpOrPat' (a typeclass not exported) can be either
+  --         a quoted expression (of type 'Language.Haskell.TH.Q' 'Language.Haskell.TH.Exp'),
+  --         which should describe a unary or binary predicate (boolean-valued function), or a quoted pattern
+  --         (of type 'Language.Haskell.TH.Q' 'Language.Haskell.TH.Pat'), which is translated into
   --         a unary predicate that computes to 'True' if the pattern is matched, or 'False' otherwise.
-
   , normal
   , normalSV
   , adaptive
@@ -94,7 +95,7 @@ lookupNames namespace typeCList valueCList =
 --
 --   > deriveBiGULGeneric ''T
 --
---   at the top level of a source file (say, below the definition of @T@).
+--   at the top level of a source file (say, after the definition of @T@).
 --   Only simple datatypes and newtypes are supported (no GADTs, for example);
 --   type parameters and named fields (record syntax) are supported.
 deriveBiGULGeneric :: Name -> Q [InstanceDec]
@@ -680,9 +681,9 @@ rearrSV qsp qvp qpp qpd = do
 --
 --   > $(update [p| x:xs |] [p| x:xs |] [d| x = Replace; xs = b |]) :: BiGUL [a] [a]
 --
---   matches both the source and view lists with a cons pattern, naming their head and tail as @x@ and @xs@ respectively,
---   and synchronises the heads with @Replace@ (which is the program associated with @x@ in the declaration list)
---   and the tails with @b :: BiGUL [a] [a]@. In other words, the program is equivalent to
+--   matches both the source and view lists with a cons pattern, marking their head and tail as @x@ and @xs@ respectively,
+--   and synchronises the heads using @Replace@ (which is the program associated with @x@ in the declaration list)
+--   and the tails using some @b :: BiGUL [a] [a]@. In short, the program is equivalent to
 --
 --   > $(rearrS [| \(x:xs) -> (x, xs) |])$
 --   >   $(rearrV [| \(x:xs) -> (x, xs) |])$
@@ -732,10 +733,10 @@ isSimplePat (VarP  _) = True
 isSimplePat  WildP    = True
 isSimplePat  _        = False
 
-unaryPatLambdaToPred :: TH.Exp -> Q TH.Exp
-unaryPatLambdaToPred p =
+patLambdaToPred :: TH.Exp -> Q TH.Exp
+patLambdaToPred p =
   case p of
-    LamE [(isSimplePat -> True)] _ -> return p
+    LamE (all id . map isSimplePat -> True) _ -> return p
     LamE [pat] body -> do
       var <- newName "x"
       (_, [hfalse]) <-lookupNames "Prelude" [] ["False"]
@@ -743,12 +744,6 @@ unaryPatLambdaToPred p =
                 (CaseE (VarE var)
                    [Match pat (NormalB body) [],
                     Match WildP (NormalB (ConE hfalse)) []]))
-    _ -> return p
-
-binaryPatLambdaToPred :: TH.Exp -> Q TH.Exp
-binaryPatLambdaToPred p =
-  case p of
-    LamE [(isSimplePat -> True), (isSimplePat -> True)] _ -> return p
     LamE [spat, vpat] body -> do
       svar <- newName "s"
       vvar <- newName "v"
@@ -760,15 +755,15 @@ binaryPatLambdaToPred p =
     _ -> return p
 
 -- | Construct a normal branch, for which a main condition on the source and view and
---   an exit condition on the source should be specified. The general form is
+--   an exit condition on the source should be specified. The usual way of using 'normal' is
 --
---   > $(normal [| main_condition |] [| exit_condition |]) b :: CaseBranch s v
+--   > $(normal [| p |] [| q |]) b :: CaseBranch s v
 --
 --   where
 --
---   * @main_condition :: s -> v -> Bool@,
+--   * @p :: s -> v -> Bool@,
 --
---   * @exit_condition :: s -> Bool@, and
+--   * @q :: s -> Bool@, and
 --
 --   * @b :: BiGUL s v@, which is the branch body.
 normal :: ExpOrPat a
@@ -776,20 +771,20 @@ normal :: ExpOrPat a
        -> a         -- ^ exit condition (unary predicate on the source)
        -> Q TH.Exp
 normal mp mq =
-  [| \b -> ($(mp >>= binaryPatLambdaToPred), $(nameNormal) b $(toExp mq >>= unaryPatLambdaToPred)) |]
+  [| \b -> ($(mp >>= patLambdaToPred), $(nameNormal) b $(toExp mq >>= patLambdaToPred)) |]
 
 -- | A special case of 'normal' where the main condition is specified as the conjunction of two unary predicates
---   on the source and view respectively. The general form is
+--   on the source and view respectively. The usual way of using 'normalSV' is
 --
---   > $(normalSV [| main_source_condition |] [| main_view_condition |] [| exit_condition |]) b :: CaseBranch s v
+--   > $(normalSV [| ps |] [| pv |] [| q |]) b :: CaseBranch s v
 --
 --   where
 --
---   * @main_source_condition :: s -> Bool@,
+--   * @ps :: s -> Bool@,
 --
---   * @main_view_condition :: v -> Bool@,
+--   * @pv :: v -> Bool@,
 --
---   * @exit_condition :: s -> Bool@, and
+--   * @q :: s -> Bool@, and
 --
 --   * @b :: BiGUL s v@, which is the branch body.
 normalSV :: (ExpOrPat a, ExpOrPat b, ExpOrPat c)
@@ -798,34 +793,32 @@ normalSV :: (ExpOrPat a, ExpOrPat b, ExpOrPat c)
          -> c  -- ^ exit condition (unary predicate on the source)
          -> Q TH.Exp
 normalSV mps mpv mq =
-  [|\b -> (\s v -> $(toExp mps) s && $(toExp mpv) v, $(nameNormal) b $(toExp mq >>= unaryPatLambdaToPred)) |]
+  [|\b -> (\s v -> $(toExp mps) s && $(toExp mpv) v, $(nameNormal) b $(toExp mq >>= patLambdaToPred)) |]
 
 -- | Construct an adaptive branch, for which a main condition on the source and view should be specified.
---   The general form is
+--   The usual way of using 'adaptive' is
 --
---   > $(adaptive [| main_condition |]) f :: CaseBranch s v
+--   > $(adaptive [| p |]) f :: CaseBranch s v
 --
 --   where
 --
---   * @main_condition :: s -> v -> Bool@ and
+--   * @p :: s -> v -> Bool@ and
 --
 --   * @f :: s -> v -> s@, which is the adaptation function.
 adaptive :: Q TH.Exp  -- ^ main condition (binary predicate on the source and view)
          -> Q TH.Exp
-adaptive mp = [| \f -> ($(mp >>= binaryPatLambdaToPred), $(nameAdaptive) f) |]
+adaptive mp = [| \f -> ($(mp >>= patLambdaToPred), $(nameAdaptive) f) |]
 
 -- | A special case of 'adaptive' where the main condition is specified as the conjunction of two unary predicates
---   on the source and view respectively. The general form is
+--   on the source and view respectively. The usual way of using 'adaptiveSV' is
 --
---   > $(adaptiveSV [| main_source_condition |] [| main_view_condition |] [| exit_condition |]) f :: CaseBranch s v
+--   > $(adaptiveSV [| ps |] [| pv |]) f :: CaseBranch s v
 --
 --   where
 --
---   * @main_source_condition :: s -> Bool@,
+--   * @ps :: s -> Bool@,
 --
---   * @main_view_condition :: v -> Bool@,
---
---   * @exit_condition :: s -> Bool@, and
+--   * @pv :: v -> Bool@, and
 --
 --   * @f :: s -> v -> s@, which is the adaptation function.
 adaptiveSV :: (ExpOrPat a, ExpOrPat b)
@@ -833,4 +826,4 @@ adaptiveSV :: (ExpOrPat a, ExpOrPat b)
            -> b  -- ^ main view condition (unary predicate on the view)
            -> Q TH.Exp
 adaptiveSV ps pv =
-  [| \f -> (\s v -> $(toExp ps >>= unaryPatLambdaToPred) s && $(toExp pv >>= unaryPatLambdaToPred) v, $(nameAdaptive) f) |]
+  [| \f -> (\s v -> $(toExp ps >>= patLambdaToPred) s && $(toExp pv >>= patLambdaToPred) v, $(nameAdaptive) f) |]

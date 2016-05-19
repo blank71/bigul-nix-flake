@@ -20,7 +20,6 @@ module Generics.BiGUL(
 
 import GHC.InOut
 
-import Control.Monad.State
 import Text.PrettyPrint
 
 
