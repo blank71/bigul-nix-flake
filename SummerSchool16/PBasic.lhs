@@ -20,7 +20,7 @@ import GHC.Generics
 
 }
 
-Intuitively, we can think of a bidirectional BiGUL program
+Intuitively, we can think of a bidirectional BiGUL program:
 
 < bx :: BiGUL s v
 
