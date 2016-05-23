@@ -55,7 +55,7 @@ repFirst = Replace `Prod` Skip (const ())
 
 -- |
 -- > repFirst' = $(update [p| (x,_) |] [p| (x,()) |] [d| x = Replace |])
--- This is the repFirst example rewritten with template Haskell syntactic sugar.
+-- This is the 'repFirst' example rewritten with syntactic sugar.
 -- The syntax is
 --
 -- > $(update [p| source-pattern |] [p| view-pattern |] [d| updating-strategy |])
@@ -117,7 +117,7 @@ repFirstV2 = RearrV PVar' (EDir DVar `EProd` EConst ()) repFirst
 -- > $(rearrV [| \v -> (v,v)|]) bigul-program
 -- but it's __/not allowed/__ to drop information:
 --
--- > $(rearrV [| \(vl,vr) -> vl |]) bigul-program -- this is wrong
+-- > $(rearrV [| \(vl,vr) -> vl |]) bigul-program           -- this is WRONG
 repFirstV2' :: BiGUL (a,b) a
 repFirstV2' = $(rearrV [| \v -> (v,()) |]) repFirst
 
@@ -204,11 +204,25 @@ repFirstV4 = Dep (const ()) ($(rearrS [| \(l, _) -> l |]) Replace)
 -- and the view to a normal case, an error will be reported at runtime.
 -- The example for /adaptive/ branch is in the next example.
 --
--- note that $(normal ... ...) takes two predicates. The first one is the entering-condition while the second one is the exit-condition.
+-- Note that $(normal ... ...) takes two predicates. The first one is the entering-condition while the second one is the exit-condition.
 -- The predicate for entering-condition is very general, and we can use any function f of type (s -> v -> Bool) to examine the source and view.
 -- If the condition is matched, then the BiGUL program after the predicate is executed. If the condition is not satisfied, the next branch is tried.
 -- The predicate for exit-condition checks the source only. The exit-condition in different branches should be always NOT overlapped.
 -- Eg: (a <= b), (b < a), (False) are not overlapped.
+--
+-- Note: instead of a general function, we can use patterns for predicate. The syntax is:
+--
+-- > $(normalSV [p| source-pattern |] [p| view-pattern |] [| exitCond |] )
+-- > ...
+-- > $(adaptiveSV [p| source-pattern |] [p| view-pattern |])
+-- For example:
+--
+-- > $(normalSV [p| Left _:_ |] [p| [] |]
+-- >            [| exitCond |] )
+-- states that the source is a non-empty list with the first element in a /Left/ constructor,
+-- and the view is an empty list. This feature is heavily used in the 'naiveMap' example.
+--
+-- Please avoid using variables in the pattern-predicate: always use an underline.
 --
 -- >>> put replaceMin (2,7) 4
 -- Right (4,7)
@@ -351,6 +365,11 @@ lensSucc = emb (flip (+) 1) (\_ v -> v - 1)
 -- The third branch will throw an error when the view list is longer than the source list.
 -- The last branch is the termination condition: both the source and view reach the empty constructor.
 --
+-- (For the sake of completeness.) In fact 'normalSV' means that we use separate condition for source and view.
+-- So we can still use a general function in the predicate:
+--
+-- > $(normalSV [| \s -> case s of _:_ -> True; _ -> False |] [p| _:_  |] [p| _:_ |])
+--
 -- >>> put (naiveMap lensSucc) [1,2,3,4] [7,8,9]
 -- Right [6,7,8]
 --
@@ -385,7 +404,8 @@ naiveMap b =
 -- we have
 --
 -- > f `Compose` g :: BiGUL a c
--- In the get direction, the semantics of @get (f \`Compose\` g) s@ is: (ignore the 'Right' constructor which wraps the result)
+-- In the get direction, the semantics of @get (f \`Compose\` g) s@ is:
+-- (suppose the function 'get' and 'put' always return a value rather than a value wrapped in 'Right'.)
 --
 -- > get g (get f s)
 -- In the put direction, the semantics of @put (f \`Compose\` g) s v@ is a little bit complex:
@@ -416,7 +436,7 @@ compose = Compose
 -- And in the put direction, (put f \`Compose\` g) traverse the two lists up to five times (get counts up once, two put count up four times, since a put takes two lists as argument),
 -- while (put mapFusion f g) traverses the lists only twice.
 --
--- Compare
+-- Compare the following result (in GHCI)
 --
 -- > t1 :: Int
 -- > t1 = last $ fromRight $ put (naiveMap lensSucc `Compose` naiveMap lensSucc) [1..100000] [2..20001]
