@@ -99,8 +99,15 @@ Right [10,9,8,7,6,5,4,3,2,1]
 
 \subsection{Efficiency Issue: |lensFoldr|}
 
-A close look at the definition of |lensFoldr| indicates that it contains many
-redundent computations because of the use of |compose|. To see this clear,
+A close look at the definition of |lensFoldr| reveals that it contains many
+redundent computations because of the use of |Compose| that calls |get| as many
+times as the number of calls of |Compose|. Put it more concretely,
+< put (lensFoldr bx (const True)) ([x1,x2,...,xn],e) v
+would call
+< get (lensFoldr bx (const True)) ([x2,...,xn],e),
+< ...,
+< get (lensFoldr bx (const True)) ([],e).
+
 
 \subsection{LensScanr}
 
