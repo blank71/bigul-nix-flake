@@ -43,14 +43,15 @@ library
                        ViewPatterns,
                        GADTs,
                        TypeFamilies,
+                       EmptyCase,
+                       ExistentialQuantification,
                        TemplateHaskell,
                        DeriveDataTypeable,
                        FlexibleInstances,
                        FlexibleContexts,
                        UndecidableInstances
-  build-depends:       base >=4.8 && < 4.9,
+  build-depends:       base ==4.8.*,
                        mtl >=2.2,
-                       pretty >=1.1,
                        containers >=0.5,
                        template-haskell >=2.10,
                        th-extras >= 0.0.0.4

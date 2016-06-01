@@ -1,21 +1,62 @@
 1.0.0 Changes
 =============
 
-Version 1.0.0 is the first feature-complete release, and is *not*
-compatible with 0.9.0 and earlier development versions.
+Version 1.0.0 is the first official release, and is *not* compatible with
+0.9.0 and earlier development versions.
 
-+ Module restructuring
+The targeted GHC version is 7.10; 8.0 support is postponed due to its
+non–backward compatible revisions to Template Haskell.
+
+* Module restructuring
 
   The module structure is refined and simplified, with `Generics.BiGUL.AST`
   changed to `Generics.BiGUL`, pattern matching functions extracted to
   `Generics.BiGUL.PatternMatching`, and `Generics.BiGUL.Lib` created to
-  serve as a prelude. More specific library modules can be placed under
-  `Generics.BiGUL.Lib`, like `Generics.BiGUL.Lib.List`.
+  serve as a prelude. More specific library modules are placed under
+  `Generics.BiGUL.Lib.`:
 
-+ Show instances for BiGUL programs removed
+  - `Generics.BiGUL.Lib.List` is the place for list-processing library
+    programs. For now the only inhabitant is the “BiFluX alignment”.
+
+  - `Generics.BiGUL.Lib.HuStudies` contains some small, concrete examples
+    illustrating the use of every BiGUL construct.
+
+* Major changes to `Generics.BiGUL.TH`
+
+  - `deriveBiGULGeneric` now supports `newtype`.
+
+  - The `update` syntax now takes the source pattern as its first argument
+    and the view pattern as its second argument. (Previously the view
+    pattern comes first.)
+
+  - `rearrV` and `update` now check at compile time whether all view
+    information is used (forbidding wildcard in view patterns and requiring
+    all view variables are used); also `rearrS` and `rearrV` check whether
+    their first argument is a one-argument lambda-expression.
+
+  - The branch construction syntax has been slimmed down to just four
+    functions: `normal`, `normalSV`, `adaptive`, and `adaptiveSV`.
+
+  - Normal branch constructing functions now take an additional argument
+    specifying on the source an “exit condition”, which should be satisfied
+    by the updated source after the branch body is executed. All the exit
+    conditions in a `Case` statement should (ideally) be disjoint.
+    Overlapping exit conditions are still allowed for fast prototyping,
+    though — the putback semantics of a Case with overlapping exit
+    conditions will still compute successfully if the ranges of the
+    branches are actually disjoint.
+
+* Error-reporting mechanism overhauled
+
+* Show instances for BiGUL programs removed
 
   There are two reasons: Functions, which are everywhere in BiGUL programs,
   cannot be shown; and worse, printing of recursive BiGUL programs will not
   terminate.
 
-+ KindSignatures no longer needed
+* List of required language extensions updated
+
+  - Removed: KindSignatures
+
+  - Added:   ViewPatterns, TypeFamilies, EmptyCase, ExistentialQuantification
+

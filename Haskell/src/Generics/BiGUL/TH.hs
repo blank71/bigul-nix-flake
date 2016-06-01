@@ -536,11 +536,16 @@ getAllVars  _         =  fail "Unsupported expression in a rearranging lambda-ex
 --   where @f :: s -> s'@ is a simple lambda-expression and @b :: BiGUL s' v@ an inner program.
 rearrS :: Q TH.Exp  -- ^ rearranging lambda-expression
        -> Q TH.Exp
-rearrS qlambexp = do lambexp@(LamE ps e) <- qlambexp
-                     case ps of
-                       [_] -> let varnames = getAllVars e
-                              in  rearr' STag lambexp (varnames \\ nub varnames)
-                       _   -> fail "A rearranging lambda-expression should have exactly one argument"
+rearrS qlambexp = do
+  lambexp <- qlambexp
+  case lambexp of
+    LamE [_] e ->
+      let varnames = getAllVars e
+      in  rearr' STag lambexp (varnames \\ nub varnames)
+    LamE _   _ ->
+      fail "A rearranging lambda-expression should have exactly one argument"
+    _          ->
+      fail "The first argument to rearrS should be a (quoted) lambda-expression"
 
 -- | A higher-level syntax for 'Generics.BiGUL.RearrV',
 --   allowing its first and second arguments to be specified in terms of a simple lambda-expression.
@@ -553,15 +558,19 @@ rearrS qlambexp = do lambexp@(LamE ps e) <- qlambexp
 --   (This is for ensuring that the view information is fully embedded into the source.)
 rearrV :: Q TH.Exp  -- ^ rearranging lambda-expression
        -> Q TH.Exp
-rearrV qlambexp = do lambexp@(LamE ps e) <- qlambexp
-                     case ps of
-                       [p] -> let varnames = getAllVars e
-                                  unusedVars = namesBoundInPat p \\ varnames
-                              in  if null unusedVars
-                                  then rearr' RTag lambexp (varnames \\ nub varnames)
-                                  else fail $ "Variable(s) unused in the body of a view-rearranging lambda-expression: " ++
-                                              concat (intersperse ", " (map nameBase unusedVars))
-                       _   -> fail "A rearranging lambda-expression should have exactly one argument"
+rearrV qlambexp = do
+  lambexp <- qlambexp
+  case lambexp of
+    LamE [p] e ->
+      let varnames = getAllVars e
+          unusedVars = namesBoundInPat p \\ varnames
+      in  if null unusedVars
+          then rearr' RTag lambexp (varnames \\ nub varnames)
+          else fail $ "Variable(s) unused in the body of a view-rearranging lambda-expression: " ++
+                      concat (intersperse ", " (map nameBase unusedVars))
+    LamE _   _ -> fail "A rearranging lambda-expression should have exactly one argument"
+    _          ->
+      fail "The first argument to rearrV should be a (quoted) lambda-expression"
 
 mkExpFromPat :: TH.Pat -> Q TH.Exp
 mkExpFromPat (LitP c) = return (LitE c)

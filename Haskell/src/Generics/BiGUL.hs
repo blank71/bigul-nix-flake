@@ -1,7 +1,8 @@
 -- | This is the main module defining the syntax of BiGUL.
+--   'Generics.BiGUL.TH' provides some higher-level syntax for writing BiGUL programs.
+--   See "Generics.BiGUL.Lib.HuStudies" for some small, illustrative examples.
 --   To execute BiGUL programs, use 'Generics.BiGUL.Interpreter.put' and 'Generics.BiGUL.Interpreter.get'
 --   from "Generics.BiGUL.Interpreter".
---   See "Generics.BiGUL.Lib.HuStudies" for some small, illustrative examples.
 
 module Generics.BiGUL(
   -- * Main syntax
@@ -17,15 +18,13 @@ module Generics.BiGUL(
   , Direction(..)
   , Expr(..)) where
 
-
 import GHC.InOut
-
-import Text.PrettyPrint
 
 
 -- | This is the datatype of BiGUL programs, as a GADT indexed with the source and view types.
---   Before the advent of GHC 8, haddock does not support documentation for GADT constructors;
---   for now, see the source for the description of each constructor and its arguments.
+--   Most of the types appearing in a BiGUL program should be instances of 'Show' to enable error reporting.
+--   Before GHC 8, haddock does not support documentation for GADT constructors;
+--   for GHC 7.10.*, see the source for the description of each constructor and its arguments.
 data BiGUL s v where
 
   -- Abort computation and emit an error message.
@@ -43,28 +42,36 @@ data BiGUL s v where
 
   -- When the source and view are both pairs, perform update on the first/second source and view components
   -- using the first/second inner program.
-  Prod    :: BiGUL s v    -- program for updating the first components
+  Prod    :: (Show s, Show s', Show v, Show v')
+          => BiGUL s v    -- program for updating the first components
           -> BiGUL s' v'  -- program for updating the second components
           -> BiGUL (s, s') (v, v')
 
   -- Rearrange the source into an intermediate form, which is updated by the inner program,
   -- and then invert the rearrangement.
-  -- /The inner program should make sure that the updated source still retains the intermediate form
-  -- (so the reversion can succeed)./
-  RearrS  :: Pat s env con  -- pattern for the original source
+  -- Instead of using 'RearrS' directly, use 'Generics.BiGUL.TH.rearrS' instead,
+  -- which offers a more intuitive syntax.
+  -- Note that the inner program should make sure that the updated source still
+  -- retains the intermediate form (so the inversion can succeed).
+  RearrS  :: (Show s', Show v)
+          => Pat s env con  -- pattern for the original source
           -> Expr env s'    -- expression computing the intermediate source
           -> BiGUL s' v     -- program for updating the intermediate source
           -> BiGUL s v
 
   -- Rearrange the view into a new one before continuing with the remaining program.
-  RearrV  :: Pat v env con  -- pattern for the original view
+  -- To guarantee well-behavedness, the expression should use all variables in the pattern.
+  -- Instead of using 'RearrV' directly, use 'Generics.BiGUL.TH.rearrV' instead,
+  -- which offers a more intuitive syntax and checks whether all pattern variables are used.
+  RearrV  :: (Show s, Show v')
+          => Pat v env con  -- pattern for the original view
           -> Expr env v'    -- expression computing the new view
           -> BiGUL s v'     -- remaining program
           -> BiGUL s v
 
   -- When the view is a pair and the second component depends entirely on the first one,
   -- discard the second component and continue with the remaining program.
-  Dep     :: Eq v'
+  Dep     :: (Eq v', Show s, Show v)
           => (v -> v')  -- how the second component of the view can be computed from the first
           -> BiGUL s v  -- remaining program
           -> BiGUL s (v, v')
@@ -76,8 +83,9 @@ data BiGUL s v where
           -> BiGUL s v
 
   -- Standard composition of bidirectional transformations.
-  Compose :: BiGUL s u
-          -> BiGUL u v
+  Compose :: (Show s, Show m, Show v)
+          => BiGUL s m
+          -> BiGUL m v
           -> BiGUL s v
 
 infixr 1 `Prod`
@@ -108,7 +116,7 @@ data Pat a env con where
   PVar'  :: Pat a (Var a) (Maybe a)
 
   -- Constant pattern.
-  PConst :: (Eq a)
+  PConst :: Eq a
          => a  -- constant to be matched
          -> Pat a () ()
 
@@ -159,7 +167,7 @@ data Expr env a where
          -> Expr env a
 
   -- Constant expression.
-  EConst :: Eq a
+  EConst :: (Eq a)
          => a  -- constant
          -> Expr env a
 
@@ -178,6 +186,6 @@ data Expr env a where
 
   -- Constructor expression, wrapping a sum-of-products representation into data.
   -- (Invoke 'Generics.BiGUL.TH.deriveBiGULGenerics' on the datatype involved first.)
-  EIn    :: InOut a => Expr env (F a) -> Expr env a
+  EIn    :: (InOut a) => Expr env (F a) -> Expr env a
 
 infixr 1 `EProd`

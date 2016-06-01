@@ -10,7 +10,8 @@ import Control.Arrow ((***))
 import Data.Maybe (isJust, catMaybes)
 
 
-align :: (a -> Bool)
+align :: (Show a, Show b)
+      => (a -> Bool)
       -> (a -> b -> Bool)
       -> BiGUL a b
       -> (b -> a)
@@ -27,9 +28,7 @@ align p match b create conceal = Case
     ==> $(rearrS [| \(s:ss) -> ss |])$
           align p match b create conceal
   , $(normal [| \(s:ss) (v:vs) -> p s && match s v |] [p| (p -> True):_ |])
-    ==> $(rearrV [| \(v:vs) -> (v, vs) |])$
-          $(rearrS [| \(s:ss) -> (s, ss) |])$
-            b `Prod` align p match b create conceal
+    ==> $(update [p| x:xs |] [p| x:xs |] [d| x = b; xs = align p match b create conceal |])
   , $(adaptive [| \ss (v:_) -> isJust (findFirst (\s -> p s && match s v) ss) ||
                                let s = create v in p s && match s v |])
     ==> \ss (v:_) -> maybe (create v:ss) (uncurry (:)) (findFirst (\s -> p s && match s v) ss)

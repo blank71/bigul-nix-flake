@@ -1,108 +1,167 @@
-module Generics.BiGUL.Interpreter (put, get, PutResult, GetResult, errorTrace) where
+-- | The standard interpreters, which perform all dynamic checks to ensure well-behavedness
+--   and produce trace information when execution fails.
+
+module Generics.BiGUL.Interpreter (put, putTrace, get, getTrace) where
 
 import Generics.BiGUL
 import Generics.BiGUL.Error
 import Generics.BiGUL.PatternMatching
-import Control.Monad.Except
-import Text.PrettyPrint
+
+import Control.Monad
 
 
-errorTrace :: PrettyPrintable e => Either e a -> Either Doc a
-errorTrace = either (Left . (text "error" $+$) . pPrint) Right
+-- | A 'Maybe' monad with/modulo trace information —
+--   the monad laws hold only when the trace component is /not/ considered.
+newtype BiGULResult a = BiGULResult { runBiGULResult :: (Maybe a, BiGULTrace) }
 
-catchBind :: Either e a -> (a -> Either e b) -> (e -> Either e b) -> Either e b
-catchBind ma f g = either g f ma
+instance Functor BiGULResult where
+    fmap = liftM
 
-type PutResult s v = Either (PutError s v) s
+instance Applicative BiGULResult where
+  pure x = BiGULResult (Just x, BTSuccess)
+  (<*>)  = ap
 
-put :: BiGUL s v -> s -> v -> PutResult s v
-put (Fail str)              s       v       = throwError (PFail str)
-put (Skip f)                s       v       = if f s == v then return s else throwError PSkipMismatch
-put Replace                 s       v       = return v
-put (Prod bigul bigul')     (s, s') (v, v') = liftM2 (,) (liftE (PProdLeft  s  v ) (put bigul  s  v ))
-                                                         (liftE (PProdRight s' v') (put bigul' s' v'))
-put (RearrS pat expr bigul) s       v       = do env <- liftE PSourcePatternMismatch (deconstruct pat s)
-                                                 let m = eval expr env
-                                                 s'  <- liftE (PRearrS m v) (put bigul m v)
-                                                 con <- liftE PUnevalFailed (uneval pat expr s' (emptyContainer pat))
-                                                 return (construct pat (fromContainerS pat env con))
-put (RearrV pat expr bigul) s       v       = do v' <- liftE PViewPatternMismatch (deconstruct pat v)
-                                                 let m = eval expr v'
-                                                 liftE (PRearrV s m) (put bigul s m)
-put (Dep f b)               s       (v, v') = if f v == v' then liftE (PDep s v) (put b s v)
-                                                          else throwError PDependencyMismatch
-put (Case branches)         s       v       = putCase branches s v
-put (Compose bigul bigul')  s       v       = do m  <- liftE PNoIntermediateSource (get bigul s)
-                                                 m' <- liftE (PComposeRight m v) (put bigul' m v)
-                                                 liftE (PComposeLeft s m') (put bigul s m')
+instance Monad BiGULResult where
+  return = pure
+  BiGULResult (Just x , t) >>= f = f x
+  BiGULResult (Nothing, t) >>= f = BiGULResult (Nothing, t)
 
-getCaseBranch :: (s -> v -> Bool, CaseBranch s v) -> s -> GetResult s v
-getCaseBranch (p , Normal bigul q) s =
+-- Auxiliary functions for 'BiGULResult'.
+
+catchBind :: BiGULResult a -> (a -> BiGULResult b) -> (BiGULTrace -> BiGULResult b) -> BiGULResult b
+catchBind (BiGULResult (Just x , _)) f g = f x
+catchBind (BiGULResult (Nothing, t)) f g = g t
+
+errorResult :: BiGULError -> BiGULResult a
+errorResult e = BiGULResult (Nothing, BTError e)
+
+modifyTrace :: (BiGULTrace -> BiGULTrace) -> BiGULResult a -> BiGULResult a
+modifyTrace f (BiGULResult ~(mx, t)) = BiGULResult (mx, f t)
+
+embedEither :: (e -> BiGULError) -> Either e a -> BiGULResult a
+embedEither f = either (errorResult . f) return
+
+incrBranchNo :: BiGULTrace -> BiGULTrace
+incrBranchNo (BTBranch i t) = BTBranch (i+1) t
+incrBranchNo t              = t
+
+addCurrentBranchTrace :: BiGULTrace -> BiGULTrace -> BiGULTrace
+addCurrentBranchTrace t (BTBranches ts) = BTBranches (t:ts)
+addCurrentBranchTrace t _               = error "panic: Generics.BiGUL.Error.addCurrentBranchTrace"
+
+-- | The putback semantics of 'Generics.BiGUL.BiGUL' programs.
+put :: BiGUL s v -> s -> v -> Maybe s
+put b s v = fst (runBiGULResult (putWithTrace b s v))
+
+-- | The execution trace of a 'put' computation.
+--   The trace is complete only when the 'put' computation fails.
+putTrace :: BiGUL s v -> s -> v -> BiGULTrace
+putTrace b s v = snd (runBiGULResult (putWithTrace b s v))
+
+putWithTrace :: BiGUL s v -> s -> v -> BiGULResult s
+putWithTrace (Fail str)      s       v       = errorResult (BEFail str)
+putWithTrace (Skip f)        s       v       = if f s == v then return s else errorResult BESkipMismatch
+putWithTrace  Replace        s       v       = return v
+putWithTrace (l `Prod` r)    (s, s') (v, v') =
+  liftM2 (,) (modifyTrace (BTNextSV "on the left of Prod"  s  v ) (putWithTrace l s  v ))
+             (modifyTrace (BTNextSV "on the right of Prod" s' v') (putWithTrace r s' v'))
+putWithTrace (RearrS p e b)  s       v       = do
+  env <- embedEither BESourcePatternMismatch (deconstruct p s)
+  let m = eval e env
+  s'  <- modifyTrace (BTNextSV "inside RearrS" m v) (putWithTrace b m v)
+  con <- embedEither BEInvRearrFailed (uneval p e s' (emptyContainer p))
+  return (construct p (fromContainerS p env con))
+putWithTrace (RearrV p e b)  s       v       = do
+  v' <- embedEither BEViewPatternMismatch (deconstruct p v)
+  let m = eval e v'
+  modifyTrace (BTNextSV "inside RearrV" s m) (putWithTrace b s m)
+putWithTrace (Dep f b)       s       (v, v') =
+  if f v == v' then modifyTrace (BTNextSV "inside Dep" s v) (putWithTrace b s v)
+               else errorResult BEDependencyMismatch
+putWithTrace (Case bs)       s       v       = putCase bs s v
+putWithTrace (l `Compose` r) s       v       = do
+  m  <- modifyTrace (BTNextS "computing intermediate source" s) (getWithTrace l s)
+  m' <- modifyTrace (BTNextSV "on the right of Compose" m v) (putWithTrace r m v)
+  modifyTrace (BTNextSV "on the left of Compose" s m') (putWithTrace l s m')
+
+getCaseBranch :: (s -> v -> Bool, CaseBranch s v) -> s -> BiGULResult v
+getCaseBranch (p, Normal b q) s =
   if q s
-  then do v <- get bigul s
+  then do v <- getWithTrace b s
           if p s v
           then return v
-          else throwError GPostVerificationFailed
-  else throwError GBranchUnmatched
-getCaseBranch (p , Adaptive f)     s = throwError GAdaptiveBranchMatched
+          else errorResult BEPostVerificationFailed
+  else errorResult BEBranchUnmatched
+getCaseBranch (p, Adaptive f) s = errorResult BEAdaptiveBranchMatched
 
-putCaseCheckDiversion :: [(s -> v -> Bool, CaseBranch s v)] -> s -> v -> Either (PutError s v) ()
+putCaseCheckDiversion :: [(s -> v -> Bool, CaseBranch s v)] -> s -> v -> BiGULResult ()
 putCaseCheckDiversion []             s v = return ()
 putCaseCheckDiversion (pb@(p, b):bs) s v =
   if not (p s v)
-  then catchBind (liftE (const undefined) (getCaseBranch pb s))
-                 (const (throwError PPreviousBranchMatched))
-                 (const (putCaseCheckDiversion bs s v))
-  else throwError PPreviousBranchMatched
+  then catchBind (getCaseBranch pb s) (const (errorResult BEPreviousBranchMatched))
+                                      (const (putCaseCheckDiversion bs s v))
+  else errorResult BEPreviousBranchMatched
 
 putCaseWithAdaptation :: [(s -> v -> Bool, CaseBranch s v)] -> [(s -> v -> Bool, CaseBranch s v)] ->
-                         s -> v -> (s -> PutResult s v) -> PutResult s v
-putCaseWithAdaptation []             bs' s v cont = throwError PCaseExhausted
+                         s -> v -> (s -> BiGULResult s) -> BiGULResult s
+putCaseWithAdaptation []             bs' s v cont = errorResult BECaseExhausted
 putCaseWithAdaptation (pb@(p, b):bs) bs' s v cont =
   if p s v
-  then liftE (PBranch 0) $
+  then modifyTrace (BTBranch 0) $
        case b of
-         Normal bigul q -> do
-           s' <- put bigul s v
+         Normal b q -> do
+           s' <- putWithTrace b s v
            if p s' v
            then if q s'
                 then putCaseCheckDiversion bs' s' v >> return s'
-                else throwError PBranchPredictionIncorrect
-           else throwError PPostVerificationFailed
+                else errorResult BEExitConditionFailed
+           else errorResult BEPostVerificationFailed
          Adaptive f -> cont (f s v)
-  else liftE incrBranchNo (putCaseWithAdaptation bs (pb:bs') s v cont)
+  else modifyTrace incrBranchNo (putCaseWithAdaptation bs (pb:bs') s v cont)
 
-putCase :: [(s -> v -> Bool, CaseBranch s v)] -> s -> v -> Either (PutError s v) s
+putCase :: [(s -> v -> Bool, CaseBranch s v)] -> s -> v -> BiGULResult s
 putCase bs s v = putCaseWithAdaptation bs [] s v
                    (\s' -> putCaseWithAdaptation bs [] s' v
-                             (const (throwError PAdaptiveBranchRevisited)))
+                             (const (errorResult BEAdaptiveBranchRevisited)))
 
-type GetResult s v = Either (GetError s v) v
+-- | The get semantics of 'Generics.BiGUL.BiGUL' programs.
+get :: BiGUL s v -> s -> Maybe v
+get b s = fst (runBiGULResult (getWithTrace b s))
 
-get :: BiGUL s v -> s -> GetResult s v
-get (Fail str)              s       = throwError (GFail str)
-get (Skip f)                s       = return (f s)
-get Replace                 s       = return s
-get (Prod bigul bigul')     (s, s') = liftM2 (,) (liftE (GProdLeft  s ) (get bigul  s ))
-                                                 (liftE (GProdRight s') (get bigul' s'))
-get (RearrS pat expr bigul) s       = do env <- liftE GSourcePatternMismatch (deconstruct pat s)
-                                         let m = eval expr env
-                                         liftE (GRearrS m) (get bigul m)
-get (RearrV pat expr bigul) s       = do v'  <- liftE (GRearrV s) (get bigul s)
-                                         con <- liftE GUnevalFailed (uneval pat expr v' (emptyContainer pat))
-                                         env <- liftE GViewRecoveringIncomplete (fromContainerV pat con)
-                                         return (construct pat env)
-get (Dep f b)               s       = do v <- liftE (GDep s) (get b s)
-                                         return (v, f v)
-get (Case branches)         s       = getCase branches s
-get (Compose bigul bigul')  s       = do m <- liftE (GComposeLeft s) (get bigul s)
-                                         liftE (GComposeRight m) (get bigul' m)
+-- | The execution trace of a 'get' computation.
+--   The trace is complete only when the 'get' computation fails.
+getTrace :: BiGUL s v -> s -> BiGULTrace
+getTrace b s = snd (runBiGULResult (getWithTrace b s))
 
-getCase :: [(s -> v -> Bool, CaseBranch s v)] -> s -> GetResult s v
-getCase []             s = throwError (GCaseExhausted [])
+getWithTrace :: BiGUL s v -> s -> BiGULResult v
+getWithTrace (Fail str)      s       = errorResult (BEFail str)
+getWithTrace (Skip f)        s       = return (f s)
+getWithTrace  Replace        s       = return s
+getWithTrace (l `Prod` r)    (s, s') =
+  liftM2 (,) (modifyTrace (BTNextS "on the left of Prod"  s ) (getWithTrace l s ))
+             (modifyTrace (BTNextS "on the right of Prod" s') (getWithTrace r s'))
+getWithTrace (RearrS p e b)  s       = do
+  env <- embedEither BESourcePatternMismatch (deconstruct p s)
+  let m = eval e env
+  modifyTrace (BTNextS "inside RearrS" m) (getWithTrace b m)
+getWithTrace (RearrV p e b)  s       = do
+  v'  <- modifyTrace (BTNextS "inside RearrV" s) (getWithTrace b s)
+  con <- embedEither BEInvRearrFailed (uneval p e v' (emptyContainer p))
+  env <- embedEither BEViewRecoveringFailed (fromContainerV p con)
+  return (construct p env)
+getWithTrace (Dep f b)       s       = do
+  v <- modifyTrace (BTNextS "inside Dep" s) (getWithTrace b s)
+  return (v, f v)
+getWithTrace (Case bs)       s       = getCase bs s
+getWithTrace (l `Compose` r) s       = do
+  m <- modifyTrace (BTNextS "on the left of Compose" s) (getWithTrace l s)
+  modifyTrace (BTNextS "on the right of Compose" m) (getWithTrace r m)
+
+getCase :: [(s -> v -> Bool, CaseBranch s v)] -> s -> BiGULResult v
+getCase []             s =  BiGULResult (Nothing, BTBranches [])
 getCase (pb@(p, b):bs) s =
   catchBind (getCaseBranch pb s) return
-            (\e -> do v <- liftE (addCurrentBranchError e) (getCase bs s)
+            (\t -> do v <- modifyTrace (addCurrentBranchTrace t) (getCase bs s)
                       if not (p s v)
                       then return v
-                      else throwError (GBranch 0 GPreviousBranchMatched))
+                      else modifyTrace (BTBranch 0) (errorResult BEPreviousBranchMatched))

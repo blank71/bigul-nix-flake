@@ -49,7 +49,7 @@ constSquare = Skip (\s -> s * s)
 --
 -- >>> get repFirst (True, 3)
 -- Right (True,())
-repFirst :: BiGUL (a, b) (a, ())
+repFirst :: (Show a, Show b) => BiGUL (a, b) (a, ())
 repFirst = Replace `Prod` Skip (const ())
 
 
@@ -70,7 +70,7 @@ repFirst = Replace `Prod` Skip (const ())
 -- where the source-pattern stands for a non-empty list of Either type, and we bind variable x to the inner part of the Left constructor.
 -- However the view is a tuple, and we bind the second element to x.
 -- The rearrangement for source and view is automatically done.
-repFirst' :: BiGUL (a, b) (a, ())
+repFirst' :: Show a => BiGUL (a, b) (a, ())
 repFirst' = $(update [p| (x,_) |] [p| (x,()) |] [d| x = Replace |])
 
 
@@ -101,7 +101,7 @@ repFirst' = $(update [p| (x,_) |] [p| (x,()) |] [d| x = Replace |])
 --
 -- >>> get repFirstV2 (True, undefined)
 -- Right True
-repFirstV2 :: BiGUL (a,b) a
+repFirstV2 :: (Show a, Show b) => BiGUL (a,b) a
 repFirstV2 = RearrV PVar' (EDir DVar `EProd` EConst ()) repFirst
 
 
@@ -118,7 +118,7 @@ repFirstV2 = RearrV PVar' (EDir DVar `EProd` EConst ()) repFirst
 -- but it's __/not allowed/__ to drop information:
 --
 -- > $(rearrV [| \(vl,vr) -> vl |]) bigul-program           -- this is WRONG
-repFirstV2' :: BiGUL (a,b) a
+repFirstV2' :: (Show a, Show b) => BiGUL (a,b) a
 repFirstV2' = $(rearrV [| \v -> (v,()) |]) repFirst
 
 
@@ -135,7 +135,7 @@ repFirstV2' = $(rearrV [| \v -> (v,()) |]) repFirst
 -- The original source is a tuple, that is to say, there are two variables. So the old-pattern is (PVar' \`Prod\` PVar').
 -- In the new-pattern, We need to tell BiGUL that, it is the first element of the tuple, i.e. the left element, we want to update.
 -- This is achieved by (DLeft DVar). Finally, we convert it into a direction using 'EDir'.
-repFirstV3 :: BiGUL (a,b) a
+repFirstV3 :: Show a => BiGUL (a,b) a
 repFirstV3 = RearrS (PVar' `PProd` PVar') (EDir (DLeft DVar)) Replace
 
 
@@ -145,7 +145,7 @@ repFirstV3 = RearrS (PVar' `PProd` PVar') (EDir (DLeft DVar)) Replace
 -- The usage of the syntactic sugar is basically the same as $(rearrV ...):
 --
 -- > $(rearrS [| \old-pattern -> new-pattern |]) bigul-program
-repFirstV3' :: BiGUL (a,b) a
+repFirstV3' :: Show a => BiGUL (a,b) a
 repFirstV3' = $(rearrS [| \(l, _) -> l |]) Replace
 
 
@@ -160,7 +160,7 @@ repFirstV3' = $(rearrS [| \(l, _) -> l |]) Replace
 -- > ($(rearrS [| \(l, _) -> l |]) Replace)
 -- which is between source (a,b) and view a only.
 -- Then both the transformation f and the function (const ()) are passed to 'Dep' to finally produce the transformation between (a, b) and (a, ())
-repFirstV4 :: BiGUL (a, b) (a, ())
+repFirstV4 :: (Show a, Show b) => BiGUL (a, b) (a, ())
 repFirstV4 = Dep (const ()) ($(rearrS [| \(l, _) -> l |]) Replace)
 
 
@@ -379,7 +379,7 @@ lensSucc = emb (flip (+) 1) (\_ v -> v - 1)
 -- >>>get (naiveMap replaceMin) [(3,9), (-2,10),(10,2)]
 -- Right [3,-2,2]
 
-naiveMap :: BiGUL a b -> BiGUL [a] [b]
+naiveMap :: (Show a, Show b) => BiGUL a b -> BiGUL [a] [b]
 naiveMap b =
   Case  [ $(normalSV [p| _:_ |] [p| _:_ |]
                      [p| _:_ |])
@@ -425,7 +425,7 @@ naiveMap b =
 --
 -- >>> get ((naiveMap replaceMin) `compose` (naiveMap lensSucc)) [(1,-1),(-2,2)]
 -- Right [0,-1]
-compose :: BiGUL a b -> BiGUL b c -> BiGUL a c
+compose :: (Show a, Show b, Show c) => BiGUL a b -> BiGUL b c -> BiGUL a c
 compose = Compose
 
 -- |
@@ -453,7 +453,7 @@ compose = Compose
 -- (0.23 secs, 122,920,792 bytes)
 --
 -- More examples can be found in the list library of BiGUL.
-mapFusion :: BiGUL a b -> BiGUL b c -> BiGUL [a] [c]
+mapFusion :: (Show a, Show b, Show c) => BiGUL a b -> BiGUL b c -> BiGUL [a] [c]
 mapFusion f g =
   Case  [ $(normalSV [p| _:_ |] [p| _:_ |]
                      [p| _:_ |])
@@ -466,28 +466,3 @@ mapFusion f g =
                      [p| [] |])
           ==> $(update [p| [] |] [p| [] |] [d| |])
         ]
-
-
---align :: (Eq a, Eq b)
---      => (a -> Bool)
---      -> (a -> b -> Bool)
---      -> BiGUL a b
---      -> (b -> a)
---      -> (a -> Maybe a)
---      -> BiGUL [a] [b]
---align p match b create conceal =
---  Case [ $(normalSV [| null . filter p |] [p| [] |]) $
---           $(rearrV [| \ [] -> () |]) Skip
---       , $(adaptiveSV [| not . null . filter p |] [p| [] |]) $ -- conceal == delete
---           \ss _ -> catMaybes (map (\s -> if p s then conceal s else Just s) ss)
-
---         -- preserve the items not satisfying predicate p in the source
---       , $(normalSV [| \ss -> not (null (filter p ss)) && not (p (head ss)) |] [p| _:_ |]) $
---           $(update [p| vs |] [p| _:vs |] [d| vs = align p match b create conceal |])
---       , $(normal' [| \ss vs -> not (null (filter p ss)) && p (head ss) && match (head ss) (head vs) |]
---                   [| \ss -> not (null (filter p ss)) && p (head ss) |]) $
---           $(update [p| v : vs |] [p| v : vs |] [d| v  = b; vs = align p match b create conceal |])
---       , $(adaptiveV [p| _:_ |]) $
---           \ss (v:_) -> case find (flip match v) (filter p ss) of
---                          Nothing -> create v:ss
---                          Just s  -> s: delete s ss ]
