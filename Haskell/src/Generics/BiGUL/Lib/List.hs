@@ -1,4 +1,4 @@
-{-# LANGUAGE ViewPatterns #-}
+-- | A library for processing lists in BiGUL.
 
 module Generics.BiGUL.Lib.List where
 
@@ -10,12 +10,21 @@ import Control.Arrow ((***))
 import Data.Maybe (isJust, catMaybes)
 
 
+-- | List alignment. Operating only on the sources satisfying the source condition,
+--   and using the specified matching condition, 'align' finds for each view the first matching source
+--   that has not been matched with previous views, and updates the source using the inner program.
+--   If there is no matching source, one is created using the creation argument —
+--   after creation, the created source should match with the view as determined by the matching condition.
+--   For a source not matched with any view, the concealment argument is applied —
+--   if concealment computes to @Nothing@, the source is deleted;
+--   if concealment computes to @Just s'@, where @s'@ should not satisfy the source condition,
+--   the source is replaced by @s'@.
 align :: (Show a, Show b)
-      => (a -> Bool)
-      -> (a -> b -> Bool)
-      -> BiGUL a b
-      -> (b -> a)
-      -> (a -> Maybe a)
+      => (a -> Bool)       -- ^ source condition
+      -> (a -> b -> Bool)  -- ^ matching condition
+      -> BiGUL a b         -- ^ inner program
+      -> (b -> a)          -- ^ creation
+      -> (a -> Maybe a)    -- ^ concealment
       -> BiGUL [a] [b]
 align p match b create conceal = Case
   [ $(normalSV [| null . filter p |] [p| [] |] [| null . filter p |])

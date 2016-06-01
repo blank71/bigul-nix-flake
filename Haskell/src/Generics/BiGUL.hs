@@ -1,5 +1,5 @@
 -- | This is the main module defining the syntax of BiGUL.
---   'Generics.BiGUL.TH' provides some higher-level syntax for writing BiGUL programs.
+--   "Generics.BiGUL.TH" provides some higher-level syntax for writing BiGUL programs.
 --   See "Generics.BiGUL.Lib.HuStudies" for some small, illustrative examples.
 --   To execute BiGUL programs, use 'Generics.BiGUL.Interpreter.put' and 'Generics.BiGUL.Interpreter.get'
 --   from "Generics.BiGUL.Interpreter".
@@ -94,6 +94,10 @@ infixr 1 `Compose`
 -- | A branch used in 'Case' (whose type is parametrised by the source and view types)
 --   can be either 'Normal' or 'Adaptive'.
 --   The exit conditions specified in 'Normal' branches should (ideally) be disjoint.
+--   Overlapping exit conditions are still allowed for fast prototyping, though —
+--   the putback semantics of 'Case' will compute successfully as long as the ranges
+--   of the branches are disjoint (regardless of whether the exit conditions are
+--   specified precisely enough).
 data CaseBranch s v =
     -- | A 'Normal' branch contains an inner program, which should update the source such that
     --   both the main condition (on both the source and view) and the exit condition (on the source) are satisfied.
@@ -142,7 +146,7 @@ data Pat a env con where
 infixr 1 `PProd`
 
 -- | A marker for variable positions in environment types.
-newtype Var a = Var a deriving (Show, Eq)
+newtype Var a = Var a deriving Show
 
 -- | Directions point to a variable position (marked by 'Var') in an environment.
 --   Their type is indexed by the environment type and the type of the variable position being pointed to.

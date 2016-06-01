@@ -11,7 +11,7 @@ fromRight :: Either a b -> b
 fromRight (Right b) = b
 fromRight _         = error "fromRight fails"
 
--- | Unsafe putback semantics of 'Generics.BiGUL.BiGUL' programs.
+-- | The unsafe putback semantics of a 'Generics.BiGUL.BiGUL' program.
 put :: BiGUL s v -> s -> v -> s
 put (Fail str)      s       v       = error ("fail: " ++ str)
 put (Skip f)        s       v       = s
@@ -50,7 +50,7 @@ putCaseWithAdaptation (pb@(p, b):bs) s v cont =
 putCase :: [(s -> v -> Bool, CaseBranch s v)] -> s -> v -> s
 putCase bs s v = putCaseWithAdaptation bs s v (\s' -> putCase bs s' v)
 
--- | Unsafe get semantics of 'Generics.BiGUL.BiGUL' programs.
+-- | The unsafe get semantics of a 'Generics.BiGUL.BiGUL' program.
 get :: BiGUL s v -> s -> v
 get (Fail str)      s       = error ("fail: " ++ str)
 get (Skip f)        s       = f s

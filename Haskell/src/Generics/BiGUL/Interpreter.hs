@@ -1,5 +1,10 @@
 -- | The standard interpreters, which perform all dynamic checks to ensure well-behavedness
 --   and produce trace information when execution fails.
+--   Currently, tracing is designed for debugging, and only the traces leading to failure
+--   can be expected to contain a complete log of the steps executed.
+--   In other words, traces leading to success usually contain only partial tracing information.
+--   Also, when a program loops, there is no guarantee that the trace is computed productively.
+--   Finally, /note that branch numbering starts from 0./
 
 module Generics.BiGUL.Interpreter (put, putTrace, get, getTrace) where
 
@@ -49,12 +54,11 @@ addCurrentBranchTrace :: BiGULTrace -> BiGULTrace -> BiGULTrace
 addCurrentBranchTrace t (BTBranches ts) = BTBranches (t:ts)
 addCurrentBranchTrace t _               = error "panic: Generics.BiGUL.Error.addCurrentBranchTrace"
 
--- | The putback semantics of 'Generics.BiGUL.BiGUL' programs.
+-- | The putback semantics of a 'Generics.BiGUL.BiGUL' program.
 put :: BiGUL s v -> s -> v -> Maybe s
 put b s v = fst (runBiGULResult (putWithTrace b s v))
 
 -- | The execution trace of a 'put' computation.
---   The trace is complete only when the 'put' computation fails.
 putTrace :: BiGUL s v -> s -> v -> BiGULTrace
 putTrace b s v = snd (runBiGULResult (putWithTrace b s v))
 
@@ -124,12 +128,11 @@ putCase bs s v = putCaseWithAdaptation bs [] s v
                    (\s' -> putCaseWithAdaptation bs [] s' v
                              (const (errorResult BEAdaptiveBranchRevisited)))
 
--- | The get semantics of 'Generics.BiGUL.BiGUL' programs.
+-- | The get semantics of a 'Generics.BiGUL.BiGUL' program.
 get :: BiGUL s v -> s -> Maybe v
 get b s = fst (runBiGULResult (getWithTrace b s))
 
 -- | The execution trace of a 'get' computation.
---   The trace is complete only when the 'get' computation fails.
 getTrace :: BiGUL s v -> s -> BiGULTrace
 getTrace b s = snd (runBiGULResult (getWithTrace b s))
 

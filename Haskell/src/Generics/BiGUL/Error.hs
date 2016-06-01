@@ -9,9 +9,6 @@ import Data.List
 
 
 -- | Execution traces, which log the operations executed, intermediate sources and views, and reasons of eventual failure.
---   Designed for debugging, only the traces leading to failure contain a complete log of the steps executed.
---   Traces leading to success usually contain only partial tracing information.
---   __Note that branch numbering starts from 0.__
 data BiGULTrace = BTSuccess
                     -- ^ Execution successfully produces a result.
                 | BTError BiGULError
@@ -21,7 +18,7 @@ data BiGULTrace = BTSuccess
                 | forall s. (Show s) => BTNextS String s BiGULTrace
                     -- ^ An intermediate step with the current source.
                 | BTBranch Int BiGULTrace
-                    -- ^ Inside a branch.
+                    -- ^ Inside a branch. /Notes that branch numbering starts from 0./
                 | BTBranches [BiGULTrace]
                     -- ^ All branches fail.
 

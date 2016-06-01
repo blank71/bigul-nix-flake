@@ -42,21 +42,22 @@ non–backward compatible revisions to Template Haskell.
     by the updated source after the branch body is executed. All the exit
     conditions in a `Case` statement should (ideally) be disjoint.
     Overlapping exit conditions are still allowed for fast prototyping,
-    though — the putback semantics of a Case with overlapping exit
-    conditions will still compute successfully if the ranges of the
-    branches are actually disjoint.
+    though — the putback semantics of 'Case' will compute successfully as
+    long as the ranges of the branches are disjoint (regardless of whether
+    the exit conditions are specified precisely enough).
 
 * Error-reporting mechanism overhauled
+
+  - The types of `put` and `get` from `Generics.BiGUL.Interpreter` are
+    changed to produce simply `Maybe` results. When execution fails
+    (producing `Nothing`), invoke `putTrace` and `getTrace` to see the
+    exact failure and the execution trace leading to the failure.
+
+  - The execution traces include intermediate sources and views; the types
+    used in a BiGUL program are thus required to be instances of `Show`.
 
 * Show instances for BiGUL programs removed
 
   There are two reasons: Functions, which are everywhere in BiGUL programs,
   cannot be shown; and worse, printing of recursive BiGUL programs will not
   terminate.
-
-* List of required language extensions updated
-
-  - Removed: KindSignatures
-
-  - Added:   ViewPatterns, TypeFamilies, EmptyCase, ExistentialQuantification
-
