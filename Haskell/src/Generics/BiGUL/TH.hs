@@ -737,31 +737,22 @@ instance ExpOrPat (Q TH.Exp) where
 instance ExpOrPat (Q TH.Pat) where
   toExp = (>>= patCond)
 
-isSimplePat :: TH.Pat -> Bool
-isSimplePat (VarP  _) = True
-isSimplePat  WildP    = True
-isSimplePat  _        = False
-
 patLambdaToPred :: TH.Exp -> Q TH.Exp
 patLambdaToPred p =
   case p of
-    LamE (all id . map isSimplePat -> True) _ -> return p
     LamE [pat] body -> do
-      var <- newName "x"
-      (_, [hfalse]) <-lookupNames "Prelude" [] ["False"]
-      return (LamE [VarP var]
-                (CaseE (VarE var)
-                   [Match pat (NormalB body) [],
-                    Match WildP (NormalB (ConE hfalse)) []]))
+      (_, [hmaybe, hFalse, hid, hreturn]) <-lookupNames "Prelude" [] ["maybe", "False", "id", "return"]
+      [| \x -> $(varE hmaybe) $(conE hFalse) $(varE hid) $(doExp hreturn pat [| x |] body) |]
     LamE [spat, vpat] body -> do
-      svar <- newName "s"
-      vvar <- newName "v"
-      (_, [hfalse]) <-lookupNames "Prelude" [] ["False"]
-      return (LamE [VarP svar, VarP vvar]
-                (CaseE (TupE [VarE svar, VarE vvar])
-                   [Match (TupP [spat, vpat]) (NormalB body) [],
-                    Match WildP (NormalB (ConE hfalse)) []]))
+      (_, [hmaybe, hFalse, hid, hreturn]) <-lookupNames "Prelude" [] ["maybe", "False", "id", "return"]
+      [| \s v -> $(varE hmaybe) $(conE hFalse) $(varE hid) $(doExp hreturn (TupP [spat, vpat]) [| (s, v) |] body) |]
     _ -> return p
+  where
+    doExp :: TH.Name -> TH.Pat -> Q TH.Exp -> TH.Exp -> Q TH.Exp
+    doExp hreturn p qMatchExp boolExp = do
+      matchExp <- qMatchExp
+      return (DoE [BindS p (VarE hreturn `AppE` matchExp),
+                   NoBindS (VarE hreturn `AppE` boolExp)])
 
 -- | Construct a normal branch, for which a main condition on the source and view and
 --   an exit condition on the source should be specified. The usual way of using 'normal' is
