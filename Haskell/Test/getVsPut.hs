@@ -4,7 +4,6 @@
 
 
 import GHC.Generics
-import Generics.BiGUL
 import Util
 import Generics.BiGUL.AST
 import Language.Haskell.TH as TH hiding (Name)
