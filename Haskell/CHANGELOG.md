@@ -21,6 +21,19 @@ non–backward compatible revisions to Template Haskell.
   - `Generics.BiGUL.Lib.HuStudies` contains some small, concrete examples
     illustrating the use of every BiGUL construct.
 
+* `Generics.BiGUL.Skip` and `Generics.BiGUL.Dep` changed
+
+  - The view type of `Skip` is not restricted to `()` anymore, but when
+    skipping, the view should be determined by the source as specified by
+    the new functional argument to `Skip` — we can perform `Skip f` on a
+    source `s` if and only if the view is `f s`. The old `Skip` can be
+    defined in terms of the new one as `Skip (const ())`. There is a helper
+    function `skip = Skip . const` defined in `Generics.BiGUL.Lib`.
+
+  - `Dep` has been reverted to the original version, used to ignore the
+    second component of the view when it depends on the first (but not
+    the source).
+
 * Major changes to `Generics.BiGUL.TH`
 
   - `deriveBiGULGeneric` now supports `newtype`.
