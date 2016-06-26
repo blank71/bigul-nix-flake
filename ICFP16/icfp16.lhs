@@ -160,8 +160,9 @@ module ICFP16 where
 import Data.Relation (rngOf)
 import Data.Set as Set
 import Data.Shape
-import Generics.BiGUL.AST
+import Generics.BiGUL
 import Generics.BiGUL.Interpreter.Unsafe (get, put)
+import Generics.BiGUL.Lib hiding (emb)
 import Generics.BiGUL.TH
 import GHC.Generics
 import Prelude hiding (traverse)
@@ -169,6 +170,7 @@ import Prelude hiding (traverse)
 import Generics.Pointless.Combinators hiding (and)
 import Generics.Pointless.Functors hiding (Functor, (:+:), (:*:))
 import Generics.Pointless.HFunctors
+
 \end{code}
 \end{comment}
 
@@ -374,7 +376,7 @@ with the following BiGUL program:
 \begin{code}
 myBX :: BiGUL Source View
 myBX = Replace `Prod` $(rearrV   [| \ c -> (c, ()) |])
-                                 (Replace `Prod` Skip)
+                                 (Replace `Prod` skip ())
 \end{code}
 
 Positional alignment for lists with elements of the above source and view types
@@ -402,15 +404,15 @@ action for each situation:
 \begin{code}
 myMapL :: BiGUL [Source] [View]
 myMapL = Case
-  [ $(normalSV [p| [] |] [p| [] |])
-      ==> $(rearrV [| \ [] -> () |]) Skip
-  , $(adaptiveV [p| [] |])
+  [ $(normalSV [p| [] |] [p| [] |] [p| _ |])
+      ==> skip []
+  , $(adaptiveSV [p| _ |] [p| [] |])
       ==> \ _ _ -> []
-  , $(normalSV [p| (_ : _) |] [p| (_ : _) |])
+  , $(normalSV [p| (_ : _) |] [p| (_ : _) |] [p| _ |])
       ==> $(rearrV [| \ (v:vs) -> (v, vs) |])$
         $(rearrS [| \ (s:ss) -> (s, ss) |])$
           myBX `Prod` myMapL
-  , $(adaptiveV [p| (_ : _) |])
+  , $(adaptiveSV [p| _ |] [p| (_ : _) |])
       ==> \ _ ((k,v1) : _) -> [(k,(v1,0))]
   ]
 \end{code}
@@ -477,20 +479,21 @@ The |myMapL| program can be generalized to work on lists with arbitrary values.
 For that, it must be parametrized with a \emph{create} function, to produce a
 source element from a view one, and with a BiGUL program to be run on the
 elements:
-\begin{code}
+\begin{spec}
 mapL :: (v -> s) -> BiGUL s v -> BiGUL [s] [v]
-\end{code}
+\end{spec}
 %
 \begin{comment}
 \begin{code}
+mapL :: (Show s, Show v, Eq v) => (v -> s) -> BiGUL s v -> BiGUL [s] [v]
 mapL c u = Case
-  [ $(normalSV [p| [] |] [p| [] |])$ $(rearrV [| \ [] -> () |]) Skip
-  , $(adaptiveV [p| [] |])$ \ _ _ -> []
-  , $(normalSV [p| (_ : _) |] [p| (_ : _) |])$
+  [ $(normalSV [p| [] |] [p| [] |] [p| _ |])$ (skip [])
+  , $(adaptiveSV [p| _ |] [p| [] |])$ \ _ _ -> []
+  , $(normalSV [p| (_ : _) |] [p| (_ : _) |] [p| _ |])$
       $(rearrV [| \ (v:vs) -> (v, vs) |])$
         $(rearrS [| \ (s:ss) -> (s, ss) |])$
           u `Prod` mapL c u
-  , $(adaptiveV [p| (_ : _) |])$ \ _ (v : _) -> [c v]
+  , $(adaptiveSV [p| _ |] [p| (_ : _) |])$ \ _ (v : _) -> [c v]
   ]
 \end{code}
 \end{comment}
@@ -549,7 +552,7 @@ the following BiGUL program:
 \begin{code}
 myKeyMatch ::  BiGUL [Source] [View]
 myKeyMatch = Case
-  [ $(normal [| isAligned |]) ==> myMapL
+  [ $(normal [| isAligned |] [p| _ |]) ==> myMapL
   , $(adaptive [| \ _ _ -> True |]) ==> keyMatchAdapt ]
 \end{code}
 
@@ -667,9 +670,9 @@ additional information. Implementing this in the running example:
 myAlignL'  ::  BiGUL ([Source], Delta) [View]
 myAlignL' = Case
   [ $(normal [| \(s, d) v   ->  d == getIdL v
-                            &&  d == getIdL s |])
+                            &&  d == getIdL s |] [p| _ |])
       ==> $(rearrS [| \(s, _) -> s |]) myMapL
-  , $(adaptiveS [| const True |])
+  , $(adaptiveSV [| const True |] [p| _ |])
       ==> \(s,d) v ->  let s' = myAdaptDeltaL s v d
                        in (s', getIdL v) ]
 \end{code}
@@ -753,10 +756,11 @@ As an aside, the embedding of |get| and |put| functions can be defined as a BiGU
 \begin{code}
 emb :: Eq v => (s -> v) -> (s -> v -> s) -> BiGUL s v
 emb g p = Case
-  [ $(normal [| \x y -> g x == y |])$
-      $(rearrV [| \x -> ((), x) |])$
-        Dep Skip (\x () -> g x)
-  , $(adaptive [| \_ _ -> True |]) p ]
+  [ $(normal [| \s v -> g s == v |] [p| _ |])
+    ==> Skip g
+  , $(adaptive [| \s v -> {- g s /= v -} True |])
+    ==> p
+  ]
 \end{code}
 %
 Here what the normal branch does is, roughly speaking, leaving the source~|x| as it is while ignoring the view, since we know that the view is necessarily |g x|.
@@ -835,13 +839,14 @@ alignL  :: Eq v => BiGUL s v -> (v -> s) -> Delta
 \end{spec}
 \begin{comment}
 \begin{code}
-alignL'  ::  BiGUL s v -> (v -> s)
+alignL'  ::  (Show s, Show v, Eq v)
+         =>  BiGUL s v -> (v -> s)
          ->  BiGUL ([s], Delta) [v]
 alignL' b c = Case
   [ $(normal [| \(s, d) v  -> d == getIdL v
-                           && d == getIdL s |])
+                           && d == getIdL s |] [p| _ |])
       ==> $(rearrS [| \(s, _) -> s |]) (mapL c b)
-  , $(adaptiveS [| const True |])
+  , $(adaptiveSV [| const True |] [p| _ |])
       ==> \(s,d) v ->  let s' = adaptDeltaL c s v d
                        in (s', getIdL v) ]
 
@@ -852,7 +857,7 @@ adaptDeltaL c s v d = Prelude.map idOrCreate (Set.elems $ locs v)
                              then data_ s !! Set.findMin js
                              else c (data_ v !! i)
 
-alignL  :: Eq v
+alignL  :: (Show s, Show v, Eq v)
         => BiGUL s v -> (v -> s) -> Delta
         -> BiGUL [s] [v]
 alignL b c d = emb g p
@@ -966,17 +971,17 @@ recursion which must be taken into account.
 \begin{code}
 myMapT :: BiGUL (Tree Source) (Tree View)
 myMapT = Case
-  [ $(normalSV [p| Nil |] [p| Nil |])
-      ==> $(rearrV [| \ Nil -> () |]) Skip
-  , $(adaptiveV [p| Nil |])
+  [ $(normalSV [p| Nil |] [p| Nil |] [p| _ |])
+      ==> skip Nil
+  , $(adaptiveSV [p| _ |] [p| Nil |])
       ==> \ _ _ -> Nil
-  , $(normalSV [p| Node _ _ _ |] [p| Node _ _ _ |])
+  , $(normalSV [p| Node _ _ _ |] [p| Node _ _ _ |] [p| _ |])
       ==>  $(rearrV  [| \ (Node v vl vr)
                        -> (v, (vl, vr)) |]) $
              $(rearrS  [| \ (Node s sl sr)
                          -> (s, (sl, sr)) |])$
                   myBX `Prod` (myMapT `Prod` myMapT)
-  , $(adaptiveV [p| (Node _ _ _) |])
+  , $(adaptiveSV [p| _ |] [p| (Node _ _ _) |])
       ==> \ _ (Node (k, v1) _ _) -> Node  (k, (v1, 0))
                                           Nil    Nil
   ]
@@ -989,9 +994,9 @@ alignment for trees in a similar way as with lists:
 myAlignT' :: BiGUL (Tree Source, Delta) (Tree View)
 myAlignT' = Case
   [ $(normal [| \(s, d) v  ->  d == getIdT v
-                           &&  d == getIdT s |])
+                           &&  d == getIdT s |] [p| _ |])
       ==> $(rearrS [| \(s, _) -> s |]) myMapT
-  , $(adaptiveS [| const True |])
+  , $(adaptiveSV [| const True |] [p| _ |])
       ==> \(s,d) v ->  let s' = myAdaptDeltaT s v d
                        in (s', getIdT v) ]
 \end{code}
@@ -1057,34 +1062,36 @@ adaptDeltaT c s v d = Prelude.fmap idOrCreate (locsT v)
                              then data_ s !! Set.findMin js
                              else c (data_ v !! i)
 
-mapT  :: (v -> s) -> BiGUL s v
+mapT  :: (Show s, Show v, Eq v)
+      => (v -> s) -> BiGUL s v
       -> BiGUL (Tree s) (Tree v)
 mapT c u = Case
-  [ $(normalSV [p| Nil |] [p| Nil |])
-      ==> $(rearrV [| \ Nil -> () |]) Skip
-  , $(adaptiveV [p| Nil |])
+  [ $(normalSV [p| Nil |] [p| Nil |] [p| _ |])
+      ==> skip Nil
+  , $(adaptiveSV [p| _ |] [p| Nil |])
       ==> \ _ _ -> Nil
-  , $(normalSV [p| Node _ _ _ |] [p| Node _ _ _ |])
+  , $(normalSV [p| Node _ _ _ |] [p| Node _ _ _ |] [p| _ |])
       ==>  $(rearrV  [| \ (Node v vl vr)
                        -> (v, (vl, vr)) |]) $
              $(rearrS  [| \ (Node s sl sr)
                          -> (s, (sl, sr)) |])$
                   u `Prod` (mapT c u `Prod` mapT c u)
-  , $(adaptiveV [p| (Node _ _ _) |])
+  , $(adaptiveSV [p| _ |] [p| (Node _ _ _) |])
       ==> \ _ (Node v _ _) -> Node (c v) Nil Nil
   ]
 
-alignT'  ::  BiGUL a b -> (b -> a)
+alignT'  ::  (Show a, Show b, Eq b)
+         =>  BiGUL a b -> (b -> a)
          ->  BiGUL (Tree a, Delta) (Tree b)
 alignT' b c = Case
   [ $(normal [| \(s, d) v  ->  d == getIdT v
-                           &&  d == getIdT s |])
+                           &&  d == getIdT s |] [p| _ |])
       ==> $(rearrS [| \(s, _) -> s |]) (mapT c b)
-  , $(adaptiveS [| const True |])
+  , $(adaptiveSV [| const True |] [p| _ |])
       ==> \(s,d) v ->  let s' = adaptDeltaT c s v d
                        in (s', getIdT v) ]
 
-alignT  :: Eq v
+alignT  :: (Show s, Show v, Eq v)
         => BiGUL s v -> (v -> s) -> Delta
         -> BiGUL (Tree s) (Tree v)
 alignT b c d = emb g p
@@ -1139,7 +1146,7 @@ To solve this issue in a simple manner, we introduce a new type class
 %
 \begin{code}
 class Shapely t => Positional t where
-  positionalMap  :: (v -> s) -> BiGUL s v
+  positionalMap  :: (Show s, Show v, Eq v) => (v -> s) -> BiGUL s v
                  -> BiGUL (t s) (t v)
 \end{code}
 %
@@ -1187,20 +1194,20 @@ adaptDelta c s v d = recover (newShape, newData)
 With this function, any shapely type can be adapted, including lists and trees.
 
 \begin{code}
-align'  ::  (Shapely t, Positional t)
+align'  ::  (Shapely t, Positional t, Show (t s), Show (t v), Show s, Show v, Eq v)
         =>  BiGUL s v -> (v -> s)
         ->  BiGUL (t s, Delta) (t v)
 align' b c = Case
   [ $(normal [| \(s, d) v  ->  d == getId v
-                           &&  d == getId s |])
+                           &&  d == getId s |] [p| _ |])
       ==> $(rearrS [| \(s, _) -> s |]) (positionalMap c b)
-  , $(adaptiveS [| const True |])
+  , $(adaptiveSV [| const True |] [p| _ |])
       ==> \(s,d) v ->  let s' = adaptDelta c s v d
                        in (s', getId v) ]
 \end{code}
 %
 \begin{code}
-align  :: (Shapely t, Positional t, Eq (t v))
+align  :: (Shapely t, Positional t, Show (t s), Show (t v), Eq (t v), Show s, Show v, Eq v)
        => BiGUL s v -> (v -> s) -> Delta
        -> BiGUL (t s) (t v)
 align b c d = emb g p
@@ -1217,7 +1224,7 @@ It is possible to make minor changes to the |align| function to
 implement other kinds of alignments, e.g., key-based:
 %
 \begin{code}
-keyAlign :: (Shapely s, Positional s, Eq (s b), Eq b, Eq k)
+keyAlign :: (Shapely s, Positional s, Show (s a), Show (s b), Eq (s b), Show a, Show b, Eq b, Eq k)
   => BiGUL a b -> (b -> a) -> (a -> k) -> (b -> k)
   -> BiGUL (s a) (s b)
 keyAlign b c sk vk = emb g p
