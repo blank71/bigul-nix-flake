@@ -390,14 +390,14 @@ the several possibilities of source and view values in the update process:
   \item all elements of the view were processed, so we adapt the source by removing
     the extra elements
     |\ _ _ -> []|;
-    \item both source and view have elements, then we update with the head of both
+    \item both source and view have elements, so we update with the head of both
     source and view, and then recurse
     |u `Prod` myMapL c u|;
-  \item the source does not have enough elements and create new ones
+  \item the source does not have enough elements and we create new ones
     |\ _ ((k,v1) : _) -> [(k,(v1,0))]|.
 \end{itemize}
 %
-These actions are packed into a |Case| statement which selects the correct
+These possibilities are packed into a |Case| statement which selects the correct
 action for each situation:
 %
 \begin{code}
@@ -529,7 +529,7 @@ We consider that source and view are aligned if both have the same number of
 elements, and that the keys match element-wise.
 
 In the case that the two lists are not aligned, we define a function that adapts a
-source such that then they are aligned. This is performed by traversing the
+source such that when applied they become aligned. This is performed by traversing the
 view and fetching the first corresponding element in the original source. If
 such element is not present, we create it. At the end, source elements not
 present in view are discarded. The adaptation of the source can be implemented
