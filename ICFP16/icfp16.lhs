@@ -353,7 +353,6 @@ $(adaptiveSV  [| pS |] [| pV |]) ==> f
   = ((\s v -> pS s && pV v), Adaptive  f)
 \end{spec}
 The unary predicates (|pS| and |pV|) can usually be conveniently expressed as patterns; |normalSV| and |adaptiveSV| can also accept patterns, which should be enclosed in pattern quotation brackets like \([p||\;pat\;||]\).
-There are also other variants of |normal| and |adaptive| that are suffixed with only |S| or~|V|, meaning that they accept only one unary predicate on either the source or the view, respectively.
 
 %%%
 %%% Positional Alignment
@@ -387,7 +386,7 @@ the several possibilities of source and view values in the update process:
 %
 \begin{itemize}
   \item both source and view are empty, and we just
-    |Skip|;
+    |skip []|;
   \item all elements of the view were processed, so we adapt the source by removing
     the extra elements
     |\ _ _ -> []|;
