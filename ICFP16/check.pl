@@ -1,17 +1,29 @@
-#!/usr/bin/perl
+#!/usr/bin/perl -s
+
+#
+# Usage:
+# perl check.pl [-stack] < icfp16.lhs
+#
 
 use strict;
 use warnings;
 use IO::Handle qw(flush);
 
+our ($stack);
+
 # environment
-my $haskelldir = '../../bigul-dev/Haskell';
+my $haskelldir = '../Haskell';
 my $paperdir = `pwd`;
 chomp $paperdir;
 
 # execution
 my $extensions = '-XTemplateHaskell -XTypeFamilies -XTypeOperators';
-my $eval = "cabal exec -- ghc $extensions -e";
+my $eval;
+if ($stack) {
+  $eval = "stack ghc -- $extensions -e";
+} else {
+  $eval = "cabal exec -- ghc $extensions -e";
+}
 
 # contents
 my $prompt = qr|@@>@@|;
