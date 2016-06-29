@@ -232,9 +232,9 @@ it is preferable to write
 just a single program that can denote both transformations,
 which has motivated two different approaches:
 \begin{itemize}
-\item {\em Get-based Method}: allowing users to write |get|
+\item {\em Get-based method}: allowing users to write |get|
 and derive a suitable |put| \cite{Foster2007,MHNHT07,Bohannon:08,Barbosa2010,Hidaka:10,Hofmann2012,Pacheco2012};
-\item {\em Put-based Method}: allowing users to write |put|
+\item {\em Put-based method}: allowing users to write |put|
 and derive the unique |get| if there is one \cite{PaHF14,PachecoZH14,HuPF14,FischerHP15,Ko2016}.
 \end{itemize}
 
@@ -265,17 +265,30 @@ transformation \cite{CheneyGMS15}.
 
 Since |get| does not contain
 sufficient information for a system to automatically
-derive intentional update policies of |put|,
-in order to deal with various update policies of |put| in
-different contexts, significant extensions
+derive intended update policies of |put|,
+in order to deal with various update policies of |put| for solving
+different problems, significant extensions
 to the language for writing |get| are necessary.
-As a matter of fact, from the original get-based bidirectional
-language \emph{lenses} \cite{Foster2007}, we have seen
-many such extensions, e.g., the \emph{matching lenses}
-to deal with alignment policies \cite{Barbosa2010},
-the \emph{delta lenses} to deal with modification-sensitive update policies
-\cite{Diskin:2011,Hofmann2012}, and the \emph{generic lenses} to deal with
-any updates on inductive data structures \cite{Pacheco2012}.
+One representative problem is \emph{alignment}:
+Both the source and view are lists, and the \emph{get} direction is simply a map on lists.
+The \emph{put} direction, on the other hand, has a great amount of freedom:
+The elements of the view list may be inserted or deleted.
+A view deletion can only be reflected as a source deletion, if we want the get direction to be just a map;
+for an insertion, however, how do we create a corresponding source element from a usually less informative view element?
+The view list may be reordered.
+How do we determine which source element should be matched with each view element?
+\emph{Matching lenses}~\cite{Barbosa2010} were developed to be able to customise such policies.
+There are other finer-grained considerations:
+Given an updated view list, how do we decide whether an element is only modified --- so the corresponding source element also only needs modification --- or newly inserted --- so we should delete the corresponding source element and insert a new one?
+This requires tracking of how the view list is modified, and frameworks for expressing modification-sensitive update policies were developed~\cite{Diskin:2011,Hofmann2012}.
+We may want to go beyond lists to trees and in general any inductive data structures, and, of course, there is work on \emph{generic lenses} to deal with any updates on inductive data structures \cite{Pacheco2012}.
+%As a matter of fact, from the original get-based bidirectional
+%language \emph{lenses} \cite{Foster2007}, we have seen
+%many such extensions, e.g., the \emph{matching lenses}
+%to deal with alignment policies \cite{Barbosa2010},
+%the \emph{delta lenses} to deal with modification-sensitive update policies
+%\cite{Diskin:2011,Hofmann2012}, and the \emph{generic lenses} to deal with
+%any updates on inductive data structures \cite{Pacheco2012}.
 All these extensions, as seen in the related papers,
 are nontrivial, where one has to
 rework all the original lens framework by adding new information
@@ -283,7 +296,7 @@ to |get| to indirectly control of the behavior of |put|, and to prove
 that the extension is sound in the sense that the new |get| and |put|
 are well-behaved.
 
-\TODO{The above is too abstract and not self-contained. The reader won't be able to understand what the alignment problem is, and how it relates to the rectangle example. I think this is related to Prof Hu's question ``What is the old idea we want to explain?''. The old idea is alignment, and we have to explain it instead of just giving references.}
+%\TODO{The above is too abstract and not self-contained. The reader won't be able to understand what the alignment problem is, and how it relates to the rectangle example. I think this is related to Prof Hu's question ``What is the old idea we want to explain?''. The old idea is alignment, and we have to explain it instead of just giving references.}
 
 In this paper, we put up
 the slogan ``One |put| for All'', in the sense that
@@ -293,7 +306,7 @@ but also enable us to systematically
 develop various domain-specific bidirectional languages and use
 them seamlessly in one framework, which
 would be nontrivial with the get-based method as seen above.
-After a brief review of BiGUL~\cite{Ko2016}, a putback-based
+In the rest of this paper, after a brief review of BiGUL~\cite{Ko2016}, a putback-based
 bidirectional language embedded in Haskell, we demonstrate how it can be used to
 concisely implement the matching/delta/generic lenses that
 are guaranteed to be well-behaved.
