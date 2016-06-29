@@ -2,8 +2,8 @@
 
 \newif\ifanonymous
 
-%\anonymoustrue
-\anonymousfalse
+\anonymoustrue
+%\anonymousfalse
 
 %include polycode.fmt
 %
@@ -101,7 +101,7 @@
 %\preprintfooter{short description of paper}   % 'preprint' option specified.
 
 \title{The Under-Appreciated Put: Implementing Delta-Alignment in BiGUL}
-%\subtitle{Functional Pearl}
+\subtitle{A POPL Pearl Submission}
 
 \ifanonymous
 \authorinfo{}{}{}
@@ -117,9 +117,9 @@
 \maketitle
 
 \begin{abstract}
-There are two approaches to bidirectional programming.
-One is the get-based method where one writes |get| and
-|put| is automatically derived, and the other is
+There are two approaches to bidirectional programming:
+One is the get-based method where one writes |get|, and
+|put| is automatically derived; the other is
 the put-based method where one writes |put| and
 |get| is automatically derived.
 In this paper, we argue that the put-based method
@@ -132,7 +132,7 @@ them seamlessly in one framework, which
 would be nontrivial with the get-based method.
 We demonstrate how the matching/delta/generic lenses can be
 implemented in BiGUL, a putback-based
-bidirectional language.
+bidirectional language embedded in Haskell.
 \end{abstract}
 
 %\category{CR-number}{subcategory}{third-level}
@@ -179,7 +179,7 @@ import Generics.Pointless.HFunctors
 Bidirectional transformations are hot! They
 originated from the {\em view updating\/} mechanism in the
 database community~\cite{Bancilhon:81,Dayal:82,GoPZ88},
-and have been recently attracting a lot of attention
+and have been attracting a lot of attention
 from researchers in the communities of programming languages and 
 software engineering \cite{GRACE:09,HSST11},
 since the pioneering work of Foster {et al.} on 
@@ -283,6 +283,8 @@ to |get| to indirectly control of the behavior of |put|, and to prove
 that the extension is sound in the sense that the new |get| and |put|
 are well-behaved.
 
+\TODO{The above is too abstract and not self-contained. The reader won't be able to understand what the alignment problem is, and how it relates to the rectangle example. I think this is related to Prof Hu's question ``What is the old idea we want to explain?''. The old idea is alignment, and we have to explain it instead of just giving references.}
+
 In this paper, we put up
 the slogan ``One |put| for All'', in the sense that
 a good language for programming |put| can not only
@@ -292,7 +294,7 @@ develop various domain-specific bidirectional languages and use
 them seamlessly in one framework, which
 would be nontrivial with the get-based method as seen above.
 After a brief review of BiGUL~\cite{Ko2016}, a putback-based
-bidirectional language, we demonstrate how it can be used to
+bidirectional language embedded in Haskell, we demonstrate how it can be used to
 concisely implement the matching/delta/generic lenses that
 are guaranteed to be well-behaved.
 
@@ -335,7 +337,7 @@ data Branch s v  =  Normal    (BiGUL s v)
                  |  Adaptive  (s -> v -> s)
 \end{spec}
 A branch can be a ``normal'' branch, in which case it is a BiGUL program of type |BiGUL s v|, or an ``adaptive'' branch, in which case it is a Haskell function of type |s -> v -> s|.
-The semantics of |Case| is largely as people would expect: executing the first branch whose associated predicate evaluates to true on the current state, and performing further updates when this branch is normal.
+Roughly speaking, the semantics of |Case| is largely as people would expect: executing the first branch whose associated predicate evaluates to true on the current state, and performing further updates when this branch is normal.
 More interestingly, when the chosen branch is adaptive, the source will be replaced by the result of evaluating the associated function on the current state, and the whole |Case| will be executed again.
 
 We introduce some extra notations for writing branches more easily.
@@ -359,8 +361,9 @@ The unary predicates (|pS| and |pV|) can usually be conveniently expressed as pa
 %%%
 \section{Positional Alignment}
 
-The simplest alignment strategy is the positional one. The following types for
-source (|Source|) and view (|View|) are used for the running example.
+As a warm-up, let us try to describe in BiGUL the simplest alignment strategy, which matches elements at the same positions in the source and view lists.
+The following types for
+source (|Source|) and view (|View|) are used as a concrete running example:
 %
 \begin{code}
 type Source  = (Int, (Char, Int))
@@ -369,7 +372,9 @@ type View    = (Int, Char)
 %
 The first |Int| component of the pair should match the first |Int| component of the view,
 and the |Char| component of the source should match the |Char|
-component of the view. This relation between source and view can be expressed
+component of the view.
+\TODO{This is abstract. Can we make a concrete story giving the fields meanings, like saying the first |Int| is an id number, the second |Char| is a name, etc?}
+This relation between source and view can be expressed
 with the following BiGUL program:
 %
 \begin{code}
@@ -377,10 +382,13 @@ myBX :: BiGUL Source View
 myBX = Replace `Prod` $(rearrV   [| \ c -> (c, ()) |])
                                  (Replace `Prod` skip ())
 \end{code}
+\TODO{This is our first BiGUL program, and we should proceed more gently. Something along the line of ``The first thing we want to do is to replace the source id with the view id, so we write |Replace| on the left-hand side of a |Prod|, whose right-hand side will deal with the name part. For that part, there is a mismatch of shape between the source and view, however: The source is a pair, whereas the view is a single element. To make them match (so we can use |Prod|), one way is to rearrange the view into a pair whose second component is a unit. After the rearrangement, we can now use |Prod|, whose left-hand side is a |Replace|, to replace the name, and right-hand side is a |Skip|, keeping \ldots\ unchanged.''}
 
 Positional alignment for lists with elements of the above source and view types
 is pretty straightforward. No moves are taken into
-account, and elements are added or deleted at the end of the source. Just as
+account, and elements are added or deleted at the end of the source.
+\TODO{Without giving a story beforehand, the reader will have a hard time getting what ``moves'' mean.}
+Just as
 with any other programming practice, the BiGUL program must take into account
 the several possibilities of source and view values in the update process:
 %
@@ -390,11 +398,14 @@ the several possibilities of source and view values in the update process:
   \item all elements of the view were processed, so we adapt the source by removing
     the extra elements
     |\ _ _ -> []|;
+    \TODO{Again, this is the first time we use adaptation, so we should proceed more gently. In general, there's a thought pattern for programming |Case|: Represent consistent cases with normal branches, and use adaptation to rectify inconsistency back to consistency. We should also use this opportunity to explain the pattern.}
     \item both source and view have elements, so we update with the head of both
     source and view, and then recurse
     |u `Prod` myMapL c u|;
+    \TODO{|myMapL| is a forward reference.}
   \item the source does not have enough elements and we create new ones
     |\ _ ((k,v1) : _) -> [(k,(v1,0))]|.
+    \TODO{Why putting in $0$? A story will also help here. More interestingly, we can compute a sensible default value from |k| and |v1|.}
 \end{itemize}
 %
 These possibilities are packed into a |Case| statement which selects the correct
@@ -442,6 +453,8 @@ element is created from the source element at the head of the list. Then, the
 |Case| statement looks for a normal branch, entering in the one where both
 source and view have elements, updating the heads and recursing.
 
+\TODO{Can these two paragraphs be integrated into the bullet points above?}
+
 Running the |get| function with this BiGUL program, we obtain the following
 result:
 %
@@ -449,7 +462,7 @@ result:
 @@>@@ get myMapL [(0,('a',0)),(1,('b',1)),(2,('c',2))]
 [(0,'a'),(1,'b'),(2,'c')]
 \end{lstlisting}
-%
+\TODO{A story will make the list look more meaningful, as opposed to just some generic data.}
 We can perform the changes that we want to this view, e.g., modify the characters
 to upper case, and put that view back into the original source\footnote{The
 symbol \lstcontinueline{} denotes line continuation.}:
@@ -496,15 +509,19 @@ mapL c u = Case
   ]
 \end{code}
 \end{comment}
+\TODO{Say that the parameter BiGUL program abstracts |myBX|, and |create| abstracts the computation of default source used in the fourth branch.}
 
 %%%
 %%% Key-Based Alignment
 %%%
 \section{Key-Based Alignment}
 
+\TODO{If there is a story, we can then easily show the need for key-based alignment: Positional alignment is obviously not enough for our application\ldots\ it is natural to match people by their ids\ldots}
 More complex alignment strategies can be implemented using BiGUL. One example is
 a key-based one, where elements of the source and the view are paired based on a
 key component from each of the elements.
+
+\TODO{There is a first solution whose logic is similar to |mapL| --- having just looked at |mapL|, it is more natural to think along this line first. And then, surprise, there is in fact another way to do it:}
 
 The idea to implement this strategy is to separate the program in two parts:
 %
@@ -512,6 +529,7 @@ The idea to implement this strategy is to separate the program in two parts:
   \item alignment of the elements;
   \item the actual update.
 \end{itemize}
+\TODO{The key lies in the observation that positional update is sufficient when the lists are already aligned; so just use adaptation to do the alignment!}
 
 To align the elements, we must first be able to extract a key from source and
 view elements. For our running example, we use the first component of the
@@ -545,7 +563,7 @@ keyMatchAdapt s v = Prelude.map getSourceElement v
 \end{code}
 
 When the source and the view are aligned, a simple positional update, as defined
-in the previous section, can be used. Thus, putting it all together, we obtain a
+in the previous section, can be used. Thus, putting it all together, we obtain
 the following BiGUL program:
 %
 \begin{code}
@@ -610,6 +628,7 @@ keyMatch  :: Eq k => (s -> k) -> (b -> k)
 %%%
 \section{Delta-Based List Alignment}
 
+\TODO{We have discovered a pattern that is actually very easy to generalise to encode much more complex alignment strategies. A story bringing out the need for delta-based alignment\ldots}
 Alignment can be made more precise using information about how the view is modified.
 If we extract the relation of elements in the original
 view to the elements in the modified view, then the alignment performed when
@@ -617,7 +636,8 @@ updating the source can be completely correct.
 
 The relation of elements in the original view with the ones in the modified view
 can be defined by a mapping from the location of the element in the original
-artifact to the location of the element in the modified artifact. The location
+artifact to the location of the element in the modified artifact.
+The location
 can be defined as an integer index within the container
 %
 \begin{code}
@@ -654,6 +674,7 @@ getIdL = Set.map (\ l -> (l, l)) . locs
 In order to implement such kind of alignment in BiGUL, the delta can be inserted
 into the source, since we can manipulate it using adaptation in
 |Case| branches.
+\TODO{This is a key revelation. We should try to give it a proper development. We still want to use the two-branch structure, but unlike the previous section, there are no keys now, so when do we know that the source and view are ready for a positional sync?}
 
 The implementation of delta-based alignment is similar to the key-based one:
 %
@@ -768,6 +789,8 @@ produce a source that when running |get| should return the view given to the
 former, as stated by the \textsc{GetPut} law and enforced by the case structure.
 Furthermore, the view should be completely defined by the source.
 
+\TODO{It might be interesting to note that |emb| is a further generalization of the two-branch structure.}
+
 To run the delta alignment, we thus need to provide a delta to the BiGUL
 program. With the running example, we can use the following deltas:
 %
@@ -872,6 +895,7 @@ alignL b c d = emb g p
 %%%
 \section{Delta-Based Tree Alignment}
 
+\TODO{The story will probably break up at this point, but we can just go generic and say it is natural to consider trees next. What difficulties will there be when we move on to trees? We need to worry about the shapes now\ldots}
 Another container where delta alignment can be implemented is a tree. Many kinds
 of trees exist, but we use binary tree with labels in the nodes:
 %
@@ -962,6 +986,7 @@ myAdaptDeltaT s v d = Prelude.fmap idOrCreate (locsT v)
 %
 where we take advantage of the |fmap| function, deriving from the fact that |Tree| is a
 functor.
+\TODO{And then I discover that you do not discuss shapes at all\ldots\ How flexibly can you deal with shape changes? Once you make it clear how to deal with shape changes here, the next section can just concentrate on explaining how all the things we have seen can be unified in one definition (in terms of containers).}
 
 The implementation of the positional tree update is similar to the one for
 lists, since both have only two data constructors. However, trees have double
@@ -1104,6 +1129,7 @@ alignT b c d = emb g p
 %%%
 \section{Generic Delta-Based Alignment}
 
+\TODO{And the previous section actually makes us sufficiently prepared to go generic!}
 Delta-based alignment can also be implemented for other containers. The
 implementations for the list and tree cases are generalizable to other
 containers.
@@ -1119,6 +1145,7 @@ order to have tools to work with these data types.
 Employing these concepts, one can abstract from the shapes of both source and
 view, and just take the data into account for the alignment process.
 
+\TODO{We need to explain these concepts in terms of lists and trees, of course --- we are generalizing from previous sections, after all.}
 Thus, a polymorphic type \(T~a\) can be characterized by three functions:
 |shape :: T a -> T ()| to extract the shape;
 |data_ :: T a -> [a]| to extract the data;
@@ -1134,7 +1161,7 @@ class Shapely (t :: * -> *) where
 \end{spec}
 
 On top of these functions, it is possible to define new ones, e.g., |locs ::
-T a -> Set Loc| to get a all the locations of the data elements within the
+T a -> Set Loc| to get all the locations of the data elements within the
 container.
 
 %%% Positional Mapping
@@ -1177,6 +1204,7 @@ Starting with the adaptation, we can make use of the functions resulting from
 the fact that we can see a container as a shape and data. Therefore, we recover
 a container with the shape of the view, but with the data of the original source
 or with created data when new elements were added:
+\TODO{We should try to avoid talking so abstractly; how is this generalized from previous |adaptDelta| functions (especially the tree one)?}
 %
 \begin{code}
 adaptDelta  :: Shapely s
@@ -1287,6 +1315,7 @@ myCreate (k, v1) = (k, (v1, 0))
 %%%
 \section{Conclusion}
 
+\TODO{So we never compare our work with the papers listed in the introduction? We do not necessarily need a dedicated section for comparison, but we can, for example, say at the end of each section that we have achieved some parts of what the related papers have done.}
 We hope to send the following two messages through this %pearl
 paper. One is that putback-based programming is not that 
 difficult in BiGUL, a simple but powerful put-based bidirectional
