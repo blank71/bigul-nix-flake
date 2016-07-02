@@ -374,6 +374,42 @@ There are also other variants of |normal| and |adaptive| that are suffixed with 
 \section{Positional Alignment}
 
 As a warm-up, let us try to describe in BiGUL the simplest alignment strategy, which matches elements at the same positions in the source and view lists.
+
+Suppose that a research institution has a listing of authors with their
+publication count and another listing with its researchers, where authors and
+researchers are respectivelly represented by the following types:
+%
+\begin{code}
+type Author      = (Id, (  Name, Publications))
+type Researcher  = (Id,    Name)
+\end{code}
+%
+where |Id :: Int| is the identification number (id for short), |Name :: String|
+is the name of the author/researcher, and |Publications :: Int| is the number
+of publications of the author. The relation between an author and a researcher
+is straightforward: a researcher is an author without the publication count and
+thus ids and names of an author must match with the ones of the respective
+researcher.
+%
+This can be expressed using the BiGUL program:
+%
+\begin{code}
+arBX :: BiGUL Author Researcher
+arBX = Replace `Prod` $(rearrV   [| \ c -> (c, ()) |])
+                                 (Replace `Prod` Skip)
+\end{code}
+%
+First, we want to replace the source id (author) with the view id (researcher)
+and thus we use |Replace| on the left-hand side of a |Prod|, whose right-hand
+side will deal with the name part. Since there is a mismatch of shape
+between the source and the view in that part --- the source is a pair whilst
+the view is a single element --- we rearrange the view (researcher name) into a
+pair whose second component is an unit. After the rearrangement, we can use a
+|Prod| with a |Replace| in the left-hand side to replace the name using a
+|Replace| and with a |Skip| on the right-hand side ignoring the value of the
+view and keeping the value of the source (publication count) unchanged.
+
+\begin{comment}
 The following types for
 source (|Source|) and view (|View|) are used as a concrete running example:
 %
@@ -395,37 +431,43 @@ myBX = Replace `Prod` $(rearrV   [| \ c -> (c, ()) |])
                                  (Replace `Prod` Skip)
 \end{code}
 \TODO{This is our first BiGUL program, and we should proceed more gently. Something along the line of ``The first thing we want to do is to replace the source id with the view id, so we write |Replace| on the left-hand side of a |Prod|, whose right-hand side will deal with the name part. For that part, there is a mismatch of shape between the source and view, however: The source is a pair, whereas the view is a single element. To make them match (so we can use |Prod|), one way is to rearrange the view into a pair whose second component is a unit. After the rearrangement, we can now use |Prod|, whose left-hand side is a |Replace|, to replace the name, and right-hand side is a |Skip|, keeping \ldots\ unchanged.''}
+\end{comment}
 
-Positional alignment for lists with elements of the above source and view types
-is pretty straightforward. No moves are taken into
+The listings are represented by lists of the above types. So we have a list of
+authors and a list of researchers. With positional alignment, the relation
+between the two lists is simple: each element of the author list matches the
+element of researcher list at the same position. When performing any operation
+on the view (list of researchers), reordering of the elements (i.e., an element moved to another position) is not taken into
 account, and elements are added or deleted at the end of the source.
-\TODO{Without giving a story beforehand, the reader will have a hard time getting what ``moves'' mean.}
 Just as
 with any other programming practice, the BiGUL program must take into account
-the several possibilities of source and view values in the update process:
+the several possibilities of source and view values in the update process. For
+that, we specify a function (|arMapL|) to map positionaly a list of researchers
+with a list of authors:
 %
 \begin{itemize}
   \item both source and view are empty, and we just
     |Skip|;
   \item all elements of the view were processed, so we adapt the source by removing
-    the extra elements
+    the extra elements:
     |\ _ _ -> []|;
     \TODO{Again, this is the first time we use adaptation, so we should proceed more gently. In general, there's a thought pattern for programming |Case|: Represent consistent cases with normal branches, and use adaptation to rectify inconsistency back to consistency. We should also use this opportunity to explain the pattern.}
     \item both source and view have elements, so we update with the head of both
-    source and view, and then recurse
-    |u `Prod` myMapL c u|;
-    \TODO{|myMapL| is a forward reference.}
-  \item the source does not have enough elements and we create new ones
+    source and view, and then recurse on the tail of the list:
+    |arBX `Prod` arMapL|;
+  \item the source does not have enough elements and we create a new one,
+    setting to 0 the number of publications of the new author:
     |\ _ ((k,v1) : _) -> [(k,(v1,0))]|.
     \TODO{Why putting in $0$? A story will also help here. More interestingly, we can compute a sensible default value from |k| and |v1|.}
+    \\\TODO{I've added a story-based justification. I left the TODO due to the ``intersting'' part. -- Jorge}
 \end{itemize}
 %
 These possibilities are packed into a |Case| statement which selects the correct
 action for each situation:
 %
 \begin{code}
-myMapL :: BiGUL [Source] [View]
-myMapL = Case
+arMapL :: BiGUL [Source] [View]
+arMapL = Case
   [ $(normalSV [p| [] |] [p| [] |])
       ==> $(rearrV [| \ [] -> () |]) Skip
   , $(adaptiveV [p| [] |])
@@ -433,7 +475,7 @@ myMapL = Case
   , $(normalSV [p| (_ : _) |] [p| (_ : _) |])
       ==> $(rearrV [| \ (v:vs) -> (v, vs) |])$
         $(rearrS [| \ (s:ss) -> (s, ss) |])$
-          myBX `Prod` myMapL
+          arBX `Prod` arMapL
   , $(adaptiveV [p| (_ : _) |])
       ==> \ _ ((k,v1) : _) -> [(k,(v1,0))]
   ]
@@ -466,43 +508,61 @@ element is created from the source element at the head of the list. Then, the
 source and view have elements, updating the heads and recursing.
 
 \TODO{Can these two paragraphs be integrated into the bullet points above?}
+\\\TODO{I tried to make the bullet points as short as possible for easy comprehension. I don't really know which way is better. -- Jorge}
 
-Running the |get| function with this BiGUL program, we obtain the following
+To demonstrate the BX functions, let
+\begin{code}
+source = [(0,("M.",3)),(1,("K.",5)),(2,("H.",8))]
+\end{code}
+%
+Running the |get| function on |source| with the |arMapL| BiGUL program, we obtain the following
 result:
 %
 \begin{lstlisting}
-@@>@@ get myMapL [(0,('a',0)),(1,('b',1)),(2,('c',2))]
-[(0,'a'),(1,'b'),(2,'c')]
+@@>@@ get arMapL source
+[(0,"M."),(1,"K."),(2,"H.")]
 \end{lstlisting}
-\TODO{A story will make the list look more meaningful, as opposed to just some generic data.}
-We can perform the changes that we want to this view, e.g., modify the characters
-to upper case, and put that view back into the original source\footnote{The
-symbol \lstcontinueline{} denotes line continuation.}:
+%
+Now, if we want to expand the last name of the authors/researchers, we just
+modify the result above and then put it back into the original source:
 %
 \begin{lstlisting}
-@@>@@ put myMapL [(0,('a',0)),(1,('b',1)),(2,('c',2))] [(0,'A'),(1,'B'),(2,'C')]
-[(0,('A',0)),(1,('B',1)),(2,('C',2))]
+@@>@@@@\hspace{1ex}@@put arMapL source [(0,"Mendes"),(1,"Ko"),(2,"Hu")]
+[(0,("Mendes",3)),(1,("Ko",5)),(2,("Hu",8))]
 \end{lstlisting}
 %
-Moreover, we can see the limitations of positional update when removing an
-element \lstinline!(1,'b')!:
+We can see that the original authors are updated according the changes made to
+the view.
+However, we can see the limitations of positional update when removing an
+element, e.g., \lstinline!(1,"K.")!:
 %
 \begin{lstlisting}
-@@>@@ put myMapL [(0,('a',0)),(1,('b',1)),(2,('c',2))] [(0,'a'),(2,'c')]
-[(0,('a',0)),(2,('c',1))]
+@@>@@ put arMapL source [(0,"M."),(2,"H.")]
+[(0,("M.",3)),(2,("H.",5))]
 \end{lstlisting}
 %
-or adding a new one \lstinline!(3,'d')! before the end:
+or adding a new one, e.g., \lstinline!(3,"Z.")! before the end%
+\footnote{The symbol \lstcontinueline{} denotes line continuation.}:
 %
 \begin{lstlisting}
-@@>@@ put myMapL [(0,('a',0)),(1,('b',1)),(2,('c',2))] [(0,'a'),(1,'b'),(3,'d'),(2,'c')]
-[(0,('a',0)),(1,('b',1)),(3,('d',2)),(2,('c',0))]
+@@>@@ put arMapL source @@\lstcontinueline@@
+             [(0,"M."),(1,"K."),(3,"T."),(2,"H.")]
+[(0,("M.",3)),(1,("K.",5)),(3,("Z.",8)), @@\lstcontinueline@@
+  (2,("H.",0))]
 \end{lstlisting}
+%
+{\lstset{breakatwhitespace}
+Notice the number of publications. For the removal example, it is as
+\lstinline!(2,"H.")! was removed and \lstinline!(1,"K.")! was modified to
+\lstinline!(2,"H.")!.  For the addition example it is as \lstinline!(2,"H.")!
+was added at the end of the view, and \lstinline!(2,"H.")! from the original
+view was modified to \lstinline!(3,"Z.")!.
+}
 
-The |myMapL| program can be generalized to work on lists with arbitrary values.
+The |arMapL| program can be generalized to work on lists with arbitrary values.
 For that, it must be parametrized with a \emph{create} function, to produce a
-source element from a view one, and with a BiGUL program to be run on the
-elements:
+source element from a view one as in the fourth branch of the |arMapL| |Case|,
+and with a BiGUL program to be run on the elements instead of |arBX|:
 \begin{code}
 mapL :: (v -> s) -> BiGUL s v -> BiGUL [s] [v]
 \end{code}
@@ -520,17 +580,21 @@ mapL c u = Case
   ]
 \end{code}
 \end{comment}
-\TODO{Say that the parameter BiGUL program abstracts |myBX|, and |create| abstracts the computation of default source used in the fourth branch.}
 
 %%%
 %%% Key-Based Alignment
 %%%
 \section{Key-Based Alignment}
 
-\TODO{If there is a story, we can then easily show the need for key-based alignment: Positional alignment is obviously not enough for our application\ldots\ it is natural to match people by their ids\ldots}
+The positional alignment strategy is not the best regarding our example as
+shown in the previous section. Looking at the types, we can define a better
+strategy using the ids to match the authors and researchers as it is done
+naturally in other contexts.
+
 More complex alignment strategies can be implemented using BiGUL. One example is
 a key-based one, where elements of the source and the view are paired based on a
 key component from each of the elements.
+Thus, we can use this strategy to implement a better alignment.
 
 \TODO{There is a first solution whose logic is similar to |mapL| --- having just looked at |mapL|, it is more natural to think along this line first. And then, surprise, there is in fact another way to do it:}
 
