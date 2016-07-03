@@ -377,7 +377,7 @@ As a warm-up, let us try to describe in BiGUL the simplest alignment strategy, w
 
 Suppose that a research institution has a listing of authors with their
 publication count and another listing with its researchers, where authors and
-researchers are respectivelly represented by the following types:
+researchers are respectively represented by the following types:
 %
 \begin{code}
 type Author      = (Id, (  Name, Publications))
@@ -546,7 +546,7 @@ or adding a new one, e.g., \lstinline!(3,"Z.")! before the end%
 %
 \begin{lstlisting}
 @@>@@ put arMapL source @@\lstcontinueline@@
-             [(0,"M."),(1,"K."),(3,"T."),(2,"H.")]
+    [(0,"M."),(1,"K."),(3,"T."),(2,"H.")]
 [(0,("M.",3)),(1,("K.",5)),(3,("Z.",8)), @@\lstcontinueline@@
   (2,("H.",0))]
 \end{lstlisting}
@@ -586,7 +586,7 @@ mapL c u = Case
 %%%
 \section{Key-Based Alignment}
 
-The positional alignment strategy is not the best regarding our example as
+The positional alignment strategy is not the best regarding our example
 shown in the previous section. Looking at the types, we can define a better
 strategy using the ids to match the authors and researchers as it is done
 naturally in other contexts.
@@ -597,7 +597,11 @@ key component from each of the elements.
 Thus, we can use this strategy to implement a better alignment.
 
 \TODO{There is a first solution whose logic is similar to |mapL| --- having just looked at |mapL|, it is more natural to think along this line first. And then, surprise, there is in fact another way to do it:}
+\\\TODO{The alignment in BiGUL libs is too complex. It has more features than a
+simple key-based alignment. -- Jorge}
 
+One could implement a key-based alignment strategy using a structure similar to
+the positional alignment. However, a simpler approach is available.
 The idea to implement this strategy is to separate the program in two parts:
 %
 \begin{itemize}
@@ -629,7 +633,7 @@ present in view are discarded. The adaptation of the source can be implemented
 as:
 %
 \begin{code}
-keyMatchAdapt s v = Prelude.map getSourceElement v
+arKeyMatchAdapt s v = Prelude.map getSourceElement v
   where  getSourceElement ve =
            case Prelude.filter ((== fst ve) . fst) s of
              []        -> create ve
@@ -642,55 +646,53 @@ in the previous section, can be used. Thus, putting it all together, we obtain
 the following BiGUL program:
 %
 \begin{code}
-myKeyMatch ::  BiGUL [Source] [View]
-myKeyMatch = Case
-  [ $(normal [| isAligned |]) ==> myMapL
-  , $(adaptive [| \ _ _ -> True |]) ==> keyMatchAdapt ]
+arKeyMatch ::  BiGUL [Source] [View]
+arKeyMatch = Case
+  [ $(normal [| isAligned |]) ==> arMapL
+  , $(adaptive [| \ _ _ -> True |]) ==> arKeyMatchAdapt ]
 \end{code}
 
-The result of running the |get| function with |myKeyMatch| is the same as with
-|myMapL| since they only differ in the alignment strategy:
+The result of running the |get| function with |arKeyMatch| is the same as with
+|arMapL| since they only differ in the alignment strategy:
 %
 \begin{lstlisting}
-@@>@@ get myKeyMatch @@\lstcontinueline@@
-    [(0,('a',0)),(1,('b',1)),(2,('c',2))]
-[(0,'a'),(1,'b'),(2,'c')]
+@@>@@ get arKeyMatch source
+[(0,"M."),(1,"K."),(2,"H.")]
 \end{lstlisting}
 %
 Running the |put| function also has the same result when the elements are the
 same and the order did not change:
 %
 \begin{lstlisting}
-@@>@@ put myKeyMatch @@\lstcontinueline@@
-    [(0,('a',0)),(1,('b',1)), (2,('c',2))] @@\lstcontinueline@@
-    [(0,'A'),(1,'B'),(2,'C')]
-[(0,('A',0)),(1,('B',1)),(2,('C',2))]
+@@>@@ put arKeyMatch source @@\lstcontinueline@@
+    [(0,"Mendes"),(1,"Ko"),(2,"Hu")]
+[(0,("Mendes",3)),(1,("Ko",5)),(2,("Hu",8))]
 \end{lstlisting}
 %
-However, when removing elements \lstinline!(1,'b')! or adding new ones
-\lstinline!(3,'d')!, key-based alignment is more precise than positional:
+However, when removing elements, e.g., \lstinline!(1,"K.")! or adding new ones,
+e.g., \lstinline!(3,"Z.")!, key-based alignment is more precise than positional:
 %
 \begin{lstlisting}
-@@>@@ put myKeyMatch @@\lstcontinueline@@
-    [(0,('a',0)),(1,('b',1)),(2,('c',2))] @@\lstcontinueline@@
-    [(0,'a'),(2,'c'),(3,'d')]
-[(0,('a',0)),(2,('c',2)),(3,('d',0))]
+@@>@@ put arKeyMatch source [(0,"M."),(2,"H.")]
+[(0,("M.",3)),(2,("H.",8))]
+@@>@@ put arKeyMatch source @@\lstcontinueline@@
+    [(0,"M."),(1,"K."),(3,"T."),(2,"H.")]
+[(0,("M.",3)),(1,("K.",5)),(3,("Z.",0)), @@\lstcontinueline@@
+  (2,("H.",8))]
 \end{lstlisting}
 %
 Nonetheless, key-based alignment also has its limitations, e.g., when modifying
-the key of an element (\lstinline!(1,'b')! to \lstinline!(3,'b')!):
+the key of an element (\lstinline!(1,"K.")! to \lstinline!(4,"K.")!):
 %
 \begin{lstlisting}
-@@>@@ put myKeyMatch @@\lstcontinueline@@
-    [(0,('a',0)),(1,('b',1)),(2,('c',2))] @@\lstcontinueline@@
-    [(0,'a'),(3,'b'),(2,'c')]
-[(0,('a',0)),(3,('b',0)),(2,('c',2))]
+@@>@@ put arKeyMatch source@@\hspace{1ex}@@[(0,"M."),(4,"K."),(2,"H.")]
+[(0,("M.",3)),(4,("K.",0)),(2,("H.",8))]
 \end{lstlisting}
 
 As with the positional update, this program can be generalized for key-based
 alignment on lists with arbitrary contents. For that, the |keyMatch| function
 must be parametrized with a function to get a key component from the source, another
-function to get the key component from the view, and the create and BiGUL update
+function to get the key component from the view, and the create function and BiGUL update
 program as with |mapL|:
 %
 \begin{spec}
