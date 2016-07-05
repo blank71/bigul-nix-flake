@@ -1093,7 +1093,8 @@ alignment for trees in a similar way as with lists:
 myAlignT' :: BiGUL (Tree Source, Delta) (Tree View)
 myAlignT' = Case
   [ $(normal [| \(s, d) v  ->  d == getIdT v
-                           &&  d == getIdT s |])
+                           &&  d == getIdT s
+                           &&  locsT s == locsT v|])
       ==> $(rearrS [| \(s, _) -> s |]) myMapT
   , $(adaptiveS [| const True |])
       ==> \(s,d) v ->  let s' = myAdaptDeltaT s v d
