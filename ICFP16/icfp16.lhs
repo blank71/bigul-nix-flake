@@ -379,12 +379,20 @@ Suppose that a research institution has a listing of authors with their
 publication count and another listing with its researchers, where authors and
 researchers are respectively represented by the following types:
 %
+\begin{comment}
 \begin{code}
-type Author      = (Id, (  Name, Publications))
-type Researcher  = (Id,    Name)
+type ID = Int
+type Name = String
+type Publications = Int
+\end{code}
+\end{comment}
+%
+\begin{code}
+type Author      = (ID, (  Name, Publications))
+type Researcher  = (ID,    Name)
 \end{code}
 %
-where |Id :: Int| is the identification number (id for short), |Name :: String|
+where |ID :: Int| is the identification number (id for short), |Name :: String|
 is the name of the author/researcher, and |Publications :: Int| is the number
 of publications of the author. The relation between an author and a researcher
 is straightforward: a researcher is an author without the publication count and
@@ -466,7 +474,7 @@ These possibilities are packed into a |Case| statement which selects the correct
 action for each situation:
 %
 \begin{code}
-arMapL :: BiGUL [Source] [View]
+arMapL :: BiGUL [Author] [Researcher]
 arMapL = Case
   [ $(normalSV [p| [] |] [p| [] |])
       ==> $(rearrV [| \ [] -> () |]) Skip
@@ -646,7 +654,7 @@ in the previous section, can be used. Thus, putting it all together, we obtain
 the following BiGUL program:
 %
 \begin{code}
-arKeyMatch ::  BiGUL [Source] [View]
+arKeyMatch ::  BiGUL [Author] [Researcher]
 arKeyMatch = Case
   [ $(normal [| isAligned |]) ==> arMapL
   , $(adaptive [| \ _ _ -> True |]) ==> arKeyMatchAdapt ]
@@ -764,13 +772,13 @@ However, the delta in the source introduces a bit more complexity to deal with t
 additional information. Implementing this in the running example:
 %
 \begin{code}
-myAlignL'  ::  BiGUL ([Source], Delta) [View]
-myAlignL' = Case
+arAlignL'  ::  BiGUL ([Author], Delta) [Researcher]
+arAlignL' = Case
   [ $(normal [| \(s, d) v   ->  d == getIdL v
                             &&  d == getIdL s |])
-      ==> $(rearrS [| \(s, _) -> s |]) myMapL
+      ==> $(rearrS [| \(s, _) -> s |]) arMapL
   , $(adaptiveS [| const True |])
-      ==> \(s,d) v ->  let s' = myAdaptDeltaL s v d
+      ==> \(s,d) v ->  let s' = arAdaptDeltaL s v d
                        in (s', getIdL v) ]
 \end{code}
 %
@@ -789,9 +797,9 @@ delta, create missing view elements, and
 delete no longer existent view elements:
 %
 \begin{code}
-myAdaptDeltaL  :: [Source] -> [View] -> Delta
-               -> [Source]
-myAdaptDeltaL s v d =
+arAdaptDeltaL  :: [Author] -> [Researcher] -> Delta
+               -> [Author]
+arAdaptDeltaL s v d =
   Prelude.map idOrCreate (Set.elems $ locs v)
   where  idOrCreate i =  let  js = rngOf i d
                          in  if js /= Set.empty
@@ -807,10 +815,10 @@ However, having the delta paired with the source might be inconvenient. To deal 
 such situation, a wrapper is made that takes care of dealing with the delta:
 %
 \begin{code}
-myAlignL :: Delta -> BiGUL [Source] [View]
-myAlignL d = emb g p
-  where  g s    = get myAlignL' (s, getIdL s)
-         p s v  = fst $ put myAlignL' (s, d) v
+arAlignL :: Delta -> BiGUL [Author] [Researcher]
+arAlignL d = emb g p
+  where  g s    = get arAlignL' (s, getIdL s)
+         p s v  = fst $ put arAlignL' (s, d) v
 \end{code}
 %
 This wrapper implements directly the |get| and |put| functions (respectively |g|
@@ -826,25 +834,25 @@ so we know that |getIdL s = getIdL v|. Applying |fst| to both sides of the
 following equation gives us |GetPut|:
 %
 \begin{spec}
-put myAlignL' (s, getIdL v) (get myAlignL' (s, getIdL s))
+put arAlignL' (s, getIdL v) (get arAlignL' (s, getIdL s))
 == { getIdL v == getIdL s }
-put myAlignL' (s, getIdL s) (get myAlignL' (s, getIdL s))
-== { GetPut for myAlignL' }
+put arAlignL' (s, getIdL s) (get arAlignL' (s, getIdL s))
+== { GetPut for arAlignL' }
 (s, getIdL s)
 \end{spec}
 %
 \textsc{PutGet} -- this law states that the view after updating a source is the
 same as the one used for the update. As the result of the |put| function, let
-|(s', delta1) = put myAlignL' (s, delta) v|, thus |(s', delta1)| is consistent
+|(s', delta1) = put arAlignL' (s, delta) v|, thus |(s', delta1)| is consistent
 with |v| and |delta1 == getIdL s'|. Applying the |get| function~|g|:
 %
 \begin{spec}
-get myAlignL' (s', getIdl s')
+get arAlignL' (s', getIdl s')
 == { delta1 = getIdL s' }
-get myAlignL' (s', delta1)
+get arAlignL' (s', delta1)
 == { let binding }
-get myAlignL' (put myAlignL' (s, delta))
-== { PutGet for myAlignL' }
+get arAlignL' (put arAlignL' (s, delta))
+== { PutGet for arAlignL' }
 v
 \end{spec}
 
@@ -881,7 +889,7 @@ For the \emph{get} direction, the delta is ignored, and the result is the same
 as for the previous kinds of alignment:
 %
 \begin{lstlisting}
-@@>@@ get (myAlignL @@|d1|@@) @@\lstcontinueline@@
+@@>@@ get (arAlignL @@|d1|@@) @@\lstcontinueline@@
     [(0,('a',0)),(1,('b',1)),(2,('c',2))]
 [(0,'a'),(1,'b'),(2,'c')]
 \end{lstlisting}
@@ -890,7 +898,7 @@ However, in the put direction, results may vary depending on the given delta,
 e.g., no changes are performed (using |d1|):
 %
 \begin{lstlisting}
-@@>@@ put (myAlignL @@|d1|@@) @@\lstcontinueline@@
+@@>@@ put (arAlignL @@|d1|@@) @@\lstcontinueline@@
   [(0,('a',0)),(1,('b',1)),(2,('c',2))] @@\lstcontinueline@@
   [(0,'A'),(1,'B'),(2,'C')]
 [(0,('A',0)),(1,('B',1)),(2,('C',2))]
@@ -899,7 +907,7 @@ e.g., no changes are performed (using |d1|):
 versus a swap between the last two elements (using |d2|):
 %
 \begin{lstlisting}
-@@>@@ put (myAlignL @@|d2|@@) @@\lstcontinueline@@
+@@>@@ put (arAlignL @@|d2|@@) @@\lstcontinueline@@
     [(0,('a',0)),(1,('b',1)),(2,('c',2))] @@\lstcontinueline@@
     [(0,'A'),(1,'B'),(2,'C')]
 [(0,('A',0)),(1,('B',2)),(2,('C',1))]
@@ -914,7 +922,7 @@ A similar situation occurs when the view is not modified, but one element is not
 in the delta:
 %
 \begin{lstlisting}
-@@>@@ put (myAlignL @@|d3|@@) @@\lstcontinueline@@
+@@>@@ put (arAlignL @@|d3|@@) @@\lstcontinueline@@
     [(0,('a',0)),(1,('b',1)),(2,('c',2))] @@\lstcontinueline@@
     [(0,'A'),(1,'B'),(2,'C')]
 [(0,('A',0)),(1,('B',1)),(2,('C',0))]
@@ -1048,9 +1056,9 @@ approach used in the other implementations:
 The adaptation function for tree can be
 %
 \begin{code}
-myAdaptDeltaT  :: Tree Source -> Tree View -> Delta
-               -> Tree Source
-myAdaptDeltaT s v d = Prelude.fmap idOrCreate (locsT v)
+arAdaptDeltaT  :: Tree Author -> Tree Researcher -> Delta
+               -> Tree Author
+arAdaptDeltaT s v d = Prelude.fmap idOrCreate (locsT v)
   where  idOrCreate i =
            let js = rngOf i d
            in  if js /= Set.empty
@@ -1068,8 +1076,8 @@ lists, since both have only two data constructors. However, trees have double
 recursion which must be taken into account.
 %
 \begin{code}
-myMapT :: BiGUL (Tree Source) (Tree View)
-myMapT = Case
+arMapT :: BiGUL (Tree Author) (Tree Researcher)
+arMapT = Case
   [ $(normalSV [p| Nil |] [p| Nil |])
       ==> $(rearrV [| \ Nil -> () |]) Skip
   , $(adaptiveV [p| Nil |])
@@ -1079,7 +1087,7 @@ myMapT = Case
                        -> (v, (vl, vr)) |]) $
              $(rearrS  [| \ (Node s sl sr)
                          -> (s, (sl, sr)) |])$
-                  myBX `Prod` (myMapT `Prod` myMapT)
+                  arBX `Prod` (arMapT `Prod` arMapT)
   , $(adaptiveV [p| (Node _ _ _) |])
       ==> \ _ (Node (k, v1) _ _) -> Node  (k, (v1, 0))
                                           Nil    Nil
@@ -1090,14 +1098,14 @@ Having the adaptation and the positional update, we can now define a delta-based
 alignment for trees in a similar way as with lists:
 %
 \begin{code}
-myAlignT' :: BiGUL (Tree Source, Delta) (Tree View)
-myAlignT' = Case
+arAlignT' :: BiGUL (Tree Author, Delta) (Tree Researcher)
+arAlignT' = Case
   [ $(normal [| \(s, d) v  ->  d == getIdT v
                            &&  d == getIdT s
                            &&  locsT s == locsT v|])
-      ==> $(rearrS [| \(s, _) -> s |]) myMapT
+      ==> $(rearrS [| \(s, _) -> s |]) arMapT
   , $(adaptiveS [| const True |])
-      ==> \(s,d) v ->  let s' = myAdaptDeltaT s v d
+      ==> \(s,d) v ->  let s' = arAdaptDeltaT s v d
                        in (s', getIdT v) ]
 \end{code}
 %
@@ -1121,10 +1129,10 @@ arAlignTL' = Case
 and corresponding wrapper:
 %
 \begin{code}
-myAlignT :: Delta -> BiGUL (Tree Source) (Tree View)
-myAlignT d = emb g p
-  where  g s    = get myAlignT' (s, getIdT s)
-         p s v  = fst $ put myAlignT' (s, d) v
+arAlignT :: Delta -> BiGUL (Tree Author) (Tree Researcher)
+arAlignT d = emb g p
+  where  g s    = get arAlignT' (s, getIdT s)
+         p s v  = fst $ put arAlignT' (s, d) v
 \end{code}
 
 The application of |get| and |put| to trees is similar to the application of
@@ -1132,7 +1140,7 @@ them to lists. The |get| functions takes the source tree and produces a view
 tree where its elements are the view of their correspondence in the source:
 %
 \begin{lstlisting}
-@@>@@ get (myAlignT @@|d1|@@) (Node (1,('b',1)) @@\lstcontinueline@@
+@@>@@ get (arAlignT @@|d1|@@) (Node (1,('b',1)) @@\lstcontinueline@@
       (Node (0,('a',0)) Nil Nil) @@\lstcontinueline@@
       (Node (2,('c',2)) Nil Nil))
 Node (1,'b')  (Node (0,'a') Nil Nil) @@\lstcontinueline@@
@@ -1142,7 +1150,7 @@ Node (1,'b')  (Node (0,'a') Nil Nil) @@\lstcontinueline@@
 The delta specification in the |put| transformation is the same as with lists:
 %
 \begin{lstlisting}
-@@>@@ put (myAlignT @@|d1|@@) @@\lstcontinueline@@
+@@>@@ put (arAlignT @@|d1|@@) @@\lstcontinueline@@
     (Node (1,('b',1)) @@\lstcontinueline@@
       (Node (0,('a',0)) Nil Nil) @@\lstcontinueline@@
       (Node (2,('c',2)) Nil Nil)) @@\lstcontinueline@@
@@ -1371,7 +1379,7 @@ implementation of delta-based alignment. The same function can be used for,
 e.g., lists:
 %
 \begin{lstlisting}
-@@>@@ put (keyAlign myBX myCreate fst fst) @@\lstcontinueline@@
+@@>@@ put (keyAlign arBX arCreate fst fst) @@\lstcontinueline@@
     [(0,('a',0)),(1,('b',1)),(2,('c',2))] @@\lstcontinueline@@
     [(0,'A'),(1,'B'),(2,'C')]
 [(0,('A',0)),(1,('B',1)),(2,('C',2))]
@@ -1380,7 +1388,7 @@ e.g., lists:
 and for trees:
 %
 \begin{lstlisting}
-@@>@@ put (keyAlign myBX myCreate fst fst) @@\lstcontinueline@@
+@@>@@ put (keyAlign arBX arCreate fst fst) @@\lstcontinueline@@
     (Node (1,('b',1)) @@\lstcontinueline@@
       (Node (0,('a',0)) Nil Nil) @@\lstcontinueline@@
       (Node (2,('c',2)) Nil Nil)) @@\lstcontinueline@@
@@ -1391,12 +1399,12 @@ Node (1,('B',1))  (Node (0,('A',0)) Nil Nil) @@\lstcontinueline@@
                   (Node (2,('C',2)) Nil Nil)
 \end{lstlisting}
 %
-where |myCreate (k, v1) = (k, (v1, 0))|.
+where |arCreate (k, v1) = (k, (v1, 0))|.
 %
 \begin{comment}
 \begin{code}
-myCreate :: View -> Source
-myCreate (k, v1) = (k, (v1, 0))
+arCreate :: View -> Source
+arCreate (k, v1) = (k, (v1, 0))
 \end{code}
 \end{comment}
 
