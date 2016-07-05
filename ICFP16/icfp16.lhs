@@ -1101,6 +1101,23 @@ myAlignT' = Case
                        in (s', getIdT v) ]
 \end{code}
 %
+\TODO{We maybe need to use call the |get| function in order to use the shape of
+the view. Otherwise, we cannot align structures with two different shapes.
+Also, we need to use something generic, like |shape| instaed of |locsT|, and
+thus introduce the following code a bit later. -- Jorge
+\begin{spec}
+arAlignTL' :: BiGUL (Tree Author, Delta) [Researcher]
+arAlignTL' = Case
+  [ $(normal [| \(s, d) v  ->  d == getIdT v
+                           &&  d == getIdT s
+                           &&  shape (get arMapT s) == shape v|])
+      ==> $(rearrS [| \(s, _) -> s |]) arMapT
+  , $(adaptiveS [| const True |])
+      ==> \(s,d) v ->  let s' = arAdaptDeltaT s v d
+                       in (s', getIdT v) ]
+\end{spec}
+}
+%
 and corresponding wrapper:
 %
 \begin{code}
