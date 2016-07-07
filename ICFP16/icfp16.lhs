@@ -323,6 +323,7 @@ are guaranteed to be well-behaved.
 
 %An under-appreciated fact about well-behaved lenses is that \emph{put} completely determines the behavior of the corresponding \emph{get} --- that is, given a \emph{put} function and two \emph{get} functions each of which forms a well-behaved lens when paired with the \emph{put} function, it must be the case that the two \emph{get} functions are pointwise equal. This fact was already noted by Foster in his PhD thesis~\cite{Foster2009} but had remained neglected until people dug up this idea and started exploring the possibility of specifying BXs in terms of \emph{put} \TODO{citations}.
 
+In this paper, we use BiGUL version 0.9, which is available on Hackage.
 Intuitively, think of a BiGUL program of type |BiGUL s v| as describing how to manipulate a state consisting of a source component of type~|s| and a view component of type~|v|; the goal is to copy all information in the view to proper places in the source.
 In the simplest case, the view has type~|()| and contains no information, and we can use |Skip :: BiGUL s ()| to leave the source unchanged;
 another simple case is when the view has the same type as the source, and we can use |Replace :: BiGUL s s| to replace the entire source with the view.
@@ -897,8 +898,11 @@ In order for an embedding to be well-behaved, running the |put| function should
 produce a source that when running |get| should return the view given to the
 former, as stated by the \textsc{GetPut} law and enforced by the case structure.
 Furthermore, the view should be completely defined by the source.
+It is interesting to note that the two-branch structure of |emb| is comparable with that of |arAlignL'|:
+The normal branch of |arAlignL'| deals with the case where the source and view are roughly consistent, i.e., aligned, but the elements are not yet completely synchronized pairwise; otherwise, when the source and view are too inconsistent, i.e., not aligned, the adaptive branch comes in and restores enough consistency such that the normal branch can take over.
+The normal branch of |emb|, on the other hand, applies when the source and view are fully consistent (as specified by~|g|), and its adaptive branch restores full consistency (by~|p|) when encountering inconsistent pairs of source and view.
+In short, |emb| is an extreme instance of the two-branch structure.
 
-\TODO{It might be interesting to note that |emb| is a further generalization of the two-branch structure.}
 
 To run the delta alignment, we thus need to provide a delta to the BiGUL
 program. With the running example, we can use the following deltas:
