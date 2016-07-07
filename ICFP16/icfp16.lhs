@@ -169,6 +169,11 @@ import Prelude hiding (traverse)
 import Generics.Pointless.Combinators hiding (and)
 import Generics.Pointless.Functors hiding (Functor, (:+:), (:*:))
 import Generics.Pointless.HFunctors
+
+infixr 0 ==>
+(==>) :: (a -> b) -> a -> b
+(==>) = ($)
+
 \end{code}
 \end{comment}
 
@@ -450,24 +455,21 @@ account, and elements are added or deleted at the end of the source.
 Just as
 with any other programming practice, the BiGUL program must take into account
 the several possibilities of source and view values in the update process. For
-that, we specify a function (|arMapL|) to map positionaly a list of researchers
+that, we specify a function (|arMapL|) to map positionally a list of researchers
 with a list of authors:
 %
 \begin{itemize}
   \item both source and view are empty, and we just
     |Skip|;
-  \item all elements of the view were processed, so we adapt the source by removing
+  \item all elements of the view were processed, so we adapt the source (explained below) by removing
     the extra elements:
     |\ _ _ -> []|;
-    \TODO{Again, this is the first time we use adaptation, so we should proceed more gently. In general, there's a thought pattern for programming |Case|: Represent consistent cases with normal branches, and use adaptation to rectify inconsistency back to consistency. We should also use this opportunity to explain the pattern.}
     \item both source and view have elements, so we update with the head of both
     source and view, and then recurse on the tail of the list:
     |arBX `Prod` arMapL|;
   \item the source does not have enough elements and we create a new one,
     setting to 0 the number of publications of the new author:
     |\ _ ((k,v1) : _) -> [(k,(v1,0))]|.
-    \TODO{Why putting in $0$? A story will also help here. More interestingly, we can compute a sensible default value from |k| and |v1|.}
-    \\\TODO{I've added a story-based justification. I left the TODO due to the ``intersting'' part. -- Jorge}
 \end{itemize}
 %
 These possibilities are packed into a |Case| statement which selects the correct
@@ -514,9 +516,6 @@ view still has elements, but the source is empty. In this case, a new source
 element is created from the source element at the head of the list. Then, the
 |Case| statement looks for a normal branch, entering in the one where both
 source and view have elements, updating the heads and recursing.
-
-\TODO{Can these two paragraphs be integrated into the bullet points above?}
-\\\TODO{I tried to make the bullet points as short as possible for easy comprehension. I don't really know which way is better. -- Jorge}
 
 To demonstrate the BX functions, let
 \begin{code}
@@ -603,19 +602,15 @@ a key-based one, where elements of the source and the view are paired based on a
 key component from each of the elements.
 Thus, we can use this strategy to implement a better alignment.
 
-\TODO{There is a first solution whose logic is similar to |mapL| --- having just looked at |mapL|, it is more natural to think along this line first. And then, surprise, there is in fact another way to do it:}
-\\\TODO{The alignment in BiGUL libs is too complex. It has more features than a
-simple key-based alignment. -- Jorge}
-
 One could implement a key-based alignment strategy using a structure similar to
 the positional alignment. However, a simpler approach is available.
 The idea to implement this strategy is to separate the program in two parts:
 %
 \begin{itemize}
   \item alignment of the elements;
-  \item the actual update.
+  \item the actual update, using a positional mapping which is sufficient when
+  the elements are aligned.
 \end{itemize}
-\TODO{The key lies in the observation that positional update is sufficient when the lists are already aligned; so just use adaptation to do the alignment!}
 
 To align the elements, we must first be able to extract a key from source and
 view elements. For our running example, we use the first component of the
@@ -1147,7 +1142,8 @@ At this point, we can define a delta-based
 alignment for trees in a similar way as with lists:
 %
 \begin{code}
-arAlignT' :: BiGUL (Tree Author, Delta) (Tree Researcher)
+arAlignT'
+  :: BiGUL (Tree Author, Delta) (Tree Researcher)
 arAlignT' = Case
   [ $(normal [| isDeltaAlignedT |])
       ==> $(rearrS [| \(s, _) -> s |]) arMapT
@@ -1156,27 +1152,11 @@ arAlignT' = Case
                        in (s', getIdT v) ]
 \end{code}
 %
-\TODO{We maybe need to use call the |get| function in order to use the shape of
-the view. Otherwise, we cannot align structures with two different shapes.
-Also, we need to use something generic, like |shape| instaed of |locsT|, and
-thus introduce the following code a bit later. -- Jorge
-\begin{spec}
-arAlignTL' :: BiGUL (Tree Author, Delta) [Researcher]
-arAlignTL' = Case
-  [ $(normal [| \(s, d) v  ->  d == getIdT v
-                           &&  d == getIdT s
-                           &&  shape (get arMapT s) == shape v|])
-      ==> $(rearrS [| \(s, _) -> s |]) arMapT
-  , $(adaptiveS [| const True |])
-      ==> \(s,d) v ->  let s' = arAdaptDeltaT s v d
-                       in (s', getIdT v) ]
-\end{spec}
-}
-%
 and corresponding wrapper:
 %
 \begin{code}
-arAlignT :: Delta -> BiGUL (Tree Author) (Tree Researcher)
+arAlignT  :: Delta
+          -> BiGUL (Tree Author) (Tree Researcher)
 arAlignT d = emb g p
   where  g s    = get arAlignT' (s, getIdT s)
          p s v  = fst $ put arAlignT' (s, d) v
@@ -1465,7 +1445,7 @@ where |arCreate (k, v1) = (k, (v1, 0))|.
 %
 \begin{comment}
 \begin{code}
-arCreate :: View -> Source
+arCreate :: Researcher -> Author
 arCreate (k, v1) = (k, (v1, 0))
 \end{code}
 \end{comment}
