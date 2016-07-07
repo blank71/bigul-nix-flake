@@ -520,7 +520,7 @@ source and view have elements, updating the heads and recursing.
 
 To demonstrate the BX functions, let
 \begin{code}
-source = [(0,("M.",3)),(1,("K.",5)),(2,("H.",8))]
+source = [(0,("A.",3)),(1,("B.",5)),(2,("C.",8))]
 \end{code}
 %
 Running the |get| function on |source| with the |arMapL| BiGUL program, we obtain the following
@@ -528,43 +528,42 @@ result:
 %
 \begin{lstlisting}
 @@>@@ get arMapL source
-[(0,"M."),(1,"K."),(2,"H.")]
+[(0,"A."),(1,"B."),(2,"C.")]
 \end{lstlisting}
 %
 Now, if we want to expand the last name of the authors/researchers, we just
 modify the result above and then put it back into the original source:
 %
 \begin{lstlisting}
-@@>@@@@\hspace{1ex}@@put arMapL source [(0,"Mendes"),(1,"Ko"),(2,"Hu")]
-[(0,("Mendes",3)),(1,("Ko",5)),(2,("Hu",8))]
+@@>@@@@\hspace{1ex}@@put arMapL source [(0,"Ana"),(1,"Bob"),(2,"Carl")]
+[(0,("Ana",3)),(1,("Bob",5)),(2,("Carl",8))]
 \end{lstlisting}
 %
 We can see that the original authors are updated according the changes made to
 the view.
 However, we can see the limitations of positional update when removing an
-element, e.g., \lstinline!(1,"K.")!:
+element, e.g., \lstinline!(1,"B.")!:
 %
 \begin{lstlisting}
-@@>@@ put arMapL source [(0,"M."),(2,"H.")]
-[(0,("M.",3)),(2,("H.",5))]
+@@>@@ put arMapL source [(0,"A."),(2,"C.")]
+[(0,("A.",3)),(2,("C.",5))]
 \end{lstlisting}
 %
-or adding a new one, e.g., \lstinline!(3,"Z.")! before the end%
+or adding a new one, e.g., \lstinline!(3,"D.")! before the end%
 \footnote{The symbol \lstcontinueline{} denotes line continuation.}:
 %
-\begin{lstlisting}
+\begin{lstlisting}[breaklines=false]
 @@>@@ put arMapL source @@\lstcontinueline@@
-    [(0,"M."),(1,"K."),(3,"T."),(2,"H.")]
-[(0,("M.",3)),(1,("K.",5)),(3,("Z.",8)), @@\lstcontinueline@@
-  (2,("H.",0))]
+    [(0,"A."),(1,"B."),(3,"D."),(2,"C.")]
+[(0,("A.",3)),(1,("B.",5)),(3,("D.",8)),(2,("C.",0))]
 \end{lstlisting}
 %
 {\lstset{breakatwhitespace}
 Notice the number of publications. For the removal example, it is as
-\lstinline!(2,"H.")! was removed and \lstinline!(1,"K.")! was modified to
-\lstinline!(2,"H.")!.  For the addition example it is as \lstinline!(2,"H.")!
-was added at the end of the view, and \lstinline!(2,"H.")! from the original
-view was modified to \lstinline!(3,"Z.")!.
+\lstinline!(2,"C.")! was removed and \lstinline!(1,"B.")! was modified to
+\lstinline!(2,"C.")!.  For the addition example it is as \lstinline!(2,"C.")!
+was added at the end of the view, and \lstinline!(2,"C.")! from the original
+view was modified to \lstinline!(3,"D.")!.
 }
 
 The |arMapL| program can be generalized to work on lists with arbitrary values.
@@ -664,8 +663,10 @@ The result of running the |get| function with |arKeyMatch| is the same as with
 |arMapL| since they only differ in the alignment strategy:
 %
 \begin{lstlisting}
+@@>@@ source
+[(0,("A.",3)),(1,("B.",5)),(2,("C.",8))]
 @@>@@ get arKeyMatch source
-[(0,"M."),(1,"K."),(2,"H.")]
+[(0,"A."),(1,"B."),(2,"C.")]
 \end{lstlisting}
 %
 Running the |put| function also has the same result when the elements are the
@@ -673,32 +674,32 @@ same and the order did not change:
 %
 \begin{lstlisting}
 @@>@@ put arKeyMatch source @@\lstcontinueline@@
-    [(0,"Mendes"),(1,"Ko"),(2,"Hu")]
-[(0,("Mendes",3)),(1,("Ko",5)),(2,("Hu",8))]
+    [(0,"Ana"),(1,"Bob"),(2,"Carl")]
+[(0,("Ana",3)),(1,("Bob",5)),(2,("Carl",8))]
 \end{lstlisting}
 %
-However, when removing elements, e.g., \lstinline!(1,"K.")! or adding new ones,
-e.g., \lstinline!(3,"Z.")!, key-based alignment is more precise than positional:
+However, when removing elements, e.g., \lstinline!(1,"B.")! or adding new ones,
+e.g., \lstinline!(3,"D.")!, key-based alignment is more precise than positional:
 %
 \begin{lstlisting}
-@@>@@ put arKeyMatch source [(0,"M."),(2,"H.")]
-[(0,("M.",3)),(2,("H.",8))]
+@@>@@ put arKeyMatch source [(0,"A."),(2,"C.")]
+[(0,("A.",3)),(2,("C.",8))]
 @@>@@ put arKeyMatch source @@\lstcontinueline@@
-    [(0,"M."),(1,"K."),(3,"T."),(2,"H.")]
-[(0,("M.",3)),(1,("K.",5)),(3,("Z.",0)), @@\lstcontinueline@@
-  (2,("H.",8))]
+    [(0,"A."),(1,"B."),(3,"D."),(2,"C.")]
+[(0,("A.",3)),(1,("B.",5)),(3,("D.",0)), @@\lstcontinueline@@
+  (2,("C.",8))]
 \end{lstlisting}
 %
 Nonetheless, key-based alignment also has its limitations, e.g., when modifying
-the key of an element (\lstinline!(1,"K.")! to \lstinline!(4,"K.")!):
+the key of an element (\lstinline!(1,"B.")! to \lstinline!(4,"B.")!):
 %
 \begin{lstlisting}
-@@>@@ put arKeyMatch source@@\hspace{1ex}@@[(0,"M."),(4,"K."),(2,"H.")]
-[(0,("M.",3)),(4,("K.",0)),(2,("H.",8))]
+@@>@@ put arKeyMatch source@@\hspace{1ex}@@[(0,"A."),(4,"B."),(2,"C.")]
+[(0,("A.",3)),(4,("B.",0)),(2,("C.",8))]
 \end{lstlisting}
 
 As with the positional update, this program can be generalized for key-based
-alignment on lists with arbitrary contents. For that, the |keyMatch| function
+alignment on lists with arbitrary contents. For that, the |arKeyMatch| function
 must be parametrized with a function to get a key component from the source, another
 function to get the key component from the view, and the create function and BiGUL update
 program as with |mapL|:
@@ -713,7 +714,24 @@ keyMatch  :: Eq k => (s -> k) -> (b -> k)
 %%%
 \section{Delta-Based List Alignment}
 
-\TODO{We have discovered a pattern that is actually very easy to generalise to encode much more complex alignment strategies. A story bringing out the need for delta-based alignment\ldots}
+The pattern used for the implementation of the key-based alignment strategy ---
+the separation of the alignment of source and view in a step and then the
+element-wise update in another one --- is actually very powerful and allows to
+implement much more complex alignment strategies.
+
+{\lstset{prebreak={},breakatwhitespace=true}
+For instance, going back to the running example, if one wants to change the id
+of a researcher alongside with other operations, that would not be possible with
+either the positional nor the key-based alignment strategies. More concretely,
+putting back \lstinline![(0,"A."),(1,"C.")]!, where \lstinline!(1,"B.")! was
+removed and \lstinline!(2,"C.")! was changed to \lstinline!(1,"C.")!, into
+\lstinline![(0,("A.",3)),(1,("B."),5),(2,("C.",8))]!
+would not yield the expected
+\lstinline![(0,("A.",3)),(1,("C.",8))]!. In this case, we are missing
+information about the operations performed which would lead to a correct update
+of the list of authors.
+}
+
 Alignment can be made more precise using information about how the view is modified.
 If we extract the relation of elements in the original
 view to the elements in the modified view, then the alignment performed when
@@ -759,7 +777,6 @@ getIdL = Set.map (\ l -> (l, l)) . locs
 In order to implement such kind of alignment in BiGUL, the delta can be inserted
 into the source, since we can manipulate it using adaptation in
 |Case| branches.
-\TODO{This is a key revelation. We should try to give it a proper development. We still want to use the two-branch structure, but unlike the previous section, there are no keys now, so when do we know that the source and view are ready for a positional sync?}
 
 The implementation of delta-based alignment is similar to the key-based one:
 %
@@ -769,13 +786,26 @@ The implementation of delta-based alignment is similar to the key-based one:
 \end{enumerate}
 %
 However, the delta in the source introduces a bit more complexity to deal with the
-additional information. Implementing this in the running example:
+additional information. We no longer use the keys of the elements to check if
+the lists are aligned, but we verify that purely based on the delta: If the
+identity delta of the source and the identity delta of the view are both equal
+to the given delta, then both source and view elements are aligned:
+%
+\begin{code}
+isDeltaAlignedL (s,d) v = d == getIdL v && d == getIdL s
+\end{code}
+%
+When the source and the view are not aligned, we adapt the source similarly to
+the key-based alignment. However, in this case we also have the delta present in
+the source, which should be the same as both the source and the view after the
+adaptation so that we can perform the positional mapping.
+%
+Implementing this in the running example:
 %
 \begin{code}
 arAlignL'  ::  BiGUL ([Author], Delta) [Researcher]
 arAlignL' = Case
-  [ $(normal [| \(s, d) v   ->  d == getIdL v
-                            &&  d == getIdL s |])
+  [ $(normal [| isDeltaAlignedL |])
       ==> $(rearrS [| \(s, _) -> s |]) arMapL
   , $(adaptiveS [| const True |])
       ==> \(s,d) v ->  let s' = arAdaptDeltaL s v d
@@ -889,28 +919,27 @@ For the \emph{get} direction, the delta is ignored, and the result is the same
 as for the previous kinds of alignment:
 %
 \begin{lstlisting}
-@@>@@ get (arAlignL @@|d1|@@) @@\lstcontinueline@@
-    [(0,('a',0)),(1,('b',1)),(2,('c',2))]
-[(0,'a'),(1,'b'),(2,'c')]
+@@>@@ source
+[(0,("A.",3)),(1,("B.",5)),(2,("C.",8))]
+@@>@@ get (arAlignL @@|d1|@@) source
+[(0,"A."),(1,"B."),(2,"C.")]
 \end{lstlisting}
 %
 However, in the put direction, results may vary depending on the given delta,
 e.g., no changes are performed (using |d1|):
 %
 \begin{lstlisting}
-@@>@@ put (arAlignL @@|d1|@@) @@\lstcontinueline@@
-  [(0,('a',0)),(1,('b',1)),(2,('c',2))] @@\lstcontinueline@@
-  [(0,'A'),(1,'B'),(2,'C')]
-[(0,('A',0)),(1,('B',1)),(2,('C',2))]
+@@>@@ put (arAlignL @@|d1|@@) source @@\lstcontinueline@@
+    [(0,"A."),(1,"B."),(2,"C.")]
+[(0,("A.",3)),(1,("B.",5)),(2,("C.",8))]
 \end{lstlisting}
 %
 versus a swap between the last two elements (using |d2|):
 %
 \begin{lstlisting}
-@@>@@ put (arAlignL @@|d2|@@) @@\lstcontinueline@@
-    [(0,('a',0)),(1,('b',1)),(2,('c',2))] @@\lstcontinueline@@
-    [(0,'A'),(1,'B'),(2,'C')]
-[(0,('A',0)),(1,('B',2)),(2,('C',1))]
+@@>@@ put (arAlignL @@|d2|@@) source @@\lstcontinueline@@
+    [(0,"A."),(1,"B."),(2,"C.")]
+[(0,("A.",3)),(1,("B.",8)),(2,("C.",5))]
 \end{lstlisting}
 %
 Note that the elements were not swapped in the view, but the delta |d2|
@@ -922,10 +951,9 @@ A similar situation occurs when the view is not modified, but one element is not
 in the delta:
 %
 \begin{lstlisting}
-@@>@@ put (arAlignL @@|d3|@@) @@\lstcontinueline@@
-    [(0,('a',0)),(1,('b',1)),(2,('c',2))] @@\lstcontinueline@@
-    [(0,'A'),(1,'B'),(2,'C')]
-[(0,('A',0)),(1,('B',1)),(2,('C',0))]
+@@>@@ put (arAlignL @@|d3|@@) source @@\lstcontinueline@@
+    [(0,"A."),(1,"B."),(2,"C.")]
+[(0,("A.",3)),(1,("B.",5)),(2,("C.",0))]
 \end{lstlisting}
 %
 In this case, it is equivalent to remove the last element and inserting it
@@ -978,9 +1006,12 @@ alignL b c d = emb g p
 %%%
 \section{Delta-Based Tree Alignment}
 
-\TODO{The story will probably break up at this point, but we can just go generic and say it is natural to consider trees next. What difficulties will there be when we move on to trees? We need to worry about the shapes now\ldots}
-Another container where delta alignment can be implemented is a tree. Many kinds
-of trees exist, but we use binary tree with labels in the nodes:
+Lists are not the only structures capable of storing information, nor the only
+ones that are used in bidirectional transformation applications. However, other
+containers bring new challenges and we need to take them into account, e.g.,
+the shape of the container.
+One such container where delta alignment can be implemented is the tree. Many kinds
+of trees exist, but we use a binary tree with labels in the nodes:
 %
 \begin{code}
 data Tree a = Nil | Node a (Tree a) (Tree a)
@@ -1069,7 +1100,9 @@ arAdaptDeltaT s v d = Prelude.fmap idOrCreate (locsT v)
 %
 where we take advantage of the |fmap| function, deriving from the fact that |Tree| is a
 functor.
-\TODO{And then I discover that you do not discuss shapes at all\ldots\ How flexibly can you deal with shape changes? Once you make it clear how to deal with shape changes here, the next section can just concentrate on explaining how all the things we have seen can be unified in one definition (in terms of containers).}
+This adaptation does two important tasks: it molds the source tree in order to
+match the shape of the view one; and, it aligns the elements in order to perform
+a positional update.
 
 The implementation of the positional tree update is similar to the one for
 lists, since both have only two data constructors. However, trees have double
@@ -1094,15 +1127,29 @@ arMapT = Case
   ]
 \end{code}
 
-Having the adaptation and the positional update, we can now define a delta-based
+Before implementing the delta-based alignment for trees, we must revisit the
+function to check if the source and the view are aligned. For the list case, the
+shape is isomorphic to naturals and thus we have the shape of a list equal to
+its length. This aspect is taken into account when verifying the identity delta
+of the list with the given delta. However, for trees this is different and we
+thus need to include another condition:
+%
+\begin{code}
+isDeltaAlignedT (s,d) v  =   d == getIdT v
+                         &&  d == getIdT s
+                         &&  locsT s == locsT v
+\end{code}
+%
+Comparing the positions of the source tree and the view one we ensure that both
+have the same shape.
+
+At this point, we can define a delta-based
 alignment for trees in a similar way as with lists:
 %
 \begin{code}
 arAlignT' :: BiGUL (Tree Author, Delta) (Tree Researcher)
 arAlignT' = Case
-  [ $(normal [| \(s, d) v  ->  d == getIdT v
-                           &&  d == getIdT s
-                           &&  locsT s == locsT v|])
+  [ $(normal [| isDeltaAlignedT |])
       ==> $(rearrS [| \(s, _) -> s |]) arMapT
   , $(adaptiveS [| const True |])
       ==> \(s,d) v ->  let s' = arAdaptDeltaT s v d
@@ -1140,25 +1187,40 @@ them to lists. The |get| functions takes the source tree and produces a view
 tree where its elements are the view of their correspondence in the source:
 %
 \begin{lstlisting}
-@@>@@ get (arAlignT @@|d1|@@) (Node (1,('b',1)) @@\lstcontinueline@@
-      (Node (0,('a',0)) Nil Nil) @@\lstcontinueline@@
-      (Node (2,('c',2)) Nil Nil))
-Node (1,'b')  (Node (0,'a') Nil Nil) @@\lstcontinueline@@
-              (Node (2,'c') Nil Nil)
+@@>@@ get (arAlignT @@|d1|@@) (Node (1,("B.",5)) @@\lstcontinueline@@
+      (Node (0,("A.",3)) Nil Nil) @@\lstcontinueline@@
+      (Node (2,("C.",8)) Nil Nil))
+Node (1,"B.")  (Node (0,"A.") Nil Nil) @@\lstcontinueline@@
+               (Node (2,"C.") Nil Nil)
 \end{lstlisting}
 %
 The delta specification in the |put| transformation is the same as with lists:
 %
 \begin{lstlisting}
 @@>@@ put (arAlignT @@|d1|@@) @@\lstcontinueline@@
-    (Node (1,('b',1)) @@\lstcontinueline@@
-      (Node (0,('a',0)) Nil Nil) @@\lstcontinueline@@
-      (Node (2,('c',2)) Nil Nil)) @@\lstcontinueline@@
-    (Node (1,'B') @@\lstcontinueline@@
-      (Node (0,'A') Nil Nil) @@\lstcontinueline@@
-      (Node (2,'C') Nil Nil))
-Node (1,('B',1))  (Node (0,('A',0)) Nil Nil) @@\lstcontinueline@@
-                  (Node (2,('C',2)) Nil Nil)
+    (Node (1,("B.",5)) @@\lstcontinueline@@
+      (Node (0,("A.",3)) Nil Nil) @@\lstcontinueline@@
+      (Node (2,("C.",8)) Nil Nil)) @@\lstcontinueline@@
+    (Node (1,"B.") @@\lstcontinueline@@
+      (Node (0,"A.") Nil Nil) @@\lstcontinueline@@
+      (Node (2,"C.") Nil Nil))
+Node (1,("B",5))  (Node (0,("A.",3)) Nil Nil) @@\lstcontinueline@@
+                  (Node (2,("C.",8)) Nil Nil)
+\end{lstlisting}
+%
+We can also change the shape of a tree in the view:
+%
+\begin{lstlisting}
+@@>@@ put (arAlignT @@|d1|@@) @@\lstcontinueline@@
+    (Node (1,("B.",5)) @@\lstcontinueline@@
+      (Node (0,("A.",3)) Nil Nil) @@\lstcontinueline@@
+      (Node (2,("C.",8)) Nil Nil)) @@\lstcontinueline@@
+    (Node (0,"A.") Nil @@\lstcontinueline@@
+      (Node (1,"B.") Nil @@\lstcontinueline@@
+        (Node (2,"C.") Nil Nil)))
+Node (0,"A.",3) Nil @@\lstcontinueline@@
+  (Node (1,"B.",5) Nil @@\lstcontinueline@@
+    (Node (2,"C.",8) Nil Nil))
 \end{lstlisting}
 
 The delta alignment implementation can be generalized for arbitrary tree
@@ -1380,23 +1442,23 @@ e.g., lists:
 %
 \begin{lstlisting}
 @@>@@ put (keyAlign arBX arCreate fst fst) @@\lstcontinueline@@
-    [(0,('a',0)),(1,('b',1)),(2,('c',2))] @@\lstcontinueline@@
-    [(0,'A'),(1,'B'),(2,'C')]
-[(0,('A',0)),(1,('B',1)),(2,('C',2))]
+    [(0,("A.",3)),(1,("B.",5)),(2,("C.",8))] @@\lstcontinueline@@
+    [(0,"A."),(1,"B."),(2,"C.")]
+[(0,("A.",3)),(1,("B.",5)),(2,("C.",8))]
 \end{lstlisting}
 %
 and for trees:
 %
 \begin{lstlisting}
 @@>@@ put (keyAlign arBX arCreate fst fst) @@\lstcontinueline@@
-    (Node (1,('b',1)) @@\lstcontinueline@@
-      (Node (0,('a',0)) Nil Nil) @@\lstcontinueline@@
-      (Node (2,('c',2)) Nil Nil)) @@\lstcontinueline@@
-    (Node (1,'B') @@\lstcontinueline@@
-      (Node (0,'A') Nil Nil) @@\lstcontinueline@@
-      (Node (2,'C') Nil Nil))
-Node (1,('B',1))  (Node (0,('A',0)) Nil Nil) @@\lstcontinueline@@
-                  (Node (2,('C',2)) Nil Nil)
+    (Node (1,("B.",5)) @@\lstcontinueline@@
+      (Node (0,("A.",3)) Nil Nil) @@\lstcontinueline@@
+      (Node (2,("C.",8)) Nil Nil)) @@\lstcontinueline@@
+    (Node (1,"B.") @@\lstcontinueline@@
+      (Node (0,"A.") Nil Nil) @@\lstcontinueline@@
+      (Node (2,"C.") Nil Nil))
+Node (1,("B.",5)) (Node (0,("A.",3)) Nil Nil) @@\lstcontinueline@@
+                  (Node (2,("C.",8)) Nil Nil)
 \end{lstlisting}
 %
 where |arCreate (k, v1) = (k, (v1, 0))|.
