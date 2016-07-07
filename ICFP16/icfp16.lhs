@@ -1274,10 +1274,12 @@ alignT b c d = emb g p
 %%%
 \section{Generic Delta-Based Alignment}
 
-\TODO{And the previous section actually makes us sufficiently prepared to go generic!}
-Delta-based alignment can also be implemented for other containers. The
-implementations for the list and tree cases are generalizable to other
-containers.
+We have explained how to do delta-based alignment for lists and then for trees,
+and these experiences actually make us sufficiently prepared to go generic!
+In this final installment, we show that delta-based alignment can be generically implemented for any other containers.
+%The
+%implementations for the list and tree cases are generalizable to other
+%containers.
 
 %%% Containers as Shape and Data
 \subsection{Containers as Shape and Data}
