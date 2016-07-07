@@ -1086,8 +1086,8 @@ approach used in the other implementations:
 The adaptation function for tree can be
 %
 \begin{code}
-arAdaptDeltaT  :: Tree Author -> Tree Researcher -> Delta
-               -> Tree Author
+arAdaptDeltaT  :: Tree Author -> Tree Researcher
+               -> Delta -> Tree Author
 arAdaptDeltaT s v d = Prelude.fmap idOrCreate (locsT v)
   where  idOrCreate i =
            let js = rngOf i d
