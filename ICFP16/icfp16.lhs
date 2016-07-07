@@ -1373,7 +1373,7 @@ Firstly, we need a generalization of the adaptation process. With lists, we take
 the view and then insert the source elements at the correct positions. For
 trees, the process is similar: we flatten the source tree extracting its data in
 order to insert it into the shape of the view. Working with shapely types, this
-is achieved recovering
+is achieved by recovering
 a container with the shape of the view, but with the data of the original source
 or with created data when new elements were added:
 %
@@ -1396,7 +1396,7 @@ containers are aligned. With lists we just compare the given delta with the
 identity deltas of source and view. With trees, in addition to the conditions
 used with lists, we also check the extracted locations. Actually, the extracted
 locations contains the shape of the tree, which is what we need in order to
-verify is some change was performed to the view in addition to the delta. Thus,
+verify that some change was performed to the view in addition to the delta. Thus,
 we check if the source and view are aligned with:
 %
 \begin{code}
