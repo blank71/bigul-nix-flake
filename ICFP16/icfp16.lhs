@@ -1369,11 +1369,13 @@ getId :: Shapely s => s a -> Delta
 getId = Set.map (\ l -> (l, l)) . locs
 \end{code}
 
-Starting with the adaptation, we can make use of the functions resulting from
-the fact that we can see a container as a shape and data. Therefore, we recover
+Firstly, we need a generalization of the adaptation process. With lists, we take
+the view and then insert the source elements at the correct positions. For
+trees, the process is similar: we flatten the source tree extracting its data in
+order to insert it into the shape of the view. Working with shapely types, this
+is achieved recovering
 a container with the shape of the view, but with the data of the original source
 or with created data when new elements were added:
-\TODO{We should try to avoid talking so abstractly; how is this generalized from previous |adaptDelta| functions (especially the tree one)?}
 %
 \begin{code}
 adaptDelta  :: Shapely s
@@ -1389,13 +1391,30 @@ adaptDelta c s v d = recover (newShape, newData)
 %
 With this function, any shapely type can be adapted, including lists and trees.
 
+Another aspect to take into account is to check if the source and view
+containers are aligned. With lists we just compare the given delta with the
+identity deltas of source and view. With trees, in addition to the conditions
+used with lists, we also check the extracted locations. Actually, the extracted
+locations contains the shape of the tree, which is what we need in order to
+verify is some change was performed to the view in addition to the delta. Thus,
+we check if the source and view are aligned with:
+%
+\begin{code}
+isDeltaAligned (s,d) v  =   d == getIdT v
+                        &&  d == getIdT s
+                        &&  shape s == shape v
+\end{code}
+%
+and use it directly in the alignment function where we perform a positional
+update when both source and view are aligned, or we adapt when they are not
+aligned:
+%
 \begin{code}
 align'  ::  (Shapely t, Positional t)
         =>  BiGUL s v -> (v -> s)
         ->  BiGUL (t s, Delta) (t v)
 align' b c = Case
-  [ $(normal [| \(s, d) v  ->  d == getId v
-                           &&  d == getId s |])
+  [ $(normal [| isDeltaAligned |])
       ==> $(rearrS [| \(s, _) -> s |]) (positionalMap c b)
   , $(adaptiveS [| const True |])
       ==> \(s,d) v ->  let s' = adaptDelta c s v d
@@ -1484,7 +1503,6 @@ arCreate (k, v1) = (k, (v1, 0))
 %%%
 \section{Conclusion}
 
-\TODO{So we never compare our work with the papers listed in the introduction? We do not necessarily need a dedicated section for comparison, but we can, for example, say at the end of each section that we have achieved some parts of what the related papers have done.}
 We hope to send the following two messages through this %pearl
 paper. One is that putback-based programming is not that 
 difficult in BiGUL, a simple but powerful put-based bidirectional
