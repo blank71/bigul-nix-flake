@@ -1286,12 +1286,36 @@ order to have tools to work with these data types.
 Employing these concepts, one can abstract from the shapes of both source and
 view, and just take the data into account for the alignment process.
 
-\TODO{We need to explain these concepts in terms of lists and trees, of course --- we are generalizing from previous sections, after all.}
 Thus, a polymorphic type \(T~a\) can be characterized by three functions:
 |shape :: T a -> T ()| to extract the shape;
 |data_ :: T a -> [a]| to extract the data;
 and, |recover :: (T (), [a]) -> T a| to rebuild the type value
 from its shape and data.
+For a list of researchers \lstinline!l = [(0,"A."),(1,"B."),(2,"C.")]! we have:
+%
+\begin{lstlisting}
+@@>@@ shape l
+[(),(),()]
+@@>@@ data_ l
+[(0,"A."),(1,"B."),(2,"C.")]
+@@>@@ recover (shape l, data_ l)
+[(0,"A."),(1,"B."),(2,"C.")]
+\end{lstlisting}
+%
+{\lstset{prebreak={}}
+and for a tree of researchers \lstinline!t = Node (1,"B.") (Node (0,"A.") Nil Nil) (Node (2,"C.") Nil Nil)!:
+}
+%
+\begin{lstlisting}
+@@>@@ shape t
+Node () (Node () Nil Nil) (Node () Nil Nil)
+@@>@@ data_ t
+[(0,"A."),(1,"B."),(2,"C.")]
+@@>@@ recover (shape t, data_ t)
+Node (1,"B.") (Node (0,"A.") Nil Nil) @@\lstcontinueline@@
+              (Node (2,"C.") Nil Nil)
+\end{lstlisting}
+%
 For flexibility, these functions are defined in a type class
 %
 \begin{spec}
