@@ -338,6 +338,214 @@ Source and view rearrangements are also among the more complex constructs of BiG
 Their complexity lies in the strongly and generically typed treatment of pattern matching, though, rather than their bidirectional behavior.
 The two kinds of rearrangements are fairly similar, and we will discuss view rearrangement only.
 
+Pattern matching is inherently a bidirectional operation:
+In one direction, we break something into a collection of its components at the variable positions of a pattern.
+This collection can be considered as indexed by the variable positions, and acting like an \emph{environment} for expression evaluation.
+Indeed, conversely, if we have a pattern and a corresponding environment, we can treat the pattern as an expression and evaluate it under the environment.
+These two directions are inverse to each other, i.e., they form an isomorphism.
+For the language designer, it may be slightly tedious to establish such isomorphisms, but for the programmer, pattern matching and evaluation are arguably the most natural way to decompose and rearrange things.
+Previous bidirectional languages usually provide theoretically simpler combinators for decomposition and rearrangement, but they are hard to use in practice.
+BiGUL's support of pattern matching, on the other hand, turns out to be one important contributing factor in its usability.
+
+BiGUL's patterns are strongly typed: The programmer has to declare a target type for a pattern, and the pattern is guaranteed by typechecking to make sense for that target type.
+This can be achieved by defining the datatype of patterns as a generalised algebraic datatype:
+\begin{spec}
+data Pat a where
+  PVar    ::  Eq a => Pat a
+  PConst  ::  Eq a => a -> Pat a
+  PProd   ::  Pat a -> Pat b -> Pat (a, b)
+  PLeft   ::  Pat a -> Pat (Either a b)
+  PRight  ::  Pat b -> Pat (Either a b)
+  PIn     ::  InOut a => Pat (F a) -> Pat a
+\end{spec}
+A pattern can be a (nameless) variable, a constant, a product, a |Left| or |Right| injection (for the |Either| type), or a generic constructor, and its target type is given as the index in its type.
+So, for example, |PProd| cannot be used to match an |Either| value.
+The |InOut| typeclass contains the types which can be broken into a sum-of-products representation.
+For example, |[a]| is an instance of |InOut|, and |F [a]|, an isomorphic sum-of-products representation of |[a]|, is |Either () (a, [a])|.
+The isomorphism is witnessed by
+\[ |inn :: InOut a => F a -> a| \qquad\text{and}\qquad |out :: InOut a => a -> F a| \]
+These two functions will be used to define pattern matching and evaluation.
+
+How do we define pattern matching?
+The result of a pattern matching, as we mentioned above, is an environment indexed by the variable positions of the pattern.
+Here we want a safe (but not necessarily efficient) representation of the environment type, in the sense that the indexes into the environment should be exactly the variable positions of the pattern, which is enforced statically by typechecking.
+In other words, this type depends on the pattern, and a way to compute this type is to encode it as a second index of the |Pat| datatype:
+\begin{spec}
+data Pat a env where
+  PVar    ::  Eq a => Pat a (Var a)
+  PConst  ::  Eq a => a -> Pat a ()
+  PProd   ::  Pat a  a'  -> Pat b b' b'' -> Pat (a, b) (a', b')
+  PLeft   ::  Pat a  a'  -> Pat (Either a b) a'
+  PRight  ::  Pat b  b'  -> Pat (Either a b) b'
+  PIn     ::  InOut a => Pat (F a) b c -> Pat a b
+\end{spec}
+Notice that an environment type is just a product of |Var| types.
+We will talk about |Var| later, which is simply defined by
+\begin{spec}
+newtype Var a = Var a
+\end{spec}
+Now we can define the pattern matching operation:
+\begin{spec}
+deconstruct :: Pat a env -> a -> Maybe env
+deconstruct PVar           x          = return (Var x)
+deconstruct (PConst c)     x          = if c == x then return () else Nothing
+deconstruct (l `PProd` r)  (x, y)     = liftM2 (,)  (deconstruct l  x  )
+                                                    (deconstruct r  y  )
+deconstruct (PLeft  p)     (Left  x)  = deconstruct p x
+deconstruct (PLeft _)      _          = Nothing
+deconstruct (PRight p)     (Right x)  = deconstruct p x
+deconstruct (PRight _)     _          = Nothing
+deconstruct (PIn p)        x          = deconstruct p (out x)
+\end{spec}
+and its inverse (which is total):
+\begin{spec}
+construct :: Pat a env -> env -> a
+construct PVar           (Var x)       = x
+construct (PConst c)     _             = c
+construct (l `PProd` r)  (envl, envr)  = (construct l envl, construct r envr)
+construct (PLeft  p)     env           = Left   (construct p env)
+construct (PRight p)     env           = Right  (construct p env)
+construct (PIn p)        env           = inn (construct p env)
+\end{spec}
+
+Now consider view rearrangement, which evaluates a ``simple'' pattern-matching $\lambda$-expression on the view and continue updating with the transformed view.
+The body of the $\lambda$-expression refers to the variables appearing in the pattern.
+How do we represent such references?
+We have seen that an environment type is a product, i.e., a binary tree; to refer to a component in an environment, we can use a \emph{path} that goes from the root to a sub-tree.
+In BiGUL, these paths are called \emph{directions}:
+\begin{spec}
+data Direction env a where
+  DVar    ::  Direction (Var a) a
+  DLeft   ::  Direction a  t -> Direction (a, b) t
+  DRight  ::  Direction b  t -> Direction (a, b) t
+\end{spec}
+The type of a direction is indexed by the environment type it points into and the component type it points to.
+Note that the type of |DVar| is specified to work with only environment types marked with |Var|; this is for ensuring that a direction goes all the way down to an actual component at a variable position of the pattern, rather than stopping half-way, pointing to a sub-tree which include more than one component.
+It is easy to extract a component from an environment following a direction:
+\begin{spec}
+retrieve :: Direction env a -> env -> a
+retrieve  DVar        (Var x)  = x
+retrieve (DLeft   d)  (x, _)   = retrieve d x
+retrieve (DRight  d)  (_, y)   = retrieve d y
+\end{spec}
+Now we can define \emph{expressions}, which are similar to patterns but include directions rather than variables, to represent the body of rearranging $\lambda$-expressions:
+\begin{spec}
+data Expr env a where
+  EDir    ::  Direction env a -> Expr env a
+  EConst  ::  (Eq a) => a -> Expr env a
+  EProd   ::  Expr env a  -> Expr env b -> Expr env (a, b)
+  ELeft   ::  Expr env a  -> Expr env (Either a b)
+  ERight  ::  Expr env b  -> Expr env (Either a b)
+  EIn     ::  (InOut a) => Expr env (F a) -> Expr env a
+\end{spec}
+Evaluating an expression under an environment is similar to inverse pattern matching:
+\begin{spec}
+eval :: Expr env a -> env -> a
+eval (EDir d)       env = retrieve d env
+eval (EConst c)     env = c
+eval (l `EProd` r)  env = (eval l env, eval r env)
+eval (ELeft  e)     env = Left   (eval e env)
+eval (ERight e)     env = Right  (eval e env)
+eval (EIn e)        env = inn (eval e env)
+\end{spec}
+The type of |RearrV| is then:
+\begin{spec}
+RearrV :: Pat v env -> Expr env v' -> BiGUL s v' -> BiGUL s v
+\end{spec}
+And its |put| behavior is simply:
+\begin{spec}
+put (RearrV p e b) s v = do  env <- deconstruct p v
+                             put b s (eval e env)
+\end{spec}
+
+For the |get| direction, after executing the inner BiGUL program to obtain an intermediate view, we should reverse the roles of the pattern and body in the $\lambda$-expression, using the latter as a pattern to match the intermediate view.
+This intermediate view will be decomposed, and eventually each of its components will be paired with a direction indicating which variable position the component should go into.
+We can prepare a ``container'' shaped like the pattern, whose variable positions are initially empty.
+Whenever we reach a component and a direction, we try to put that component into the place in the container pointed to by the direction; if two components are put into the same position twice (indicating that the $\lambda$-expression uses a variable more than once), then they must be equal.
+In the end, all places in the container must be filled before it can be used as an environment to evaluate the pattern.
+Again, to compute the type of containers from a pattern, we add a third index to |Pat|:
+\begin{spec}
+data Pat a env con where
+  PVar    ::  Eq a => Pat a (Var a) (Maybe a)
+  PConst  ::  Eq a => a -> Pat a () ()
+  PProd   ::  Pat a  a'  a''  -> Pat b b' b'' -> Pat (a, b) (a', b') (a'', b'')
+  PLeft   ::  Pat a  a'  a''  -> Pat (Either a b) a'  a''
+  PRight  ::  Pat b  b'  b''  -> Pat (Either a b) b'  b''
+  PIn     ::  InOut a => Pat (F a) b c -> Pat a b c
+\end{spec}
+A container type is just like an environment type except that the variable positions give rise to |Maybe| instead of |Var|.
+The first step --- matching a value with an \emph{expression} --- can then be implemented as:
+\begin{spec}
+uneval :: Pat a env con -> Expr env b -> b -> con -> Maybe con
+uneval p (EDir d)     x          con = unevalDir p d x con
+uneval p (EConst c)   x          con = if c == x then return con else Nothing
+uneval p (EProd l r)  (x, y)     con = uneval p l x con >>= uneval p r y
+uneval p (ELeft  e)   (Left  x)  con = uneval p e x con
+uneval p (ELeft _)    x          con = Nothing
+uneval p (ERight e)   (Right x)  con = uneval p e x con
+uneval p (ERight _)   x          con = Nothing
+uneval p (EIn e)      x          con = uneval p e (out x) con
+
+unevalDir :: Pat a env con -> Direction env b -> b -> con -> Maybe con
+unevalDir PVar           DVar         x  (Just y)      =  if x == y
+                                                          then return (Just x)
+                                                          else Nothing
+unevalDir PVar           DVar         x  Nothing       =  return (Just x)
+unevalDir (PConst c)     _            x  con           =  return con
+unevalDir (l `PProd` r)  (DLeft   d)  x  (conl, conr)  =  liftM (, conr)
+                                                            (unevalDir l d x conl)
+unevalDir (l `PProd` r)  (DRight  d)  x  (conl, conr)  =  liftM (conl ,)
+                                                            (unevalDir r d x conr)
+unevalDir (PLeft   p)    d            x  con           =  unevalDir p d x con
+unevalDir (PRight  p)    d            x  con           =  unevalDir p d x con
+unevalDir (PIn p)        d            x  con           =  unevalDir p d x con
+\end{spec}
+This function |uneval| initially takes an empty container, which is generated by:
+\begin{spec}
+emptyContainer :: Pat v env con -> con
+emptyContainer PVar           = Nothing
+emptyContainer (PConst c)     = ()
+emptyContainer (l `PProd` r)  = (emptyContainer l, emptyContainer r)
+emptyContainer (PLeft   p)    = emptyContainer p
+emptyContainer (PRight  p)    = emptyContainer p
+emptyContainer (PIn p)        = emptyContainer p
+\end{spec}
+And then we can try to convert a container to an environment, checking whether the container is full in the process:
+\begin{spec}
+fromContainerV :: Pat v env con -> con -> Maybe env
+fromContainerV PVar           Nothing       =  Nothing
+fromContainerV PVar           (Just v)      =  return (Var v)
+fromContainerV (PConst c)     con           =  return ()
+fromContainerV (l `PProd` r)  (conl, conr)  =  liftM2 (,)
+                                                 (fromContainerV l conl  )
+                                                 (fromContainerV r conr  )
+fromContainerV (PLeft   p)    con           =  fromContainerV pat con
+fromContainerV (PRight  p)    con           =  fromContainerV pat con
+fromContainerV (PIn p)        on            =  fromContainerV pat con
+\end{spec}
+If we can get hold of an environment, then we can let out a sigh of relief, since the last step --- inverse pattern matching --- is total.
+To sum up:
+\begin{spec}
+get (RearrV p e b)  s = do  v'   <- get b s
+                            con  <- uneval p e v' (emptyContainer p)
+                            env  <- fromContainerV p con
+                            return (construct p env)
+\end{spec}
+Conceptually, this is just reversing pattern matching and expression evaluation. To actually prove the well-behavedness, though, we need to reason about stateful computation (which is what |uneval| essentially is), which involves coming up with suitable invariants and proving that they are maintained throughout the computation.
+It is somewhat tedious, but can be done without a problem.
+
+It is interesting to mention that there would be a catch if we designed this combinator from the |get| direction: It is tempting to think that a rearranging $\lambda$-expression gives rise to an isomorphism, which can be lifted to a lens, and can be composed with the inner lens to give a lens semantics to |RearrV|.
+This would result in a redundant computation of an intermediate source which is immediately discarded, and now the success of the whole computation would unnecessarily depend on that of the intermediate source.
+We would need to use a special composition which composes a lens with an isomorphism on the right, but such a need would be hard to notice since the |get| behavior of the two compositions are the same --- we really have to think in terms of |put| to see that the special composition is needed.
+
+
+
+
+
+
+
+
+
 
 
 
