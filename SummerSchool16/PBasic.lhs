@@ -8,10 +8,9 @@
 {-# LANGUAGE TypeOperators, TypeFamilies, FlexibleContexts, DeriveGeneric, ViewPatterns, ScopedTypeVariables, TemplateHaskell #-}
 
 module PBasic where
-import Generics.BiGUL.Error
-import Generics.BiGUL.AST
-import Generics.BiGUL.Interpreter
+import Generics.BiGUL
 import Generics.BiGUL.TH
+import Generics.BiGUL.Lib
 import Data.List
 import Data.Maybe
 import Control.Monad.Except
