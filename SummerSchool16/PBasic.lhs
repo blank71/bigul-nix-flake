@@ -1,6 +1,6 @@
 %include lhs2TeX-macros.lhs
 
-\section{Basics}
+\section{A Quick Tour of BiGUL}
 
 \ignore{
 
