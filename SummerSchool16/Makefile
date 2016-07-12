@@ -9,7 +9,7 @@ MAIN=paper
 
 BIB_FILE=references.bib
 
-FILES=$(MAIN).tex PBasic.lhs PList.lhs PSet.lhs Principle.lhs Implementation.lhs Delta.lhs BiYacc.lhs
+FILES=$(MAIN).tex PutBX.lhs Install.tex PBasic.lhs PList.lhs PSet.lhs Principle.lhs Implementation.lhs Delta.lhs BiYacc.lhs
 
 TEX_FILE=$(MAIN).tex
 DVI_FILE=$(MAIN).dvi
@@ -23,7 +23,7 @@ BBL_FILE=$(MAIN).bbl
 default : pdf
 
 clean :
-	$(RM) *.aux *.blg *.bbl *.dvi *.log *.toc *.pbm *~ $(MAIN).p* PBasic.tex PList.tex PSet.tex Principle.tex Implementation.tex Delta.tex BiYacc.tex
+	$(RM) *.aux *.blg *.bbl *.dvi *.log *.toc *.pbm *~ $(MAIN).p* PutBX.tex PBasic.tex PList.tex PSet.tex Principle.tex Implementation.tex Delta.tex BiYacc.tex
 
 all_clean : clean
 	$(RM) $(PS_FILE) $(PDF_FILE)
@@ -62,7 +62,7 @@ $(PDF_FILE) : $(FILES)
 	pdflatex $(TEX_FILE)
 	pdflatex $(TEX_FILE)
 
-$(MAIN).tex: lhs2TeX-polycode.sty lhs2TeX-macros.lhs PBasic.tex PList.tex PSet.tex Principle.tex Implementation.tex Delta.tex BiYacc.tex
+$(MAIN).tex: lhs2TeX-polycode.sty lhs2TeX-macros.lhs PutBX.tex PBasic.tex PList.tex PSet.tex Principle.tex Implementation.tex Delta.tex BiYacc.tex
 
 lhs2TeX-polycode.sty: lhs2TeX-polycode.lhs
 	lhs2TeX --output=$@ $<
