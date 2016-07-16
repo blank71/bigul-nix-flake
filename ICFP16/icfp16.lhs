@@ -280,7 +280,7 @@ A view deletion can only be reflected as a source deletion, if we want the get d
 for an insertion, however, how do we create a corresponding source element from a usually less informative view element?
 The view list may be reordered.
 How do we determine which source element should be matched with each view element?
-\emph{Matching lenses}~\cite{Barbosa2010} were developed to be able to customise such policies.
+\emph{Matching lenses}~\cite{Barbosa2010} were developed to be able to customize such policies.
 There are other finer-grained considerations:
 Given an updated view list, how do we decide whether an element is only modified --- so the corresponding source element also only needs modification --- or newly inserted --- so we should delete the corresponding source element and insert a new one?
 This requires tracking of how the view list is modified, and frameworks for expressing modification-sensitive update policies were developed~\cite{Diskin:2011,Hofmann2012}.
@@ -1506,11 +1506,13 @@ arCreate (k, v1) = (k, (v1, 0))
 \section{Conclusion}
 
 We hope to send the following two messages through this %pearl
-paper. One is that putback-based programming is not that 
-difficult in BiGUL, a simple but powerful put-based bidirectional
+paper. One is that putback-based bidirectional programming is not that 
+difficult in BiGUL, a simple but powerful putback-based
 language. The other is that a \emph{single} well-designed putback-based
-bidirectional programming language can serve as basis for developing
+bidirectional programming language can serve as the basis for developing
 many useful domain-specific bidirectional languages/libraries.
+We have shown that, with BiGUL alone, we can implement various alignment
+strategies which previously had to be implemented with separate bidirectional frameworks.
 %that allow both get-based and put-based bidirectional programming.
 
 %\appendix
