@@ -517,11 +517,11 @@ fromContainerV PVar           Nothing       =  Nothing
 fromContainerV PVar           (Just v)      =  return (Var v)
 fromContainerV (PConst c)     con           =  return ()
 fromContainerV (l `PProd` r)  (conl, conr)  =  liftM2 (,)
-                                                 (fromContainerV l conl  )
-                                                 (fromContainerV r conr  )
+                                                 (fromContainerV l  conl  )
+                                                 (fromContainerV r  conr  )
 fromContainerV (PLeft   p)    con           =  fromContainerV pat con
 fromContainerV (PRight  p)    con           =  fromContainerV pat con
-fromContainerV (PIn p)        on            =  fromContainerV pat con
+fromContainerV (PIn p)        con           =  fromContainerV pat con
 \end{spec}
 If we can get hold of an environment, then we can let out a sigh of relief, since the last step --- inverse pattern matching --- is total.
 To sum up:
@@ -536,7 +536,8 @@ It is somewhat tedious, but can be done without a problem.
 
 It is interesting to mention that there would be a catch if we designed this combinator from the |get| direction: It is tempting to think that a rearranging $\lambda$-expression gives rise to an isomorphism, which can be lifted to a lens, and can be composed with the inner lens to give a lens semantics to |RearrV|.
 This would result in a redundant computation of an intermediate source which is immediately discarded, and now the success of the whole computation would unnecessarily depend on that of the intermediate source.
-We would need to use a special composition which composes a lens with an isomorphism on the right, but such a need would be hard to notice since the |get| behavior of the two compositions are the same --- we really have to think in terms of |put| to see that the special composition is needed.
+To eliminate the redundant computation, we would need to use a special composition which composes a lens with an isomorphism on the right.
+Such a need would be hard to notice since the |get| behavior of the two compositions are the same; that is, we really have to think in terms of |put| to see that the special composition is needed.
 
 
 
