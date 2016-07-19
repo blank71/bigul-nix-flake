@@ -35,9 +35,11 @@ and backwardly by calling |put|.
 where |get bx| is a function mapping a source to a view, while |put bx|
 accepts an original source and an update view and returns an updated source.
 
+In BiGUL, it is enought for users to write the |put| behavior (how to a view to update the original source to a new source), and the (unqiue)
+|get| behavior is obtained for free. 
+%
 The core of BiGUL consists of a small number of combinators for constructing
-bidirectional transformation through development of well-behaved putback
-transformations. 
+bidirectional transformation through development of well-behaved |put|.
 
 \subsection{Skip}
  

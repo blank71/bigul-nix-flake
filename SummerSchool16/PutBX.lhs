@@ -116,7 +116,7 @@ programming.
 This tutorial introduces BiGUL \cite{KoZH16}, a simple but powerful
 putback-based bidirectional language, which
 which grew out of the work \cite{PaHF14,PaZH14}.
-We will demonstrate how to develop bidirectional programs in BiGUL, explains the
+We shall demonstrate how to develop bidirectional programs in BiGUL, explain the
 principle behind BiGUL, and show its applications in developing various of bidirectional transformations.
 
 
