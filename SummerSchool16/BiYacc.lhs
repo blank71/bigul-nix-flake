@@ -137,7 +137,7 @@ For example, corresponding to the plus/addition branch, we write:
 S(adaptiveSV (P(_)) (P(Add _ _)))
   ==> \ _ _ -> Plus ENull FNull
 \end{spec}
-The final programs are:
+The full programs are:
 \begin{spec}
 pExpArith  ::  BiGUL Exp Arith
 pExpArith  =   Case
@@ -180,29 +180,61 @@ pFactorArith  =    Case
 The BiGUL programs, being bidirectional, can be executed, in the |put| direction, a reflective printer, or, in the |get| direction, as a parser.
 Let us look at parsing first. For example:
 \begin{verbatim}
-*Main> get pExpArith (unsafeParseExp "(1)+-((-1))")
-Just (Add (Num 1) (Sub (Num 0) (Sub (Num 0) (Num 1))))
+*Main> get pExpArith (unsafeParseExp "(-(3+4))")
+Just (Sub (Num 0) (Add (Num 3) (Num 4)))
 \end{verbatim}
-Note that negation is considered as syntactic sugar, and is desugared into a subtraction whose left operand is zero.
+Note that a unary minus is considered as syntactic sugar, and is desugared into a subtraction whose left operand is zero.
 Also note that parentheses are turned into correct structure of the abstract syntax tree, and nothing more --- excessive parentheses are cleanly discarded.
 
 For reflective printing, as we mentioned, one application is reporting what compiler optimizations do.
-We can replace the computation $1-2$ with its result $-1$, for example, and the reflective printer will be able to retain the excessive parentheses:
+We can replace the sub-expression $3+4$ with its result~$1$, for example, and the reflective printer will be able to retain the excessive parentheses:
 \begin{verbatim}
-*Main> put pExpArith (unsafeParseExp "(1)+-((-1))")
-                     (Add (Num 1) (Sub (Num 0) (Num (-1))))
-Just (1)+-((-1))
+*Main> put pExpArith (unsafeParseExp "(-(3+4))")
+                     (Sub (Num 0) (Num 7))
+Just (-(7))
 \end{verbatim}
-This can also be considered as the first step of an evaluation sequence.
-If we keep evaluating the abstract syntax tree, the steps can all be reflected to concrete syntax:
+Notice that the unary minus is preserved.
+If the original concrete expression uses a binary minus instead, it will be preserved as well:
 \begin{verbatim}
-*Main> put pExpArith (unsafeParseExp "(1)+-((-1))")
-                     (Add (Num 1) (Num 1))
-Just (1)+1
-*Main> put pExpArith (unsafeParseExp "(1)+-((-1))") (Num 2)
-Just 2
+*Main> put pExpArith (unsafeParseExp "(0-(3+4))")
+                     (Sub (Num 0) (Num 7))
+Just (0-(7))
+\end{verbatim}
+
+More generally, the steps in an evaluation sequence of an abstract syntax tree can all be reflected to concrete syntax.
+For example, starting from:
+\begin{verbatim}
+*Main> get pExpArith (unsafeParseExp "1+(2+3)")
+Just (Add (Num 1) (Add (Num 2) (Num 3)))
+\end{verbatim}
+it takes two steps to evaluate this expression:
+\begin{verbatim}
+*Main> put pExpArith (unsafeParseExp "1+(2+3)")
+                     (Add (Num 1) (Num 5))
+Just 1+(5)
+*Main> put pExpArith (unsafeParseExp "1+(5)") (Num 6)
+Just 6
 \end{verbatim}
 This means that if we have an evaluator on the abstract syntax, we will automatically get an evaluator on the concrete syntax!
+
+A reflective printer can also be used as an ordinary printer by setting the original source to an empty one.
+For example:
+\begin{verbatim}
+*Main> put pExpArith ENull (Sub (Num 0) (Add (Num 1) (Num 1)))
+Just 0-(1+1)
+\end{verbatim}
+You have probably noticed that the subtraction is reflected as a binary minus instead of a unary one, despite that the left operand is zero.
+This behavior is easily customizable:
+By adding an adaptive branch before the one dealing generically with |Sub| in |pExpArith|:
+\begin{spec}
+S(adaptiveSV (P(_)) (P(Sub (Num 0) _)))
+  ==> \ _ _ -> EF FNull
+\end{spec}
+the above abstract syntax tree can be printed as:
+\begin{verbatim}
+*Main> put pExpArith ENull (Sub (Num 0) (Add (Num 1) (Num 1)))
+Just -(1+1)
+\end{verbatim}
 
 \subsection{A domain-specific language}
 
