@@ -59,9 +59,8 @@ when putting back from the view to the source, according to the
 \ref{PutGet} property.
 
 Before explaining how to write |put|, let us briefly review
-the foundation 
-from~\cite{Foster:09,FiHP15,FiHP15b} showing that putback is the essence
-of bidirectional programming.
+the foundation~\cite{Foster:09,FiHP15,FiHP15b}, showing that "putback"
+is the essence of bidirectional programming.
 We start by defining validity of |put| as follows.
 
 \begin{definition}[Validity of |put|]
@@ -71,7 +70,8 @@ such that both \ref{GetPut} and \ref{PutGet} are satisfied.
 
 The first interesting fact is that, for a valid |put|, there exists at most one |get|
 that can form a BX with it. This is in sharp contrast to get-based 
-bidirectional programming, where many |put|s can be paired with a |get| to form a BX. 
+bidirectional programming, where many |put|s may be paired with a |get|
+to form a BX. 
 
 \begin{lemma}[Uniqueness of |get|]
 \label{lemma:injective}
@@ -80,8 +80,8 @@ one |get| function that forms a well-behaved BX.
 \end{lemma}
 
 The second interesting fact is that it is possible to
-check validity |put| without mentioning |get|.
-The following two properties on |put| whose combination is equivalent to \ref{GetPut} and \ref{PutGet}.
+check validity of |put| without mentioning |get|.
+The following are two important properties on |put|.
 \begin{itemize}
 \item 
  The first, that we call \emph{view determination}, says that equivalence 
@@ -100,24 +100,25 @@ Note that the view determination implies that |put s| is injective (with |s=s'|)
 	\forall~s.~\exists~v.~put~s~v~=~s
 \end{align*}
 \end{itemize}
-Actually, these two laws together provide an equivalent characterization of 
+Actually, these two properties together provide an equivalent characterization of 
 the validity of |put|. 
 \begin{theorem}
 \label{th:put2}
 A |put| function is valid if and only if it satisfies the \ref{PutDet} and \ref{PutStable} properties. 
 \end{theorem}
 
-Practically, however, there have not been many researches on put-based
+Practically, there are few languages supporting put-based
 bidirectional programming. This is not without reason: as argued in
 \cite{Foster:09}, it is far from being straightforward to construct a
 framework that can directly support putback-based bidirectional
 programming.
 
 This tutorial introduces BiGUL \cite{KoZH16}, a simple but powerful
-putback-based bidirectional language, which
+putback-based bidirectional language,
 which grew out of the work \cite{PaHF14,PaZH14}.
-We shall demonstrate how to develop bidirectional programs in BiGUL, explain the
-principle behind BiGUL, and show its applications in developing various of bidirectional transformations.
+We shall demonstrate how to program with BiGUL, explain the
+principle behind BiGUL, and show its applications in
+developing various of bidirectional transformations.
 
 
 

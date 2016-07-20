@@ -163,10 +163,14 @@
 %format `star` = "\mathbin{\star}"
 %format istar  = "\identity_{" `star` "}"
 
+%format s0
 %format s1
 %format s2
+%format s3
+%format t0
 %format t1
 %format t2
+%format t3
 
 %format v0
 %format v1

@@ -5,13 +5,13 @@
 \ignore{
 
 \begin{code}
-{-# LANGUAGE TypeOperators, TypeFamilies, FlexibleContexts, DeriveGeneric, ViewPatterns, ScopedTypeVariables, TemplateHaskell #-}
+{-# LANGUAGE FlexibleContexts, TemplateHaskell, TypeFamilies #-}
 
 module PList where
-import Generics.BiGUL.Error
-import Generics.BiGUL.AST
+import Generics.BiGUL
 import Generics.BiGUL.Interpreter
 import Generics.BiGUL.TH
+import Generics.BiGUL.Lib
 import Data.List
 import Data.Maybe
 import Control.Monad.Except
@@ -22,7 +22,8 @@ import PBasic
 }
 
 In this section, we show many list functions can be bidirectionalized
-using BiGUL. To show the correspondence with the original we prefix
+using BiGUL. To show the correspondence with the original list functions,
+we prefix
 the original forward function names with "lens". Note that the forward
 function can be automatically derived from the new putback transformation
 by calling |get|.
@@ -33,7 +34,7 @@ by calling |get|.
 < foldr f e []      = e
 < foldr f e (x:xs)  = f x (foldr f e xs)
 
-Many intereting functions can be defined in |foldr|
+Many interesting functions can be defined in |foldr|
 < sum = foldr (+) 0
 < map f = foldr (\a r -> f a : r) []
 < filter p = foldr (\a r -> if p a then a : r else r) []
@@ -42,15 +43,15 @@ Many intereting functions can be defined in |foldr|
 
 First, we develop a putback transformation for |foldr|.
 \begin{code}
-lensFoldr :: BiGUL (a, b) b -> (b->Bool) -> BiGUL ([a], b) b
+lensFoldr :: (Show a, Show b) => BiGUL (a, b) b -> (b->Bool) -> BiGUL ([a], b) b
 lensFoldr bx pv =
-  Case  [  $(adaptive [| \(x,y) v -> pv v && length x /= 0 |]) $
-             \(x,y) v -> ([],y)
-        ,  $(normalS [| \(s, e) -> length s == 0 |] ) $
-             $(rearrV [| \v -> ((),v) |]) $
-               $(update [p| ((),v ) |] [p| (_, v) |] [d| v = Replace |])
-        ,  $(normalSV [p| _ |] [p| _ |] ) $
-             $(rearrS [| \((x:xs), e) -> (x, (xs,e))  |])
+  Case  [  $(adaptive [| \(x,y) v -> pv v && length x /= 0 |]) 
+             ==> \(x,y) v -> ([],y)
+        ,  $(normal [| \(s,_) v -> null s |] [| \(s,_) -> null s |]) 
+             ==> $(rearrV [| \v -> ((),v) |]) $
+                    $(update [p| (_, v) |] [p| ((),v ) |] [d| v = Replace |])
+        ,  $(normalSV [p| _ |] [p| _ |] [| \(s,_) -> not (null s) |])
+             ==> $(rearrS [| \((x:xs), e) -> (x, (xs,e))  |])
                (Replace `Prod` lensFoldr bx pv) `Compose` bx
         ]
 \end{code}
@@ -62,60 +63,14 @@ lensFilter :: (a->Bool) -> BiGUL [a] [a]
 lensInsert :: Ord a => BiGUL (a,[a]{-sorted-}) [a]{-sorted-}
 lensSort :: Ord a => BiGUL [a] [a]
 }
-\begin{code}
-lensReverse :: BiGUL [a] [a]
-lensReverse =  $(rearrS [| \s -> (s,[]) |]) $
-                  lensFoldr lensSnoc null
 
-lensSnoc :: BiGUL (a,[a]) [a]
-lensSnoc = Case  [  $(normal [| \s v -> length v == 1 |]) $
-                       $(rearrV [| \[v] -> (v,[]) |]) Replace,
-                    $(normal [| \(_,s) v -> length s > 0 |]) $
-                       $(rearrS [| \(x,y:ys) -> (y,(x,ys)) |]) $
-                          $(rearrV [| \(v:vs) -> (v,vs) |]) $
-                             Replace `Prod` lensSnoc,
-                    $(adaptive [| \(_,s) v -> null s |]) $
-                       \(x,s) _ -> (x, [undefined])
-                 ]
-\end{code}
-\begin{verbatim}
-*PList> put lensSnoc (1,[2,3,4]) [10,11,12,13]
-Right (13,[10,11,12])
-*PList> put lensSnoc (1,[2,3,4]) [10,11,12,13,14]
-Right (14,[10,11,12,13])
-*PList> put lensSnoc (1,[2,3,4]) [10,11]
-Right (11,[10])
-*PList> get lensSnoc (100,[1..10])
-Right [1,2,3,4,5,6,7,8,9,10,100]
-
-*PList> put lensReverse [1..10] [100..105]
-Right [105,104,103,102,101,100]
-*PList> put lensReverse [1..10] [100..115]
-Left either value mismatch
-*PList> get lensReserve [1..10]
-*PList> get lensReverse [1..10]
-Right [10,9,8,7,6,5,4,3,2,1]
-\end{verbatim}
-
-\subsection{Efficiency Issue: |lensFoldr|}
-
-A close look at the definition of |lensFoldr| reveals that it contains many
-redundent computations because of the use of |Compose| that calls |get| as many
-times as the number of calls of |Compose|. Put it more concretely,
-< put (lensFoldr bx (const True)) ([x1,x2,...,xn],e) v
-would call
-< get (lensFoldr bx (const True)) ([x2,...,xn],e),
-< ...,
-< get (lensFoldr bx (const True)) ([],e).
-
-
-\subsection{LensScanr}
-
-\subsection{LensMap}
+Next, we show that many list functions can be bidirectionalized using
+|lensFoldr|. As the first example, we consider bidirectionalize |map|.
+It can be easily defined in terms of |lensFoldr|.
 
 \begin{code}
-lensMap :: BiGUL a b -> BiGUL ([a],[b]) [b]
-lensMap bx =  lensFoldr bx' (\v -> length v == 0)
+lensMap :: (Show a, Show b) => BiGUL a b -> BiGUL ([a],[b]) [b]
+lensMap bx =  lensFoldr bx' null
    where  bx' =  $(rearrV [| \(v:vs) -> (v,vs) |]) $
                     bx `Prod` Replace
 \end{code}
@@ -129,11 +84,68 @@ dec1 = emb g p
 \end{code}
 \begin{verbatim}
 *PList> put (lensMap dec1) ([0..10],[]) [100..110]
-Right ([99,100,101,102,103,104,105,106,107,108,109],[])
+Just ([99,100,101,102,103,104,105,106,107,108,109],[])
 *PList> get (lensMap dec1) ([1..10],[])
-Right [2,3,4,5,6,7,8,9,10,11]
-*PList> put (lensMap dec1) ([0..10],[]) [100]
-Right ([99],[])
-*PList> put (lensMap dec1) ([0..10],[]) [100..111]
-Right ([99,100,101,102,103,104,105,106,107,108,109],[111])
+Just [2,3,4,5,6,7,8,9,10,11]
 \end{verbatim}
+Now we give another example of |reverse|.
+\begin{code}
+lensReverse :: Show a => BiGUL [a] [a]
+lensReverse =  Case  [
+                        $(adaptive [| \s v -> length s < length v |])
+                          ==> \s v -> v
+                     ,  $(normalSV [p| _ |] [p| _ |] [| \ s -> True |])
+                          ==> $(rearrS [| \s -> (s,[]) |]) $
+                                lensFoldr (lensSwap `Compose` lensSnoc) null
+                     ]
+
+lensSnoc :: Show a => BiGUL ([a],a) [a]
+lensSnoc = Case  [  $(normal [| \s v -> length v == 1 |] [| \(s,_) -> null s |])
+                       ==> $(rearrV [| \[v] -> ([],v) |]) Replace
+                 ,  $(normal [| \(s,_) v -> length s > 0 |] [| \(s,_) -> length s > 0 |])
+                       ==> $(rearrS [| \(y:ys,x) -> (y,(ys,x)) |]) $
+                              $(rearrV [| \(v:vs) -> (v,vs) |]) $
+                                  Replace `Prod` lensSnoc
+                 ,  $(adaptive [| \(s,_) v -> null s |]) 
+                       ==> \(s,x) _ -> ([undefined], x)
+                 ]
+
+lensSwap :: (Show a, Show b) => BiGUL (a,b) (b,a)
+lensSwap = $(rearrS [| \(x,y) -> (y,x) |]) Replace
+\end{code}
+Below are some testing examples.
+\begin{verbatim}
+*PList> put lensSnoc ([2,3,4],1) [10,11,12,13]
+Just ([10,11,12],13)
+*PList> put lensSnoc ([2,3,4],1) [10,11,12,13,14]
+Just ([10,11,12,13],14)
+*PList> put lensSnoc ([2,3,4],1) [10,11]
+Just ([10],11)
+*PList> get lensSnoc ([1..10], 100)
+Just [1,2,3,4,5,6,7,8,9,10,100]
+
+*PList> put lensReverse [1..10] [100..105]
+Just [105,104,103,102,101,100]
+*PList> put lensReverse [1..10] [100..115]
+Just [115,114,113,112,111,110,109,108,107,106,105,104,103,102,101,100]
+*PList> get lensReverse [1..10]
+Just [10,9,8,7,6,5,4,3,2,1]
+\end{verbatim}
+
+\ignore{
+\subsection{Efficiency Issue: |lensFoldr|}
+
+A close look at the definition of |lensFoldr| reveals that it contains many
+redundant computations because of the use of |Compose| that calls |get| as many
+times as the number of calls of |Compose|. Put it more concretely,
+< put (lensFoldr bx (const True)) ([x1,x2,...,xn],e) v
+would call
+< get (lensFoldr bx (const True)) ([x2,...,xn],e),
+< ...,
+< get (lensFoldr bx (const True)) ([],e).
+
+
+\subsection{LensScanr}
+
+\subsection{LensMap}
+}

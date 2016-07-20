@@ -11,6 +11,7 @@ Now you can easily check whether BiGUL is correctly installed.
 First, create a simple file called ``test.hs'' with the following 
 content for importing BiGUL modules.
 \begin{verbatim}
+{-# LANGUAGE FlexibleContexts, TemplateHaskell, TypeFamilies #-}
 import Generics.BiGUL
 import Generics.BiGUL.TH
 import Generics.BiGUL.Lib

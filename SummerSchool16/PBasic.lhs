@@ -4,11 +4,13 @@
 
 \ignore{
 
+
 \begin{code}
-{-# LANGUAGE TypeOperators, TypeFamilies, FlexibleContexts, DeriveGeneric, ViewPatterns, ScopedTypeVariables, TemplateHaskell #-}
+{-# LANGUAGE FlexibleContexts, TemplateHaskell, TypeFamilies #-}
 
 module PBasic where
 import Generics.BiGUL
+import Generics.BiGUL.Interpreter
 import Generics.BiGUL.TH
 import Generics.BiGUL.Lib
 import Data.List
@@ -26,39 +28,74 @@ Intuitively, we can think of a bidirectional BiGUL program:
 as describing how to manipulate a state consisting of
 a source component of type~|s| and a view component of type |v|;
 the goal is to embed all information in the view to proper places
-in the source. For each |bx|, we can run it forwardly by calling |get|
+in the source. For each |bx :: BiGUL s v|, we can run it forwardly by calling |get|
 and backwardly by calling |put|.
 
-< get bx :: s -> v
-< put bx :: s -> v -> s
+< get bx :: s -> Maybe v
+< put bx :: s -> v -> Maybe s
 
-where |get bx| is a function mapping a source to a view, while |put bx|
-accepts an original source and an update view and returns an updated source.
+where |get bx| is a function mapping a source to a view if it succeeds,
+while |put bx|
+accepts an original source and uses a view to update it to get an updated source.
 
-In BiGUL, it is enought for users to write the |put| behavior (how to a view to update the original source to a new source), and the (unqiue)
-|get| behavior is obtained for free. 
+In BiGUL, it is suffice for users to write the |put| behavior (i.e.,
+how to use a view to update the original source to a new source),
+and the (unique) |get| behavior is obtained for free. 
 %
-The core of BiGUL consists of a small number of combinators for constructing
-bidirectional transformation through development of well-behaved |put|.
+The core of BiGUL consists of a small number of primitives and
+combinators for constructing valid (well-behaved)
+bidirectional transformations.
 
 \subsection{Skip}
  
-The first one is the simple primitive
+The first primitive for writing |put| is
 
-< Skip     :: BiGUL s ()
+< Skip     :: (s->v) -> BiGUL s v
 
-Its putback semantics is to skip any change on the source for the unit view.
-One can test this using ghci after loading the test.hs by
+The put behavior of |Skip f| does not allow any change on the view
+and thus skip any change on the source
+(while in the get direction, the view is fully computed by
+applying function |f| to the source). Consider a simple |put| defined by
+|Skip square| where
+\begin{code}
+square x = x*x
+\end{code}
+and we can test it by
 \begin{verbatim}
-*Main> put Skip 5 ()
-Right 5
+*Main> put (Skip square) 10 100
+Just 10
 \end{verbatim}
-which means that |Skip| putbacks the unit view |()| on the source |5| and gets the same source |5|. In fact, each well-behaved putback transformation is equipped with a unique |get| for doing forward transformation.
+It first checks if the view |100| is the square of the source |10|, and returns
+the original source if it is. But if the view is changed, say to |250|,
+it should return |Nothing|:
 \begin{verbatim}
-*Main> get Skip 5
-Right ()
+*Main> put (Skip square) 10 250
+Nothing
 \end{verbatim}
-It reads that doing forward transformation for |Skip| on the source |5| gives the unit view |()|.
+If one wants to see why |put| returns |Nothing|, he may use
+|putTrace| instead of |put| to get more information.
+\begin{verbatim}
+*Main> putTrace (Skip square) 10 250
+view not determined by the source
+\end{verbatim}
+
+Note that each well-behaved putback transformation in BiGUL
+is equipped with a unique |get| for doing forward transformation.
+We can test the |get| behavior as follows.
+\begin{verbatim}
+*Main> get (Skip square) 5
+Just 25
+\end{verbatim}
+It reads that doing forward transformation for |Skip square| on the
+source of |5| gives the view of |25|. Like that we have |putTrace| for |put|
+to see more execution information about |put|,
+we have |getTrace| for |get| to see  more execution information about |get|.
+
+As a simple exercise, can you see what the following |skip1| is? 
+\begin{code}
+skip1 :: BiGUL s ()
+skip1 = Skip (const ())
+\end{code}
 
 \subsection{Replace}
 
@@ -66,133 +103,170 @@ The second one is
 
 < Replace  :: BiGUL s s
 
-which is to use the view to replace the source:
+to use the view to completely replace the source. For instance,
 \begin{verbatim}
 *Main> put Replace 1 100
-Right 100
+Just 100
 \end{verbatim}
-which uses the view |100| to replace the source |1| and gets a new source |100|.
+uses the view |100| to replace the source |1| and gets a new source |100|.
 
 \subsection{Product: Prod}
 
-If we want to putback a view pair |(v1,v2)| to a source pair
+To use a view pair |(v1,v2)| to update a source pair
 |(s1,s2)|,
-we may write |bx1 Prod bx2|, a product of two putback transformation,
-to putback |v1| to |s1| with |bx1| and |v2| to |s2| with |bx2|.
+we can write |bx1 Prod bx2|, a product of two putback transformations
+|bx1| and |bx2|,
+which is to use |v1| to update |s1| with |bx1| and |v2| to |s2| with |bx2|.
 
 < Prod :: BiGUL s1 v1 -> BiGUL s2 v2 -> BiGUL (s1,s2) (v1,v2)
 
-For instance, we can combine |Skip| and |Replace| to putback a view pair to a source pair.
+For instance, we can combine |Skip| and |Replace| to putback a view pair
+to a source pair.
 \begin{verbatim}
-*Main> put (Skip `Prod` Replace) (5,1) ((),100)
-Right (5,100)
+*Main> put (skip1 `Prod` Replace) (5,1) ((),100)
+Just (5,100)
 \end{verbatim}
-We may deal with more complicated structure using nested |Prod|:
+More complicated structures can be dealt with by using nested |Prod|:
 \begin{verbatim}
-*Main> put ((Skip `Prod` Replace) `Prod` Replace) ((5,1),2) (((),100),200)
-Right ((5,100),200)
+*Main> put ((skip1 `Prod` Replace) `Prod` Replace)
+           ((5,1),2) (((),100),200)
+Just ((5,100),200)
 \end{verbatim}
+
+To help describe structural mapping more directly, we provide the following
+syntactic sugar:
+< $(update [p| source-pattern |] [p| view-pattern |] [d| updating-strategy |])
+Source and view are decomposed by the patterns in the
+|[p| ... |]| and corresponding elements are updated based on |updating-strategy|.
+As an example, we may describe |(skip1 `Prod` Replace) `Prod` Replace| by
+\begin{code}
+testUpdate :: (Show a, Show b, Show c) => BiGUL ((a,b),c) (((),b),c)
+testUpdate = $(update  [p| ((x,y),z) |] [p| ((x,y),z) |]
+                       [d| x = skip1; y = Replace; z = Replace |])
+\end{code}
+In this concrete example, the three elements of the tuple (both in the source and in the view) are bound to variables |x,y,z|, and they are sent to the three
+combinators as arguments in the [d| ... |] part. Note that since |skip1| appears
+quite often, we could just mark the source element as underline(\_) in the [p| source-pattern |] and omit writing |skip1| in the [d| ... |] part.
+\begin{code}
+testUpdate' :: (Show a, Show b, Show c) => BiGUL ((a,b),c) (((),b),c)
+testUpdate' = $(update  [p| ((_,y),z) |] [p| (((),y),z) |]
+                        [d| y = Replace; z = Replace |])
+\end{code}
 
 \subsection{Source/View Rearrangement}
 
-So far, the source and the view must be of the same structure. What if we
-wish to putback a pair view |(v1,v2)| to a complicated source,
-say |((s0,s1),s2))|, where we hope to replace |s1| by |v1| and
-|s2| by |v2|? BiGUL provide a way of prepossessing of
+So far, the source and the view are of the same structure. What if we
+wish to putback a view |(v1,v2)| to a source of a different structure,
+say |((s0,s1),s2))|, to replace |s1| by |v1| and
+|s2| by |v2|? BiGUL provides a way of 
 rearranging either the source
-or the view through a natural transformation |tau|.
+or the view through a natural transformation |tau| to make both the view and
+the source have the same structure.
 
 < $(rearrS [| tau :: s1 -> s2 |]) :: BiGUL s2 v -> BiGUL s1 v
 < $(rearrV [| tau :: v1 -> v2 |]) :: BiGUL s v2 -> BiGUL s v1 
 
-Returning to the above problem, we can solve it by defining the following
-putback transformation
+Returning to the above problem, we may define the following
+putback transformation by rearranging the source
 \begin{code}
-putPairOverNPair :: BiGUL ((s0,s1),s2) (s1,s2)
+putPairOverNPair :: (Show s1, Show s2) => BiGUL ((s0,s1),s2) (s1,s2)
 putPairOverNPair = $(rearrS [| \((s0,s1),s2) -> (s1,s2) |]) Replace
 \end{code}
 and have
 \begin{verbatim}
 *PBasic> put putPairOverNPair ((5,1),2) (100,200)
-Right ((5,100),200)
+Just ((5,100),200)
 \end{verbatim}
-In fact, it is possible to define |putPairOverNPair| by rearranging the view too.
+Or we may define it by rearranging the view:
 \begin{code}
-putPairOverNPair' :: BiGUL ((s0,s1),s2) (s1,s2)
+putPairOverNPair' :: (Show s0, Show s1, Show s2) => BiGUL ((s0,s1),s2) (s1,s2)
 putPairOverNPair' =  $(rearrV [| \(v1,v2) -> (((),v1),v2) |]) $
-                       (Skip `Prod` Replace) `Prod` Replace
+                       (skip1 `Prod` Replace) `Prod` Replace
 \end{code}
 
-The mechanism of source/view rearrangement makes it possible
-to process algebraic data structures such as
-lists and trees. The following example describes using view |v| to
-replace the first element of a nonempty source.
+The mechanism of source/view rearrangement enables us to
+process algebraic data structures such as
+lists and trees. The following example uses view |v| to
+replace the first element of a nonempty source list.
 \begin{code}
-pHead :: BiGUL [s] s
+pHead :: Show s => BiGUL [s] s
 pHead = $(rearrS [| \(s:_) -> s |]) Replace
 \end{code}
 \begin{verbatim}
 *PBasic> put pHead [1,2,3,4] 100
-Right [100,2,3,4]
+Just [100,2,3,4]
 \end{verbatim}
-
-We may go further to define a general putback transformation 
-to replace the |i|th element of a source list with a view |v|.
+What if we wish to define a general putback transformation 
+that uses the view to replace the |i|th element of the source list?
+We can define it recursively as follows.
 \begin{code}
-pNth :: Int -> BiGUL [s] s
+pNth :: Show s => Int -> BiGUL [s] s
 pNth i =  if i == 0 then pHead
           else  $(rearrS [| \(x:xs) -> (x,xs) |]) $
                    $(rearrV [| \v -> ((), v) |]) $
-                      Skip `Prod` pNth (i-1) 
+                      skip1 `Prod` pNth (i-1) 
 \end{code}
 \begin{verbatim}
 *PBasic> put (pNth 3) [1..10] 100
-Right [1,2,3,100,5,6,7,8,9,10]
+Just [1,2,3,100,5,6,7,8,9,10]
 \end{verbatim}
-Note that any putback function is equipped with a |get| function (which may
-be partial). So for |pNth|, the corresponding |get| function is actually
-the familiar |take| function.
+As we know that any putback function in BiGUL is equipped with
+a |get| function, for |pNth|, we can test its |get| behavior
+as follows; its corresponding |get| function is actually
+our familiar |take| function.
 \begin{verbatim}
 *PBasic> get (pNth 3) [1..10]
-Right 4
+Just 4
 \end{verbatim}
 
 \subsection{Case}
 
-The |Case| combinator is for case analysis.
-The basic structure is as follows.
-< Case  [  $(normal [| cond1 :: s -> v -> Bool |]) (bx1 :: BiGUL s v),
-<          $(normal [| cond2 :: s -> v -> Bool |]) (bx2 :: BiGUL s v),
-<          ...,
-<          $(normal [| condn :: s -> v -> Bool |]) (bxn :: BiGUL s v),
-<          $(adaptive [| cond1' :: s -> v -> Bool |]) $ (f1 :: s -> v -> s),
-<          $(adaptive [| cond2' :: s -> v -> Bool |]) $ (f2 :: s -> v -> s),
-<          ...,
-<          $(adaptive [| condm' :: s -> v -> Bool |]) $ (fm :: s -> v -> s)
+The |Case| combinator is for case analysis, which is very useful.
+The general structure is as follows.
+< Case  [  $(normal   [| enteringCond1  :: s -> v -> Bool |] [|exitCond1 :: s -> Bool |])
+<            ==> (bx1 :: BiGUL s v)
+<       ,  $(adaptive [| enteringCond1' :: s -> v -> Bool |]) 
+<            ==> (f1 :: s -> v -> s)
+<       ,  ...
+<       ,  $(normal   [| enteringCondn  :: s -> v -> Bool |] [|exitCond1 :: s -> Bool |]) 
+<            ==> (bxn :: BiGUL s v)
+<       ,  ...
+<       ,  $(adaptive [| enteringCondm' :: s -> v -> Bool |]) 
+<            ==> (fm :: s -> v -> s)
 <       ]
-<  :: BiGUL s v
-It contains a sequence of cases. For each case, it is either |normal| or
-|adaptive|. For the normal case, if the condition is satisfied, a
-corresponding putback transformation is applied. For the  adaptive case,
-if the condition is satisfied, a function is used to update the source
-with the view so that for the next step one of the normal cases can
-be applied. Note that if adaptation does not lead the source and the view
-to a normal case, an error will be reported at runtime.
+<    :: BiGUL s v
+It contains a sequence of cases. For each case, it is either normal or
+adaptive. For the normal case, if the condition is satisfied, a
+corresponding putback transformation is applied. For the adaptive
+case, if the condition is satisfied, a function is used to update the
+source with the view so that for the next step one of the normal cases
+can be applied. Note that if adaptation does not lead the source and
+the view to a normal case, an error will be reported at runtime.
+
+Note that |$(normal ... ...)| takes two predicates. The first one is
+the entering-condition while the second one is the exit-condition. The
+predicate for entering-condition is very general, and we can use any
+function f of type |(s -> v -> Bool)| to examine the source and view. If
+the condition is matched, then the BiGUL program after the predicate
+is executed. If the condition is not satisfied, the next branch is
+tried. The predicate for exit-condition checks the source only. The
+exit-condition in different branches should NOT be overlapped.
 
 As a simple example, consider using the view to update all
 the elements in the source list. To do so, we can use |Case|.
 \begin{code}
-replaceAll :: Eq s => BiGUL [s] s
-replaceAll = Case  [
-                     $(normal [| \s v -> length s == 1 |]) $
-                         $(rearrS [| \[x] -> x |]) Replace,
-                     $(normal [| \s v -> length s > 1 |]) $
-                          $(rearrS [| \(x:xs) -> (x,xs) |]) $
-                              $(rearrV [| \v -> (v, v) |]) $
-                                  Replace `Prod` replaceAll,
-                     $(adaptive [| \s v -> length s == 0 |]) $
-                           \s v -> [undefined]
-                   ]
+replaceAll :: (Eq s, Show s) => BiGUL [s] s
+replaceAll =
+  Case  [
+           $(normal [| \s v -> length s == 1 |] [| \s -> length s == 1 |])
+             ==> $(rearrS [| \[x] -> x |]) Replace,
+           $(normal [| \s v -> length s > 1 |] [| \s -> length s > 1 |])
+             ==> $(rearrS [| \(x:xs) -> (x,xs) |]) $
+                    $(rearrV [| \v -> (v, v) |]) $
+                       Replace `Prod` replaceAll,
+           $(adaptive [| \s v -> length s == 0 |]) 
+             ==> \s v -> [undefined]
+        ]
 \end{code}
 \begin{verbatim}
 *PBasic> put replaceAll [] 100
@@ -200,6 +274,26 @@ Right [100]
 *PBasic> put replaceAll [1..10] 100
 Right [100,100,100,100,100,100,100,100,100,100]
 \end{verbatim}
+
+Note that instead of using a general function to describe
+the entering condition or the exit condition, 
+we can use patterns. The syntax for each case is:
+< $(normalSV [p| source-pattern |] [p| view-pattern |] [| exitCond |])
+<   ==> (bx :: BiGUL s v)
+< $(adaptiveSV [p| source-pattern |] [p| view-pattern |])
+<   ==> (fm :: s -> v -> s)
+
+\ignore{
+\begin{code}
+repHead :: BiGUL [Int] Int
+repHead = Case [
+  $(normal [| \s v -> length s > 0 |] [| \s -> length s > 0 |])
+    ==> $(rearrS [| \(x:xs) -> x |]) Replace,
+  $(adaptive [| \s v -> length s == 0 |])
+    ==> \s v -> [0]
+ ]
+\end{code}
+}
 
 \subsection{Dependency: Dep}
 
@@ -209,59 +303,60 @@ to be changed. For instance, for the view |(x, x+1)|, the second
 component can be computed from the first by increasing it by |1|.
 To capture this, BiGUL provides
 
-< Dep :: Eq v' => BiGUL a v -> (a -> v -> v') -> BiGUL a (v, v')
+< Dep :: Eq v' => (v->v') -> BiGUL a v -> BiGUL a (v, v')
 
 to describe this intention. We may, for example, define
 \begin{code}
 replaceAll2 :: BiGUL [Int] (Int,Int)
-replaceAll2 = Dep replaceAll (\s v -> v+1) 
+replaceAll2 = Dep (+1) replaceAll
 \end{code}
 to replace all elements of the source by the
 first component of the view, while the second component
 of the view is a derived one that should be one bigger than the first one.
 \begin{verbatim}
 *PBasic> put replaceAll2 [1..10] (100,101)
-Right [100,100,100,100,100,100,100,100,100,100]
+Just [100,100,100,100,100,100,100,100,100,100]
 *PBasic> put replaceAll2 [1..10] (100,200)
-Left dependency mismatch
+Nothing
+*PBasic> putTrace replaceAll2 [1..10] (100,200)
+second view component not determined by the first
 \end{verbatim}
-As seen in the last running of |put|, it reports an error because in the view |(100,200)|, |200| is not one bigger than |100|.
+As seen in the last running of |put|, it reports an error because in the view |(100,200)|,
+|200| is not one bigger than |100|.
 
 \subsection{Composition}
 
-Composition of two putback transformations follows that of two
-bidirectional transformations This is because each putback transformation is essentially a bidirectional transformation.
+Putback transformations can be composed.
 
 < Compose :: BiGUL a u -> BiGUL u b -> BiGUL a b
 
-As an example, consider
+As a simple example, consider the following definition.
 \begin{code}
-pHead2 :: BiGUL [[a]] a
+pHead2 :: Show a => BiGUL [[a]] a
 pHead2 = pHead `Compose` pHead
 \end{code}
 \begin{verbatim}
 *PBasic> put pHead2 [[1,2],[3,4,5],[]] 100
-Right [[100,2],[3,4,5],[]]
+Just [[100,2],[3,4,5],[]]
 \end{verbatim}
 
 \subsection{Utilities}
 
-BiGUL provides some useful functions for building putback transformations.
+Generics.BiGUL.Lib has predefined some useful functions for building putback transformations.
 One interesting one is |emb| that can safely embed a pair of well-behaved
 |get| and |put| a putback transformation into our context.
 |emb| itself is defined as follows.
-\begin{code}
-emb :: Eq v => (s -> v) -> (s -> v -> s) -> BiGUL s v
-emb g p = Case   [  $(normal [| \x y -> g x == y |])$
-                        $(rearrV [| \x -> ((), x) |])$
-                           Dep Skip (\x () -> g x)
-                 ,  $(adaptive [| \_ _ -> True |])
-                        p
-                 ]
-\end{code}
 
-As an application of |emb|, we may define a useful putback functions
-for reflecting the sum to a pair.
+< emb :: Eq v => (s -> v) -> (s -> v -> s) -> BiGUL s v
+< emb g p = Case
+<   [ $(normal [| \s v -> g s == v |] [p| _ |])
+<     ==> Skip g
+<   , $(adaptive [| \s v -> {- g s /= v -} True |])
+<     ==> p
+<   ]
+
+As an application of |emb|, we may define the following putback function
+for using the sum to update a pair.
 \begin{code}
 distSum :: BiGUL (Int, Int) Int
 distSum = emb g p
