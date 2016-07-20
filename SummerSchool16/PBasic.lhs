@@ -1,6 +1,6 @@
 %include lhs2TeX-macros.lhs
 
-\section{A Quick Tour of BiGUL}
+\section{A quick tour of BiGUL}
 
 \ignore{
 
@@ -153,7 +153,7 @@ testUpdate' = $(update  [p| ((_,y),z) |] [p| (((),y),z) |]
                         [d| y = Replace; z = Replace |])
 \end{code}
 
-\subsection{Source/View Rearrangement}
+\subsection{Source/View rearrangement}
 
 So far, the source and the view are of the same structure. What if we
 wish to putback a view |(v1,v2)| to a source of a different structure,

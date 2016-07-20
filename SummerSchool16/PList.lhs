@@ -1,6 +1,6 @@
 %include lhs2TeX-macros.lhs
 
-\section{Bidirectional Programming on Lists}
+\section{Bidirectional programming on lists}
 
 \ignore{
 

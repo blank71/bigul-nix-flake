@@ -1,6 +1,6 @@
 %include lhs2TeX-macros.lhs
 
-\section{Putback-based Bidirectional Programming}
+\section{Putback-based bidirectional programming}
 
 A {\em bidirectional transformation} basically consists of a pair of
 transformations: the {\em forward} transformation |get s| is used to
