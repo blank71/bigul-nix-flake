@@ -28,20 +28,17 @@ the original forward function names with "lens". Note that the forward
 function can be automatically derived from the new putback transformation
 by calling |get|.
 
-\subsection{lensFoldr}
-
-|foldr| is a simple but useful higher order function on lists.
+We shall focus on |foldr|, which is a simple but useful higher order function on lists:
 < foldr f e []      = e
 < foldr f e (x:xs)  = f x (foldr f e xs)
-
-Many interesting functions can be defined in |foldr|
+where many interesting functions can be defined in |foldr|
 < sum = foldr (+) 0
 < map f = foldr (\a r -> f a : r) []
 < filter p = foldr (\a r -> if p a then a : r else r) []
 < reverse p = foldr (\a r -> r ++ [a]) []
 < sort = foldr insert []
 
-First, we develop a putback transformation for |foldr|.
+First, we develop a putback version for |foldr|.
 \begin{code}
 lensFoldr :: (Show a, Show b) => BiGUL (a, b) b -> (b->Bool) -> BiGUL ([a], b) b
 lensFoldr bx pv =
