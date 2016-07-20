@@ -187,13 +187,13 @@ Note that a unary minus is considered as syntactic sugar, and is desugared into 
 Also note that parentheses are turned into correct structure of the abstract syntax tree, and nothing more --- excessive parentheses are cleanly discarded.
 
 For reflective printing, as we mentioned, one application is reporting what compiler optimizations do.
-We can replace the sub-expression $3+4$ with its result~$1$, for example, and the reflective printer will be able to retain the excessive parentheses:
+We can replace the sub-expression $3+4$ with its value~$1$, for example, and the reflective printer will be able to retain the excessive parentheses:
 \begin{verbatim}
 *Main> put pExpArith (unsafeParseExp "(-(3+4))")
                      (Sub (Num 0) (Num 7))
 Just (-(7))
 \end{verbatim}
-Notice that the unary minus is preserved.
+Notice also that the unary minus is preserved.
 If the original concrete expression uses a binary minus instead, it will be preserved as well:
 \begin{verbatim}
 *Main> put pExpArith (unsafeParseExp "(0-(3+4))")
@@ -253,4 +253,4 @@ For example, all the programs we have written can be generated from the followin
   Sub (Num 0) r +> '-' (r +> Factor);
   f             +> '(' (f +> Exp) ')';
 \end{verbatim}
-See our draft paper for more interesting experiments about reflective printing, done on a more realistic imperative language.
+See our draft paper\footnote{\url{http://www.prg.nii.ac.jp/members/zhu/papers/sle2016_draft.pdf}} for more interesting experiments about reflective printing, done on a more realistic imperative language.

@@ -295,8 +295,10 @@
 %format generateDS = generate "_{ " `plus` ", " cks "}" 
 %format aggregateD = aggregate
 
-%format (S(x)) = "{\color[gray]{0.7}^\$(}" x "{\color[gray]{0.7})}"
-%format (P(x)) = "{\color[gray]{0.7}" [ "\textit p\kern-2pt" | "}\;" x "\;{\color[gray]{0.7}" |] "}"
-%format (Q(x)) = "{\color[gray]{0.7}" [| "}\;" x "\;{\color[gray]{0.7}" |] "}"
-%format (D(x)) = "{\color[gray]{0.7}" [ "\rlap{\kern-.5pt\textit d}\phantom p\kern-2pt" | "}\;" x "\;{\color[gray]{0.7}" |] "}"
+%format (S(x)) = "{\color[gray]{0.6}^\$(}" x "{\color[gray]{0.6})}"
+%format (P(x)) = "{\color[gray]{0.6}" [ "\textit p\kern-2pt" | "}\;" x "\;{\color[gray]{0.6}" |] "}"
+%format (Q(x)) = "{\color[gray]{0.6}" [| "}\;" x "\;{\color[gray]{0.6}" |] "}"
+%format (D(x)) = "{\color[gray]{0.6}" [ "\rlap{\kern-.5pt\textit d}\phantom p\kern-2pt" | "}\;" x "\;{\color[gray]{0.6}" |] "}"
 %format ==> = "\Longrightarrow"
+
+%format Int = "\mathit{Int}"

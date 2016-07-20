@@ -4,7 +4,7 @@
 
 \section{Into BiGUL's Bidirectionality}
 
-We have been writing |put| programs, usually having a corresponding |get| in mind but not explicitly describing it, and yet BiGUL is capable of finding the right |get| behaviour as if reading our mind. How? We will see that, when writing a BiGUL program, we are always simultaneously describing both a |put| function and a |get| function, which are guaranteed to be a well-behaved pair. And the ``mind-reading'' ability is far from magic: Well-behavedness directly implies that |get| is uniquely determined by |put|, which is the main motivation for designing a putback-based language. We will look at several constructs of BiGUL in detail to get a taste of such design.
+We have been writing |put| programs, usually having a corresponding |get| in mind but not explicitly describing it, and yet BiGUL is capable of finding the right |get| behaviour as if reading our mind. How? We will see that, when writing a BiGUL program, we are always simultaneously describing both a |put| function and a |get| function, which are guaranteed to be a well-behaved pair. And the ``mind-reading'' ability is far from magic: Well-behavedness directly implies that |get| is uniquely determined by |put|, which is the main motivation for designing a putback-based language. And then we dive into BiGUL's internals.
 
 \subsection{Lenses, well-behavedness, and the fundamental theorem}
 
@@ -46,14 +46,13 @@ The theorem guarantees that the BiGUL programmer is in full control of the bidir
 Also, to the language designer, the theorem gives a kind of reassurance that, once the |put| behavior of a construct is determined, there is no need to worry about which |get| behavior should be adopted --- there is at most one possibility.
 This is in contrast to |get|-based design, in which there are usually more than one viable |put| semantics that can be assigned to a |get|-based construct, and the designer needs to justify the choice or provide several versions.
 
-\subsection{Designing putback-based language components}
-
+For the rest of this section, we will look at several constructs of BiGUL in detail to get a taste of putback-based design.
 Each BiGUL construct is conceived, at the design stage, as a lens (like |Skip| and |Replace|) or a lens \emph{combinator} (like |Case|), which constructs a more complex lens from simpler ones.
 The |put| and |get| components of these lenses usually have to be developed together, but for each lens we will employ a more ``|put|-oriented'' design process: We start from an intended |put| behavior, and then add restrictions so that we can find a corresponding |get|.
 This does not guarantee that the lenses we arrive at will have a ``strong |put| flavor'' --- that is, some of the lenses will be as suitable for |get|-based programming as for putback-based programming (or even more suitable).
 But we will also see that some other lenses are more naturally understood in terms of their |put| behavior.
 
-\subsubsection{{\itshape Replace}.}
+\subsection{Replacement}
 
 The simplest lens is probably |Replace|, which replaces the entire source with the view:
 \begin{spec}
@@ -65,7 +64,7 @@ get Replace v = Just v
 \end{spec}
 We still need to verify \ref{eq:GetPut}, which can be easily checked to be true.
 
-\subsubsection{{\itshape Skip}.}
+\subsection{Skipping}
 
 Coming up next is |Skip|, whose natural behavior is
 \begin{spec}
@@ -96,7 +95,7 @@ This pair of |put| and |get| can be verified to be well-behaved.
 |Skip f|, which features in BiGUL 1.0, is one lens which turns out to be more easily understood from the |get| direction --- it bidirectionalizes any function whose codomain has decidable equality, albeit trivially.
 We get the first version of |Skip| as a special case by setting~|f| to |const ()|.
 
-\subsubsection{{\itshape Prod}.}
+\subsection{Product}
 
 For a simplest example of a lens combinator, we look at |Prod|.
 Both the source and view types should be pairs; |Prod| accepts two lenses, say |l|~and~|r|, and applies them respectively to the left and right components:
@@ -165,7 +164,9 @@ Similarly, (\ref{eq:Prod-PutGet-conclusion})~can be shown to be equivalent to
 \[ |get l sl' = Just vl| \quad\wedge\quad |get r sr' = Just vr| \]
 The entailment is then just \ref{eq:PutGet} for |l|~and~|r|.
 
-\subsubsection{{\itshape Case}.} This is a representative combinator in BiGUL, and arguably the most complex one.
+\subsection{Case analysis}
+
+This is a representative combinator in BiGUL, and arguably the most complex one.
 For simplicity, let us consider a two-branch variant of |Case| first.
 A branch is a condition and a body; since in |put| we manipulate both a source and a view, the conditions in general can be binary predicates on both the source and view.
 We thus define the type of branches as:
@@ -185,7 +186,7 @@ put (Case (pl, l) (pr, r)) s v =  if       pl  s v  then  put l  s v
 That is, depending on which condition is satisfied (with |pl| having higher priority), we execute either |put l| or |put r|, or fail the computation if neither of the conditions is satisfied.
 Now, again, we ask the question: Can we find a |get| behavior to pair with this |put|?
 
-\paragraph{Ruling out branch switching for \ref{eq:PutGet}.} An important working assumption here is that we want lens combinators to be \emph{compositional}:
+\subsubsection{Ruling out branch switching for \ref{eq:PutGet}.} An important working assumption here is that we want lens combinators to be \emph{compositional}:
 When we looked at |Prod|, for example, we defined its |put| and |get| in terms of those of the smaller lenses, and derived the overall well-behavedness from that of the smaller lenses.
 For |Case|, this implies that, when establishing well-behavedness, we want a |get| following a |put| (or a |put| following a |get|) to use the same branch taken by the |put| (or the |get|), so we can invoke \ref{eq:PutGet} (or \ref{eq:GetPut}) of the branch.
 The current |put| behavior of |Case| does not leave any clue in the updated source about which branch is used to produce it, though, so it is impossible for |get| to choose the right branch.
@@ -215,7 +216,7 @@ put (Case (pl, l) (pr, r)) s v =
   else Nothing
 \end{spec}
 
-\paragraph{Ruling out branch switching for \ref{eq:GetPut}.}
+\subsubsection{Ruling out branch switching for \ref{eq:GetPut}.}
 
 The \ref{eq:GetPut} direction, on the other hand, still does not avoid branch switching --- the outcome of |get| does not say anything about which of |pl| and |pr| will be satisfied in the subsequent |put|.
 So we add some checks to |get| such that |get|'s success will tell us which branch will be chosen by |put|:
@@ -247,7 +248,7 @@ put (Case (pl, l) (pr, r)) s v =
 \end{spec}
 Now this pair of |put| and |get| can be verified to be well-behaved.
 
-\paragraph{Improving the efficiency of |get|.}
+\subsubsection{Improving the efficiency of |get|.}
 
 The efficiency of the current |get| does not seem very good, especially when, in general, any number of branches is allowed, and |get| has to try to execute each branch, possibly with a high cost, until it reaches a successful one; also, inefficient |get| affects the efficiency of |put|, which calls |get| to check range disjointness.
 An idea is to ask the programmer to make a rough ``prediction'' of the range of each branch:
@@ -284,7 +285,7 @@ If we do not care about efficiency, we can simply use |const True| as exit condi
 But if we supply disjoint exit conditions, then |get| will try at most one branch.
 Incidentally (but actually no less importantly), making exit conditions explicit also encourages the programmer to think about range disjointness, which is essential to totality of |Case|.
 
-\paragraph{Adaptation.}
+\subsubsection{Adaptation.}
 
 We have seen that, to make |Case| total, one thing we need to ensure is that the main condition of a branch should be satisfied again after the update.
 In practice, the main condition is usually closely related to the consistency relation, and we will only be able to deal with sources and views that are already more or less consistent; this is a rather severe restriction.
@@ -332,7 +333,7 @@ For each normal branch, (i)~the main condition should be satisfied after the upd
 Also the ranges of all the normal branches should be disjoint; the programmer is encouraged to write disjoint exit conditions, which imply disjointness of the ranges, and improve the efficiency of |get|.
 Also, for each adaptive branch, the adapted source and the view should match the main condition of a normal branch.
 
-\subsubsection{{\itshape RearrV}.}
+\subsection{Rearrangement}
 
 Source and view rearrangements are also among the more complex constructs of BiGUL.
 Their complexity lies in the strongly and generically typed treatment of pattern matching, though, rather than their bidirectional behavior.
