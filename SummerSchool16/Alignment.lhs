@@ -19,10 +19,11 @@ import Data.List
 \end{code}
 }
 
+In the next three sections, we will talk about some applications in BiGUL, starting from the list alignment problem.
 List alignment is one of the tasks that frequently show up when developing bidirectional applications.
 When the source and view are both lists, and the |get| direction (i.e., the consistency relation) is a |map|, how do we put an updated view --- the updates on which might involve insertions, deletions, in-place modifications, and reordering --- into the source?
 
-Throughout the section, we use a concrete example to introduce three variations of the list alignment problem.
+Throughout the section, we use a concrete example to introduce three variations of list alignment.
 Suppose that we represent a payroll database as a list.
 (This is a slightly inadequate setting for explaining list alignment, because entries in a database are usually unordered. But let us assume that order matters.)
 Each entry is a triple consisting of an identification number (``id'' henceforth), a name, and a salary number:
@@ -270,7 +271,7 @@ Just [(0,("Zhenjiang",1000)),(1,("Josh",0)),(2,("Jeremy",2000))]
 
 \subsubsection{One alignment to rule them all.}
 Where do deltas come from?
-In general, we may provide a view editor which monitors how the view is modified and produces a suitable delta.
+In general, we may provide a special view editor which monitors how the view is modified and produces a suitable delta.
 But in more specialized scenarios, deltas can simply be computed by, for example, comparing the source and view.
 We can formalize this delta computation as:
 \begin{code}

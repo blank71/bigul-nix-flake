@@ -32,7 +32,7 @@ Below we will use a simplified arithmetic expression language to explain how ref
 It is probably obvious that the idea of reflective printing comes from |put| transformations; parsing, then, is the |get| direction.
 Before we proceed to implement parsing and reflective printing in BiGUL, a natural question to ask is:
 Is well-behavedness meaningful in the context of parsing of reflective printing?
-The answer is yes, ecodeially for \ref{eq:PutGet}: An abstract syntax tree (AST) may be thought of as a concise and canonical representation of a concrete program, so it would be strange if a concrete program printed from an AST could not be parsed back to the same AST.
+The answer is yes, especially for \ref{eq:PutGet}: An abstract syntax tree (AST) may be thought of as a concise and canonical representation of a concrete program, so it would be strange if a concrete program printed from an AST could not be parsed back to the same AST.
 \ref{eq:GetPut}, on the other hand, is in fact not strong enough for our purpose, as it only says that, when an AST is unmodified, printing it reflectively to the original program does not change anything, whereas we would have liked to also say that ``small'' changes to the AST leads to only ``small'' changes to the concrete program.
 It is at least a good start to have \ref{eq:GetPut}, though.
 We thus conclude that BiGUL is indeed a suitable language for implementing reflective printers and corresponding parsers.
@@ -59,7 +59,7 @@ Factor  ->  Int
         |   '(' Exp ')'
 \end{spec}
 The two-level structure of |Exp| and |Factor| ensures that plus and minus associate to the left by default; to change association, we should use parentheses.
-And, to spice up the problem a little, we allow minus to be used also as a negative sign, as codeified by the second production rule for |Factor|.
+And, to spice up the problem a little, we allow minus to be used also as a negative sign, as specified by the second production rule for |Factor|.
 BiGUL deals with structured data only, so we should represent a string generated using this grammar as a concrete syntax tree of the following type:
 \begin{code}
 data Exp  =  Plus   Exp Factor
@@ -88,10 +88,10 @@ instance Show Exp where
   show    ENull         =  "."
 
 instance Show Factor where
-  show (  Lit    n  )  =  show n
-  show (  Neg    f  )  =  "-" ++ show f
-  show (  Paren  e  )  =  "(" ++ show e ++ ")"
-  show    FNull        =  "."
+  show (  Lit    n   )   =  show n
+  show (  Neg    f   )   =  "-" ++ show f
+  show (  Paren  e   )   =  "(" ++ show e ++ ")"
+  show    FNull          =  "."
 \end{code}
 Conversely, using modern parser technologies like Haskell's \texttt{parsec} parser combinator library, we can easily implement a ``concrete parser'' that turns a string into a concrete syntax tree:
 \begin{spec}
@@ -258,7 +258,7 @@ pFactorArith  =   Case
 
 \subsection{Reflecting optimizations and evaluation sequences}
 
-The BiGUL programs, being bidirectional, can be executed, in the |put| direction, a reflective printer, or, in the |get| direction, as a parser.
+The BiGUL programs, being bidirectional, can be executed in the |put| direction as a reflective printer, or in the |get| direction as a parser.
 Let us look at parsing first. For example:
 \begin{verbatim}
 *Main> get pExpArith (unsafeParseExp "(-(3+4))")
@@ -320,7 +320,7 @@ Just -(1+1)
 \subsection{A domain-codeific language}
 
 As a final remark, the above programs may look long, but at the core of them are merely the correspondences between concrete production rules and abstract constructors.
-We can design a domain-codeific language (DSL) that expresses such correspondences concisely, and then expand programs in this DSL into BiGUL.
+We can design a domain-specific language (DSL) that expresses such correspondences concisely, and then expand programs in this DSL into BiGUL.
 In fact, we have already done so, and the DSL is called \emph{BiYacc}.
 For example, all the programs we have written can be generated from the following eight-line BiYacc program:
 \begin{verbatim}
