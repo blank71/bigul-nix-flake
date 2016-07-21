@@ -45,6 +45,7 @@ In this tutorial, we will focus on |align|, which can describe flexible update s
 related to selection/projection queries. 
 
 \subsection{Relational database representation}
+\label{sec:table}
 
 A relational table is a list of records,
 and each record is a list of attribute elements of type.
@@ -98,7 +99,7 @@ showResultTuple (Left error) = putStrLn (show error)
 -- revise: many attributes may depend on the same attribute.
 -- type FDMap = Map.Map Int [Int]
 
--- Mapping between source and view attribute, as brul does not support arithmetic operaiton yet, the correspondence is simply mapping.
+-- Mapping between source and view attribute, as brul does not support arithmetic operation yet, the correspondence is simply mapping.
 type SVMap = Map.Map Int Int
 
 -- update a specific location of a record with a value v with type RType.
@@ -107,7 +108,7 @@ uRecord 0 v (x:xs) = v:xs
 uRecord i v (x:xs) = x : uRecord (i-1) v xs  
 
 
--- find records in the view accordign to the specific source record attribute value. 
+-- find records in the view according to the specific source record attribute value. 
 findWith :: Record -> Int -> [Record] -> Int -> Maybe Record
 findWith rs is vs iv = 
     case find p vs of
@@ -175,22 +176,21 @@ sfdMap = Map.fromList [(0,[1,2]), (3,[4])]
 
 \subsection{Relation Alignment}
 
-The alignment of relational tables are similar to the key-based list alignment
-discussed in Section \ref{sec:alignment}, except that we need to consider
+The alignment of two relational tables is similar to the key-based list alignment
+in Section \ref{sec:alignment}. The difference is that we need to consider
 filtering on the source records and maintaining of functional dependency
 on the source elements when updates on the view happen.
 
-Our relation alignment is has the form of
+Our relation alignment has the form of
 <relAlign p ks kv b c h fd
-where |p| is a predicate for filtering out those source elemnents that do not satisfy |p|,
-|ks| and |kv| are two functions to extract keys from the soruce and the view respectively, 
+where |p| is a predicate for filtering out those source elements that do not satisfy |p|,
+|ks| and |kv| are two functions to extract keys from the source and the view respectively, 
 |b| is a \textsc{BiGUL} program to do updating when the source and the view are matched by their keys,
 |c| is a function for creating a source element,
 |h| is a function to conceal elements in the source,
-and |fd| is a function for updating the source record according to the functional dependency.
+and |fd| is a function for updating source records according to the functional dependency.
 %
-Specifically,
-|relAlign| starts by using |p| to extract the satisfied
+Concretely, |relAlign| uses |p| to extract the satisfied
 source records, and then uses |ks| and |kv| to match these source
 elements with the view elements.  The matching result has three cases,
 and each case uses different update operation: when source and view
@@ -203,18 +203,18 @@ is used to conceal the element (from the view) by either
 deleting this source element or modifying it so that it does not
 satisfy the filter condition.
 
-Let us see how to extend |keyAlign| discussed in Section
-\ref{sec:alignment} to implement this more complex |relAlign|.
-We start by considering a simpler alighment which only considers
-filtering of source elements.
-To do so, we extend |keyAlign| with two new arguments, one is
-the predicate |p| to allow those source elements to appear in the view,
-and the other is a function |h| for hiding/concealing a source element
-if its corresponding
-element in the view is removed.
-As seen in the following definition, |pAlign| has a similar structure 
-to |keyAlign|, where we refine the third case
-into two cases (the middle part of |Case|).
+Let us see how to extend |keyAlign| (in Section \ref{sec:alignment})
+to implement |relAlign|.
+We do this extension by two steps. First, we consider an alignment
+that only deals with filtering of source elements.
+We extend |keyAlign| with two new arguments, one is
+the predicate |p| for filtering source elements,
+and the other is a function |h| for hiding/concealing source elements
+if their corresponding
+elements are removed from the view.
+As seen below, |pAlign| has a similar structure 
+to that of |keyAlign|, where we refine the third case of |keyAlign|
+into two cases (the third and the fourth cases of |pAlign|).
 
 \begin{code}
 pAlign :: forall s v k. (Show s, Show v, Eq k)
@@ -227,33 +227,31 @@ pAlign p ks kv b c h = Case
     ==> $(update [p| [] |] [p| [] |] [d| |])
   , $(normal [| \(s:ss) (v:vs) -> p s && ks s == kv v |] [| \(s:ss) -> p s |])
     ==> $(update [p| x:xs |] [p| x:xs |] [d| x = b; xs = pAlign p ks kv b c h |])
-  --------- 
   , $(adaptive [| \(s:ss) v -> p s && null v|])
     ==> \(s:ss) v -> maybe [] (:[]) (h s) ++ ss
   , $(normal [| \(s:ss) v -> not (p s) |] [| \(s:ss) -> not (p s) |])
     ==> $(update [p| _:xs |] [p| xs |] [d| xs = pAlign p ks kv b c h |])
-  --------- 
   , $(adaptive [| \ss (v:vs) -> kv v `elem` map ks (filter p ss) |])
     ==> \ss (v:_) -> uncurry (:) (extract (kv v) ss)
   , $(adaptiveSV [p| _ |] [p| _:_ |])
-    ==> \ss (v:_) -> filterCheck (c v) : ss
+    ==> \ss (v:_) -> filterCheck p (c v) : ss
   ]
-
   where
     extract :: k -> [s] -> (s, [s])
-    extract k (x:xs) | p x && ks x == k = (x, xs)
-                     | otherwise = let (y, ys) = extract k xs
-                                   in  (y, x:ys)
-    filterCheck v | p v = v
-                  | otherwise = error "error in filter checking"
+    extract k (x:xs)  | p x && ks x == k = (x, xs)
+                      | otherwise =  let (y, ys) = extract k xs
+                                     in  (y, x:ys)
+    filterCheck p v  | p v = v
+                     | otherwise = error "error in filter checking"
 \end{code}
 
-To test it, let us consider that the view is a list of key-name pairs
-selected from the source |employees| whose salary is greater than |1000|.
+To test, recall the example in Section \ref{sec:alignment}.
+Consider the following use of |pAlign|:
 \begin{code}
 pSelProj = pAlign (\(k,(n,s)) -> s > 1000) fst fst bx cr' (const Nothing)
   where cr' (k,n) = (k,(n, 2000))
 \end{code}
+we have:
 \begin{verbatim}
 *Brul> get pSelProj employees
 Just [(2,"Jeremy")]
@@ -262,10 +260,12 @@ Just [(0,("Zhenjiang",1000)),(1,("Josh",400)),(0,("Zhenjiang",2000)),
 (2,("Jeremy",2000))]
 \end{verbatim}
 
-Now maintaining functional dependency consistency when updates happen becomes straightforward;
-We just add a new parameter for the function for updating source element when necessary,
-and extend the fourth case of |pAlign| to check for each element in the source
-and do correction when necessary.
+Second, we extend |pAlign| to deal with functional dependency consistency
+when updates happen.
+To this end, we add a new parameter |fd|, a function for updating source records
+to conform functional dependency.
+Surprisingly, this is simple. It is suffice to 
+extend the fourth case of |pAlign| to apply |fd| when inconsistency happens.
 
 \begin{code}
 relAlign :: forall s v k. (Show s, Show v, Eq k, Eq s)
@@ -293,6 +293,14 @@ relAlign p ks kv b c h fd = Case
   , $(adaptiveSV [p| _ |] [p| _:_ |])
     ==> \ss (v:_) -> filterCheck p (c v) : ss
   ]
+  where
+    extract :: k -> [s] -> (s, [s])
+    extract k (x:xs)  | p x && ks x == k = (x, xs)
+                      | otherwise =  let (y, ys) = extract k xs
+                                     in  (y, x:ys)
+    filterCheck p v  | p v = v
+                     | otherwise = error "error in filter checking"
+
 \end{code}
 
 \subsection{Describing update policies in selection/projection}
@@ -303,14 +311,10 @@ consider the following selection/projection query:
 < select Track, Rating, Album, Quantity as v
 < from s
 < where Quantity > 2
-How to write a single BiGUL program, where its |get| does the
-above query and its |put| describes a specific update policy.
+Let us see how to write a single BiGUL program so that its |get|
+does the above query and its |put| describes an intended update policy.
 
-The first BiGUL program is |u1| shown below.
-It accepts an argument of type |RType|
-which is used as a default value to fill in the Date attribute when
-there is a new record inserted into the view and no records in the
-source have the same Track value.
+The first \textsc{BiGUL} program is |u0| below.
 \begin{code}
 u0 :: RType -> (Record -> Record) -> BiGUL [Record] [Record]
 u0 d =
@@ -324,12 +328,9 @@ u0 d =
     (\(t: r: a: q: []) -> (t: d: r: a: q: []))
     (\rs -> Nothing)
 \end{code}
-The filter function determines whether the Quantity is greater
-than 2.  The expression |r!!4|
-retrieves the fifth value of a list.  The matching condition states
-that a source record and a view record are matched if they share the
-same Track name and Album name.
-When aligning, there are three cases:
+It matches the source records whose |Quantity| is greater than |2|
+with the view records by the key (|Track|, |Album|).
+There are three cases:
 \begin{itemize}
 
 \item A source record is matched with a view record: we first use a
@@ -338,21 +339,20 @@ four-element list |[t,r,a,q]| to a five-element list |[t,_,r,a,q]|
 with the second element marked as underscore.  This rearrangement
 function reshapes the view to match the shape of the source.  Then,
 the element in the source is |Replace|d by the corresponding element
-in the view by an update |[d|t = Replace|]| which means the |t| in the
-source record will be replaced by the |t| in the view record.
+in the view.
 
 \item A view record that has no matching source record: a new source
-record is created (line 10) with a default value $d$ filled into the
+record is created with a default value $d$ filled into the
 Date.
 
- \item A source record that has no matching view record: we simply
+\item A source record that has no matching view record: we simply
 delete this record by return |Nothing|.
 
 \end{itemize}
 
-If we would like to hide the source record if it has no marching view record,
-by saying setting its Quantity to |0|, we can change the last line
-of the above program as follows.
+Now if we would like to hide the source record by setting its Quantity to |0|
+rather than deleting it if it has no marching view record,
+we can simply change the last line of |u0| and get |u1| as follows.
 
 \begin{code}
 u1 :: RType -> (Record -> Record) -> BiGUL [Record] [Record]
@@ -368,12 +368,37 @@ u1 d =
     (\(t: d: r: a: _: []) -> Just (t: d: r: a: RInt 1:[]))
 \end{code}
 
+To be concrete, let us see some concrete running examples of using |u0|.
+Recall |s| defined in Section \ref{sec:table}. We can confirm that |get| does
+the query given at the start of this subsection.
+\begin{verbatim}
+*Brul> get (u0 (RInt (-1)) id) s
+Just
+[[RString "Lullaby",RInt 3,RString "Show",RInt 3],
+[RString "Lovesong",RInt 5,RString "Disintegration",RInt 4],
+[RString "Trust",RInt 4,RString "Wish",RInt 5]]
+\end{verbatim}
+Now suppose that we change the above view to the following:
 \begin{code}
-v =[
-    [RString "Lullaby" , RInt 4, RString "Show"  , RInt 3]
-   ,[RString "Lovesong", RInt 5, RString "Disintegration" , RInt 7]
-   ]
+v =  [ [RString "Lullaby" , RInt 4, RString "Show"  , RInt 3]
+     , [RString "Lovesong", RInt 5, RString "Disintegration" , RInt 7]
+     ]
+\end{code}
+and we can reflect this change to the source by performing |put| as follows.
+\begin{verbatim}
+*Brul> put (u0 (RInt (-1)) (fdFun sfdMap vfdMap svMap v)) s v
+Just
+[[RString "Lullaby",RInt 1989,RInt 4,RString "Galore",RInt 1],
+[RString "Lullaby",RInt 1989,RInt 4,RString "Show",RInt 3],
+[RString "Lovesong",RInt 1989,RInt 5,RString "Galore",RInt 1],
+[RString "Lovesong",RInt 1989,RInt 5,RString "Disintegration",RInt 7]]
+\end{verbatim}
+Note that the above |(fdFun sfdMap vfdMap svMap v)| denotes a function
+generated by applying |fdFun| to several dependency mappings and view |v|.
+We omit the definition of |fdFun| here.
 
+\ignore{
+\begin{code}
 d = RInt (-1)
 
 type Source = [Record]
@@ -381,7 +406,7 @@ type View = [Record]
 
 brul0 :: BiGUL Source View
 brul0 = emb (\s -> fromJust $ get (u0 d id) s)
-                  (\s v -> fromJust $ put (u0 d (fd sfdMap vfdMap svMap v)) s v)
+                  (\s v -> fromJust $ put (u0 d (fdFun sfdMap vfdMap svMap v)) s v)
 
 tb0 = showTable $ fromJust $ put brul0 s v
 tf0 = showTable $ fromJust $ get brul0 s
@@ -390,7 +415,7 @@ tf0 = showTable $ fromJust $ get brul0 s
 
 brul1 :: BiGUL Source View
 brul1 = emb (\s -> fromJust $ get (u1 d id) s)
-           (\s v -> fromJust $ put (u1 d (fd sfdMap vfdMap svMap v)) s v)
+           (\s v -> fromJust $ put (u1 d (fdFun sfdMap vfdMap svMap v)) s v)
 
 tb1 = showTable $ fromJust $ put brul1 s v
 tf1 = showTable $ fromJust $ get brul1 s
@@ -406,8 +431,8 @@ svMap = Map.fromList [(0,0), (2,1), (3,2), (4,3)]
 -- computation of functional dependency
 
 -- S, and V
-fd :: FDMap -> FDMap -> SVMap -> View -> Record -> Record
-fd sfdMap vfdMap svMap vs s = 
+fdFun :: FDMap -> FDMap -> SVMap -> View -> Record -> Record
+fdFun sfdMap vfdMap svMap vs s = 
   let sfdList = Map.toAscList sfdMap
   in  fdHelper sfdList vfdMap svMap vs s
 
@@ -441,6 +466,5 @@ findVFromHelper vto ((vfrom, vtos) : vs) =
     Nothing -> findVFromHelper vto vs
     Just _  -> Just vfrom
 
-
 \end{code}
-
+}
