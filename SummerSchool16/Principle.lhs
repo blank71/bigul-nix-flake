@@ -4,7 +4,11 @@
 
 \section{Into BiGUL's Bidirectionality}
 
-We have been writing |put| programs, usually having a corresponding |get| in mind but not explicitly describing it, and yet BiGUL is capable of finding the right |get| behaviour as if reading our mind. How? We will see that, when writing a BiGUL program, we are always simultaneously describing both a |put| function and a |get| function, which are guaranteed to be a well-behaved pair. And the ``mind-reading'' ability is far from magic: Well-behavedness directly implies that |get| is uniquely determined by |put|, which is the main motivation for designing a putback-based language. And then we dive into BiGUL's internals.
+We have been writing |put| programs, usually having a corresponding |get| in mind but not explicitly describing it, and yet BiGUL is capable of finding the right |get| behaviour as if reading our mind. How?
+We will see that, when writing a BiGUL program, we are always simultaneously describing both a |put| function and a |get| function, which are guaranteed to be a well-behaved pair.
+And the ``mind-reading'' ability is far from magic:
+It is the consequence of the fact that well-behavedness directly implies that |get| is uniquely determined by |put|, which is the main motivation for designing a putback-based language.
+In this section, we will first review the theory, this time explicitly taking \emph{partiality} into account, and then we will dive into BiGUL's internals to get a taste of putback-based design.
 
 \subsection{Lenses, well-behavedness, and the fundamental theorem}
 

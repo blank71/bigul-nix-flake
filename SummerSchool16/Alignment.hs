@@ -50,7 +50,7 @@ updatedEmployees0 :: [View]
 updatedEmployees0 = [(0, "Zhenjiang"), (2, "Jeremy")]
 
 _ = put (posAlign bx cr) employees updatedEmployees0
--- Just [(0,("Zhenjiang Hu",1000)),(2,("Jeremy Gibbons",400))]
+-- Just [(0,("Zhenjiang",1000)),(2,("Jeremy",400))]
 
 updatedEmployees1 :: [View]
 updatedEmployees1 = [(2, "Jeremy"), (0, "Zhenjiang"), (1, "Josh")]
@@ -86,7 +86,7 @@ _ = get (keyAlign fst fst bx cr) employees
 -- Just [(0,"Zhenjiang"),(1,"Josh"),(2,"Jeremy")]
 
 _ = put (keyAlign fst fst bx cr) employees updatedEmployees0
--- Just [(0,("Zhenjiang Hu",1000)),(2,("Jeremy Gibbons",2000))]
+-- Just [(0,("Zhenjiang",1000)),(2,("Jeremy",2000))]
 
 _ = put (keyAlign fst fst bx cr) employees updatedEmployees1
 -- Just [(1,("Josh",400)),(0,("Zhenjiang",1000)),(2,("Jeremy",2000))]
@@ -140,7 +140,7 @@ byPosition :: DeltaStrategy s v
 byPosition ss _ = idDelta ss
 
 _ = putDeltaAlignS byPosition bx cr employees updatedEmployees0
--- Just [(0,("Zhenjiang Hu",1000)),(2,("Jeremy Gibbons",400))]
+-- Just [(0,("Zhenjiang",1000)),(2,("Jeremy",400))]
 
 byKey :: Eq k => (s -> k) -> (v -> k) -> DeltaStrategy s v
 byKey ks kv ss vs = let sis = zip ss [0..]
