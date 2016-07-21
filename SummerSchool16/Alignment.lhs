@@ -82,6 +82,13 @@ posAlign b c = Case
   ]
 \end{code}
 The normal branches deal with the situations where both lists are empty or non-empty, and the adaptive branches remove or create elements when the lengths of the two lists differ.
+In the normal branches, we use a new operation |update|, which is a more compact syntax for the common programming pattern in which both the source and view are rearranged into a product and then further updates are performed on corresponding components.
+For example, the |update| in the second normal branch is shorthand for:
+\begin{spec}
+$(rearrS [| \(x:xs) -> (x, xs) |])
+  $(rearrV [| \(x:xs) -> (x, xs) |])
+    b `Prod` posAlign b c
+\end{spec}
 
 The |get| direction of |posAlign| does exactly what we want it to do:
 \begin{verbatim}

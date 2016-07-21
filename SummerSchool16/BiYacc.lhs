@@ -173,13 +173,6 @@ pFactorArith  =   Case undefined
 \end{spec}
 The branch for plus and addition can then be written as:
 \begin{spec}
-$(normalSV [p| Plus _ _ |] [p| Add _ _ |] [p| Plus _ _ |])
-  ==>  $(rearrS [| \(Plus l r) -> (l, r) |])$
-         $(rearrV [| \(Add l r) -> (l, r) |])$
-           pExpArith `Prod` pFactorArith
-\end{spec}
-The body, which rearranges both the source and view into a product and then performs further updates on corresponding pairs, is a common programming pattern in BiGUL, so in fact there is a more compact syntax for it:
-\begin{spec}
 $(update  [p| Plus l r |] [p| Add l r |]
           [d| l = pExpArith; r = pFactorArith |])
 \end{spec}
