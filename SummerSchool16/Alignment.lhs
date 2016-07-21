@@ -3,11 +3,13 @@
 %include lhs2TeX-macros.lhs
 
 \section{Positional, key-based, and delta-based list alignment}
+\label{sec:alignment}
 
 \ignore{
 \begin{code}
 {-# LANGUAGE TemplateHaskell, TypeFamilies, ScopedTypeVariables #-}
 
+module Alignment where
 import Generics.BiGUL
 import Generics.BiGUL.TH
 import Generics.BiGUL.Lib

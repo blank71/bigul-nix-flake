@@ -5,19 +5,21 @@
 \ignore{
 
 \begin{code}
-{-# LANGUAGE FlexibleContexts, TemplateHaskell, TypeFamilies #-}
+{-# LANGUAGE FlexibleContexts, TemplateHaskell, TypeFamilies, ScopedTypeVariables #-}
 
 module Brul where
 import Generics.BiGUL
 import Generics.BiGUL.Interpreter
 import Generics.BiGUL.TH
 import Generics.BiGUL.Lib
+
 import GHC.Generics
 import Data.List
 import Control.Monad.Except
 import qualified Data.Map as Map
 import Data.Maybe
 
+import Alignment (employees,bx,updatedEmployees0,cr)
 
 \end{code}
 
@@ -171,76 +173,274 @@ sfdMap :: FDMap
 sfdMap = Map.fromList [(0,[1,2]), (3,[4])]
 \end{code}
 
-\subsection{Align}
+\subsection{Relation Alignment}
+
+The alignment of relational tables are similar to the key-based list alignment
+discussed in Section \ref{sec:alignment}, except that we need to consider
+filtering on the source records and maintaining of functional dependency
+on the source elements when updates on the view happen.
+
+Our relation alignment is has the form of
+<relAlign p ks kv b c h fd
+where |p| is a predicate for filtering out those source elemnents that do not satisfy |p|,
+|ks| and |kv| are two functions to extract keys from the soruce and the view respectively, 
+|b| is a \textsc{BiGUL} program to do updating when the source and the view are matched by their keys,
+|c| is a function for creating a source element,
+|h| is a function to conceal elements in the source,
+and |fd| is a function for updating the source record according to the functional dependency.
+%
+Specifically,
+|relAlign| starts by using |p| to extract the satisfied
+source records, and then uses |ks| and |kv| to match these source
+elements with the view elements.  The matching result has three cases,
+and each case uses different update operation: when source and view
+elements are matched, |b| is used to update the source
+element by the view element; when a view element has no corresponding
+matching source element, |c| is used to create a source
+element from this view element; when a source element has no
+corresponding matching view element, |h|
+is used to conceal the element (from the view) by either
+deleting this source element or modifying it so that it does not
+satisfy the filter condition.
+
+Let us see how to extend |keyAlign| discussed in Section
+\ref{sec:alignment} to implement this more complex |relAlign|.
+We start by considering a simpler alighment which only considers
+filtering of source elements.
+To do so, we extend |keyAlign| with two new arguments, one is
+the predicate |p| to allow those source elements to appear in the view,
+and the other is a function |h| for hiding/concealing a source element
+if its corresponding
+element in the view is removed.
+As seen in the following definition, |pAlign| has a similar structure 
+to |keyAlign|, where we refine the third case
+into two cases (the middle part of |Case|).
 
 \begin{code}
-align :: (Eq a, Show a, Eq b, Show b)
-      => (a -> Bool)
-      -> (a -> b -> Bool)
-      -> BiGUL a b
-      -> (b -> a)
-      -> (a -> Maybe a)
-      -> (a -> a)  -- update functional dependency
-      -> BiGUL [a] [b]
-align p match b create conceal fd =  
-  Case [ $(adaptiveSV [| \ss -> null (filter p ss) && map fd ss /= ss |] [p| [] |]) 
-         ==> \ss _ -> map (\s1 -> let s2 = fd s1 in if p s2 then berror s1 else s2) ss    
-       , $(adaptiveSV [| not . null . filter p |] [p| [] |])
-         ==> \ss _ -> catMaybes (map (\s -> 
-          let s1 = if p s then conceal s else Just s 
-          in (maybe Nothing 
-                (\s1 -> let s2 = fd s1 in if p s2 then berror s1 else (Just s2)) -- after fd, check p
-                s1
-             )) ss) -- using fd to update
-       , $(adaptiveSV [| \ss -> not (null (filter p ss)) && not (p (head ss)) && (fd (head ss) /= head ss) |] [p| _:_ |])
-         ==> \(s:xs) _ -> let s1 = fd s in if p s1 then berror s else s1: xs -- after fd, check p    
-       , $(normalSV [| \ss -> null (filter p ss) |] [p| [] |] [| const True |])  
-         ==> $(update [p| _ |] [p| [] |] [d| |])
-       , $(normalSV [| \ss -> not (null (filter p ss)) && not (p (head ss)) |] [p| _:_ |] [| const True |])
-         ==> $(update [p| _:vs |] [p| vs |] [d| vs = align p match b create conceal fd |])
-       , $(normal [| \ss vs -> not (null (filter p ss)) && p (head ss) && not (null vs) && match (head ss) (head vs) |]
-                  [| \ss -> not (null (filter p ss)) && p (head ss) |]) 
-         ==> $(update [p| v: vs |] [p| v : vs |]
-                      [d| v  = b
-                          vs = align p match b create conceal fd |])
-       , $(adaptiveSV [| const True |] [p| _:_ |])
-         ==> \ss (v:_) -> case find (flip match v) (filter p ss) of
-                          Nothing -> let s1 = fd (create v)
-                                     in if p s1 
-                                          then s1 :ss
-                                          else berrorn s1
-                          Just s  -> s :delete s ss ]
+pAlign :: forall s v k. (Show s, Show v, Eq k)
+         => (s -> Bool) {- predicate -}
+            -> (s -> k) -> (v -> k) -> BiGUL s v -> (v -> s) 
+            -> (s -> Maybe s) {- conceal function -}
+            -> BiGUL [s] [v]
+pAlign p ks kv b c h = Case
+  [ $(normalSV [p| [] |] [p| [] |] [p| [] |])
+    ==> $(update [p| [] |] [p| [] |] [d| |])
+  , $(normal [| \(s:ss) (v:vs) -> p s && ks s == kv v |] [| \(s:ss) -> p s |])
+    ==> $(update [p| x:xs |] [p| x:xs |] [d| x = b; xs = pAlign p ks kv b c h |])
+  --------- 
+  , $(adaptive [| \(s:ss) v -> p s && null v|])
+    ==> \(s:ss) v -> maybe [] (:[]) (h s) ++ ss
+  , $(normal [| \(s:ss) v -> not (p s) |] [| \(s:ss) -> not (p s) |])
+    ==> $(update [p| _:xs |] [p| xs |] [d| xs = pAlign p ks kv b c h |])
+  --------- 
+  , $(adaptive [| \ss (v:vs) -> kv v `elem` map ks (filter p ss) |])
+    ==> \ss (v:_) -> uncurry (:) (extract (kv v) ss)
+  , $(adaptiveSV [p| _ |] [p| _:_ |])
+    ==> \ss (v:_) -> filterCheck (c v) : ss
+  ]
 
+  where
+    extract :: k -> [s] -> (s, [s])
+    extract k (x:xs) | p x && ks x == k = (x, xs)
+                     | otherwise = let (y, ys) = extract k xs
+                                   in  (y, x:ys)
+    filterCheck v | p v = v
+                  | otherwise = error "error in filter checking"
+\end{code}
+
+To test it, let us consider that the view is a list of key-name pairs
+selected from the source |employees| whose salary is greater than |1000|.
+\begin{code}
+pSelProj = pAlign (\(k,(n,s)) -> s > 1000) fst fst bx cr' (const Nothing)
+  where cr' (k,n) = (k,(n, 2000))
+\end{code}
+\begin{verbatim}
+*Brul> get pSelProj employees
+Just [(2,"Jeremy")]
+*Brul> put pSelProj employees updatedEmployees0
+Just [(0,("Zhenjiang",1000)),(1,("Josh",400)),(0,("Zhenjiang",2000)),
+(2,("Jeremy",2000))]
+\end{verbatim}
+
+Now maintaining functional dependency consistency when updates happen becomes straightforward;
+We just add a new parameter for the function for updating source element when necessary,
+and extend the fourth case of |pAlign| to check for each element in the source
+and do correction when necessary.
+
+\begin{code}
+relAlign :: forall s v k. (Show s, Show v, Eq k, Eq s)
+         => (s -> Bool) -> (s -> k) -> (v -> k)
+            -> BiGUL s v -> (v -> s) -> (s -> Maybe s)
+            -> (s -> s) {- dependency maintaining function -}
+            -> BiGUL [s] [v]
+relAlign p ks kv b c h fd = Case
+  [ $(normalSV [p| [] |] [p| [] |] [p| [] |])
+    ==> $(update [p| [] |] [p| [] |] [d| |])
+  , $(normal [| \(s:ss) (v:vs) -> p s && ks s == kv v |] [| \(s:ss) -> p s |])
+    ==> $(update [p| x:xs |] [p| x:xs |] [d| x = b; xs = relAlign p ks kv b c h fd |])
+
+  , $(adaptive [| \(s:ss) v -> p s && null v|])
+    ==> \(s:ss) v -> maybe [] ((:[]) . filterCheck p . fd) (h s) ++ ss
+  , $(normal [| \(s:ss) v -> not (p s) |] [| \(s:ss) -> not (p s) |])
+    ==> Case
+     [ $(adaptive [| \(s:_) _ -> fd s /= s |])
+        ==> \(s:ss) _ -> filterCheck (not.p) (fd s) : ss
+     , $(normal [|\_ _ -> True |] [| const True |])
+        ==> $(update [p| _:xs |] [p| xs |] [d| xs = relAlign p ks kv b c h fd |])
+     ]
+  , $(adaptive [| \ss (v:vs) -> kv v `elem` map ks (filter p ss) |])
+    ==> \ss (v:_) -> uncurry (:) (extract (kv v) ss)
+  , $(adaptiveSV [p| _ |] [p| _:_ |])
+    ==> \ss (v:_) -> filterCheck p (c v) : ss
+  ]
 \end{code}
 
 \subsection{Describing update policies in selection/projection}
 
+With |relAlign|, we can describe various update policies
+for the selection/projection queries. To be concrete,
+consider the following selection/projection query:
+< select Track, Rating, Album, Quantity as v
+< from s
+< where Quantity > 2
+How to write a single BiGUL program, where its |get| does the
+above query and its |put| describes a specific update policy.
+
+The first BiGUL program is |u1| shown below.
+It accepts an argument of type |RType|
+which is used as a default value to fill in the Date attribute when
+there is a new record inserted into the view and no records in the
+source have the same Track value.
 \begin{code}
---------------------------------------------------------------
--- The first update program
--- Delete the unmatched source record
 u0 :: RType -> (Record -> Record) -> BiGUL [Record] [Record]
 u0 d =
-  align
+  relAlign
     (\r -> (r !! 4) > RInt 2)
-    (\s v -> (s !! 0 == v !! 0) && (s !! 3 == v !! 2))
+    (\s -> (s !! 0, s!!3))
+    (\v -> (v !! 0, v !! 2))
     $(update [p| (t: _: r: a: q: [])|]
              [p| (t: r: a: q: []) |]
              [d| t = Replace; r = Replace; a = Replace; q = Replace |])
     (\(t: r: a: q: []) -> (t: d: r: a: q: []))
     (\rs -> Nothing)
+\end{code}
+The filter function determines whether the Quantity is greater
+than 2.  The expression |r!!4|
+retrieves the fifth value of a list.  The matching condition states
+that a source record and a view record are matched if they share the
+same Track name and Album name.
+When aligning, there are three cases:
+\begin{itemize}
 
---------------------------------------------------------------
--- The second update program
--- Update the unmatched source record
+\item A source record is matched with a view record: we first use a
+rearrangement function to rearrange the view from a
+four-element list |[t,r,a,q]| to a five-element list |[t,_,r,a,q]|
+with the second element marked as underscore.  This rearrangement
+function reshapes the view to match the shape of the source.  Then,
+the element in the source is |Replace|d by the corresponding element
+in the view by an update |[d|t = Replace|]| which means the |t| in the
+source record will be replaced by the |t| in the view record.
+
+\item A view record that has no matching source record: a new source
+record is created (line 10) with a default value $d$ filled into the
+Date.
+
+ \item A source record that has no matching view record: we simply
+delete this record by return |Nothing|.
+
+\end{itemize}
+
+If we would like to hide the source record if it has no marching view record,
+by saying setting its Quantity to |0|, we can change the last line
+of the above program as follows.
+
+\begin{code}
 u1 :: RType -> (Record -> Record) -> BiGUL [Record] [Record]
 u1 d =
-  align
+  relAlign
     (\r -> (r !! 4) > RInt 2)
-    (\s v -> (s !! 0 == v !! 0) && (s !! 3 == v !! 2))
+    (\s -> (s !! 0, s!!3))
+    (\v -> (v !! 0, v !! 2))
     $(update [p| (t: _: r: a: q: [])|]
              [p| (t: r: a: q: []) |]
              [d| t = Replace; r = Replace; a = Replace; q = Replace |])
     (\(t: r: a: q: []) -> (t: d: r: a: q: []))
     (\(t: d: r: a: _: []) -> Just (t: d: r: a: RInt 1:[]))
 \end{code}
+
+\begin{code}
+v =[
+    [RString "Lullaby" , RInt 4, RString "Show"  , RInt 3]
+   ,[RString "Lovesong", RInt 5, RString "Disintegration" , RInt 7]
+   ]
+
+d = RInt (-1)
+
+type Source = [Record]
+type View = [Record]
+
+brul0 :: BiGUL Source View
+brul0 = emb (\s -> fromJust $ get (u0 d id) s)
+                  (\s v -> fromJust $ put (u0 d (fd sfdMap vfdMap svMap v)) s v)
+
+tb0 = showTable $ fromJust $ put brul0 s v
+tf0 = showTable $ fromJust $ get brul0 s
+
+--------------------------------------------------------------------
+
+brul1 :: BiGUL Source View
+brul1 = emb (\s -> fromJust $ get (u1 d id) s)
+           (\s v -> fromJust $ put (u1 d (fd sfdMap vfdMap svMap v)) s v)
+
+tb1 = showTable $ fromJust $ put brul1 s v
+tf1 = showTable $ fromJust $ get brul1 s
+
+-- Define the functional dependency on view
+vfdMap :: FDMap
+vfdMap = Map.fromList [(0, [1]), (2, [3])]
+
+-- Define the mapping relation between source and view.
+svMap :: SVMap
+svMap = Map.fromList [(0,0), (2,1), (3,2), (4,3)]
+
+-- computation of functional dependency
+
+-- S, and V
+fd :: FDMap -> FDMap -> SVMap -> View -> Record -> Record
+fd sfdMap vfdMap svMap vs s = 
+  let sfdList = Map.toAscList sfdMap
+  in  fdHelper sfdList vfdMap svMap vs s
+
+fdHelper :: [(Int, [Int])] -> FDMap -> SVMap -> View -> Record -> Record
+fdHelper []                      vfdMap svMap vs s = s
+fdHelper ((from, [to]): ms)      vfdMap svMap vs s = 
+  case Map.lookup to svMap of
+    Nothing  -> fdHelper ms vfdMap svMap vs s
+    Just vto -> 
+      case findVFrom vto vfdMap of
+        Nothing    -> fdHelper ms vfdMap svMap vs s
+        Just vfrom -> 
+          case findWith s from vs vfrom of
+            Nothing -> fdHelper ms vfdMap svMap vs s
+            Just rv -> let s1 = uRecord to (rv !! vto) s
+                       in fdHelper ms vfdMap svMap vs s1
+fdHelper ((from, (to: tos)): ms)      vfdMap svMap vs s = 
+  let s1 = fdHelper [(from, [to])] vfdMap svMap vs s
+  in fdHelper ((from, tos): ms) vfdMap svMap vs s
+
+
+findVFrom :: Int -> FDMap -> Maybe Int
+findVFrom vto vfdMap = 
+  let vfdList = Map.toAscList vfdMap
+  in findVFromHelper vto vfdList
+
+findVFromHelper :: Int -> [(Int, [Int])] -> Maybe Int
+findVFromHelper vto [] = Nothing
+findVFromHelper vto ((vfrom, vtos) : vs) = 
+  case find (\v -> v == vto) vtos of
+    Nothing -> findVFromHelper vto vs
+    Just _  -> Just vfrom
+
+
+\end{code}
+
