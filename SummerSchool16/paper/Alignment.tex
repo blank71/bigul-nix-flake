@@ -1,0 +1,960 @@
+% !TEX root = paper.tex
+
+%% ODER: format ==         = "\mathrel{==}"
+%% ODER: format /=         = "\neq "
+%
+%
+\makeatletter
+\@ifundefined{lhs2tex.lhs2tex.sty.read}%
+  {\@namedef{lhs2tex.lhs2tex.sty.read}{}%
+   \newcommand\SkipToFmtEnd{}%
+   \newcommand\EndFmtInput{}%
+   \long\def\SkipToFmtEnd#1\EndFmtInput{}%
+  }\SkipToFmtEnd
+
+\newcommand\ReadOnlyOnce[1]{\@ifundefined{#1}{\@namedef{#1}{}}\SkipToFmtEnd}
+\usepackage{amstext}
+\usepackage{amssymb}
+\usepackage{stmaryrd}
+\DeclareFontFamily{OT1}{cmtex}{}
+\DeclareFontShape{OT1}{cmtex}{m}{n}
+  {<5><6><7><8>cmtex8
+   <9>cmtex9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmtex10}{}
+\DeclareFontShape{OT1}{cmtex}{m}{it}
+  {<-> ssub * cmtt/m/it}{}
+\newcommand{\texfamily}{\fontfamily{cmtex}\selectfont}
+\DeclareFontShape{OT1}{cmtt}{bx}{n}
+  {<5><6><7><8>cmtt8
+   <9>cmbtt9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmbtt10}{}
+\DeclareFontShape{OT1}{cmtex}{bx}{n}
+  {<-> ssub * cmtt/bx/n}{}
+\newcommand{\tex}[1]{\text{\texfamily#1}}	% NEU
+
+\newcommand{\Sp}{\hskip.33334em\relax}
+
+
+\newcommand{\Conid}[1]{\mathit{#1}}
+\newcommand{\Varid}[1]{\mathit{#1}}
+\newcommand{\anonymous}{\kern0.06em \vbox{\hrule\@width.5em}}
+\newcommand{\plus}{\mathbin{+\!\!\!+}}
+\newcommand{\bind}{\mathbin{>\!\!\!>\mkern-6.7mu=}}
+\newcommand{\rbind}{\mathbin{=\mkern-6.7mu<\!\!\!<}}% suggested by Neil Mitchell
+\newcommand{\sequ}{\mathbin{>\!\!\!>}}
+\renewcommand{\leq}{\leqslant}
+\renewcommand{\geq}{\geqslant}
+\usepackage{polytable}
+
+%mathindent has to be defined
+\@ifundefined{mathindent}%
+  {\newdimen\mathindent\mathindent\leftmargini}%
+  {}%
+
+\def\resethooks{%
+  \global\let\SaveRestoreHook\empty
+  \global\let\ColumnHook\empty}
+\newcommand*{\savecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\savecolumns[#1]}}
+\newcommand*{\restorecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\restorecolumns[#1]}}
+\newcommand*{\aligncolumn}[2]%
+  {\g@addto@macro\ColumnHook{\column{#1}{#2}}}
+
+\resethooks
+
+\newcommand{\onelinecommentchars}{\quad-{}- }
+\newcommand{\commentbeginchars}{\enskip\{-}
+\newcommand{\commentendchars}{-\}\enskip}
+
+\newcommand{\visiblecomments}{%
+  \let\onelinecomment=\onelinecommentchars
+  \let\commentbegin=\commentbeginchars
+  \let\commentend=\commentendchars}
+
+\newcommand{\invisiblecomments}{%
+  \let\onelinecomment=\empty
+  \let\commentbegin=\empty
+  \let\commentend=\empty}
+
+\visiblecomments
+
+\newlength{\blanklineskip}
+\setlength{\blanklineskip}{0.66084ex}
+
+\newcommand{\hsindent}[1]{\quad}% default is fixed indentation
+\let\hspre\empty
+\let\hspost\empty
+\newcommand{\NB}{\textbf{NB}}
+\newcommand{\Todo}[1]{$\langle$\textbf{To do:}~#1$\rangle$}
+
+\EndFmtInput
+\makeatother
+%
+%
+%
+%
+%
+%
+% This package provides two environments suitable to take the place
+% of hscode, called "plainhscode" and "arrayhscode". 
+%
+% The plain environment surrounds each code block by vertical space,
+% and it uses \abovedisplayskip and \belowdisplayskip to get spacing
+% similar to formulas. Note that if these dimensions are changed,
+% the spacing around displayed math formulas changes as well.
+% All code is indented using \leftskip.
+%
+% Changed 19.08.2004 to reflect changes in colorcode. Should work with
+% CodeGroup.sty.
+%
+\ReadOnlyOnce{polycode.fmt}%
+\makeatletter
+
+\newcommand{\hsnewpar}[1]%
+  {{\parskip=0pt\parindent=0pt\par\vskip #1\noindent}}
+
+% can be used, for instance, to redefine the code size, by setting the
+% command to \small or something alike
+\newcommand{\hscodestyle}{}
+
+% The command \sethscode can be used to switch the code formatting
+% behaviour by mapping the hscode environment in the subst directive
+% to a new LaTeX environment.
+
+\newcommand{\sethscode}[1]%
+  {\expandafter\let\expandafter\hscode\csname #1\endcsname
+   \expandafter\let\expandafter\endhscode\csname end#1\endcsname}
+
+% "compatibility" mode restores the non-polycode.fmt layout.
+
+\newenvironment{compathscode}%
+  {\par\noindent
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \let\hspre\(\let\hspost\)%
+   \pboxed}%
+  {\endpboxed\)%
+   \par\noindent
+   \ignorespacesafterend}
+
+\newcommand{\compaths}{\sethscode{compathscode}}
+
+% "plain" mode is the proposed default.
+% It should now work with \centering.
+% This required some changes. The old version
+% is still available for reference as oldplainhscode.
+
+\newenvironment{plainhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\hspre\(\let\hspost\)%
+   \pboxed}%
+  {\endpboxed%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+\newenvironment{oldplainhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \(\pboxed}%
+  {\endpboxed\)%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+% Here, we make plainhscode the default environment.
+
+\newcommand{\plainhs}{\sethscode{plainhscode}}
+\newcommand{\oldplainhs}{\sethscode{oldplainhscode}}
+\plainhs
+
+% The arrayhscode is like plain, but makes use of polytable's
+% parray environment which disallows page breaks in code blocks.
+
+\newenvironment{arrayhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \(\parray}%
+  {\endparray\)%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+\newcommand{\arrayhs}{\sethscode{arrayhscode}}
+
+% The mathhscode environment also makes use of polytable's parray 
+% environment. It is supposed to be used only inside math mode 
+% (I used it to typeset the type rules in my thesis).
+
+\newenvironment{mathhscode}%
+  {\parray}{\endparray}
+
+\newcommand{\mathhs}{\sethscode{mathhscode}}
+
+% texths is similar to mathhs, but works in text mode.
+
+\newenvironment{texthscode}%
+  {\(\parray}{\endparray\)}
+
+\newcommand{\texths}{\sethscode{texthscode}}
+
+% The framed environment places code in a framed box.
+
+\def\codeframewidth{\arrayrulewidth}
+\RequirePackage{calc}
+
+\newenvironment{framedhscode}%
+  {\parskip=\abovedisplayskip\par\noindent
+   \hscodestyle
+   \arrayrulewidth=\codeframewidth
+   \tabular{@{}|p{\linewidth-2\arraycolsep-2\arrayrulewidth-2pt}|@{}}%
+   \hline\framedhslinecorrect\\{-1.5ex}%
+   \let\endoflinesave=\\
+   \let\\=\@normalcr
+   \(\pboxed}%
+  {\endpboxed\)%
+   \framedhslinecorrect\endoflinesave{.5ex}\hline
+   \endtabular
+   \parskip=\belowdisplayskip\par\noindent
+   \ignorespacesafterend}
+
+\newcommand{\framedhslinecorrect}[2]%
+  {#1[#2]}
+
+\newcommand{\framedhs}{\sethscode{framedhscode}}
+
+% The inlinehscode environment is an experimental environment
+% that can be used to typeset displayed code inline.
+
+\newenvironment{inlinehscode}%
+  {\(\def\column##1##2{}%
+   \let\>\undefined\let\<\undefined\let\\\undefined
+   \newcommand\>[1][]{}\newcommand\<[1][]{}\newcommand\\[1][]{}%
+   \def\fromto##1##2##3{##3}%
+   \def\nextline{}}{\) }%
+
+\newcommand{\inlinehs}{\sethscode{inlinehscode}}
+
+% The joincode environment is a separate environment that
+% can be used to surround and thereby connect multiple code
+% blocks.
+
+\newenvironment{joincode}%
+  {\let\orighscode=\hscode
+   \let\origendhscode=\endhscode
+   \def\endhscode{\def\hscode{\endgroup\def\@currenvir{hscode}\\}\begingroup}
+   %\let\SaveRestoreHook=\empty
+   %\let\ColumnHook=\empty
+   %\let\resethooks=\empty
+   \orighscode\def\hscode{\endgroup\def\@currenvir{hscode}}}%
+  {\origendhscode
+   \global\let\hscode=\orighscode
+   \global\let\endhscode=\origendhscode}%
+
+\makeatother
+\EndFmtInput
+%
+
+% format { = "\lbag"
+% format } = "\rbag"
+
+
+% TODO: fix spacing for \lbag and \rbag
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%formap phiX = "\Phi"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{Positional, key-based, and delta-based list alignment}
+\label{sec:alignment}
+
+\ignore{
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mbox{\enskip\{-\# LANGUAGE TemplateHaskell, TypeFamilies, ScopedTypeVariables  \#-\}\enskip}{}\<[E]%
+\\[\blanklineskip]%
+\>[B]{}\mathbf{module}\;\Conid{Alignment}\;\mathbf{where}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Generics}.BiGUL}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Generics}.\Conid{BiGUL}.TH}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Generics}.\Conid{BiGUL}.Lib}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Generics}.\Conid{BiGUL}.Interpreter}{}\<[E]%
+\\[\blanklineskip]%
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Data}.Tuple}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Data}.Maybe}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Data}.List}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+}
+
+In the next three sections, we will talk about some applications in BiGUL, starting from the list alignment problem.
+List alignment is one of the tasks that frequently show up when developing bidirectional applications.
+When the source and view are both lists, and the \ensuremath{\Varid{get}} direction (i.e., the consistency relation) is a \ensuremath{\Varid{map}}, how do we put an updated view --- the updates on which might involve insertions, deletions, in-place modifications, and reordering --- into the source?
+
+Throughout the section, we use a concrete example to introduce three variations of list alignment.
+Suppose that we represent a payroll database as a list.
+(This is a slightly inadequate setting for explaining list alignment, because entries in a database are usually unordered. But let us assume that order matters.)
+Each entry is a triple consisting of an identification number (``id'' henceforth), a name, and a salary number:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{14}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{14E}{@{}l@{}}%
+\column{17}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathbf{type}\;\Conid{Source}\mathrel{=}(\Conid{Id},(\Conid{Name},\Conid{Salary})){}\<[E]%
+\\[\blanklineskip]%
+\>[B]{}\mathbf{type}\;\Conid{Id}{}\<[14]%
+\>[14]{}\mathrel{=}{}\<[14E]%
+\>[17]{}\mathit{Int}{}\<[E]%
+\\
+\>[B]{}\mathbf{type}\;\Conid{Name}{}\<[14]%
+\>[14]{}\mathrel{=}{}\<[14E]%
+\>[17]{}\Conid{String}{}\<[E]%
+\\
+\>[B]{}\mathbf{type}\;\Conid{Salary}{}\<[14]%
+\>[14]{}\mathrel{=}{}\<[14E]%
+\>[17]{}\mathit{Int}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+For example, here is a sample payroll database:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{12}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{12E}{@{}l@{}}%
+\column{16}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{19}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{23}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{39}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{47}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{employees}{}\<[12]%
+\>[12]{}\mathbin{::}{}\<[12E]%
+\>[16]{}[\mskip1.5mu \Conid{Source}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{employees}{}\<[12]%
+\>[12]{}\mathrel{=}{}\<[12E]%
+\>[16]{}[\mskip1.5mu {}\<[19]%
+\>[19]{}(\mathrm{0}{}\<[23]%
+\>[23]{},(\text{\tt \char34 Zhenjiang\char34}{}\<[39]%
+\>[39]{},\mathrm{1000}{}\<[47]%
+\>[47]{})){}\<[E]%
+\\
+\>[16]{},{}\<[19]%
+\>[19]{}(\mathrm{1}{}\<[23]%
+\>[23]{},(\text{\tt \char34 Josh\char34}{}\<[39]%
+\>[39]{},\mathrm{400}{}\<[47]%
+\>[47]{})){}\<[E]%
+\\
+\>[16]{},{}\<[19]%
+\>[19]{}(\mathrm{2}{}\<[23]%
+\>[23]{},(\text{\tt \char34 Jeremy\char34}{}\<[39]%
+\>[39]{},\mathrm{2000}{}\<[47]%
+\>[47]{}))\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+Suppose that the human resource department, which is in charge of hiring or sacking employees, has no say on salary numbers, so the entries of the database are presented to them only as pairs of ids and names:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathbf{type}\;\Conid{View}\mathrel{=}(\Conid{Id},\Conid{Name}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+For example, \ensuremath{\Varid{employees}} is presented to them as
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}[\mskip1.5mu (\mathrm{0},\text{\tt \char34 Zhenjiang\char34}),(\mathrm{1},\text{\tt \char34 Josh\char34}),(\mathrm{2},\text{\tt \char34 Jeremy\char34})\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+on which they can make modifications.
+It is easy to write a BiGUL program to synchronize the source and view elements:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{bx}\mathbin{::}\Conid{BiGUL}\;\Conid{Source}\;\Conid{View}{}\<[E]%
+\\
+\>[B]{}\Varid{bx}\mathrel{=}\Conid{Replace}\mathbin{`\Conid{Prod}`}\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{n},\anonymous )\to \Varid{n}\mid \mskip1.5mu])\;\Conid{Replace}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+The problem is then how to determine the correspondences between sources and views in the two lists, so \ensuremath{\Varid{bx}} can be applied to the right pairs.
+
+\subsection{Positional alignment}
+
+As a first exercise, we consider the simplest strategy, which matches source and view elements by their positions in the lists.
+If the source list has more elements than the view list, the extra elements at the tail are simply dropped; if the former has less elements, then new source elements have to be created, which we can specify as a function:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{cr}\mathbin{::}\Conid{View}\to \Conid{Source}{}\<[E]%
+\\
+\>[B]{}\Varid{cr}\;(\Varid{i},\Varid{n})\mathrel{=}(\Varid{i},(\Varid{n},\mathrm{0})){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+The salary is set to zero, which can be taken care of by the accounting department later, for example.
+In general, we can abstract the source and view types and \ensuremath{\Varid{bx}} and \ensuremath{\Varid{cr}} as parameters, so the alignment program we write can be widely applicable.
+Here is how we implement positional alignment, which is fairly standard:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{posAlign}\mathbin{::}(\Conid{Show}\;\Varid{s},\Conid{Show}\;\Varid{v})\Rightarrow \Conid{BiGUL}\;\Varid{s}\;\Varid{v}\to (\Varid{v}\to \Varid{s})\to \Conid{BiGUL}\;[\mskip1.5mu \Varid{s}\mskip1.5mu]\;[\mskip1.5mu \Varid{v}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{posAlign}\;\Varid{b}\;\Varid{c}\mathrel{=}\Conid{Case}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}[\mskip1.5mu \mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{d}\mid \mid \mskip1.5mu]){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mathbin{:}\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mathbin{:}\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mathbin{:}\anonymous \mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid \Varid{x}\mathbin{:}\Varid{xs}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Varid{x}\mathbin{:}\Varid{xs}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{d}\mid \Varid{x}\mathrel{=}\Varid{b};\Varid{xs}\mathrel{=}\Varid{posAlign}\;\Varid{b}\;\Varid{c}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{adaptiveSV}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mathbin{:}\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Longrightarrow\lambda \anonymous \;\anonymous \to [\mskip1.5mu \mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{adaptiveSV}\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mathbin{:}\anonymous \mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Longrightarrow\lambda \anonymous \;(\Varid{v}\mathbin{:}\anonymous )\to [\mskip1.5mu \Varid{c}\;\Varid{v}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+The normal branches deal with the situations where both lists are empty or non-empty, and the adaptive branches remove or create elements when the lengths of the two lists differ.
+In the normal branches, we use a new operation \ensuremath{\Varid{update}}, which is a more compact syntax for the common programming pattern in which both the source and view are rearranged into a product and then further updates are performed on corresponding components.
+For example, the \ensuremath{\Varid{update}} in the second normal branch is shorthand for:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{x}\mathbin{:}\Varid{xs})\to (\Varid{x},\Varid{xs})\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda (\Varid{x}\mathbin{:}\Varid{xs})\to (\Varid{x},\Varid{xs})\mid \mskip1.5mu])\;{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Varid{b}\mathbin{`\Conid{Prod}`}\Varid{posAlign}\;\Varid{b}\;\Varid{c}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+The \ensuremath{\Varid{get}} direction of \ensuremath{\Varid{posAlign}} does exactly what we want it to do:
+\begin{tabbing}\tt
+~\char42{}Main\char62{}~get~\char40{}posAlign~bx~cr\char41{}~employees\\
+\tt ~Just~\char91{}\char40{}0\char44{}\char34{}Zhenjiang\char34{}\char41{}\char44{}\char40{}1\char44{}\char34{}Josh\char34{}\char41{}\char44{}\char40{}2\char44{}\char34{}Jeremy\char34{}\char41{}\char93{}
+\end{tabbing}
+It should be quite obvious, though, that the \ensuremath{\Varid{put}} direction is not so useful for our purpose.
+If we sack Josh:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{20}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{20E}{@{}l@{}}%
+\column{24}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{updatedEmployees0}{}\<[20]%
+\>[20]{}\mathbin{::}{}\<[20E]%
+\>[24]{}[\mskip1.5mu \Conid{View}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{updatedEmployees0}{}\<[20]%
+\>[20]{}\mathrel{=}{}\<[20E]%
+\>[24]{}[\mskip1.5mu (\mathrm{0},\text{\tt \char34 Zhenjiang\char34}),(\mathrm{2},\text{\tt \char34 Jeremy\char34})\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+then the database will updated to:
+\begin{tabbing}\tt
+~\char42{}Main\char62{}~put~\char40{}posAlign~bx~cr\char41{}~employees~updatedEmployees0\\
+\tt ~Just~\char91{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}2\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}400\char41{}\char41{}\char93{}
+\end{tabbing}
+where Jeremy inadvertently gets Josh's original salary.
+Even if we do not remove any employee, we may still want to reorder them:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{20}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{20E}{@{}l@{}}%
+\column{24}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{updatedEmployees1}{}\<[20]%
+\>[20]{}\mathbin{::}{}\<[20E]%
+\>[24]{}[\mskip1.5mu \Conid{View}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{updatedEmployees1}{}\<[20]%
+\>[20]{}\mathrel{=}{}\<[20E]%
+\>[24]{}[\mskip1.5mu (\mathrm{2},\text{\tt \char34 Jeremy\char34}),(\mathrm{0},\text{\tt \char34 Zhenjiang\char34}),(\mathrm{1},\text{\tt \char34 Josh\char34})\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+and now everyone gets a wrong salary:
+\begin{tabbing}\tt
+~\char42{}Main\char62{}~put~\char40{}posAlign~bx~cr\char41{}~employees~updatedEmployees1\\
+\tt ~Just~\char91{}\char40{}2\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}400\char41{}\char41{}\char44{}\char40{}1\char44{}\char40{}\char34{}Josh\char34{}\char44{}2000\char41{}\char41{}\char93{}
+\end{tabbing}
+This first exercise shows that the alignment problem is inherently one that should be solved from the \ensuremath{\Varid{put}} direction.
+It is easy to implement the \ensuremath{\Varid{get}} direction correctly, but what matters is the \ensuremath{\Varid{put}} behavior.
+
+\subsection{Key-based alignment}
+
+A more reasonable strategy is to match source and view elements by some \emph{key} value.
+In our example, we can use the id as the key.
+Key-based alignment might seem much more complex than positional alignment, but, in fact, we can just revise \ensuremath{\Varid{posAlign}} to get a BiGUL program for key-based alignment!
+
+First of all, we need to somehow obtain the keys.
+In our example, on both the source and view we can use \ensuremath{\Varid{fst}} to extract the key value.
+In general, we can further parametrize the alignment program with key extraction functions:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{11}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{11E}{@{}l@{}}%
+\column{15}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{keyAlign}{}\<[11]%
+\>[11]{}\mathbin{::}{}\<[11E]%
+\>[15]{}\Varid{forall}\;\Varid{a}\;\Varid{b}\;\Varid{k}\mathbin{\circ}(\Conid{Show}\;\Varid{a},\Conid{Show}\;\Varid{b},\Conid{Eq}\;\Varid{k}){}\<[E]%
+\\
+\>[11]{}\Rightarrow {}\<[11E]%
+\>[15]{}(\Varid{a}\to \Varid{k})\to (\Varid{b}\to \Varid{k})\to \Conid{BiGUL}\;\Varid{a}\;\Varid{b}\to (\Varid{b}\to \Varid{a})\to \Conid{BiGUL}\;[\mskip1.5mu \Varid{a}\mskip1.5mu]\;[\mskip1.5mu \Varid{b}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{keyAlign}\;\Varid{ks}\;\Varid{kv}\;\Varid{b}\;\Varid{c}\mathrel{=}\Conid{Case}\;\bot {}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+The first normal branch of \ensuremath{\Varid{posAlign}} still works perfectly.
+As for the second normal branch, we should revise the main condition to also require that the head elements of the two lists have the same key value:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\lambda (\Varid{s}\mathbin{:}\Varid{ss})\;(\Varid{v}\mathbin{:}\Varid{vs})\to \Varid{ks}\;\Varid{s}\equiv \Varid{kv}\;\Varid{v}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+The first adaptive branch, again, works well.
+The second adaptive branch, on the other hand, is no longer applicable:
+Since the main condition of the second normal branch has been tightened, it is no longer the case that this adaptive branch will receive only empty source lists.
+In fact, whether the source list is empty or not is not relevant here --- what matters now is whether the key of the first view is in the source list.
+If it is, then we bring the (first) source element with the same key value to the head position, and the second normal branch can take over; otherwise, we create a new source element.
+This gives us key-based alignment:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{11}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{11E}{@{}l@{}}%
+\column{15}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{23}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{31}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{36}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{36E}{@{}l@{}}%
+\column{39}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{44}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{keyAlign}{}\<[11]%
+\>[11]{}\mathbin{::}{}\<[11E]%
+\>[15]{}\Varid{forall}\;\Varid{s}\;\Varid{v}\;\Varid{k}\mathbin{\circ}(\Conid{Show}\;\Varid{s},\Conid{Show}\;\Varid{v},\Conid{Eq}\;\Varid{k}){}\<[E]%
+\\
+\>[11]{}\Rightarrow {}\<[11E]%
+\>[15]{}(\Varid{s}\to \Varid{k})\to (\Varid{v}\to \Varid{k})\to \Conid{BiGUL}\;\Varid{s}\;\Varid{v}\to (\Varid{v}\to \Varid{s})\to \Conid{BiGUL}\;[\mskip1.5mu \Varid{s}\mskip1.5mu]\;[\mskip1.5mu \Varid{v}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{keyAlign}\;\Varid{ks}\;\Varid{kv}\;\Varid{b}\;\Varid{c}\mathrel{=}\Conid{Case}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}[\mskip1.5mu \mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{d}\mid \mid \mskip1.5mu]){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda (\Varid{s}\mathbin{:}\Varid{ss})\;(\Varid{v}\mathbin{:}\Varid{vs})\to \Varid{ks}\;\Varid{s}\equiv \Varid{kv}\;\Varid{v}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mathbin{:}\anonymous \mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid \Varid{x}\mathbin{:}\Varid{xs}\mid \mskip1.5mu]\;{}\<[31]%
+\>[31]{}[\mskip1.5mu \Varid{p}\mid \Varid{x}\mathbin{:}\Varid{xs}\mid \mskip1.5mu]\;{}\<[E]%
+\\
+\>[31]{}[\mskip1.5mu \Varid{d}\mid \Varid{x}\mathrel{=}\Varid{b};\Varid{xs}\mathrel{=}\Varid{keyAlign}\;\Varid{ks}\;\Varid{kv}\;\Varid{b}\;\Varid{c}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{adaptiveSV}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mathbin{:}\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Longrightarrow\lambda \anonymous \;\anonymous \to [\mskip1.5mu \mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \lambda \Varid{ss}\;(\Varid{v}\mathbin{:}\Varid{vs})\to \Varid{kv}\;\Varid{v}\in \Varid{map}\;\Varid{ks}\;\Varid{ss}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Longrightarrow\lambda \Varid{ss}\;(\Varid{v}\mathbin{:}\anonymous )\to \Varid{uncurry}\;(\mathbin{:})\;(\Varid{extract}\;(\Varid{kv}\;\Varid{v})\;\Varid{ss}){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{adaptiveSV}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mathbin{:}\anonymous \mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Longrightarrow\lambda \Varid{ss}\;(\Varid{v}\mathbin{:}\anonymous )\to \Varid{c}\;\Varid{v}\mathbin{:}\Varid{ss}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbf{where}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Varid{extract}\mathbin{::}\Varid{k}\to [\mskip1.5mu \Varid{s}\mskip1.5mu]\to (\Varid{s},[\mskip1.5mu \Varid{s}\mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Varid{extract}\;\Varid{k}\;(\Varid{x}\mathbin{:}\Varid{xs}){}\<[23]%
+\>[23]{}\mid \Varid{ks}\;\Varid{x}\equiv \Varid{k}{}\<[36]%
+\>[36]{}\mathrel{=}{}\<[36E]%
+\>[39]{}(\Varid{x},\Varid{xs}){}\<[E]%
+\\
+\>[23]{}\mid \Varid{otherwise}{}\<[36]%
+\>[36]{}\mathrel{=}{}\<[36E]%
+\>[39]{}\mathbf{let}\;{}\<[44]%
+\>[44]{}(\Varid{y},\Varid{ys})\mathrel{=}\Varid{extract}\;\Varid{k}\;\Varid{xs}{}\<[E]%
+\\
+\>[39]{}\mathbf{in}\;{}\<[44]%
+\>[44]{}(\Varid{y},\Varid{x}\mathbin{:}\Varid{ys}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+Back to our employment example.
+The \ensuremath{\Varid{get}} direction behaves the same:
+\begin{tabbing}\tt
+~\char42{}Main\char62{}~get~\char40{}keyAlign~fst~fst~bx~cr\char41{}~employees\\
+\tt ~Just~\char91{}\char40{}0\char44{}\char34{}Zhenjiang\char34{}\char41{}\char44{}\char40{}1\char44{}\char34{}Josh\char34{}\char41{}\char44{}\char40{}2\char44{}\char34{}Jeremy\char34{}\char41{}\char93{}
+\end{tabbing}
+Unlike positional alignment, view element deletion can now be reflected correctly:
+\begin{tabbing}\tt
+~\char42{}Main\char62{}~put~\char40{}keyAlign~fst~fst~bx~cr\char41{}~employees~updatedEmployees0\\
+\tt ~Just~\char91{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}2\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}2000\char41{}\char41{}\char93{}
+\end{tabbing}
+And reordering as well:
+\begin{tabbing}\tt
+~\char42{}Main\char62{}~put~\char40{}keyAlign~fst~fst~bx~cr\char41{}~employees~updatedEmployees1\\
+\tt ~Just~\char91{}\char40{}2\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}2000\char41{}\char41{}\char44{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}1\char44{}\char40{}\char34{}Josh\char34{}\char44{}400\char41{}\char41{}\char93{}
+\end{tabbing}
+
+So it seems that key-based alignment is just what we need.
+Indeed, key-based alignment usually works well, but there is an important assumption:
+The key values should not be changed.
+If, for example, we decide to assign a different id to Josh:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{20}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{20E}{@{}l@{}}%
+\column{24}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{updatedEmployees2}{}\<[20]%
+\>[20]{}\mathbin{::}{}\<[20E]%
+\>[24]{}[\mskip1.5mu \Conid{View}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{updatedEmployees2}{}\<[20]%
+\>[20]{}\mathrel{=}{}\<[20E]%
+\>[24]{}[\mskip1.5mu (\mathrm{0},\text{\tt \char34 Zhenjiang\char34}),(\mathrm{100},\text{\tt \char34 Josh\char34}),(\mathrm{1},\text{\tt \char34 Jeremy\char34})\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+Then the effect is the same as sacking Josh and then hiring him again, whose salary is thus reset:
+\begin{tabbing}\tt
+~\char42{}Main\char62{}~put~\char40{}keyAlign~fst~fst~bx~cr\char41{}~employees~updatedEmployees2\\
+\tt ~Just~\char91{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}100\char44{}\char40{}\char34{}Josh\char34{}\char44{}0\char41{}\char41{}\char44{}\char40{}1\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}400\char41{}\char41{}\char93{}
+\end{tabbing}
+The problem is that we cannot distinguish modification from deletion and insertion pairs.
+To be able to have such distinction, we introduce the notion of \emph{deltas}, with which the links between source and view elements can be kept track of.
+
+\subsection{Delta-based alignment}
+
+A delta between a source list and a view list is a list of pairs of associated positions:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathbf{type}\;\Conid{Delta}\mathrel{=}[\mskip1.5mu (\mathit{Int},\mathit{Int})\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+For example, the delta we have in mind between \ensuremath{\Varid{employees}} and \ensuremath{\Varid{updatedEmployees2}} is \ensuremath{[\mskip1.5mu (\mathrm{0},\mathrm{0}),(\mathrm{1},\mathrm{1}),(\mathrm{2},\mathrm{2})\mskip1.5mu]}, which, in particular, associates the source and view entries for Josh since \ensuremath{(\mathrm{2},\mathrm{2})} is included, instead of \ensuremath{[\mskip1.5mu (\mathrm{0},\mathrm{0}),(\mathrm{1},\mathrm{1})\mskip1.5mu]}, which indicates that Josh's source entry is not associated with any view entry and should be deleted, and that Josh's view entry is not associated with any source entry and is thus new.
+Deltas can easily represent reordering as well.
+For example, we would supply the delta between \ensuremath{\Varid{employees}} and \ensuremath{\Varid{updatedEmployees1}} as \ensuremath{[\mskip1.5mu (\mathrm{0},\mathrm{1}),(\mathrm{1},\mathrm{2}),(\mathrm{2},\mathrm{0})\mskip1.5mu]}, associating the 0th element in the source --- namely the one for Zhenjiang --- with the 1st element in the view, and so on.
+
+So the input now includes not only source and view lists but also a delta between them.
+Recall key-based alignment: What it does overall is to bring the first matching source element to the front for each view element, so the source list is updated throughout execution, with the links between the source and view elements gradually and implicitly restored.
+If we are doing something similar with delta-based alignment, then when the source list is updated, the delta should also be updated to reflect the restored consistency.
+This suggests that the delta should be paired with the source list, so it can be updated.
+The type we use for the delta-based alignment program is thus:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{13}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{13E}{@{}l@{}}%
+\column{17}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{deltaAlign}{}\<[13]%
+\>[13]{}\mathbin{::}{}\<[13E]%
+\>[17]{}(\Conid{Show}\;\Varid{s},\Conid{Show}\;\Varid{v}){}\<[E]%
+\\
+\>[13]{}\Rightarrow {}\<[13E]%
+\>[17]{}\Conid{BiGUL}\;\Varid{s}\;\Varid{v}\to (\Varid{v}\to \Varid{s})\to \Conid{BiGUL}\;([\mskip1.5mu \Varid{s}\mskip1.5mu],\Conid{Delta})\;[\mskip1.5mu \Varid{v}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{deltaAlign}\;\Varid{b}\;\Varid{c}\mathrel{=}\Conid{Case}\;\bot {}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+Here we take a simpler approach to implementing \ensuremath{\Varid{deltaAlign}}, analyzing the problem into just two cases:
+The delta can tell us either that the source and view elements are all in correspondence, so a simple positional alignment suffices, or that we need to do some rearrangement of the source elements, which can be done by adaptation.
+In BiGUL:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{12}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{13}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{13E}{@{}l@{}}%
+\column{17}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{18}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{23}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{idDelta}{}\<[13]%
+\>[13]{}\mathbin{::}{}\<[13E]%
+\>[17]{}[\mskip1.5mu \Varid{s}\mskip1.5mu]\to \Conid{Delta}{}\<[E]%
+\\
+\>[B]{}\Varid{idDelta}\;\Varid{ss}{}\<[13]%
+\>[13]{}\mathrel{=}{}\<[13E]%
+\>[17]{}[\mskip1.5mu (\Varid{i},\Varid{i})\mid \Varid{i}\leftarrow [\mskip1.5mu \mathrm{0}\mathinner{\ldotp\ldotp}\Varid{length}\;\Varid{ss}\mskip1.5mu]\mskip1.5mu]{}\<[E]%
+\\[\blanklineskip]%
+\>[B]{}\Varid{deltaAlign}{}\<[13]%
+\>[13]{}\mathbin{::}{}\<[13E]%
+\>[17]{}(\Conid{Show}\;\Varid{s},\Conid{Show}\;\Varid{v}){}\<[E]%
+\\
+\>[13]{}\Rightarrow {}\<[13E]%
+\>[17]{}\Conid{BiGUL}\;\Varid{s}\;\Varid{v}\to (\Varid{v}\to \Varid{s})\to \Conid{BiGUL}\;([\mskip1.5mu \Varid{s}\mskip1.5mu],\Conid{Delta})\;[\mskip1.5mu \Varid{v}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{deltaAlign}\;\Varid{b}\;\Varid{c}\mathrel{=}\Conid{Case}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}[\mskip1.5mu \mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda (\Varid{ss},\Varid{d})\;\Varid{vs}\to \Varid{length}\;\Varid{ss}\equiv \Varid{length}\;\Varid{vs}\mathrel{\wedge}\Varid{d}\equiv \Varid{idDelta}\;\Varid{ss}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{ss},\anonymous )\to \Varid{ss}\mid \mskip1.5mu])\mathbin{\$}\Varid{posAlign}\;\Varid{b}\;\Varid{c}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{},\mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \mathbin{\char92 \char95 }\anonymous \to \Varid{otherwise}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Longrightarrow{}\<[10]%
+\>[10]{}\lambda (\Varid{ss},\Varid{d})\;\Varid{vs}\to {}\<[E]%
+\\
+\>[10]{}\hsindent{2}{}\<[12]%
+\>[12]{}\mathbf{let}\;{}\<[18]%
+\>[18]{}\Varid{d'}{}\<[23]%
+\>[23]{}\mathrel{=}\Varid{map}\;\Varid{swap}\;\Varid{d}{}\<[E]%
+\\
+\>[18]{}\Varid{ss'}{}\<[23]%
+\>[23]{}\mathrel{=}[\mskip1.5mu \Varid{maybe}\;(\Varid{c}\;\Varid{v})\;(\Varid{ss}\mathbin{!!})\;(\Varid{lookup}\;\Varid{j}\;\Varid{d'})\mid (\Varid{v},\Varid{j})\leftarrow \Varid{zip}\;\Varid{vs}\;[\mskip1.5mu \mathrm{0}\mathinner{\ldotp\ldotp}\mskip1.5mu]\mskip1.5mu]{}\<[E]%
+\\
+\>[10]{}\hsindent{2}{}\<[12]%
+\>[12]{}\mathbf{in}\;({}\<[18]%
+\>[18]{}\Varid{ss'},\Varid{idDelta}\;\Varid{ss'}){}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+The source and view lists are in full correspondence if and only if they have the same length and the delta associates all their elements positionally.
+This full positional delta can be computed by \ensuremath{\Varid{idDelta}}.
+When this is the case, it suffices to call \ensuremath{\Varid{posAlign}} to carry out an element-wise synchronization, since no rearrangement is required.
+Otherwise, we enter the adaptive branch, which constructs a new source list in full correspondence with the view list, drawing elements from the original source list or create new ones as the delta dictates.
+The new source list is in full correspondence with the view list, so the delta we pair with it is the one computed by \ensuremath{\Varid{idDelta}}.
+
+Only when performing \ensuremath{\Varid{put}} does supplying a delta make sense.
+When performing \ensuremath{\Varid{get}}, however, we still need to supply a delta since it is part of the source; but there is natural choice, which is \ensuremath{\Varid{idDelta}}.
+So we define:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{16}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{16E}{@{}l@{}}%
+\column{20}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{putDeltaAlign}{}\<[16]%
+\>[16]{}\mathbin{::}{}\<[16E]%
+\>[20]{}(\Conid{Show}\;\Varid{s},\Conid{Show}\;\Varid{v}){}\<[E]%
+\\
+\>[16]{}\Rightarrow {}\<[16E]%
+\>[20]{}\Conid{BiGUL}\;\Varid{s}\;\Varid{v}\to (\Varid{v}\to \Varid{s})\to [\mskip1.5mu \Varid{s}\mskip1.5mu]\to \Conid{Delta}\to [\mskip1.5mu \Varid{v}\mskip1.5mu]\to \Conid{Maybe}\;[\mskip1.5mu \Varid{s}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{putDeltaAlign}\;\Varid{b}\;\Varid{c}\;\Varid{ss}\;\Varid{d}\;\Varid{vs}\mathrel{=}\Varid{fmap}\;\Varid{fst}\;(\Varid{put}\;(\Varid{deltaAlign}\;\Varid{b}\;\Varid{c})\;(\Varid{ss},\Varid{d})\;\Varid{vs}){}\<[E]%
+\\[\blanklineskip]%
+\>[B]{}\Varid{getDeltaAlign}{}\<[16]%
+\>[16]{}\mathbin{::}{}\<[16E]%
+\>[20]{}(\Conid{Show}\;\Varid{s},\Conid{Show}\;\Varid{v}){}\<[E]%
+\\
+\>[16]{}\Rightarrow {}\<[16E]%
+\>[20]{}\Conid{BiGUL}\;\Varid{s}\;\Varid{v}\to (\Varid{v}\to \Varid{s})\to [\mskip1.5mu \Varid{s}\mskip1.5mu]\to \Conid{Maybe}\;[\mskip1.5mu \Varid{v}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{getDeltaAlign}\;\Varid{b}\;\Varid{c}\;\Varid{ss}\mathrel{=}\Varid{get}\;(\Varid{deltaAlign}\;\Varid{b}\;\Varid{c})\;(\Varid{ss},\Varid{idDelta}\;\Varid{ss}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+It is easy to prove that, given the same \ensuremath{\Varid{b}}~and~\ensuremath{\Varid{c}}, these two functions do form a lens.
+The key observation is that the delta produced by \ensuremath{\Varid{put}\;(\Varid{deltaAlign}\;\Varid{b}\;\Varid{c})} is necessarily one computed by \ensuremath{\Varid{idDelta}}, so, for example, in \ref{eq:PutGet}, throwing away the delta in the \ensuremath{\Varid{put}} direction is fine because it can be recomputed by \ensuremath{\Varid{idDelta}}, and the \ensuremath{\Varid{get}} direction can resume from exactly the same source pair.
+
+Back to our example. We can now update the id of Josh without resetting his salary by providing a full delta indicating that there are only in-place updates:
+\begin{tabbing}\tt
+~\char42{}Main\char62{}~putDeltaAlign~bx~cr~employees\\
+\tt ~~~~~~~~~~\char91{}\char40{}0\char44{}0\char41{}\char44{}~\char40{}1\char44{}1\char41{}\char44{}~\char40{}2\char44{}2\char41{}\char93{}~updatedEmployees2\\
+\tt ~Just~\char91{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}100\char44{}\char40{}\char34{}Josh\char34{}\char44{}400\char41{}\char41{}\char44{}\char40{}1\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}2000\char41{}\char41{}\char93{}
+\end{tabbing}
+Besides obvious things like reordering, we can also do some fairly subtle things now:
+If we actually sack Josh and replace him with a new Josh (inheriting the original Josh's id) whose salary should be reset to be re-considered, we can say so by providing a partial delta:
+\begin{tabbing}\tt
+~\char42{}Main\char62{}~putDeltaAlign~bx~cr~employees~\char91{}\char40{}0\char44{}0\char41{}\char44{}~\char40{}2\char44{}2\char41{}\char93{}\\
+\tt ~~~~~~~~~~\char61{}\char60{}\char60{}~getDeltaAlign~bx~cr~employees\\
+\tt ~Just~\char91{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}1\char44{}\char40{}\char34{}Josh\char34{}\char44{}0\char41{}\char41{}\char44{}\char40{}2\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}2000\char41{}\char41{}\char93{}
+\end{tabbing}
+
+\subsubsection{One alignment to rule them all.}
+Where do deltas come from?
+In general, we may provide a special view editor which monitors how the view is modified and produces a suitable delta.
+But in more specialized scenarios, deltas can simply be computed by, for example, comparing the source and view.
+We can formalize this delta computation as:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mathbf{type}\;\Conid{DeltaStrategy}\;\Varid{s}\;\Varid{v}\mathrel{=}[\mskip1.5mu \Varid{s}\mskip1.5mu]\to [\mskip1.5mu \Varid{v}\mskip1.5mu]\to \Conid{Delta}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+and further parametrize \ensuremath{\Varid{putDeltaAlign}}:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{17}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{17E}{@{}l@{}}%
+\column{21}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{putDeltaAlignS}{}\<[17]%
+\>[17]{}\mathbin{::}{}\<[17E]%
+\>[21]{}(\Conid{Show}\;\Varid{s},\Conid{Show}\;\Varid{v})\Rightarrow \Conid{DeltaStrategy}\;\Varid{s}\;\Varid{v}{}\<[E]%
+\\
+\>[17]{}\to {}\<[17E]%
+\>[21]{}\Conid{BiGUL}\;\Varid{s}\;\Varid{v}\to (\Varid{v}\to \Varid{s})\to [\mskip1.5mu \Varid{s}\mskip1.5mu]\to [\mskip1.5mu \Varid{v}\mskip1.5mu]\to \Conid{Maybe}\;[\mskip1.5mu \Varid{s}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{putDeltaAlignS}\;\Varid{dst}\;\Varid{b}\;\Varid{c}\;\Varid{ss}\;\Varid{vs}\mathrel{=}\Varid{putDeltaAlign}\;\Varid{b}\;\Varid{c}\;\Varid{ss}\;(\Varid{dst}\;\Varid{ss}\;\Varid{vs})\;\Varid{vs}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+Positional alignment and key-based alignment can then be seen as special cases of delta-based alignment using specific delta-computing strategies.
+For positional alignment, we simply compute the identity delta:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{byPosition}\mathbin{::}\Conid{DeltaStrategy}\;\Varid{s}\;\Varid{v}{}\<[E]%
+\\
+\>[B]{}\Varid{byPosition}\;\Varid{ss}\;\anonymous \mathrel{=}\Varid{idDelta}\;\Varid{ss}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+And for key-based alignment, we compute a delta associating source and view elements with the same key:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{8}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{19}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{19E}{@{}l@{}}%
+\column{22}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{byKey}\mathbin{::}\Conid{Eq}\;\Varid{k}\Rightarrow (\Varid{s}\to \Varid{k})\to (\Varid{v}\to \Varid{k})\to \Conid{DeltaStrategy}\;\Varid{s}\;\Varid{v}{}\<[E]%
+\\
+\>[B]{}\Varid{byKey}\;\Varid{ks}\;\Varid{kv}\;\Varid{ss}\;\Varid{vs}\mathrel{=}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbf{let}\;{}\<[8]%
+\>[8]{}\Varid{sis}\mathrel{=}\Varid{zip}\;\Varid{ss}\;[\mskip1.5mu \mathrm{0}\mathinner{\ldotp\ldotp}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbf{in}\;{}\<[8]%
+\>[8]{}\Varid{catMaybes}\;{}\<[19]%
+\>[19]{}[\mskip1.5mu {}\<[19E]%
+\>[22]{}\Varid{fmap}\;(\lambda (\anonymous ,\Varid{i})\to (\Varid{i},\Varid{j}))\;(\Varid{find}\;(\lambda (\Varid{s},\anonymous )\to \Varid{ks}\;\Varid{s}\equiv \Varid{kv}\;\Varid{v})\;\Varid{sis}){}\<[E]%
+\\
+\>[19]{}\mid {}\<[19E]%
+\>[22]{}(\Varid{v},\Varid{j})\leftarrow \Varid{zip}\;\Varid{vs}\;[\mskip1.5mu \mathrm{0}\mathinner{\ldotp\ldotp}\mskip1.5mu]\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+We can check that these strategies indeed give us positional and key-based alignment:
+\begin{tabbing}\tt
+~\char42{}Main\char62{}~putDeltaAlignS~byPosition~bx~cr~employees~updatedEmployees0\\
+\tt ~Just~\char91{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}2\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}400\char41{}\char41{}\char93{}\\
+\tt ~\\
+\tt ~\char42{}Main\char62{}~putDeltaAlignS~\char40{}byKey~fst~fst\char41{}~bx~cr~employees~updatedEmployees1\\
+\tt ~Just~\char91{}\char40{}2\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}2000\char41{}\char41{}\char44{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}1\char44{}\char40{}\char34{}Josh\char34{}\char44{}400\char41{}\char41{}\char93{}
+\end{tabbing}
