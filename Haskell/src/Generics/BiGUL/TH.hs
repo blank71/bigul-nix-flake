@@ -793,7 +793,8 @@ normalSV :: (ExpOrPat a, ExpOrPat b, ExpOrPat c)
          -> c  -- ^ exit condition (unary predicate on the source)
          -> Q TH.Exp
 normalSV mps mpv mq =
-  [|\b -> (\s v -> $(toExp mps) s && $(toExp mpv) v, $(nameNormal) b $(toExp mq >>= patLambdaToPred)) |]
+  [| \b -> (\s v -> $(toExp mps >>= patLambdaToPred) s && $(toExp mpv >>= patLambdaToPred) v,
+            $(nameNormal) b $(toExp mq >>= patLambdaToPred)) |]
 
 -- | Construct an adaptive branch, for which a main condition on the source and view should be specified.
 --   The usual way of using 'adaptive' is
