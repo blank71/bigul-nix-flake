@@ -715,12 +715,8 @@ mkEnvForUpdate (_:ds) = fail "Invalid syntax in update bindings (write ‘x1 = e
 
 patCond :: TH.Pat -> Q TH.Exp
 patCond p = do
-  (_, [htrue,hfalse]) <- lookupNames "Prelude" [] ["True", "False"]
-  var <- newName "x"
-  return $ case p of
-             TH.WildP -> LamE [VarP var] (ConE htrue)
-             _        -> LamE [VarP var] (CaseE (VarE var)
-                              [Match p (NormalB (ConE htrue)) [], Match WildP (NormalB (ConE hfalse)) []])
+  (_, [htrue]) <- lookupNames "Prelude" [] ["True"]
+  return (LamE [p] (ConE htrue))
 
 nameAdaptive :: Q TH.Exp
 nameAdaptive = lookupNames astNamespace [] ["Adaptive"] >>= \(_, [badaptive]) -> conE badaptive
