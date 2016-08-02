@@ -52,7 +52,7 @@ incrBranchNo t              = t
 
 addCurrentBranchTrace :: BiGULTrace -> BiGULTrace -> BiGULTrace
 addCurrentBranchTrace t (BTBranches ts) = BTBranches (t:ts)
-addCurrentBranchTrace t _               = error "panic: Generics.BiGUL.Error.addCurrentBranchTrace"
+addCurrentBranchTrace t u               = u
 
 -- | The putback semantics of a 'Generics.BiGUL.BiGUL' program.
 put :: BiGUL s v -> s -> v -> Maybe s
