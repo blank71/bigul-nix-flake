@@ -38,7 +38,6 @@ library
                        Generics.BiGUL.Lib
                        Generics.BiGUL.Lib.HuStudies
                        Generics.BiGUL.Lib.List
-                       Generics.BiGUL.Lib.Symmetric
   other-modules:       GHC.InOut
   default-extensions:  TupleSections,
                        ViewPatterns,
