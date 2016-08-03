@@ -88,6 +88,8 @@ data BiGUL s v where
           -> BiGUL m v
           -> BiGUL s v
 
+  Checkpoint :: (Show s, Show v) => String -> BiGUL s v -> BiGUL s v
+
 infixr 1 `Prod`
 infixr 1 `Compose`
 

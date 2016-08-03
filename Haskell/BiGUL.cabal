@@ -1,5 +1,5 @@
 name:                BiGUL
-version:             1.0.1.1
+version:             1.0.1.2
 synopsis:            The Bidirectional Generic Update Language
 description:
   Putback-based bidirectional programming allows the programmer to
@@ -38,6 +38,7 @@ library
                        Generics.BiGUL.Lib
                        Generics.BiGUL.Lib.HuStudies
                        Generics.BiGUL.Lib.List
+                       Generics.BiGUL.Lib.Symmetric
   other-modules:       GHC.InOut
   default-extensions:  TupleSections,
                        ViewPatterns,
