@@ -20,8 +20,13 @@ import Data.Maybe (catMaybes)
 import Data.List (find, delete, inits, tails)
 
 
---import Data.Set
---import Control.Monad.Except
+-- TODO
+-- put semantics. composition.
+-- higher order function
+-- linear time complexity fold
+
+-- map composition . map fold . higher order function
+-- linear time complexity fold
 
 bHead  = get lensHead
 bpHead = put lensHead
@@ -90,6 +95,84 @@ bDropWhile  p = get (lensDropWhile p)
 bpDropWhile p = put (lensDropWhile p)
 
 
+
+
+-- foldr ::   (a -> b -> b)   ->   b -> [a] -> b
+-- lensFoldr :: (BiGUL (x, xs) result) -> (BiGUL ([x], e) result)
+lensFoldr :: (BiGUL (a, b) b) -> (BiGUL ([a], b) b)
+lensFoldr bx =
+  Case  [ $(normalS [| \(s, e) -> length s == 0 |] ) $
+            $(rearrV [| \v -> ((),v) |]) $
+              $(update [p| ((),v ) |] [p| (_, v) |] [d| v = Replace |])
+        , $(normalSV [p| _ |] [p| _ |] ) $
+            $(rearrS [| \((x:xs), e) -> (x, (xs,e))  |])
+              (Replace `Prod` lensFoldr bx)
+              `Compose`
+              bx
+        ]
+
+-- get (lensFoldr (+) 0) [1,2,3,4]  ==  10
+-- put (lensFoldr plusl) ([1,2,3], 0) 8 -> ([3,2,3], 0)
+-- \([1,2,3],0) -> (1, ([2,3], 0))
+-- get (Replace `Prod` lensFoldr bx) (1, ([2,3], 0)) == (1, 5)
+-- put bx (1, 5) 8 = (3, 5)
+-- put (Replace `Prod` lensFoldr bx) (1, ([2,3], 0)) (3, 5) == (3, put (lensFoldr bx) ([2,3], 0) 5 )
+-- == ...
+-- ==
+-- Note: the get direction of lensFoldr is executed many times (as length of the source list). time complexity is quadratic.
+-- (1, sum(2,3,4)) 12 = (1, 9) 12 = (3, 9)
+-- (2, sum(3,4)) 9    = (2 , 7) 9 = (2, 7)
+-- ...
+
+-- the wrong version but the same as List.foldr1.
+lensFoldr1 :: (BiGUL (a, a) a) -> (BiGUL [a] a)
+lensFoldr1 bx =
+  Case  [ $(normalS [| \s -> length s == 1 |] ) $
+            $(update [p| v |] [p| [v] |] [d| v = Replace |])
+        , $(normalSV [p| _ |] [p| _ |] ) $
+            $(rearrS [| \(x:xs) -> (x,xs)  |])
+              (Replace `Prod` lensFoldr1 bx)
+              `Compose`
+              bx
+        ]
+
+
+-- correct version of lensFoldr1.
+lensFoldr1C :: BiGUL a b -> BiGUL (a, b) b -> (BiGUL [a] b)
+lensFoldr1C f bx =
+  Case  [ $(normalS [| \s -> length s == 1 |] ) $
+            $(update [p| v |] [p| [v] |] [d| v = f `Compose` Replace |])
+        , $(normalSV [p| _ |] [p| _ |] ) $
+            $(rearrS [| \(x:xs) -> (x,xs)  |])
+              (Replace `Prod` lensFoldr1C f bx)
+              `Compose`
+              bx
+        ]
+
+
+-- works only when (length s == length v) holds
+lensMap :: BiGUL a b -> BiGUL [a] [b]
+lensMap bx = $(rearrS [| \s -> (s, []) |])
+  (lensFoldr ($(rearrV [| \(v:vs) -> (v,vs) |]) $ bx `Prod` Replace))
+
+-- compose hell. I am not clear about the put semantics ... and the time complexity
+lensScanr :: (Eq b) => (BiGUL (a, b) b) -> (BiGUL ([a], b) [b])
+lensScanr bx =
+  Case  [ $(normalS [| \(s, e) -> length s == 0 |] ) $
+            $(rearrV [| \[v] -> ((),v) |]) $
+              $(update [p| ((),v ) |] [p| (_, v) |] [d| v = Replace |])
+        , $(normalSV [p| _ |] [p| _ |] ) $
+            $(rearrS [| \((x:xs), e) -> (x, (xs,e))  |]) $
+              (((Replace `Prod` lensScanr bx) -- source (x, xs) --> (x, done)
+                  `Compose`
+                    $(rearrS [| \(a, b) -> (a, (b, b))  |]) (Replace `Prod` lensHead `Prod` Replace)) -- (x, (done, done)) --> (x, (head done, done))
+                      `Compose`
+                      $(rearrS [| \(a, (hb, b)) -> ((a, hb), b)  |]) (bx `Prod` Replace)) -- ((x, head done), done) --> (f x (head done), done)
+                        `Compose`
+                        lensCons -- f x (head done) : done
+        ]
+
+
 replaceByPosition :: BiGUL [a] [a]
 replaceByPosition = Case  [ $(normalSV [p| [] |] [p| [] |] )
                               $(update [p| [] |] [p| [] |] [d| |])
@@ -100,7 +183,8 @@ replaceByPosition = Case  [ $(normalSV [p| [] |] [p| [] |] )
 -- put semantics: replace the first element in list with the provided one
 -- work only with non-empty list
 lensHead :: BiGUL [a] a
-lensHead = $(update [p| x |] [p| x:_ |]  [d| x = Replace |])
+lensHead = lensFoldr1 ($(update [p| v |] [p| (v,_) |] [d| v = Replace |]))
+
 
 -- work only with non-empty list
 lensLast :: BiGUL [a] a
@@ -136,17 +220,18 @@ lensTailStrict = Case [ $(normal [|\s v -> length s /= 1 + length v |])
 
 
 lensInitNonStrict :: (Typeable a, Defaultable a) => BiGUL [a] [a]
-lensInitNonStrict = Case  [ $(adaptive [|\s v -> length s /= 1 + length v |])
-                                (\s v ->  if length s > length v
-                                            then take (1 + length v) s -- try to preserve the source (the front part). especially the last element.
-                                            else replicate (1 + length v) defaultVal)  -- all the elements in source should be replaced by view later. and we need a default element as the last element in the source.
-                          , $(normalSV [p| _:_ |] [p| _:_ |] )
-                              $(update [p| x:xs |] [p| x:xs |] [d| x = Replace; xs = lensInitStrict |])
-                          , $(normalSV [p| [_] |] [p| [] |] )
-                              $(update [p| [] |] [p| [_] |] [d| |])
-                          , $(normalS [| null |])
-                               (Fail "empty source list detected")
-                          ]
+lensInitNonStrict =
+  Case  [ $(adaptive [|\s v -> length s /= 1 + length v |])
+              (\s v ->  if length s > length v
+                          then take (1 + length v) s -- try to preserve the source (the front part). especially the last element.
+                          else replicate (1 + length v) defaultVal)  -- all the elements in source should be replaced by view later. and we need a default element as the last element in the source.
+        , $(normalSV [p| _:_ |] [p| _:_ |] )
+            $(update [p| x:xs |] [p| x:xs |] [d| x = Replace; xs = lensInitStrict |])
+        , $(normalSV [p| [_] |] [p| [] |] )
+            $(update [p| [] |] [p| [_] |] [d| |])
+        , $(normalS [| null |])
+             (Fail "empty source list detected")
+        ]
 
 
 -- given a non-empty source list of length n,
@@ -237,20 +322,23 @@ lensDrop n =
 
 
 -- work on non-empty list
--- put semantics: replacet he maximum value with a new one
+-- put semantics: replace the maximum value with a new one
 -- pre condition: in general, the view should be no less than the second large element in the source
 -- however, we enforce the view should be larger than the second largest element. The following situation is prohibited:
--- put [4,5,6,1] 5 -> [4,5,5,1]. the first 5 is choosed when performing get. though the result is the same, the branch is different.
+-- put [4,5,6,1] 5 -> [4,5,5,1]. the first 5 is chosen when performing get. though the result is the same, the branch is different.
+-- however after revision. put [6,6,6] 7 is valid - TODO
 lensMaximum :: (Ord a) => BiGUL [a] a
-lensMaximum =
-  Case  [ -- since secondMax [x] = x while replace a singleton list is always safe. we should exclude this condition.
-          $(normal [| \s v -> (length s > 1) && v <= secondMax s |] )
-            (Fail "the view should be greater than the second smallest element in the list")
-        , $(normal [| \s v -> head s == maximum s |] ) $
-             $(update [p| v |] [p| v:_ |] [d| v = Replace |])
-        -- overlapped pattern. be careful.
-        , $(normalS [p| _ |] ) $
-            $(update [p| v |] [p| _:v |] [d| v = lensMaximum |])
+lensMaximum = lensFoldr1 lensMaxInner
+
+lensMaxInner :: (Ord a) => BiGUL (a, a) a
+lensMaxInner =
+  Case  [ $(normal [| \(elem, acc) v -> elem >= acc && v > acc |] ) $
+            $(rearrV [| \v -> (v,()) |]) $
+              Replace `Prod` Skip
+        , $(normal [| \(elem, acc) v -> elem < acc && v > elem |] ) $
+            $(rearrV [| \v -> ((),v) |]) $
+              Skip `Prod` Replace
+        , $(normal [| \ _ _ -> True |] ) (Fail "Possible reason: the view is less than the second largest elements in source")
         ]
 
 
@@ -258,15 +346,19 @@ lensMaximum =
 -- put semantics: replacet he minimum value with a new one
 -- explanation: the same as the maximum functions.
 lensMinimum :: (Ord a) => BiGUL [a] a
-lensMinimum =
-  Case  [ $(normal [| \s v -> (length s > 1) && v >= secondMin s |] )
-            (Fail "the view should be less than the second smallest element in the list")
-        , $(normal [| \s v -> head s == minimum s |] ) $
-            $(update [p| v |] [p| v:_ |] [d| v = Replace |])
-        -- overlapped pattern. be careful.
-        , $(normalS [p| _ |] ) $
-            $(update [p| v |] [p| _:v |] [d| v = lensMinimum |])
+lensMinimum = lensFoldr1 lensMinInner
+
+lensMinInner :: (Ord a) => BiGUL (a, a) a
+lensMinInner =
+  Case  [ $(normal [| \(elem, acc) v -> elem <= acc && v < acc |] ) $
+            $(rearrV [| \v -> (v,()) |]) $
+              Replace `Prod` Skip
+        , $(normal [| \(elem, acc) v -> elem > acc && elem > v |] ) $
+            $(rearrV [| \v -> ((),v) |]) $
+              Skip `Prod` Replace
+        , $(normal [| \ _ _ -> True |] ) (Fail "Possible reason: the view is larger than the second least elements in source")
         ]
+
 
 -- put semantics: check if the elements in view list are all the same. if not, report error.
 -- if the predicate holds, replace the source with any (in fact all) element in the view list.
@@ -391,58 +483,55 @@ lensDropWhile__ p =
 -- put semantics: check if view is a valid inits. Then generate the original list from view only
 -- source <-> view is just isomorphism. data could be fully recovered from either side. tedious.
 -- the general framework for isomorphisms is: adaptive + recursively Replace
-lensInits :: (Eq a) => BiGUL [a] [[a]]
+
+-- initial value
+-- (rearranged)source ( 1, [[],[2],[2,3],[2,3,4]] ) -> ([ [], [1],[2],[2,3],[2,3,4]] )
+-- view       [[],[1],[1,2],[1,2,3],[1,2,3,4]]
+lensInits :: Eq a => BiGUL [a] [[a]]
 lensInits =
-  Case  [ $(adaptive  [| \s v -> isInits v && length s /= length v - 1 |]) (\_ v -> inits2list v) -- sorry. I cannot use undefined here...
+  Case  [ $(adaptive  [| \s v -> isInits v && length s /= length v - 1 |]) (\_ v -> replicate (length v - 1) undefined)
         , $(normalSV [p| _ |] [p| _ |] ) $
-            $(update [p| v |] [p| v |] [d| v = recover 0 |])
+            $(rearrS [| \s -> (s, [[]]) |]) (lensFoldr xd)
         ]
   where
-    recover :: (Eq a) => Int -> BiGUL [a] [[a]]
-    recover n =
-      Case  [ $(normalV [p| _:_:_ |]) $
-                $(rearrS [| \s -> (s,s) |]) $
-                  $(update [p| s:ss |] [p| (s,ss) |] [d| s = recoverSingle n; ss = recover (n+1) |])
-            , $(normalV [p| _:_ |] ) $ -- [[]] . or the last element ([1,2]:[]) of [[],[1],[1,2]]
-                $(update [p| [s] |] [p| s |] [d| s = recoverSingle n |])
+    -- seperate three conditions into two functions for simplicity
+    -- the view has one more element thant the source. so the first function handle the first element in the view, which is always an empty list ([]).
+    -- after that, pass the remaining data to the second function.
+    xd :: Eq a => BiGUL (a, [[a]]) [[a]]
+    xd =
+      Case  [ $(normalSV [p| (_, []:_) |] [p| []:_ |] ) $ -- view is [[],[1],[1,2] ...] there is at least one element, and the first element is []
+                $(update [p| ([]:vs) |] [p| vs |] [d| vs = xd1 |])
             ]
-    recoverSingle :: (Eq a) => Int -> BiGUL [a] [a]
-    recoverSingle n =
-      Case  [ $(normal [| \s v -> n /= 0 && not (null v) |] ) $
-               $(update [p| x:xs |] [p| x:xs |] [d| x = Replace; xs = recoverSingle (n-1) |])
-            , $(normal [| \ s v -> null v && n== 0 |] ) $
-                $(rearrV [| \[] -> () |]) $
-                  Skip
+    xd1 :: Eq a => BiGUL (a, [[a]]) [[a]]
+    xd1 =
+      Case  [ $(normalSV [p| (_, [_]) |] [p| [_:_] |] ) $ -- there is only one element left.
+                $(rearrS [| \(s, [t]) -> s:t |]) $        -- ( 1, [[2,3,4]] )  --> 1:[2,3,4]
+                  $(rearrV [| \[v] -> v |]) $             -- [[1,2,3,4]]       --> [1,2,3,4]
+                    Replace
+
+            , $(normal' [| \s v -> case (s, v) of ( (_, _:_) , (_:_):_) -> True; _ -> False |] [p| (_, _:_:_) |]) $
+                $(rearrS [| \(s, t:ts) -> (s:t, (s,ts) ) |]) $ -- ( 1, [[],[2],[2,3],[2,3,4]] )  --> ( 1:[], (1, [[2],[2,3],[2,3,4]]) )
+                  $(rearrV [| \(v:vs) -> (v,vs) |]) $          -- [[1],[1,2],[1,2,3],[1,2,3,4]]  --> ([1]  , [[1,2],[1,2,3],[1,2,3,4]])
+                    Replace `Prod` xd1
             ]
 
 
 -- put semantics: check if view is a valid tails. then generate the original list from view only
 -- using put to write simple isomorphisms is always tedious.
+-- adaptive is used for reshaping source.
+-- (rearranged)source ( 1 , [[2,3,4],[3,4],[4],[]] )
+-- view       [[1,2,3,4],[2,3,4],[3,4],[4],[]]
 lensTails :: Eq a => BiGUL [a] [[a]]
 lensTails =
   Case  [ $(adaptive  [| \s v -> isTails v && length s /= length v - 1 |]) (\_ v -> replicate (length v - 1) undefined)
         , $(normalSV [p| _ |] [p| _ |] ) $
-            $(update [p| v |] [p| v |] [d| v = recover 0 |])
+            $(rearrS [| \s -> (s,[[]]) |]) $
+              lensFoldr xd
         ]
   where
-    recover :: (Eq a) => Int -> BiGUL [a] [[a]]
-    recover n =
-      Case  [ $(normalV [p| _:_:_ |]) $
-                $(rearrS [| \(x:xs) -> ((x:xs),xs) |]) $ -- source: 1:[2,3,4] --> ([1,2,3,4], [2,3,4]). view: [1,2,3,4] : [[2,3,4],[3,4],[4],[]]
-                  $(update [p| s:ss |] [p| (s,ss) |] [d| s = Replace ; ss = recover (n+1) |])
-            , $(normalSV [p| [] |] [p| [[]] |] ) $
-                $(update [p| [[]] |] [p| [] |] [d| |])
-            ]
-
-
---segs = concat . map inits . tails
-
-
-
--- can bigul handle infinite data?
--- repeat :: a -> [a]
--- cycle :: [a] -> [a]
-
+    xd :: Eq a => BiGUL (a,[[a]]) [[a]]
+    xd = $(rearrS [| \(s, t:ts) -> (s:t, t:ts) |])
+            $(update [p| v:vs |] [p| (v, vs) |] [d| v = Replace ; vs = Replace |])
 
 
 ---- trivial well-behaved wrapper
@@ -469,87 +558,52 @@ lengthEmb = emb (length)
                   --        then error "a proper source cannot be generated: the original source is empty and the type is unknown"
                           else s ++ (replicate (v - ls) defaultVal))
 
---lensLengthStrict :: BiGUL [a] Int
---lensLengthStrict = Case [ $(normal [| \s v -> length s == v |] ) $
---                            $(rearrV [| \v -> () |])
---                              $(update [p| () |] [p| _ |] [d|  |])
---                        , $(adaptive  [|\ _ _ -> True|])  (\_ _ -> error "length mismatch")]
 
-
--- foldr ::   (a -> b -> b)   ->   b -> [a] -> b
--- lensFoldr :: (BiGUL (x, xs) result) -> (BiGUL ([x], e) result)
-lensFoldr :: (BiGUL (a, b) b) -> (BiGUL ([a], b) b)
-lensFoldr bx =
+lensFoldrMapFusion :: (BiGUL a c) -> (BiGUL (c, b) b) -> (BiGUL ([a], b) b)
+lensFoldrMapFusion mapBX foldBx =
   Case  [ $(normalS [| \(s, e) -> length s == 0 |] ) $
             $(rearrV [| \v -> ((),v) |]) $
               $(update [p| ((),v ) |] [p| (_, v) |] [d| v = Replace |])
         , $(normalSV [p| _ |] [p| _ |] ) $
             $(rearrS [| \((x:xs), e) -> (x, (xs,e))  |])
-              $(update [p| (x, v) |] [p| (x, v) |] [d| x = Replace; v = lensFoldr bx |])
+              ((mapBX `Compose` Replace) `Prod` lensFoldrMapFusion mapBX foldBx)
               `Compose`
-              bx
+              foldBx
         ]
 
--- the wrong version but the same as List.foldr1.
-lensFoldr1 :: (BiGUL (a, a) a) -> (BiGUL ([a], a) a)
-lensFoldr1 bx =
-  Case  [ $(normalS [| \(s, e) -> length s == 1 |] ) $
-            $(rearrV [| \v -> (v,()) |]) $
-              $(update [p| (v, ()) |] [p| ([v], _) |] [d| v = Replace |])
+lensFoldr1MapFusion :: BiGUL a c -> BiGUL (c, c) c -> BiGUL [a] c
+lensFoldr1MapFusion mapBX foldBX =
+  Case  [ $(normalS [| \s -> length s == 1 |] ) $
+            $(update [p| v |] [p| [v] |] [d| v = mapBX `Compose` Replace |])
         , $(normalSV [p| _ |] [p| _ |] ) $
-            $(rearrS [| \((x:xs), e) -> (x, (xs,e))  |])
-              $(update [p| (x, v) |] [p| (x, v) |] [d| x = Replace; v = lensFoldr bx |])
+            $(rearrS [| \(x:xs) -> (x, xs)  |])
+              ((mapBX `Compose` Replace) `Prod` lensFoldr1MapFusion mapBX foldBX)
               `Compose`
-              bx
+              foldBX
+        ]
+
+--                       map ->  change the last element -> foldr  -> fused foldr
+lensFoldr1CMapFusion :: BiGUL a c -> BiGUL c b -> BiGUL (c, b) b -> BiGUL [a] b
+lensFoldr1CMapFusion mapBX f foldBX =
+  Case  [ $(normalS [| \s -> length s == 1 |] ) $
+            $(update [p| v |] [p| [v] |] [d| v = mapBX `Compose` f `Compose` Replace |])
+        , $(normalSV [p| _ |] [p| _ |] ) $
+            $(rearrS [| \(x:xs) -> (x, xs)  |])
+              ((mapBX `Compose` Replace) `Prod` lensFoldr1CMapFusion mapBX f foldBX)
+              `Compose`
+              foldBX
         ]
 
 
--- map composition . map fold . higher order function
--- linear time complexity fold
-lensMap :: BiGUL a b -> BiGUL [a] [b]
-lensMap bx = $(rearrS [| \s -> (s, []) |])
-  (lensFoldr ($(rearrV [| \(v:vs) -> (v,vs) |]) $ bx `Prod` Replace))
-
--- get (lensFoldr (+) 0) [1,2,3,4]  ==  10
--- put (lensFoldr plusl) ([1,2,3], 0) 8 -> ([3,2,3], 0)
--- \([1,2,3],0) -> (1, ([2,3], 0))
--- get (Replace `Prod` lensFoldr bx) (1, ([2,3], 0)) == (1, 5)
--- put bx (1, 5) 8 = (3, 5)
--- put (Replace `Prod` lensFoldr bx) (1, ([2,3], 0)) (3, 5) == (3, put (lensFoldr bx) ([2,3], 0) 5 )
--- == ...
--- ==
--- Note: the get direction of lensFoldr is executed many times (as length of the source list). time complexity is quadratic.
--- (1, sum(2,3,4)) 12 = (1, 9) 12 = (3, 9)
--- (2, sum(3,4)) 9    = (2 , 7) 9 = (2, 7)
--- ...
+lensMapMapFusion :: BiGUL a b -> BiGUL b c -> BiGUL [a] [c]
+lensMapMapFusion bx1 bx2 = $(rearrS [| \s -> (s, []) |])
+  (lensFoldr ($(rearrV [| \(v:vs) -> (v,vs) |]) $ (bx1 `Compose` bx2) `Prod` Replace))
 
 
---haha :: BiGUL [a] Nat
---haha = Case [ $(normal [| \s v -> length s == 0 && v == Zero |] ) $
---                $(rearrV [| \Zero -> () |]) $
---                  $(update [p| () |] [p| _ |] [d| |])
---            , $(normalSV [p| _:_ |] [p| Succ _ |] ) $
---              --  $(rearrV [| \(x:xs) -> ((),xs) |])
---                  $(update [p| Succ xs |] [p| _:xs |] [d| xs = haha |])
---            ]
+-- can bigul handle infinite data?
+-- repeat :: a -> [a]
+-- cycle :: [a] -> [a]
 
-
---nat2Int :: BiGUL Int Nat
---nat2Int =  Case [ $(normalV [p| Zero |] ) $
---                  --  $(rearrS [| \s -> 0 |]) $
---                      $(rearrV [| \Zero -> () |]) $
---                        $(update [p| () |] [p| _ |] [d|  |])
---                , $(normalSV [| \s -> 0 < s  |] [p| Succ _ |] ) $
---                  --  $(rearrS [| \s -> s |]) $
---                    --  $(rearrV [| \(Succ nat) -> nat |]) $
---                        $(update [p| Succ nat |] [p| nat |] [d| nat = nat2Int |])
---                ]
-
-isEqNatInt :: Int -> Nat -> Bool
-isEqNatInt 0 Zero       = True
-isEqNatInt 0 (Succ _)   = False
-isEqNatInt n (Succ nat) = isEqNatInt (n-1) nat
-isEqNatInt _ Zero       = False
 
 
 
@@ -586,29 +640,7 @@ deriveBiGULGeneric ''Nat
 
 
 
--- backups for the local change lensdropwhile (not workable)
---lensDropWhile__ :: (Eq a) => (a -> Bool) -> BiGUL [a] [a]
---lensDropWhile__ p =
---  Case  [
-        --  $(normal [| \s v -> s == v |]) $
-        --    Replace
-        --, $(normal [| \s v -> null v && null s |]) $
-        --    $(rearrV [| \[] -> () |]) $
-        --      $(update [p| u |] [p| u |] [d| u = Skip |])
-        --, $(adaptive [| \s v -> null s && not (null v) |]) (\ _ v -> v)  -- concate remaining view to the source
-        --, $(normal [| \s v -> not (null s) && null v |]) -- two conditions
-
-        --, $(normal [| \s v -> not (null s) && p (head s) |]) $ -- preserve the elements in source satisfying p
-        --    $(rearrV [| \v -> ((),v) |]) $
-        --      $(update [p| ((),v) |] [p| _:v |] [d| v = lensDropWhile_ p |])
-          --  $(rearrS [| \(x:xs) -> xs |]) $
-          --    lensDropWhile_ p
-
-        -- find the first element (k) in source not satisfying p
-        -- delete the remaining source from where not satisfying p.
-        -- the program shall be stopped after this adaptation.
-        --, $(adaptive [| \s v -> not (null v) && not (null s) && not (p (head s)) && v /= s |]) (\_ v -> v)
-        --]
+-- backups
 
 -- works only when the length of the view equals to the length of the source
 --lensMap :: BiGUL a b -> BiGUL [a] [b]
