@@ -365,7 +365,7 @@ u1 d =
              [p| (t: r: a: q: []) |]
              [d| t = Replace; r = Replace; a = Replace; q = Replace |])
     (\(t: r: a: q: []) -> (t: d: r: a: q: []))
-    (\(t: d: r: a: _: []) -> Just (t: d: r: a: RInt 1:[]))
+    (\(t: d: r: a: _: []) -> Just (t: d: r: a: RInt 0:[]))
 \end{code}
 
 To be concrete, let us see some concrete running examples of using |u0|.

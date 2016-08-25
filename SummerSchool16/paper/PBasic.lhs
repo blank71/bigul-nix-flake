@@ -369,3 +369,29 @@ Right (98,2)
 *PBasic> get distSum (1,2)
 Right 3
 \end{verbatim}
+
+\ignore{
+\begin{code}
+pHead' :: Show s
+       => BiGUL [s] s
+pHead' = Case [
+     $(normal [| \s v -> not (null s) |] [| not . null |])
+       ==> pHead,
+     $(adaptive [| \s v -> null s |])
+       ==> \s v -> [v]
+     ]
+
+
+pEither :: (Show a, Show b, Eq a)
+        => a -> BiGUL (Either a b) a
+pEither x0 = Case [
+  $(normalSV [p| Left _ |] [p| _ |] [p| Left _ |])
+    ==> $(update [p| Left x |] [p| x |] [d| x = Replace |]),
+  $(normalSV [p| Right y |] [| \x -> x==x0 |] [p| Right _ |])
+    ==> Skip (const x0),
+  $(adaptive [| \ _ _ -> True |])
+    ==> \s v -> Left v
+  ]
+
+\end{code}
+}

@@ -1,0 +1,1001 @@
+%% ODER: format ==         = "\mathrel{==}"
+%% ODER: format /=         = "\neq "
+%
+%
+\makeatletter
+\@ifundefined{lhs2tex.lhs2tex.sty.read}%
+  {\@namedef{lhs2tex.lhs2tex.sty.read}{}%
+   \newcommand\SkipToFmtEnd{}%
+   \newcommand\EndFmtInput{}%
+   \long\def\SkipToFmtEnd#1\EndFmtInput{}%
+  }\SkipToFmtEnd
+
+\newcommand\ReadOnlyOnce[1]{\@ifundefined{#1}{\@namedef{#1}{}}\SkipToFmtEnd}
+\usepackage{amstext}
+\usepackage{amssymb}
+\usepackage{stmaryrd}
+\DeclareFontFamily{OT1}{cmtex}{}
+\DeclareFontShape{OT1}{cmtex}{m}{n}
+  {<5><6><7><8>cmtex8
+   <9>cmtex9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmtex10}{}
+\DeclareFontShape{OT1}{cmtex}{m}{it}
+  {<-> ssub * cmtt/m/it}{}
+\newcommand{\texfamily}{\fontfamily{cmtex}\selectfont}
+\DeclareFontShape{OT1}{cmtt}{bx}{n}
+  {<5><6><7><8>cmtt8
+   <9>cmbtt9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmbtt10}{}
+\DeclareFontShape{OT1}{cmtex}{bx}{n}
+  {<-> ssub * cmtt/bx/n}{}
+\newcommand{\tex}[1]{\text{\texfamily#1}}	% NEU
+
+\newcommand{\Sp}{\hskip.33334em\relax}
+
+
+\newcommand{\Conid}[1]{\mathit{#1}}
+\newcommand{\Varid}[1]{\mathit{#1}}
+\newcommand{\anonymous}{\kern0.06em \vbox{\hrule\@width.5em}}
+\newcommand{\plus}{\mathbin{+\!\!\!+}}
+\newcommand{\bind}{\mathbin{>\!\!\!>\mkern-6.7mu=}}
+\newcommand{\rbind}{\mathbin{=\mkern-6.7mu<\!\!\!<}}% suggested by Neil Mitchell
+\newcommand{\sequ}{\mathbin{>\!\!\!>}}
+\renewcommand{\leq}{\leqslant}
+\renewcommand{\geq}{\geqslant}
+\usepackage{polytable}
+
+%mathindent has to be defined
+\@ifundefined{mathindent}%
+  {\newdimen\mathindent\mathindent\leftmargini}%
+  {}%
+
+\def\resethooks{%
+  \global\let\SaveRestoreHook\empty
+  \global\let\ColumnHook\empty}
+\newcommand*{\savecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\savecolumns[#1]}}
+\newcommand*{\restorecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\restorecolumns[#1]}}
+\newcommand*{\aligncolumn}[2]%
+  {\g@addto@macro\ColumnHook{\column{#1}{#2}}}
+
+\resethooks
+
+\newcommand{\onelinecommentchars}{\quad-{}- }
+\newcommand{\commentbeginchars}{\enskip\{-}
+\newcommand{\commentendchars}{-\}\enskip}
+
+\newcommand{\visiblecomments}{%
+  \let\onelinecomment=\onelinecommentchars
+  \let\commentbegin=\commentbeginchars
+  \let\commentend=\commentendchars}
+
+\newcommand{\invisiblecomments}{%
+  \let\onelinecomment=\empty
+  \let\commentbegin=\empty
+  \let\commentend=\empty}
+
+\visiblecomments
+
+\newlength{\blanklineskip}
+\setlength{\blanklineskip}{0.66084ex}
+
+\newcommand{\hsindent}[1]{\quad}% default is fixed indentation
+\let\hspre\empty
+\let\hspost\empty
+\newcommand{\NB}{\textbf{NB}}
+\newcommand{\Todo}[1]{$\langle$\textbf{To do:}~#1$\rangle$}
+
+\EndFmtInput
+\makeatother
+%
+%
+%
+%
+%
+%
+% This package provides two environments suitable to take the place
+% of hscode, called "plainhscode" and "arrayhscode". 
+%
+% The plain environment surrounds each code block by vertical space,
+% and it uses \abovedisplayskip and \belowdisplayskip to get spacing
+% similar to formulas. Note that if these dimensions are changed,
+% the spacing around displayed math formulas changes as well.
+% All code is indented using \leftskip.
+%
+% Changed 19.08.2004 to reflect changes in colorcode. Should work with
+% CodeGroup.sty.
+%
+\ReadOnlyOnce{polycode.fmt}%
+\makeatletter
+
+\newcommand{\hsnewpar}[1]%
+  {{\parskip=0pt\parindent=0pt\par\vskip #1\noindent}}
+
+% can be used, for instance, to redefine the code size, by setting the
+% command to \small or something alike
+\newcommand{\hscodestyle}{}
+
+% The command \sethscode can be used to switch the code formatting
+% behaviour by mapping the hscode environment in the subst directive
+% to a new LaTeX environment.
+
+\newcommand{\sethscode}[1]%
+  {\expandafter\let\expandafter\hscode\csname #1\endcsname
+   \expandafter\let\expandafter\endhscode\csname end#1\endcsname}
+
+% "compatibility" mode restores the non-polycode.fmt layout.
+
+\newenvironment{compathscode}%
+  {\par\noindent
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \let\hspre\(\let\hspost\)%
+   \pboxed}%
+  {\endpboxed\)%
+   \par\noindent
+   \ignorespacesafterend}
+
+\newcommand{\compaths}{\sethscode{compathscode}}
+
+% "plain" mode is the proposed default.
+% It should now work with \centering.
+% This required some changes. The old version
+% is still available for reference as oldplainhscode.
+
+\newenvironment{plainhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\hspre\(\let\hspost\)%
+   \pboxed}%
+  {\endpboxed%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+\newenvironment{oldplainhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \(\pboxed}%
+  {\endpboxed\)%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+% Here, we make plainhscode the default environment.
+
+\newcommand{\plainhs}{\sethscode{plainhscode}}
+\newcommand{\oldplainhs}{\sethscode{oldplainhscode}}
+\plainhs
+
+% The arrayhscode is like plain, but makes use of polytable's
+% parray environment which disallows page breaks in code blocks.
+
+\newenvironment{arrayhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \(\parray}%
+  {\endparray\)%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+\newcommand{\arrayhs}{\sethscode{arrayhscode}}
+
+% The mathhscode environment also makes use of polytable's parray 
+% environment. It is supposed to be used only inside math mode 
+% (I used it to typeset the type rules in my thesis).
+
+\newenvironment{mathhscode}%
+  {\parray}{\endparray}
+
+\newcommand{\mathhs}{\sethscode{mathhscode}}
+
+% texths is similar to mathhs, but works in text mode.
+
+\newenvironment{texthscode}%
+  {\(\parray}{\endparray\)}
+
+\newcommand{\texths}{\sethscode{texthscode}}
+
+% The framed environment places code in a framed box.
+
+\def\codeframewidth{\arrayrulewidth}
+\RequirePackage{calc}
+
+\newenvironment{framedhscode}%
+  {\parskip=\abovedisplayskip\par\noindent
+   \hscodestyle
+   \arrayrulewidth=\codeframewidth
+   \tabular{@{}|p{\linewidth-2\arraycolsep-2\arrayrulewidth-2pt}|@{}}%
+   \hline\framedhslinecorrect\\{-1.5ex}%
+   \let\endoflinesave=\\
+   \let\\=\@normalcr
+   \(\pboxed}%
+  {\endpboxed\)%
+   \framedhslinecorrect\endoflinesave{.5ex}\hline
+   \endtabular
+   \parskip=\belowdisplayskip\par\noindent
+   \ignorespacesafterend}
+
+\newcommand{\framedhslinecorrect}[2]%
+  {#1[#2]}
+
+\newcommand{\framedhs}{\sethscode{framedhscode}}
+
+% The inlinehscode environment is an experimental environment
+% that can be used to typeset displayed code inline.
+
+\newenvironment{inlinehscode}%
+  {\(\def\column##1##2{}%
+   \let\>\undefined\let\<\undefined\let\\\undefined
+   \newcommand\>[1][]{}\newcommand\<[1][]{}\newcommand\\[1][]{}%
+   \def\fromto##1##2##3{##3}%
+   \def\nextline{}}{\) }%
+
+\newcommand{\inlinehs}{\sethscode{inlinehscode}}
+
+% The joincode environment is a separate environment that
+% can be used to surround and thereby connect multiple code
+% blocks.
+
+\newenvironment{joincode}%
+  {\let\orighscode=\hscode
+   \let\origendhscode=\endhscode
+   \def\endhscode{\def\hscode{\endgroup\def\@currenvir{hscode}\\}\begingroup}
+   %\let\SaveRestoreHook=\empty
+   %\let\ColumnHook=\empty
+   %\let\resethooks=\empty
+   \orighscode\def\hscode{\endgroup\def\@currenvir{hscode}}}%
+  {\origendhscode
+   \global\let\hscode=\orighscode
+   \global\let\endhscode=\origendhscode}%
+
+\makeatother
+\EndFmtInput
+%
+
+% format { = "\lbag"
+% format } = "\rbag"
+
+
+% TODO: fix spacing for \lbag and \rbag
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%formap phiX = "\Phi"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{A quick tour of BiGUL}
+
+\ignore{
+
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mbox{\enskip\{-\# LANGUAGE FlexibleContexts, TemplateHaskell, TypeFamilies  \#-\}\enskip}{}\<[E]%
+\\[\blanklineskip]%
+\>[B]{}\mathbf{module}\;\Conid{PBasic}\;\mathbf{where}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Generics}.BiGUL}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Generics}.\Conid{BiGUL}.Interpreter}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Generics}.\Conid{BiGUL}.TH}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Generics}.\Conid{BiGUL}.Lib}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Data}.List}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Data}.Maybe}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Control}.\Conid{Monad}.Except}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{GHC}.Generics}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+}
+
+Intuitively, we can think of a bidirectional BiGUL program:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Varid{bx}\mathbin{::}\Conid{BiGUL}\;\Varid{s}\;\Varid{v}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+as describing how to manipulate a state consisting of
+a source component of type~\ensuremath{\Varid{s}} and a view component of type \ensuremath{\Varid{v}};
+the goal is to embed all information in the view to proper places
+in the source. For each \ensuremath{\Varid{bx}\mathbin{::}\Conid{BiGUL}\;\Varid{s}\;\Varid{v}}, we can run it forwardly by calling \ensuremath{\Varid{get}}
+and backwardly by calling \ensuremath{\Varid{put}}.
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Varid{get}\;\Varid{bx}\mathbin{::}\Varid{s}\to \Conid{Maybe}\;\Varid{v}{}\<[E]%
+\\
+\>[3]{}\Varid{put}\;\Varid{bx}\mathbin{::}\Varid{s}\to \Varid{v}\to \Conid{Maybe}\;\Varid{s}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+where \ensuremath{\Varid{get}\;\Varid{bx}} is a function mapping a source to a view if it succeeds,
+while \ensuremath{\Varid{put}\;\Varid{bx}}
+accepts an original source and uses a view to update it to get an updated source.
+
+In BiGUL, it is suffice for users to write the \ensuremath{\Varid{put}} behavior (i.e.,
+how to use a view to update the original source to a new source),
+and the (unique) \ensuremath{\Varid{get}} behavior is obtained for free. 
+%
+The core of BiGUL consists of a small number of primitives and
+combinators for constructing valid (well-behaved)
+bidirectional transformations.
+
+\subsection{Skip}
+ 
+The first primitive for writing \ensuremath{\Varid{put}} is
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{12}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Conid{Skip}{}\<[12]%
+\>[12]{}\mathbin{::}(\Varid{s}\to \Varid{v})\to \Conid{BiGUL}\;\Varid{s}\;\Varid{v}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+The put behavior of \ensuremath{\Conid{Skip}\;\Varid{f}} does not allow any change on the view
+and thus skip any change on the source
+(while in the get direction, the view is fully computed by
+applying function \ensuremath{\Varid{f}} to the source). Consider a simple \ensuremath{\Varid{put}} defined by
+\ensuremath{\Conid{Skip}\;\Varid{square}} where
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{square}\;\Varid{x}\mathrel{=}\Varid{x}\mathbin{*}\Varid{x}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+and we can test it by
+\begin{tabbing}\tt
+~\char42{}Main\char62{}~put~\char40{}Skip~square\char41{}~10~100\\
+\tt ~Just~10
+\end{tabbing}
+It first checks if the view \ensuremath{\mathrm{100}} is the square of the source \ensuremath{\mathrm{10}}, and returns
+the original source if it is. But if the view is changed, say to \ensuremath{\mathrm{250}},
+it should return \ensuremath{\Conid{Nothing}}:
+\begin{tabbing}\tt
+~\char42{}Main\char62{}~put~\char40{}Skip~square\char41{}~10~250\\
+\tt ~Nothing
+\end{tabbing}
+If one wants to see why \ensuremath{\Varid{put}} returns \ensuremath{\Conid{Nothing}}, he may use
+\ensuremath{\Varid{putTrace}} instead of \ensuremath{\Varid{put}} to get more information.
+\begin{tabbing}\tt
+~\char42{}Main\char62{}~putTrace~\char40{}Skip~square\char41{}~10~250\\
+\tt ~view~not~determined~by~the~source
+\end{tabbing}
+
+Note that each well-behaved putback transformation in BiGUL
+is equipped with a unique \ensuremath{\Varid{get}} for doing forward transformation.
+We can test the \ensuremath{\Varid{get}} behavior as follows.
+\begin{tabbing}\tt
+~\char42{}Main\char62{}~get~\char40{}Skip~square\char41{}~5\\
+\tt ~Just~25
+\end{tabbing}
+It reads that doing forward transformation for \ensuremath{\Conid{Skip}\;\Varid{square}} on the
+source of \ensuremath{\mathrm{5}} gives the view of \ensuremath{\mathrm{25}}. Like that we have \ensuremath{\Varid{putTrace}} for \ensuremath{\Varid{put}}
+to see more execution information about \ensuremath{\Varid{put}},
+we have \ensuremath{\Varid{getTrace}} for \ensuremath{\Varid{get}} to see  more execution information about \ensuremath{\Varid{get}}.
+
+As a simple exercise, can you see what the following \ensuremath{\Varid{skip1}} is? 
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{skip1}\mathbin{::}\Conid{BiGUL}\;\Varid{s}\;(){}\<[E]%
+\\
+\>[B]{}\Varid{skip1}\mathrel{=}\Conid{Skip}\;(\Varid{const}\;()){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+\subsection{Replace}
+
+The second one is
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{12}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Conid{Replace}{}\<[12]%
+\>[12]{}\mathbin{::}\Conid{BiGUL}\;\Varid{s}\;\Varid{s}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+to use the view to completely replace the source. For instance,
+\begin{tabbing}\tt
+~\char42{}Main\char62{}~put~Replace~1~100\\
+\tt ~Just~100
+\end{tabbing}
+uses the view \ensuremath{\mathrm{100}} to replace the source \ensuremath{\mathrm{1}} and gets a new source \ensuremath{\mathrm{100}}.
+
+\subsection{Product: Prod}
+
+To use a view pair \ensuremath{(\Varid{v}_{1},\Varid{v}_{2})} to update a source pair
+\ensuremath{(\Varid{s}_{1},\Varid{s}_{2})},
+we can write \ensuremath{\Varid{bx1}\;\Conid{Prod}\;\Varid{bx2}}, a product of two putback transformations
+\ensuremath{\Varid{bx1}} and \ensuremath{\Varid{bx2}},
+which is to use \ensuremath{\Varid{v}_{1}} to update \ensuremath{\Varid{s}_{1}} with \ensuremath{\Varid{bx1}} and \ensuremath{\Varid{v}_{2}} to \ensuremath{\Varid{s}_{2}} with \ensuremath{\Varid{bx2}}.
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Conid{Prod}\mathbin{::}\Conid{BiGUL}\;\Varid{s}_{1}\;\Varid{v}_{1}\to \Conid{BiGUL}\;\Varid{s}_{2}\;\Varid{v}_{2}\to \Conid{BiGUL}\;(\Varid{s}_{1},\Varid{s}_{2})\;(\Varid{v}_{1},\Varid{v}_{2}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+For instance, we can combine \ensuremath{\Conid{Skip}} and \ensuremath{\Conid{Replace}} to putback a view pair
+to a source pair.
+\begin{tabbing}\tt
+~\char42{}Main\char62{}~put~\char40{}skip1~\char96{}Prod\char96{}~Replace\char41{}~\char40{}5\char44{}1\char41{}~\char40{}\char40{}\char41{}\char44{}100\char41{}\\
+\tt ~Just~\char40{}5\char44{}100\char41{}
+\end{tabbing}
+More complicated structures can be dealt with by using nested \ensuremath{\Conid{Prod}}:
+\begin{tabbing}\tt
+~\char42{}Main\char62{}~put~\char40{}\char40{}skip1~\char96{}Prod\char96{}~Replace\char41{}~\char96{}Prod\char96{}~Replace\char41{}\\
+\tt ~~~~~~~~~~~~\char40{}\char40{}5\char44{}1\char41{}\char44{}2\char41{}~\char40{}\char40{}\char40{}\char41{}\char44{}100\char41{}\char44{}200\char41{}\\
+\tt ~Just~\char40{}\char40{}5\char44{}100\char41{}\char44{}200\char41{}
+\end{tabbing}
+
+To help describe structural mapping more directly, we provide the following
+syntactic sugar:\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid \Varid{source}\mathbin{-}\Varid{pattern}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Varid{view}\mathbin{-}\Varid{pattern}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{d}\mid \Varid{updating}\mathbin{-}\Varid{strategy}\mid \mskip1.5mu]){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+Source and view are decomposed by the patterns in the
+\ensuremath{[\mskip1.5mu \Varid{p}} ... \ensuremath{\mskip1.5mu]} and corresponding elements are updated based on \ensuremath{\Varid{updating}\mathbin{-}\Varid{strategy}}.
+As an example, we may describe \ensuremath{(\Varid{skip1}\mathbin{`\Conid{Prod}`}\Conid{Replace})\mathbin{`\Conid{Prod}`}\Conid{Replace}} by
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{24}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{testUpdate}\mathbin{::}(\Conid{Show}\;\Varid{a},\Conid{Show}\;\Varid{b},\Conid{Show}\;\Varid{c})\Rightarrow \Conid{BiGUL}\;((\Varid{a},\Varid{b}),\Varid{c})\;(((),\Varid{b}),\Varid{c}){}\<[E]%
+\\
+\>[B]{}\Varid{testUpdate}\mathrel{=}\mathbin{\$}(\Varid{update}\;{}\<[24]%
+\>[24]{}[\mskip1.5mu \Varid{p}\mid ((\Varid{x},\Varid{y}),\Varid{z})\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid ((\Varid{x},\Varid{y}),\Varid{z})\mid \mskip1.5mu]\;{}\<[E]%
+\\
+\>[24]{}[\mskip1.5mu \Varid{d}\mid \Varid{x}\mathrel{=}\Varid{skip1};\Varid{y}\mathrel{=}\Conid{Replace};\Varid{z}\mathrel{=}\Conid{Replace}\mid \mskip1.5mu]){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+In this concrete example, the three elements of the tuple (both in the source and in the view) are bound to variables \ensuremath{\Varid{x},\Varid{y},\Varid{z}}, and they are sent to the three
+combinators as arguments in the [d\ensuremath{\mathbin{...}}] part. Note that since \ensuremath{\Varid{skip1}} appears
+quite often, we could just mark the source element as underline(\_) in the [p\ensuremath{\Varid{source}\mathbin{-}\Varid{pattern}}] and omit writing \ensuremath{\Varid{skip1}} in the [d\ensuremath{\mathbin{...}}] part.
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{25}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{testUpdate'}\mathbin{::}(\Conid{Show}\;\Varid{a},\Conid{Show}\;\Varid{b},\Conid{Show}\;\Varid{c})\Rightarrow \Conid{BiGUL}\;((\Varid{a},\Varid{b}),\Varid{c})\;(((),\Varid{b}),\Varid{c}){}\<[E]%
+\\
+\>[B]{}\Varid{testUpdate'}\mathrel{=}\mathbin{\$}(\Varid{update}\;{}\<[25]%
+\>[25]{}[\mskip1.5mu \Varid{p}\mid ((\anonymous ,\Varid{y}),\Varid{z})\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid (((),\Varid{y}),\Varid{z})\mid \mskip1.5mu]\;{}\<[E]%
+\\
+\>[25]{}[\mskip1.5mu \Varid{d}\mid \Varid{y}\mathrel{=}\Conid{Replace};\Varid{z}\mathrel{=}\Conid{Replace}\mid \mskip1.5mu]){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+\subsection{Source/View rearrangement}
+
+So far, the source and the view are of the same structure. What if we
+wish to putback a view \ensuremath{(\Varid{v}_{1},\Varid{v}_{2})} to a source of a different structure,
+say \ensuremath{((\Varid{s}_{0},\Varid{s}_{1}),\Varid{s}_{2}))}, to replace \ensuremath{\Varid{s}_{1}} by \ensuremath{\Varid{v}_{1}} and
+\ensuremath{\Varid{s}_{2}} by \ensuremath{\Varid{v}_{2}}? BiGUL provides a way of 
+rearranging either the source
+or the view through a natural transformation \ensuremath{\Varid{tau}} to make both the view and
+the source have the same structure.
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \Varid{tau}\mathbin{::}\Varid{s}_{1}\to \Varid{s}_{2}\mid \mskip1.5mu])\mathbin{::}\Conid{BiGUL}\;\Varid{s}_{2}\;\Varid{v}\to \Conid{BiGUL}\;\Varid{s}_{1}\;\Varid{v}{}\<[E]%
+\\
+\>[3]{}\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \Varid{tau}\mathbin{::}\Varid{v}_{1}\to \Varid{v}_{2}\mid \mskip1.5mu])\mathbin{::}\Conid{BiGUL}\;\Varid{s}\;\Varid{v}_{2}\to \Conid{BiGUL}\;\Varid{s}\;\Varid{v}_{1}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+Returning to the above problem, we may define the following
+putback transformation by rearranging the source
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{putPairOverNPair}\mathbin{::}(\Conid{Show}\;\Varid{s}_{1},\Conid{Show}\;\Varid{s}_{2})\Rightarrow \Conid{BiGUL}\;((\Varid{s}_{0},\Varid{s}_{1}),\Varid{s}_{2})\;(\Varid{s}_{1},\Varid{s}_{2}){}\<[E]%
+\\
+\>[B]{}\Varid{putPairOverNPair}\mathrel{=}\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda ((\Varid{s}_{0},\Varid{s}_{1}),\Varid{s}_{2})\to (\Varid{s}_{1},\Varid{s}_{2})\mid \mskip1.5mu])\;\Conid{Replace}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+and have
+\begin{tabbing}\tt
+~\char42{}PBasic\char62{}~put~putPairOverNPair~\char40{}\char40{}5\char44{}1\char41{}\char44{}2\char41{}~\char40{}100\char44{}200\char41{}\\
+\tt ~Just~\char40{}\char40{}5\char44{}100\char41{}\char44{}200\char41{}
+\end{tabbing}
+Or we may define it by rearranging the view:
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{22}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{24}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{putPairOverNPair'}\mathbin{::}(\Conid{Show}\;\Varid{s}_{0},\Conid{Show}\;\Varid{s}_{1},\Conid{Show}\;\Varid{s}_{2})\Rightarrow \Conid{BiGUL}\;((\Varid{s}_{0},\Varid{s}_{1}),\Varid{s}_{2})\;(\Varid{s}_{1},\Varid{s}_{2}){}\<[E]%
+\\
+\>[B]{}\Varid{putPairOverNPair'}\mathrel{=}{}\<[22]%
+\>[22]{}\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda (\Varid{v}_{1},\Varid{v}_{2})\to (((),\Varid{v}_{1}),\Varid{v}_{2})\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\\
+\>[22]{}\hsindent{2}{}\<[24]%
+\>[24]{}(\Varid{skip1}\mathbin{`\Conid{Prod}`}\Conid{Replace})\mathbin{`\Conid{Prod}`}\Conid{Replace}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+The mechanism of source/view rearrangement enables us to
+process algebraic data structures such as
+lists and trees. The following example uses view \ensuremath{\Varid{v}} to
+replace the first element of a nonempty source list.
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{pHead}\mathbin{::}\Conid{Show}\;\Varid{s}\Rightarrow \Conid{BiGUL}\;[\mskip1.5mu \Varid{s}\mskip1.5mu]\;\Varid{s}{}\<[E]%
+\\
+\>[B]{}\Varid{pHead}\mathrel{=}\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{s}\mathbin{:\char95 })\to \Varid{s}\mid \mskip1.5mu])\;\Conid{Replace}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\begin{tabbing}\tt
+~\char42{}PBasic\char62{}~put~pHead~\char91{}1\char44{}2\char44{}3\char44{}4\char93{}~100\\
+\tt ~Just~\char91{}100\char44{}2\char44{}3\char44{}4\char93{}
+\end{tabbing}
+What if we wish to define a general putback transformation 
+that uses the view to replace the \ensuremath{\Varid{i}}th element of the source list?
+We can define it recursively as follows.
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{11}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{17}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{20}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{23}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{pNth}\mathbin{::}\Conid{Show}\;\Varid{s}\Rightarrow \mathit{Int}\to \Conid{BiGUL}\;[\mskip1.5mu \Varid{s}\mskip1.5mu]\;\Varid{s}{}\<[E]%
+\\
+\>[B]{}\Varid{pNth}\;\Varid{i}\mathrel{=}{}\<[11]%
+\>[11]{}\mathbf{if}\;\Varid{i}\equiv \mathrm{0}\;\mathbf{then}\;\Varid{pHead}{}\<[E]%
+\\
+\>[11]{}\mathbf{else}{}\<[17]%
+\>[17]{}\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{x}\mathbin{:}\Varid{xs})\to (\Varid{x},\Varid{xs})\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\\
+\>[17]{}\hsindent{3}{}\<[20]%
+\>[20]{}\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda \Varid{v}\to ((),\Varid{v})\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\\
+\>[20]{}\hsindent{3}{}\<[23]%
+\>[23]{}\Varid{skip1}\mathbin{`\Conid{Prod}`}\Varid{pNth}\;(\Varid{i}\mathbin{-}\mathrm{1}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\begin{tabbing}\tt
+~\char42{}PBasic\char62{}~put~\char40{}pNth~3\char41{}~\char91{}1\char46{}\char46{}10\char93{}~100\\
+\tt ~Just~\char91{}1\char44{}2\char44{}3\char44{}100\char44{}5\char44{}6\char44{}7\char44{}8\char44{}9\char44{}10\char93{}
+\end{tabbing}
+As we know that any putback function in BiGUL is equipped with
+a \ensuremath{\Varid{get}} function, for \ensuremath{\Varid{pNth}}, we can test its \ensuremath{\Varid{get}} behavior
+as follows; its corresponding \ensuremath{\Varid{get}} function is actually
+our familiar \ensuremath{\Varid{take}} function.
+\begin{tabbing}\tt
+~\char42{}PBasic\char62{}~get~\char40{}pNth~3\char41{}~\char91{}1\char46{}\char46{}10\char93{}\\
+\tt ~Just~4
+\end{tabbing}
+
+\subsection{Case}
+
+The \ensuremath{\Conid{Case}} combinator is for case analysis, which is very useful.
+The general structure is as follows.\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{6}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{9E}{@{}l@{}}%
+\column{12}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{14}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{23}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{41}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Conid{Case}\;{}\<[9]%
+\>[9]{}[\mskip1.5mu {}\<[9E]%
+\>[12]{}\mathbin{\$}(\Varid{normal}\;{}\<[23]%
+\>[23]{}[\mskip1.5mu \mid \Varid{enteringCond1}{}\<[41]%
+\>[41]{}\mathbin{::}\Varid{s}\to \Varid{v}\to \Conid{Bool}\mid \mskip1.5mu]\;[\mskip1.5mu \mid \Varid{exitCond1}\mathbin{::}\Varid{s}\to \Conid{Bool}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[12]{}\hsindent{2}{}\<[14]%
+\>[14]{}\Longrightarrow(\Varid{bx1}\mathbin{::}\Conid{BiGUL}\;\Varid{s}\;\Varid{v}){}\<[E]%
+\\
+\>[9]{},{}\<[9E]%
+\>[12]{}\mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \Varid{enteringCond1'}\mathbin{::}\Varid{s}\to \Varid{v}\to \Conid{Bool}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[12]{}\hsindent{2}{}\<[14]%
+\>[14]{}\Longrightarrow(\Varid{f1}\mathbin{::}\Varid{s}\to \Varid{v}\to \Varid{s}){}\<[E]%
+\\
+\>[9]{},{}\<[9E]%
+\>[12]{}\mathbin{...}{}\<[E]%
+\\
+\>[9]{},{}\<[9E]%
+\>[12]{}\mathbin{\$}(\Varid{normal}\;{}\<[23]%
+\>[23]{}[\mskip1.5mu \mid \Varid{enteringCondn}{}\<[41]%
+\>[41]{}\mathbin{::}\Varid{s}\to \Varid{v}\to \Conid{Bool}\mid \mskip1.5mu]\;[\mskip1.5mu \mid \Varid{exitCond1}\mathbin{::}\Varid{s}\to \Conid{Bool}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[12]{}\hsindent{2}{}\<[14]%
+\>[14]{}\Longrightarrow(\Varid{bxn}\mathbin{::}\Conid{BiGUL}\;\Varid{s}\;\Varid{v}){}\<[E]%
+\\
+\>[9]{},{}\<[9E]%
+\>[12]{}\mathbin{...}{}\<[E]%
+\\
+\>[9]{},{}\<[9E]%
+\>[12]{}\mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \Varid{enteringCondm'}\mathbin{::}\Varid{s}\to \Varid{v}\to \Conid{Bool}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[12]{}\hsindent{2}{}\<[14]%
+\>[14]{}\Longrightarrow(\Varid{fm}\mathbin{::}\Varid{s}\to \Varid{v}\to \Varid{s}){}\<[E]%
+\\
+\>[9]{}\mskip1.5mu]{}\<[9E]%
+\\
+\>[3]{}\hsindent{3}{}\<[6]%
+\>[6]{}\mathbin{::}\Conid{BiGUL}\;\Varid{s}\;\Varid{v}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+It contains a sequence of cases. For each case, it is either normal or
+adaptive. For the normal case, if the condition is satisfied, a
+corresponding putback transformation is applied. For the adaptive
+case, if the condition is satisfied, a function is used to update the
+source with the view so that for the next step one of the normal cases
+can be applied. Note that if adaptation does not lead the source and
+the view to a normal case, an error will be reported at runtime.
+
+Note that \ensuremath{\mathbin{\$}(\Varid{normal}\mathbin{...}\mathbin{...})} takes two predicates. The first one is
+the entering-condition while the second one is the exit-condition. The
+predicate for entering-condition is very general, and we can use any
+function f of type \ensuremath{(\Varid{s}\to \Varid{v}\to \Conid{Bool})} to examine the source and view. If
+the condition is matched, then the BiGUL program after the predicate
+is executed. If the condition is not satisfied, the next branch is
+tried. The predicate for exit-condition checks the source only. The
+exit-condition in different branches should NOT be overlapped.
+
+As a simple example, consider using the view to update all
+the elements in the source list. To do so, we can use \ensuremath{\Conid{Case}}.
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{9E}{@{}l@{}}%
+\column{12}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{14}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{21}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{24}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{replaceAll}\mathbin{::}(\Conid{Eq}\;\Varid{s},\Conid{Show}\;\Varid{s})\Rightarrow \Conid{BiGUL}\;[\mskip1.5mu \Varid{s}\mskip1.5mu]\;\Varid{s}{}\<[E]%
+\\
+\>[B]{}\Varid{replaceAll}\mathrel{=}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Conid{Case}\;{}\<[9]%
+\>[9]{}[\mskip1.5mu {}\<[9E]%
+\\
+\>[9]{}\hsindent{3}{}\<[12]%
+\>[12]{}\mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda \Varid{s}\;\Varid{v}\to \Varid{length}\;\Varid{s}\equiv \mathrm{1}\mid \mskip1.5mu]\;[\mskip1.5mu \mid \lambda \Varid{s}\to \Varid{length}\;\Varid{s}\equiv \mathrm{1}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[12]{}\hsindent{2}{}\<[14]%
+\>[14]{}\Longrightarrow\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda [\mskip1.5mu \Varid{x}\mskip1.5mu]\to \Varid{x}\mid \mskip1.5mu])\;\Conid{Replace},{}\<[E]%
+\\
+\>[9]{}\hsindent{3}{}\<[12]%
+\>[12]{}\mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda \Varid{s}\;\Varid{v}\to \Varid{length}\;\Varid{s}\mathbin{>}\mathrm{1}\mid \mskip1.5mu]\;[\mskip1.5mu \mid \lambda \Varid{s}\to \Varid{length}\;\Varid{s}\mathbin{>}\mathrm{1}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[12]{}\hsindent{2}{}\<[14]%
+\>[14]{}\Longrightarrow\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{x}\mathbin{:}\Varid{xs})\to (\Varid{x},\Varid{xs})\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\\
+\>[14]{}\hsindent{7}{}\<[21]%
+\>[21]{}\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda \Varid{v}\to (\Varid{v},\Varid{v})\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\\
+\>[21]{}\hsindent{3}{}\<[24]%
+\>[24]{}\Conid{Replace}\mathbin{`\Conid{Prod}`}\Varid{replaceAll},{}\<[E]%
+\\
+\>[9]{}\hsindent{3}{}\<[12]%
+\>[12]{}\mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \lambda \Varid{s}\;\Varid{v}\to \Varid{length}\;\Varid{s}\equiv \mathrm{0}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[12]{}\hsindent{2}{}\<[14]%
+\>[14]{}\Longrightarrow\lambda \Varid{s}\;\Varid{v}\to [\mskip1.5mu \bot \mskip1.5mu]{}\<[E]%
+\\
+\>[9]{}\mskip1.5mu]{}\<[9E]%
+\ColumnHook
+\end{hscode}\resethooks
+\begin{tabbing}\tt
+~\char42{}PBasic\char62{}~put~replaceAll~\char91{}\char93{}~100\\
+\tt ~Right~\char91{}100\char93{}\\
+\tt ~\char42{}PBasic\char62{}~put~replaceAll~\char91{}1\char46{}\char46{}10\char93{}~100\\
+\tt ~Right~\char91{}100\char44{}100\char44{}100\char44{}100\char44{}100\char44{}100\char44{}100\char44{}100\char44{}100\char44{}100\char93{}
+\end{tabbing}
+
+Note that instead of using a general function to describe
+the entering condition or the exit condition, 
+we can use patterns. The syntax for each case is:\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \Varid{source}\mathbin{-}\Varid{pattern}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Varid{view}\mathbin{-}\Varid{pattern}\mid \mskip1.5mu]\;[\mskip1.5mu \mid \Varid{exitCond}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Longrightarrow(\Varid{bx}\mathbin{::}\Conid{BiGUL}\;\Varid{s}\;\Varid{v}){}\<[E]%
+\\
+\>[3]{}\mathbin{\$}(\Varid{adaptiveSV}\;[\mskip1.5mu \Varid{p}\mid \Varid{source}\mathbin{-}\Varid{pattern}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Varid{view}\mathbin{-}\Varid{pattern}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Longrightarrow(\Varid{fm}\mathbin{::}\Varid{s}\to \Varid{v}\to \Varid{s}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\ignore{
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{repHead}\mathbin{::}\Conid{BiGUL}\;[\mskip1.5mu \mathit{Int}\mskip1.5mu]\;\mathit{Int}{}\<[E]%
+\\
+\>[B]{}\Varid{repHead}\mathrel{=}\Conid{Case}\;[\mskip1.5mu {}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda \Varid{s}\;\Varid{v}\to \Varid{length}\;\Varid{s}\mathbin{>}\mathrm{0}\mid \mskip1.5mu]\;[\mskip1.5mu \mid \lambda \Varid{s}\to \Varid{length}\;\Varid{s}\mathbin{>}\mathrm{0}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{x}\mathbin{:}\Varid{xs})\to \Varid{x}\mid \mskip1.5mu])\;\Conid{Replace},{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \lambda \Varid{s}\;\Varid{v}\to \Varid{length}\;\Varid{s}\equiv \mathrm{0}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Longrightarrow\lambda \Varid{s}\;\Varid{v}\to [\mskip1.5mu \mathrm{0}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+}
+
+\subsection{Dependency: Dep}
+
+Sometimes, a view may contain derived value that is computed from
+other part of the view and not allowed
+to be changed. For instance, for the view \ensuremath{(\Varid{x},\Varid{x}\mathbin{+}\mathrm{1})}, the second
+component can be computed from the first by increasing it by \ensuremath{\mathrm{1}}.
+To capture this, BiGUL provides
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Conid{Dep}\mathbin{::}\Conid{Eq}\;\Varid{v'}\Rightarrow (\Varid{v}\to \Varid{v'})\to \Conid{BiGUL}\;\Varid{a}\;\Varid{v}\to \Conid{BiGUL}\;\Varid{a}\;(\Varid{v},\Varid{v'}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+to describe this intention. We may, for example, define
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{replaceAll2}\mathbin{::}\Conid{BiGUL}\;[\mskip1.5mu \mathit{Int}\mskip1.5mu]\;(\mathit{Int},\mathit{Int}){}\<[E]%
+\\
+\>[B]{}\Varid{replaceAll2}\mathrel{=}\Conid{Dep}\;(\mathbin{+}\mathrm{1})\;\Varid{replaceAll}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+to replace all elements of the source by the
+first component of the view, while the second component
+of the view is a derived one that should be one bigger than the first one.
+\begin{tabbing}\tt
+~\char42{}PBasic\char62{}~put~replaceAll2~\char91{}1\char46{}\char46{}10\char93{}~\char40{}100\char44{}101\char41{}\\
+\tt ~Just~\char91{}100\char44{}100\char44{}100\char44{}100\char44{}100\char44{}100\char44{}100\char44{}100\char44{}100\char44{}100\char93{}\\
+\tt ~\char42{}PBasic\char62{}~put~replaceAll2~\char91{}1\char46{}\char46{}10\char93{}~\char40{}100\char44{}200\char41{}\\
+\tt ~Nothing\\
+\tt ~\char42{}PBasic\char62{}~putTrace~replaceAll2~\char91{}1\char46{}\char46{}10\char93{}~\char40{}100\char44{}200\char41{}\\
+\tt ~second~view~component~not~determined~by~the~first
+\end{tabbing}
+As seen in the last running of \ensuremath{\Varid{put}}, it reports an error because in the view \ensuremath{(\mathrm{100},\mathrm{200})},
+\ensuremath{\mathrm{200}} is not one bigger than \ensuremath{\mathrm{100}}.
+
+\subsection{Composition}
+
+Putback transformations can be composed.
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Conid{Compose}\mathbin{::}\Conid{BiGUL}\;\Varid{a}\;\Varid{u}\to \Conid{BiGUL}\;\Varid{u}\;\Varid{b}\to \Conid{BiGUL}\;\Varid{a}\;\Varid{b}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+As a simple example, consider the following definition.
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{pHead2}\mathbin{::}\Conid{Show}\;\Varid{a}\Rightarrow \Conid{BiGUL}\;[\mskip1.5mu [\mskip1.5mu \Varid{a}\mskip1.5mu]\mskip1.5mu]\;\Varid{a}{}\<[E]%
+\\
+\>[B]{}\Varid{pHead2}\mathrel{=}\Varid{pHead}\mathbin{`\Conid{Compose}`}\Varid{pHead}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\begin{tabbing}\tt
+~\char42{}PBasic\char62{}~put~pHead2~\char91{}\char91{}1\char44{}2\char93{}\char44{}\char91{}3\char44{}4\char44{}5\char93{}\char44{}\char91{}\char93{}\char93{}~100\\
+\tt ~Just~\char91{}\char91{}100\char44{}2\char93{}\char44{}\char91{}3\char44{}4\char44{}5\char93{}\char44{}\char91{}\char93{}\char93{}
+\end{tabbing}
+
+\subsection{Utilities}
+
+Generics.BiGUL.Lib has predefined some useful functions for building putback transformations.
+One interesting one is \ensuremath{\Varid{emb}} that can safely embed a pair of well-behaved
+\ensuremath{\Varid{get}} and \ensuremath{\Varid{put}} a putback transformation into our context.
+\ensuremath{\Varid{emb}} itself is defined as follows.
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{7}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Varid{emb}\mathbin{::}\Conid{Eq}\;\Varid{v}\Rightarrow (\Varid{s}\to \Varid{v})\to (\Varid{s}\to \Varid{v}\to \Varid{s})\to \Conid{BiGUL}\;\Varid{s}\;\Varid{v}{}\<[E]%
+\\
+\>[3]{}\Varid{emb}\;\Varid{g}\;\Varid{p}\mathrel{=}\Conid{Case}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}[\mskip1.5mu \mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda \Varid{s}\;\Varid{v}\to \Varid{g}\;\Varid{s}\equiv \Varid{v}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]){}\<[E]%
+\\
+\>[5]{}\hsindent{2}{}\<[7]%
+\>[7]{}\Longrightarrow\Conid{Skip}\;\Varid{g}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{},\mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \lambda \Varid{s}\;\Varid{v}\to \mbox{\commentbegin  g s /= v  \commentend}\Conid{True}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[5]{}\hsindent{2}{}\<[7]%
+\>[7]{}\Longrightarrow\Varid{p}{}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+As an application of \ensuremath{\Varid{emb}}, we may define the following putback function
+for using the sum to update a pair.
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{distSum}\mathbin{::}\Conid{BiGUL}\;(\mathit{Int},\mathit{Int})\;\mathit{Int}{}\<[E]%
+\\
+\>[B]{}\Varid{distSum}\mathrel{=}\Varid{emb}\;\Varid{g}\;\Varid{p}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbf{where}\;{}\<[10]%
+\>[10]{}\Varid{g}\;(\Varid{x},\Varid{y})\mathrel{=}\Varid{x}\mathbin{+}\Varid{y}{}\<[E]%
+\\
+\>[10]{}\Varid{p}\;(\Varid{x},\Varid{y})\;\Varid{v}\mathrel{=}(\Varid{v}\mathbin{-}\Varid{y},\Varid{y}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\begin{tabbing}\tt
+~\char42{}PBasic\char62{}~put~distSum~\char40{}1\char44{}2\char41{}~100\\
+\tt ~Right~\char40{}98\char44{}2\char41{}\\
+\tt ~\char42{}PBasic\char62{}~get~distSum~\char40{}1\char44{}2\char41{}\\
+\tt ~Right~3
+\end{tabbing}
+
+\ignore{
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{5}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{6}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{8}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{pHead'}\mathbin{::}\Conid{Show}\;\Varid{s}{}\<[E]%
+\\
+\>[B]{}\hsindent{8}{}\<[8]%
+\>[8]{}\Rightarrow \Conid{BiGUL}\;[\mskip1.5mu \Varid{s}\mskip1.5mu]\;\Varid{s}{}\<[E]%
+\\
+\>[B]{}\Varid{pHead'}\mathrel{=}\Conid{Case}\;[\mskip1.5mu {}\<[E]%
+\\
+\>[B]{}\hsindent{6}{}\<[6]%
+\>[6]{}\mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda \Varid{s}\;\Varid{v}\to not\;(\Varid{null}\;\Varid{s})\mid \mskip1.5mu]\;[\mskip1.5mu \mid not\mathbin{\circ}\Varid{null}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[6]{}\hsindent{2}{}\<[8]%
+\>[8]{}\Longrightarrow\Varid{pHead},{}\<[E]%
+\\
+\>[B]{}\hsindent{6}{}\<[6]%
+\>[6]{}\mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \lambda \Varid{s}\;\Varid{v}\to \Varid{null}\;\Varid{s}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[6]{}\hsindent{2}{}\<[8]%
+\>[8]{}\Longrightarrow\lambda \Varid{s}\;\Varid{v}\to [\mskip1.5mu \Varid{v}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\hsindent{6}{}\<[6]%
+\>[6]{}\mskip1.5mu]{}\<[E]%
+\\[\blanklineskip]%
+\>[B]{}\Varid{pEither}\mathbin{::}(\Conid{Show}\;\Varid{a},\Conid{Show}\;\Varid{b},\Conid{Eq}\;\Varid{a}){}\<[E]%
+\\
+\>[B]{}\hsindent{9}{}\<[9]%
+\>[9]{}\Rightarrow \Varid{a}\to \Conid{BiGUL}\;(\Conid{Either}\;\Varid{a}\;\Varid{b})\;\Varid{a}{}\<[E]%
+\\
+\>[B]{}\Varid{pEither}\;\Varid{x0}\mathrel{=}\Conid{Case}\;[\mskip1.5mu {}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \Conid{Left}\;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Left}\;\anonymous \mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid \Conid{Left}\;\Varid{x}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Varid{x}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{d}\mid \Varid{x}\mathrel{=}\Conid{Replace}\mid \mskip1.5mu]),{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \Conid{Right}\;\Varid{y}\mid \mskip1.5mu]\;[\mskip1.5mu \mid \lambda \Varid{x}\to \Varid{x}\equiv \Varid{x0}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Right}\;\anonymous \mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Longrightarrow\Conid{Skip}\;(\Varid{const}\;\Varid{x0}),{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \lambda \anonymous \;\anonymous \to \Conid{True}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[3]{}\hsindent{2}{}\<[5]%
+\>[5]{}\Longrightarrow\lambda \Varid{s}\;\Varid{v}\to \Conid{Left}\;\Varid{v}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+}

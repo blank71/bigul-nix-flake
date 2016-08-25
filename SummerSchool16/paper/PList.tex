@@ -1,0 +1,625 @@
+%% ODER: format ==         = "\mathrel{==}"
+%% ODER: format /=         = "\neq "
+%
+%
+\makeatletter
+\@ifundefined{lhs2tex.lhs2tex.sty.read}%
+  {\@namedef{lhs2tex.lhs2tex.sty.read}{}%
+   \newcommand\SkipToFmtEnd{}%
+   \newcommand\EndFmtInput{}%
+   \long\def\SkipToFmtEnd#1\EndFmtInput{}%
+  }\SkipToFmtEnd
+
+\newcommand\ReadOnlyOnce[1]{\@ifundefined{#1}{\@namedef{#1}{}}\SkipToFmtEnd}
+\usepackage{amstext}
+\usepackage{amssymb}
+\usepackage{stmaryrd}
+\DeclareFontFamily{OT1}{cmtex}{}
+\DeclareFontShape{OT1}{cmtex}{m}{n}
+  {<5><6><7><8>cmtex8
+   <9>cmtex9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmtex10}{}
+\DeclareFontShape{OT1}{cmtex}{m}{it}
+  {<-> ssub * cmtt/m/it}{}
+\newcommand{\texfamily}{\fontfamily{cmtex}\selectfont}
+\DeclareFontShape{OT1}{cmtt}{bx}{n}
+  {<5><6><7><8>cmtt8
+   <9>cmbtt9
+   <10><10.95><12><14.4><17.28><20.74><24.88>cmbtt10}{}
+\DeclareFontShape{OT1}{cmtex}{bx}{n}
+  {<-> ssub * cmtt/bx/n}{}
+\newcommand{\tex}[1]{\text{\texfamily#1}}	% NEU
+
+\newcommand{\Sp}{\hskip.33334em\relax}
+
+
+\newcommand{\Conid}[1]{\mathit{#1}}
+\newcommand{\Varid}[1]{\mathit{#1}}
+\newcommand{\anonymous}{\kern0.06em \vbox{\hrule\@width.5em}}
+\newcommand{\plus}{\mathbin{+\!\!\!+}}
+\newcommand{\bind}{\mathbin{>\!\!\!>\mkern-6.7mu=}}
+\newcommand{\rbind}{\mathbin{=\mkern-6.7mu<\!\!\!<}}% suggested by Neil Mitchell
+\newcommand{\sequ}{\mathbin{>\!\!\!>}}
+\renewcommand{\leq}{\leqslant}
+\renewcommand{\geq}{\geqslant}
+\usepackage{polytable}
+
+%mathindent has to be defined
+\@ifundefined{mathindent}%
+  {\newdimen\mathindent\mathindent\leftmargini}%
+  {}%
+
+\def\resethooks{%
+  \global\let\SaveRestoreHook\empty
+  \global\let\ColumnHook\empty}
+\newcommand*{\savecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\savecolumns[#1]}}
+\newcommand*{\restorecolumns}[1][default]%
+  {\g@addto@macro\SaveRestoreHook{\restorecolumns[#1]}}
+\newcommand*{\aligncolumn}[2]%
+  {\g@addto@macro\ColumnHook{\column{#1}{#2}}}
+
+\resethooks
+
+\newcommand{\onelinecommentchars}{\quad-{}- }
+\newcommand{\commentbeginchars}{\enskip\{-}
+\newcommand{\commentendchars}{-\}\enskip}
+
+\newcommand{\visiblecomments}{%
+  \let\onelinecomment=\onelinecommentchars
+  \let\commentbegin=\commentbeginchars
+  \let\commentend=\commentendchars}
+
+\newcommand{\invisiblecomments}{%
+  \let\onelinecomment=\empty
+  \let\commentbegin=\empty
+  \let\commentend=\empty}
+
+\visiblecomments
+
+\newlength{\blanklineskip}
+\setlength{\blanklineskip}{0.66084ex}
+
+\newcommand{\hsindent}[1]{\quad}% default is fixed indentation
+\let\hspre\empty
+\let\hspost\empty
+\newcommand{\NB}{\textbf{NB}}
+\newcommand{\Todo}[1]{$\langle$\textbf{To do:}~#1$\rangle$}
+
+\EndFmtInput
+\makeatother
+%
+%
+%
+%
+%
+%
+% This package provides two environments suitable to take the place
+% of hscode, called "plainhscode" and "arrayhscode". 
+%
+% The plain environment surrounds each code block by vertical space,
+% and it uses \abovedisplayskip and \belowdisplayskip to get spacing
+% similar to formulas. Note that if these dimensions are changed,
+% the spacing around displayed math formulas changes as well.
+% All code is indented using \leftskip.
+%
+% Changed 19.08.2004 to reflect changes in colorcode. Should work with
+% CodeGroup.sty.
+%
+\ReadOnlyOnce{polycode.fmt}%
+\makeatletter
+
+\newcommand{\hsnewpar}[1]%
+  {{\parskip=0pt\parindent=0pt\par\vskip #1\noindent}}
+
+% can be used, for instance, to redefine the code size, by setting the
+% command to \small or something alike
+\newcommand{\hscodestyle}{}
+
+% The command \sethscode can be used to switch the code formatting
+% behaviour by mapping the hscode environment in the subst directive
+% to a new LaTeX environment.
+
+\newcommand{\sethscode}[1]%
+  {\expandafter\let\expandafter\hscode\csname #1\endcsname
+   \expandafter\let\expandafter\endhscode\csname end#1\endcsname}
+
+% "compatibility" mode restores the non-polycode.fmt layout.
+
+\newenvironment{compathscode}%
+  {\par\noindent
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \let\hspre\(\let\hspost\)%
+   \pboxed}%
+  {\endpboxed\)%
+   \par\noindent
+   \ignorespacesafterend}
+
+\newcommand{\compaths}{\sethscode{compathscode}}
+
+% "plain" mode is the proposed default.
+% It should now work with \centering.
+% This required some changes. The old version
+% is still available for reference as oldplainhscode.
+
+\newenvironment{plainhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\hspre\(\let\hspost\)%
+   \pboxed}%
+  {\endpboxed%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+\newenvironment{oldplainhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \(\pboxed}%
+  {\endpboxed\)%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+% Here, we make plainhscode the default environment.
+
+\newcommand{\plainhs}{\sethscode{plainhscode}}
+\newcommand{\oldplainhs}{\sethscode{oldplainhscode}}
+\plainhs
+
+% The arrayhscode is like plain, but makes use of polytable's
+% parray environment which disallows page breaks in code blocks.
+
+\newenvironment{arrayhscode}%
+  {\hsnewpar\abovedisplayskip
+   \advance\leftskip\mathindent
+   \hscodestyle
+   \let\\=\@normalcr
+   \(\parray}%
+  {\endparray\)%
+   \hsnewpar\belowdisplayskip
+   \ignorespacesafterend}
+
+\newcommand{\arrayhs}{\sethscode{arrayhscode}}
+
+% The mathhscode environment also makes use of polytable's parray 
+% environment. It is supposed to be used only inside math mode 
+% (I used it to typeset the type rules in my thesis).
+
+\newenvironment{mathhscode}%
+  {\parray}{\endparray}
+
+\newcommand{\mathhs}{\sethscode{mathhscode}}
+
+% texths is similar to mathhs, but works in text mode.
+
+\newenvironment{texthscode}%
+  {\(\parray}{\endparray\)}
+
+\newcommand{\texths}{\sethscode{texthscode}}
+
+% The framed environment places code in a framed box.
+
+\def\codeframewidth{\arrayrulewidth}
+\RequirePackage{calc}
+
+\newenvironment{framedhscode}%
+  {\parskip=\abovedisplayskip\par\noindent
+   \hscodestyle
+   \arrayrulewidth=\codeframewidth
+   \tabular{@{}|p{\linewidth-2\arraycolsep-2\arrayrulewidth-2pt}|@{}}%
+   \hline\framedhslinecorrect\\{-1.5ex}%
+   \let\endoflinesave=\\
+   \let\\=\@normalcr
+   \(\pboxed}%
+  {\endpboxed\)%
+   \framedhslinecorrect\endoflinesave{.5ex}\hline
+   \endtabular
+   \parskip=\belowdisplayskip\par\noindent
+   \ignorespacesafterend}
+
+\newcommand{\framedhslinecorrect}[2]%
+  {#1[#2]}
+
+\newcommand{\framedhs}{\sethscode{framedhscode}}
+
+% The inlinehscode environment is an experimental environment
+% that can be used to typeset displayed code inline.
+
+\newenvironment{inlinehscode}%
+  {\(\def\column##1##2{}%
+   \let\>\undefined\let\<\undefined\let\\\undefined
+   \newcommand\>[1][]{}\newcommand\<[1][]{}\newcommand\\[1][]{}%
+   \def\fromto##1##2##3{##3}%
+   \def\nextline{}}{\) }%
+
+\newcommand{\inlinehs}{\sethscode{inlinehscode}}
+
+% The joincode environment is a separate environment that
+% can be used to surround and thereby connect multiple code
+% blocks.
+
+\newenvironment{joincode}%
+  {\let\orighscode=\hscode
+   \let\origendhscode=\endhscode
+   \def\endhscode{\def\hscode{\endgroup\def\@currenvir{hscode}\\}\begingroup}
+   %\let\SaveRestoreHook=\empty
+   %\let\ColumnHook=\empty
+   %\let\resethooks=\empty
+   \orighscode\def\hscode{\endgroup\def\@currenvir{hscode}}}%
+  {\origendhscode
+   \global\let\hscode=\orighscode
+   \global\let\endhscode=\origendhscode}%
+
+\makeatother
+\EndFmtInput
+%
+
+% format { = "\lbag"
+% format } = "\rbag"
+
+
+% TODO: fix spacing for \lbag and \rbag
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+%formap phiX = "\Phi"
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+\section{Bidirectional programming on lists}
+
+\ignore{
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\mbox{\enskip\{-\# LANGUAGE FlexibleContexts, TemplateHaskell, TypeFamilies  \#-\}\enskip}{}\<[E]%
+\\[\blanklineskip]%
+\>[B]{}\mathbf{module}\;\Conid{PList}\;\mathbf{where}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Generics}.BiGUL}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Generics}.\Conid{BiGUL}.Interpreter}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Generics}.\Conid{BiGUL}.TH}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Generics}.\Conid{BiGUL}.Lib}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Data}.List}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Data}.Maybe}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{Control}.\Conid{Monad}.Except}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{\Conid{GHC}.Generics}{}\<[E]%
+\\
+\>[B]{}\mathbf{import}\;\Conid{PBasic}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+}
+
+In this section, we show many list functions can be bidirectionalized
+using BiGUL. To show the correspondence with the original list functions,
+we prefix
+the original forward function names with "lens". Note that the forward
+function can be automatically derived from the new putback transformation
+by calling \ensuremath{\Varid{get}}.
+
+We shall focus on \ensuremath{\Varid{foldr}}, which is a simple but useful higher order function on lists:\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{21}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Varid{foldr}\;\Varid{f}\;\Varid{e}\;[\mskip1.5mu \mskip1.5mu]{}\<[21]%
+\>[21]{}\mathrel{=}\Varid{e}{}\<[E]%
+\\
+\>[3]{}\Varid{foldr}\;\Varid{f}\;\Varid{e}\;(\Varid{x}\mathbin{:}\Varid{xs}){}\<[21]%
+\>[21]{}\mathrel{=}\Varid{f}\;\Varid{x}\;(\Varid{foldr}\;\Varid{f}\;\Varid{e}\;\Varid{xs}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+where many interesting functions can be defined in \ensuremath{\Varid{foldr}}\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Varid{sum}\mathrel{=}\Varid{foldr}\;(\mathbin{+})\;\mathrm{0}{}\<[E]%
+\\
+\>[3]{}\Varid{map}\;\Varid{f}\mathrel{=}\Varid{foldr}\;(\lambda \Varid{a}\;\Varid{r}\to \Varid{f}\;\Varid{a}\mathbin{:}\Varid{r})\;[\mskip1.5mu \mskip1.5mu]{}\<[E]%
+\\
+\>[3]{}\Varid{filter}\;\Varid{p}\mathrel{=}\Varid{foldr}\;(\lambda \Varid{a}\;\Varid{r}\to \mathbf{if}\;\Varid{p}\;\Varid{a}\;\mathbf{then}\;\Varid{a}\mathbin{:}\Varid{r}\;\mathbf{else}\;\Varid{r})\;[\mskip1.5mu \mskip1.5mu]{}\<[E]%
+\\
+\>[3]{}\Varid{reverse}\;\Varid{p}\mathrel{=}\Varid{foldr}\;(\lambda \Varid{a}\;\Varid{r}\to \Varid{r}\plus [\mskip1.5mu \Varid{a}\mskip1.5mu])\;[\mskip1.5mu \mskip1.5mu]{}\<[E]%
+\\
+\>[3]{}\Varid{sort}\mathrel{=}\Varid{foldr}\;\Varid{insert}\;[\mskip1.5mu \mskip1.5mu]{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+First, we develop a putback version for \ensuremath{\Varid{foldr}}.
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{9E}{@{}l@{}}%
+\column{12}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{14}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{16}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{21}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{59}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{lensFoldr}\mathbin{::}(\Conid{Show}\;\Varid{a},\Conid{Show}\;\Varid{b})\Rightarrow \Conid{BiGUL}\;(\Varid{a},\Varid{b})\;\Varid{b}\to (\Varid{b}\to \Conid{Bool})\to \Conid{BiGUL}\;([\mskip1.5mu \Varid{a}\mskip1.5mu],\Varid{b})\;\Varid{b}{}\<[E]%
+\\
+\>[B]{}\Varid{lensFoldr}\;\Varid{bx}\;\Varid{pv}\mathrel{=}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Conid{Case}\;{}\<[9]%
+\>[9]{}[\mskip1.5mu {}\<[9E]%
+\>[12]{}\mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \lambda (\Varid{x},\Varid{y})\;\Varid{v}\to \Varid{pv}\;\Varid{v}\mathrel{\wedge}\Varid{length}\;\Varid{x}\not\equiv \mathrm{0}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[12]{}\hsindent{2}{}\<[14]%
+\>[14]{}\Longrightarrow\lambda (\Varid{x},\Varid{y})\;\Varid{v}\to ([\mskip1.5mu \mskip1.5mu],\Varid{y}){}\<[E]%
+\\
+\>[9]{},{}\<[9E]%
+\>[12]{}\mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda (\Varid{s},\anonymous )\;\Varid{v}\to \Varid{null}\;\Varid{s}\mid \mskip1.5mu]\;[\mskip1.5mu \mid \lambda (\Varid{s},\anonymous )\to \Varid{null}\;\Varid{s}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[12]{}\hsindent{2}{}\<[14]%
+\>[14]{}\Longrightarrow\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda \Varid{v}\to ((),\Varid{v})\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\\
+\>[14]{}\hsindent{7}{}\<[21]%
+\>[21]{}\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid (\anonymous ,\Varid{v})\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid ((),\Varid{v})\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{d}\mid \Varid{v}\mathrel{=}\Conid{Replace}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[9]{},{}\<[9E]%
+\>[12]{}\mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \mid \lambda (\Varid{s},\anonymous )\to not\;(\Varid{null}\;\Varid{s})\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[12]{}\hsindent{2}{}\<[14]%
+\>[14]{}\Longrightarrow\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda ((\Varid{x}\mathbin{:}\Varid{xs}),\Varid{e})\to (\Varid{x},(\Varid{xs},\Varid{e})){}\<[59]%
+\>[59]{}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[14]{}\hsindent{2}{}\<[16]%
+\>[16]{}(\Conid{Replace}\mathbin{`\Conid{Prod}`}\Varid{lensFoldr}\;\Varid{bx}\;\Varid{pv})\mathbin{`\Conid{Compose}`}\Varid{bx}{}\<[E]%
+\\
+\>[9]{}\mskip1.5mu]{}\<[9E]%
+\ColumnHook
+\end{hscode}\resethooks
+\ensuremath{\Varid{lengFoldr}\;\Varid{bx}\;\Varid{pv}} is to synchronize source \ensuremath{(\Varid{xs},\Varid{v})} with view \ensuremath{\Varid{v'}}.
+If \ensuremath{\Varid{v'}} satisfies \ensuremath{\Varid{pv}}, it will stop. Otherwise,
+it will recursively apply \ensuremath{\Varid{bx}} rightwards over the elements of \ensuremath{\Varid{xs}}.
+\ignore{
+lensFilter :: (a->Bool) -> BiGUL [a] [a]
+lensInsert :: Ord a => BiGUL (a,[a]{-sorted-}) [a]{-sorted-}
+lensSort :: Ord a => BiGUL [a] [a]
+}
+
+Next, we show that many list functions can be bidirectionalized using
+\ensuremath{\Varid{lensFoldr}}. As the first example, we consider bidirectionalize \ensuremath{\Varid{map}}.
+It can be easily defined in terms of \ensuremath{\Varid{lensFoldr}}.
+
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{4}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{11}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{15}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{18}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{21}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{lensMap}\mathbin{::}(\Conid{Show}\;\Varid{a},\Conid{Show}\;\Varid{b})\Rightarrow \Conid{BiGUL}\;\Varid{a}\;\Varid{b}\to \Conid{BiGUL}\;([\mskip1.5mu \Varid{a}\mskip1.5mu],[\mskip1.5mu \Varid{b}\mskip1.5mu])\;[\mskip1.5mu \Varid{b}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{lensMap}\;\Varid{bx}\mathrel{=}{}\<[15]%
+\>[15]{}\Varid{lensFoldr}\;\Varid{bx'}\;\Varid{null}{}\<[E]%
+\\
+\>[B]{}\hsindent{4}{}\<[4]%
+\>[4]{}\mathbf{where}\;{}\<[11]%
+\>[11]{}\Varid{bx'}\mathrel{=}{}\<[18]%
+\>[18]{}\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda (\Varid{v}\mathbin{:}\Varid{vs})\to (\Varid{v},\Varid{vs})\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\\
+\>[18]{}\hsindent{3}{}\<[21]%
+\>[21]{}\Varid{bx}\mathbin{`\Conid{Prod}`}\Conid{Replace}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+For testing, we define
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{dec1}\mathbin{::}\Conid{BiGUL}\;\mathit{Int}\;\mathit{Int}{}\<[E]%
+\\
+\>[B]{}\Varid{dec1}\mathrel{=}\Varid{emb}\;\Varid{g}\;\Varid{p}{}\<[E]%
+\\
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\mathbf{where}\;{}\<[10]%
+\>[10]{}\Varid{g}\;\Varid{s}\mathrel{=}\Varid{s}\mathbin{+}\mathrm{1}{}\<[E]%
+\\
+\>[10]{}\Varid{p}\;\Varid{s}\;\Varid{v}\mathrel{=}\Varid{v}\mathbin{-}\mathrm{1}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+\begin{tabbing}\tt
+~\char42{}PList\char62{}~put~\char40{}lensMap~dec1\char41{}~\char40{}\char91{}0\char46{}\char46{}10\char93{}\char44{}\char91{}\char93{}\char41{}~\char91{}100\char46{}\char46{}110\char93{}\\
+\tt ~Just~\char40{}\char91{}99\char44{}100\char44{}101\char44{}102\char44{}103\char44{}104\char44{}105\char44{}106\char44{}107\char44{}108\char44{}109\char93{}\char44{}\char91{}\char93{}\char41{}\\
+\tt ~\char42{}PList\char62{}~get~\char40{}lensMap~dec1\char41{}~\char40{}\char91{}1\char46{}\char46{}10\char93{}\char44{}\char91{}\char93{}\char41{}\\
+\tt ~Just~\char91{}2\char44{}3\char44{}4\char44{}5\char44{}6\char44{}7\char44{}8\char44{}9\char44{}10\char44{}11\char93{}
+\end{tabbing}
+Now we give another example of \ensuremath{\Varid{reverse}}.
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{16}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{18}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{18E}{@{}l@{}}%
+\column{21}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{22}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{22E}{@{}l@{}}%
+\column{24}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{25}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{27}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{31}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{33}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{35}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[B]{}\Varid{lensReverse}\mathbin{::}\Conid{Show}\;\Varid{a}\Rightarrow \Conid{BiGUL}\;[\mskip1.5mu \Varid{a}\mskip1.5mu]\;[\mskip1.5mu \Varid{a}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{lensReverse}\mathrel{=}{}\<[16]%
+\>[16]{}\Conid{Case}\;{}\<[22]%
+\>[22]{}[\mskip1.5mu {}\<[22E]%
+\\
+\>[22]{}\hsindent{3}{}\<[25]%
+\>[25]{}\mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \lambda \Varid{s}\;\Varid{v}\to \Varid{length}\;\Varid{s}\mathbin{<}\Varid{length}\;\Varid{v}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[25]{}\hsindent{2}{}\<[27]%
+\>[27]{}\Longrightarrow\lambda \Varid{s}\;\Varid{v}\to \Varid{v}{}\<[E]%
+\\
+\>[22]{},{}\<[22E]%
+\>[25]{}\mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \mid \lambda \Varid{s}\to \Conid{True}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[25]{}\hsindent{2}{}\<[27]%
+\>[27]{}\Longrightarrow\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda \Varid{s}\to (\Varid{s},[\mskip1.5mu \mskip1.5mu])\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\\
+\>[27]{}\hsindent{6}{}\<[33]%
+\>[33]{}\Varid{lensFoldr}\;(\Varid{lensSwap}\mathbin{`\Conid{Compose}`}\Varid{lensSnoc})\;\Varid{null}{}\<[E]%
+\\
+\>[22]{}\mskip1.5mu]{}\<[22E]%
+\\[\blanklineskip]%
+\>[B]{}\Varid{lensSnoc}\mathbin{::}\Conid{Show}\;\Varid{a}\Rightarrow \Conid{BiGUL}\;([\mskip1.5mu \Varid{a}\mskip1.5mu],\Varid{a})\;[\mskip1.5mu \Varid{a}\mskip1.5mu]{}\<[E]%
+\\
+\>[B]{}\Varid{lensSnoc}\mathrel{=}\Conid{Case}\;{}\<[18]%
+\>[18]{}[\mskip1.5mu {}\<[18E]%
+\>[21]{}\mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda \Varid{s}\;\Varid{v}\to \Varid{length}\;\Varid{v}\equiv \mathrm{1}\mid \mskip1.5mu]\;[\mskip1.5mu \mid \lambda (\Varid{s},\anonymous )\to \Varid{null}\;\Varid{s}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[21]{}\hsindent{3}{}\<[24]%
+\>[24]{}\Longrightarrow\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda [\mskip1.5mu \Varid{v}\mskip1.5mu]\to ([\mskip1.5mu \mskip1.5mu],\Varid{v})\mid \mskip1.5mu])\;\Conid{Replace}{}\<[E]%
+\\
+\>[18]{},{}\<[18E]%
+\>[21]{}\mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda (\Varid{s},\anonymous )\;\Varid{v}\to \Varid{length}\;\Varid{s}\mathbin{>}\mathrm{0}\mid \mskip1.5mu]\;[\mskip1.5mu \mid \lambda (\Varid{s},\anonymous )\to \Varid{length}\;\Varid{s}\mathbin{>}\mathrm{0}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[21]{}\hsindent{3}{}\<[24]%
+\>[24]{}\Longrightarrow\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{y}\mathbin{:}\Varid{ys},\Varid{x})\to (\Varid{y},(\Varid{ys},\Varid{x}))\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\\
+\>[24]{}\hsindent{7}{}\<[31]%
+\>[31]{}\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda (\Varid{v}\mathbin{:}\Varid{vs})\to (\Varid{v},\Varid{vs})\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\\
+\>[31]{}\hsindent{4}{}\<[35]%
+\>[35]{}\Conid{Replace}\mathbin{`\Conid{Prod}`}\Varid{lensSnoc}{}\<[E]%
+\\
+\>[18]{},{}\<[18E]%
+\>[21]{}\mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \lambda (\Varid{s},\anonymous )\;\Varid{v}\to \Varid{null}\;\Varid{s}\mid \mskip1.5mu]){}\<[E]%
+\\
+\>[21]{}\hsindent{3}{}\<[24]%
+\>[24]{}\Longrightarrow\lambda (\Varid{s},\Varid{x})\;\anonymous \to ([\mskip1.5mu \bot \mskip1.5mu],\Varid{x}){}\<[E]%
+\\
+\>[18]{}\mskip1.5mu]{}\<[18E]%
+\\[\blanklineskip]%
+\>[B]{}\Varid{lensSwap}\mathbin{::}(\Conid{Show}\;\Varid{a},\Conid{Show}\;\Varid{b})\Rightarrow \Conid{BiGUL}\;(\Varid{a},\Varid{b})\;(\Varid{b},\Varid{a}){}\<[E]%
+\\
+\>[B]{}\Varid{lensSwap}\mathrel{=}\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{x},\Varid{y})\to (\Varid{y},\Varid{x})\mid \mskip1.5mu])\;\Conid{Replace}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+Below are some testing examples.
+\begin{tabbing}\tt
+~\char42{}PList\char62{}~put~lensSnoc~\char40{}\char91{}2\char44{}3\char44{}4\char93{}\char44{}1\char41{}~\char91{}10\char44{}11\char44{}12\char44{}13\char93{}\\
+\tt ~Just~\char40{}\char91{}10\char44{}11\char44{}12\char93{}\char44{}13\char41{}\\
+\tt ~\char42{}PList\char62{}~put~lensSnoc~\char40{}\char91{}2\char44{}3\char44{}4\char93{}\char44{}1\char41{}~\char91{}10\char44{}11\char44{}12\char44{}13\char44{}14\char93{}\\
+\tt ~Just~\char40{}\char91{}10\char44{}11\char44{}12\char44{}13\char93{}\char44{}14\char41{}\\
+\tt ~\char42{}PList\char62{}~put~lensSnoc~\char40{}\char91{}2\char44{}3\char44{}4\char93{}\char44{}1\char41{}~\char91{}10\char44{}11\char93{}\\
+\tt ~Just~\char40{}\char91{}10\char93{}\char44{}11\char41{}\\
+\tt ~\char42{}PList\char62{}~get~lensSnoc~\char40{}\char91{}1\char46{}\char46{}10\char93{}\char44{}~100\char41{}\\
+\tt ~Just~\char91{}1\char44{}2\char44{}3\char44{}4\char44{}5\char44{}6\char44{}7\char44{}8\char44{}9\char44{}10\char44{}100\char93{}\\
+\tt ~\\
+\tt ~\char42{}PList\char62{}~put~lensReverse~\char91{}1\char46{}\char46{}10\char93{}~\char91{}100\char46{}\char46{}105\char93{}\\
+\tt ~Just~\char91{}105\char44{}104\char44{}103\char44{}102\char44{}101\char44{}100\char93{}\\
+\tt ~\char42{}PList\char62{}~put~lensReverse~\char91{}1\char46{}\char46{}10\char93{}~\char91{}100\char46{}\char46{}115\char93{}\\
+\tt ~Just~\char91{}115\char44{}114\char44{}113\char44{}112\char44{}111\char44{}110\char44{}109\char44{}108\char44{}107\char44{}106\char44{}105\char44{}104\char44{}103\char44{}102\char44{}101\char44{}100\char93{}\\
+\tt ~\char42{}PList\char62{}~get~lensReverse~\char91{}1\char46{}\char46{}10\char93{}\\
+\tt ~Just~\char91{}10\char44{}9\char44{}8\char44{}7\char44{}6\char44{}5\char44{}4\char44{}3\char44{}2\char44{}1\char93{}
+\end{tabbing}
+
+\ignore{
+\subsection{Efficiency Issue: \ensuremath{\Varid{lensFoldr}}}
+
+A close look at the definition of \ensuremath{\Varid{lensFoldr}} reveals that it contains many
+redundant computations because of the use of \ensuremath{\Conid{Compose}} that calls \ensuremath{\Varid{get}} as many
+times as the number of calls of \ensuremath{\Conid{Compose}}. Put it more concretely,\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Varid{put}\;(\Varid{lensFoldr}\;\Varid{bx}\;(\Varid{const}\;\Conid{True}))\;([\mskip1.5mu \Varid{x1},\Varid{x2},\mathbin{...},\Varid{xn}\mskip1.5mu],\Varid{e})\;\Varid{v}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+would call\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Varid{get}\;(\Varid{lensFoldr}\;\Varid{bx}\;(\Varid{const}\;\Conid{True}))\;([\mskip1.5mu \Varid{x2},\mathbin{...},\Varid{xn}\mskip1.5mu],\Varid{e}),{}\<[E]%
+\\
+\>[3]{}\mathbin{...},{}\<[E]%
+\\
+\>[3]{}\Varid{get}\;(\Varid{lensFoldr}\;\Varid{bx}\;(\Varid{const}\;\Conid{True}))\;([\mskip1.5mu \mskip1.5mu],\Varid{e})\mathbin{\circ}{}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
+
+\subsection{LensScanr}
+
+\subsection{LensMap}
+}
