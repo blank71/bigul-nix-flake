@@ -163,10 +163,14 @@
 %format `star` = "\mathbin{\star}"
 %format istar  = "\identity_{" `star` "}"
 
+%format s0
 %format s1
 %format s2
+%format s3
+%format t0
 %format t1
 %format t2
+%format t3
 
 %format v0
 %format v1
@@ -295,4 +299,10 @@
 %format generateDS = generate "_{ " `plus` ", " cks "}" 
 %format aggregateD = aggregate
 
+%format (S(x)) = "{\color[gray]{0.6}^\$(}" x "{\color[gray]{0.6})}"
+%format (P(x)) = "{\color[gray]{0.6}" [ "\textit p\kern-2pt" | "}\;" x "\;{\color[gray]{0.6}" |] "}"
+%format (Q(x)) = "{\color[gray]{0.6}" [| "}\;" x "\;{\color[gray]{0.6}" |] "}"
+%format (D(x)) = "{\color[gray]{0.6}" [ "\rlap{\kern-.5pt\textit d}\phantom p\kern-2pt" | "}\;" x "\;{\color[gray]{0.6}" |] "}"
+%format ==> = "\Longrightarrow"
 
+%format Int = "\mathit{Int}"
