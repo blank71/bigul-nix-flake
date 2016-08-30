@@ -1,3 +1,8 @@
+1.0.2 Changes
+=============
+
+
+
 1.0.1 Changes
 =============
 
@@ -14,8 +19,8 @@
 
 * Error fixes
 
-  - Fixed the glitch that normalSV does not convert boolean-valued lambdas to
-    total functions.
+  - Fixed the glitch that `normalSV` does not convert boolean-valued lambdas
+    to total functions.
 
   - Eliminated a “Pattern match(es) are overlapped” warning reported when
     using patterns as conditions.
