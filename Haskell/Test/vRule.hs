@@ -1,4 +1,4 @@
-{-# LANGUAGE TypeOperators, TypeFamilies, FlexibleContexts, DeriveGeneric, ViewPatterns, ScopedTypeVariables  #-}
+{-# LANGUAGE TypeOperators, TypeFamilies, FlexibleContexts, DeriveGeneric, ViewPatterns, ScopedTypeVariables, TemplateHaskell #-}
 
 import Generics.BiGUL.Error
 import Generics.BiGUL.AST
@@ -101,9 +101,7 @@ bx3 = $(rearrS [| \(s:_) -> s |]) Replace
 -- put bx3 [1,2,3,4] 100
 
 bx3' :: BiGUL [s] s
-bx3' = $(rearrS [| \(x:xs) -> (x,xs) |]) $
-         $(rearrV [| \v -> (v, ()) |]) $
-           Replace `Prod` Skip
+bx3' = $(rearrS [| \(x:xs) -> x |]) Replace
 
 jin2 :: Int -> BiGUL [s] s
 jin2 i = if i == 0 then bx3
@@ -243,7 +241,7 @@ jin6 = jin5 `Prod` Replace
 -- make "Case" be more intuitive
 infixr 0 ==>
 (==>) :: (a->b) -> a -> b
-f ==> x = f $ x
+(==>)  = ($)
 
 -- now bx6 can be written as follows.
 
