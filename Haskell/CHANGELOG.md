@@ -3,6 +3,10 @@
 
 * GHC 8.0.1 compabitility
 
+  Generics.BiGUL.TH now works with template-haskell-2.11 (which is used by
+  GHC 8.0.1). Also explanations of the GADT constructors in Generics.BiGUL
+  have been included in the haddock documentation.
+
 * `Generics.BiGUL.Checkpoint` added
 
   This new BiGUL constructor lets the programmer display a customised message
