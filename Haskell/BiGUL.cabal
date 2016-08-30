@@ -19,6 +19,7 @@ description:
     pages 61–72. ACM, 2016. <http://dx.doi.org/10.1145/2847538.2847544>.
 
 homepage:            http://www.prg.nii.ac.jp/project/bigul/
+bug-reports:         https://bitbucket.org/prl_tokyo/bigul/issues
 license:             PublicDomain
 license-file:        UNLICENSE
 author:              Josh Ko, Tao Zan, Li Liu, Zirun Zhu, Jorge Mendes, and Zhenjiang Hu
@@ -27,6 +28,15 @@ category:            Language, Generics, Lenses
 build-type:          Simple
 cabal-version:       >=1.22
 extra-source-files:  CHANGELOG.md
+
+source-repository head
+  type:      git
+  location:  https://bitbucket.org/prl_tokyo/bigul.git
+
+source-repository this
+  type:      git
+  location:  https://bitbucket.org/prl_tokyo/bigul.git
+  tag:       v1.0.2
 
 library
   exposed-modules:     Generics.BiGUL
