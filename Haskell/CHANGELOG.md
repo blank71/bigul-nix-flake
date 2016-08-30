@@ -1,3 +1,23 @@
+1.0.1 Changes
+=============
+
+* GHC 8.0.1 compabitility
+
+* `Generics.BiGUL.Checkpoint` added
+
+  This new BiGUL constructor lets the programmer display a customised message
+  in error traces.
+
+* Error fixes
+
+  - Fixed the glitch that normalSV does not convert boolean-valued lambdas to
+    total functions.
+
+  - Eliminated a “Pattern match(es) are overlapped” warning reported when
+    using patterns as conditions.
+
+  - Fixed a panic produced by `Generics.BiGUL.Interpreter.addCurrentBranchTrace`.
+
 1.0.0 Changes
 =============
 
