@@ -7,6 +7,7 @@ import GHC.Generics
 import Generics.BiGUL
 import Generics.BiGUL.TH
 import Generics.BiGUL.Lib
+import Generics.BiGUL.Lib.List
 import Generics.BiGUL.Interpreter
 
 
@@ -22,26 +23,13 @@ deriveBiGULGeneric ''FS
 type Tag = String
 type Web = [(Picture, [Tag])]
 
-posAlign :: (Show s, Show v) => BiGUL s v -> (v -> s) -> BiGUL [s] [v]
-posAlign b c = Case
-  [ $(normalSV [p| [] |] [p| [] |] [p| [] |])
-    ==> $(update [p| [] |] [p| [] |] [d| |])
-  , $(normalSV [p| _:_ |] [p| _:_ |] [p| _:_ |])
-    ==> $(update [p| x:xs |] [p| x:xs |]
-                 [d| x = b; xs = posAlign b c |])
-  , $(adaptiveSV [p| _:_ |] [p| [] |])
-    ==> \_ _ -> []
-  , $(adaptiveSV [p| [] |] [p| _:_ |])
-    ==> \_ (v:_) -> [c v]
-  ]
-
 pushdown :: BiGUL FS FS
 pushdown = Case
   [ $(normalSV [p| Directory _ (Directory _ [] : _) |] [p| Directory _ _ |]
                [p| Directory _ (Directory _ [] : _) |])
     ==> $(update [p| Directory dirName (Directory _ [] : fs) |] [p| Directory dirName fs |]
                  [d| dirName = Replace
-                     fs      = posAlign Replace (const (Directory "???" [])) |])
+                     fs      = align (const True) (\_ _ -> True) Replace (const (Directory "???" [])) (const Nothing) |])
   , $(normalSV [p| Directory _ (Directory _ (_:_) : _) |] [p| Directory _ (_:_) |]
                [p| Directory _ (Directory _ (_:_) : _) |])
     ==> $(rearrS [| \(Directory dirName (Directory dirName' (x:xs) : fs)) ->
@@ -65,7 +53,7 @@ catLensL = Case
   ]
 
 catLensR :: BiGUL Web [Picture]
-catLensR = posAlign $(update [p| (pic, _) |] [p| pic |] [d| pic = Replace |]) (,[])
+catLensR = align (const True) (\_ _ -> True) $(update [p| (pic, _) |] [p| pic |] [d| pic = Replace |]) (,[]) (const Nothing)
 
 putR :: FS -> Web -> Maybe Web
 putR fs web = put catLensR web =<< get catLensL fs

@@ -1,5 +1,5 @@
 name:                BiGUL
-version:             1.0.2.0
+version:             1.0.2.1
 synopsis:            The Bidirectional Generic Update Language
 description:
   Putback-based bidirectional programming allows the programmer to
@@ -49,19 +49,19 @@ library
                        Generics.BiGUL.Lib.HuStudies
                        Generics.BiGUL.Lib.List
   other-modules:       GHC.InOut
-  default-extensions:  TupleSections,
-                       ViewPatterns,
-                       GADTs,
-                       TypeFamilies,
-                       TypeOperators,
+  default-extensions:  CPP,
+                       DeriveDataTypeable,
                        EmptyCase,
                        ExistentialQuantification,
-                       TemplateHaskell,
-                       DeriveDataTypeable,
-                       FlexibleInstances,
                        FlexibleContexts,
-                       UndecidableInstances,
-                       CPP
+                       FlexibleInstances,
+                       GADTs,
+                       ScopedTypeVariables,
+                       TemplateHaskell,
+                       TupleSections,
+                       TypeFamilies,
+                       TypeOperators,
+                       UndecidableInstances
   if impl(ghc >= 7.10) && impl(ghc < 8)
     build-depends:     base == 4.8.*,
                        mtl >= 2.2,
