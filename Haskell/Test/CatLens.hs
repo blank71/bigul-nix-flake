@@ -17,10 +17,6 @@ data FS = Directory Name [FS]
         | File Name Picture
         deriving (Show, Eq)
 
-isFile :: FS -> Bool
-isFile (Directory _ _) = False
-isFile (File _ _)      = True
-
 deriveBiGULGeneric ''FS
 
 type Tag = String
@@ -41,25 +37,28 @@ posAlign b c = Case
 
 pushdown :: BiGUL FS FS
 pushdown = Case
-  [ $(normalSV [p| Directory _ (Directory _ [] : _) |] [p| Directory _ _ |] [p| _ |])
+  [ $(normalSV [p| Directory _ (Directory _ [] : _) |] [p| Directory _ _ |]
+               [p| Directory _ (Directory _ [] : _) |])
     ==> $(update [p| Directory dirName (Directory _ [] : fs) |] [p| Directory dirName fs |]
                  [d| dirName = Replace
                      fs      = posAlign Replace (const (Directory "???" [])) |])
-  , $(normalSV [p| Directory _ (Directory _ (_:_) : _) |] [p| Directory _ (_:_) |] [p| _ |])
-    ==> $(rearrS [| \(Directory dirName (Directory dirName' (x:xs) : fs)) -> (x, Directory dirName (Directory dirName' xs : fs)) |])$
+  , $(normalSV [p| Directory _ (Directory _ (_:_) : _) |] [p| Directory _ (_:_) |]
+               [p| Directory _ (Directory _ (_:_) : _) |])
+    ==> $(rearrS [| \(Directory dirName (Directory dirName' (x:xs) : fs)) ->
+                      (x, Directory dirName (Directory dirName' xs : fs)) |])$
           $(rearrV [| \(Directory dirName (x:xs)) -> (x, Directory dirName xs) |])$
             Replace `Prod` pushdown
   ]
 
 catLensL :: BiGUL FS [Picture]
 catLensL = Case
-  [ $(normalSV [p| Directory _ [] |] [p| [] |] [p| Directory _ _ |])
+  [ $(normalSV [p| Directory _ [] |] [p| [] |] [p| Directory _ [] |])
     ==> $(update [p| _ |] [p| [] |] [d| |])
-  , $(normalSV [p| Directory _ (File _ _ : _) |] [p| _:_ |] [p| Directory _ _ |])
+  , $(normalSV [p| Directory _ (File _ _ : _) |] [p| _:_ |] [p| Directory _ (File _ _ : _) |])
     ==> $(rearrS [| \(Directory dirName (File _ pic : fs)) -> (pic, Directory dirName fs) |])$
           $(rearrV [| \(pic:pics) -> (pic, pics) |])$
             Replace `Prod` catLensL
-  , $(normalSV [p| Directory _ (Directory _ _ : _) |] [p| _:_ |] [p| Directory _ _ |])
+  , $(normalSV [p| Directory _ (Directory _ _ : _) |] [p| _:_ |] [p| Directory _ (Directory _ _ : _) |])
     ==> pushdown `Compose` catLensL
   , $(adaptiveSV [p| Directory _ [] |] [p| _:_ |])
     ==> \(Directory dirName _) pics -> Directory dirName (replicate (length pics) (File "???" ""))
