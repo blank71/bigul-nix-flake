@@ -140,11 +140,11 @@ data Pat a env con where
          -> Pat b b' b''  -- right-hand side pattern
          -> Pat (a, b) (a', b') (a'', b'')
 
-  -- __DB__ Left pattern, matching values of shape `Left x :: Either a b` for some `x :: a`.
+  -- __DB__ Left pattern, matching values of shape @Left x :: Either a b@ for some @x :: a@.
   PLeft  :: Pat a a' a''  -- inner pattern
          -> Pat (Either a b) a' a''
 
-  -- __DB__ Right pattern, matching values of shape `Right y :: Either a b` for some `y :: b`.
+  -- __DB__ Right pattern, matching values of shape @Right y :: Either a b@ for some @y :: b@.
   PRight :: Pat b b' b''  -- inner pattern
          -> Pat (Either a b) b' b''
 
