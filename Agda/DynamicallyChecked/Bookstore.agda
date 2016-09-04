@@ -10,70 +10,110 @@ open import DynamicallyChecked.Rearrangement
 open import Function
 open import Data.Product
 open import Data.Sum
-open import Data.Bool
-open import Data.Maybe
-open import Data.Nat
+open import Data.Bool as Bool
+open import Data.Maybe as Maybe
+open import Data.Nat as Nat
 open import Data.Fin
 open import Data.List
-open import Data.String
+open import Data.String as String
 open import Relation.Nullary
 open import Relation.Nullary.Decidable
 open import Relation.Binary.PropositionalEquality
 
 
 kString : {n : ℕ} → U n
-kString = k String Data.String._≟_
+kString = k String String._≟_
 
 -- title, author, year, price, in stock
 SBookU : {n : ℕ} → U n
-SBookU = kString ⊗ (kString ⊗ (k ℕ Data.Nat._≟_ ⊗ (k ℕ Data.Nat._≟_ ⊗ k Bool Data.Bool._≟_)))
+SBookU = kString ⊗ (kString ⊗ (k ℕ Nat._≟_ ⊗ (k ℕ Nat._≟_ ⊗ k Bool Bool._≟_)))
 
 -- title, price
 VBookU : {n : ℕ} → U n
-VBookU = kString ⊗ k ℕ Data.Nat._≟_
+VBookU = kString ⊗ k ℕ Nat._≟_
 
-emptyF : Functor 0
-emptyF ()
+BookstoreF : Functor 2
+BookstoreF zero       = one ⊕ (SBookU ⊗ var zero)
+BookstoreF (suc zero) = one ⊕ (VBookU ⊗ var (suc zero))
+BookstoreF (suc (suc ()))
 
-emptyTEnv : Fin 0 → Set
-emptyTEnv ()
+concealPrefix : μ BookstoreF zero → μ BookstoreF zero
+concealPrefix (con (inj₁ tt)) = con (inj₁ tt)
+concealPrefix (con (inj₂ ((title , author , year , price , instock) , ss))) with ⌊ year Nat.≟ 2015 ⌋ ∧ instock
+... | true  = (con (inj₂ ((title , author , year , price , false) , concealPrefix ss)))
+... | false = (con (inj₂ ((title , author , year , price , instock) , ss)))
 
-bookstore : BiGUL emptyF (list SBookU) (list VBookU)
-bookstore =
-  align ((String × String × ℕ × ℕ × Bool → Par Bool) ∋
-           (λ { (_ , _ , year , _ , instock) → return (⌊ year Data.Nat.≟ 2015 ⌋ ∧ instock) }))
-        ((String × String × ℕ × ℕ × Bool → String × ℕ → Par Bool) ∋
-           (λ { (stitle , _) (vtitle , _) → return (stitle == vtitle) }))
-        (rearrV (prod var var) (prod var (prod (k tt) (prod (k tt) (prod var (k tt)))))
-                (inj₁ refl , tt , tt , inj₂ refl , tt)
-                (update (prod var (prod var (prod var (prod var var))))
-                        ((, replace) , (, skip) , (, skip) , (, replace) , (, skip))))
-        (const (return ("" , "(to be updated)" , 2015 , 0 , true)))
-        (λ { (title , author , year , price , instock) → return (just (title , author , year , price , false)) })
+findFirstMatch : String → μ BookstoreF zero → Maybe (⟦ SBookU ⟧ (μ BookstoreF) × μ BookstoreF zero)
+findFirstMatch vtitle (con (inj₁ tt)) = nothing
+findFirstMatch vtitle (con (inj₂ ((stitle , author , year , price , instock) , ss)))
+    with ⌊ year Nat.≟ 2015 ⌋ ∧ instock ∧ (vtitle == stitle)
+... | true  = just ((stitle , author , year , price , instock) , ss) 
+... | false = Maybe.map (λ { (s' , ss') → (s' , con (inj₂ ((stitle , author , year , price , instock) , ss'))) })
+                        (findFirstMatch vtitle ss) 
 
-bookstore-CompleteExpr : BiGULCompleteExpr emptyF bookstore
-bookstore-CompleteExpr = (return refl >>= return refl) , tt , tt , tt , tt , tt
+bookstoreB : BiGUL BookstoreF (var zero) (var (suc zero)) → BiGUL BookstoreF (var zero) (var (suc zero))
+bookstoreB rec = case
+  (((λ { (con (inj₁ tt)) (con (inj₁ tt)) → true; _ _ → false }) ,
+      normal
+        (rearrV (con (left (k tt))) (k {G = one} tt) tt (skip (const tt)))
+        (λ { (con (inj₁ tt)) → true; _ → false })) ∷
+   ((λ { (con (inj₂ ((stitle , _) , _))) (con (inj₂ ((vtitle , _) , _))) → stitle == vtitle; _ _ → false }) ,
+      normal
+        (rearrS (con (right (prod (prod var (prod var (prod var (prod var var)))) var)))
+                (prod (prod var var) var)
+                ((inj₁ (inj₁ refl) , inj₁ (inj₂ (inj₂ (inj₂ (inj₁ refl))))) , inj₂ refl)
+           (rearrV (con (right var)) var refl
+              (prod replace rec)))
+        (λ { (con (inj₂ ((_ , _ , year , _ , instock) , _))) → ⌊ year Nat.≟ 2015 ⌋ ∧ instock; _ → false })) ∷
+   ((λ { (con (inj₂ ((_ , _ , year , _ , instock) , _))) (con (inj₁ tt)) → ⌊ year Nat.≟ 2015 ⌋ ∧ instock; _ _ → false }) ,
+      adaptive
+        (λ ss _ → concealPrefix ss)) ∷
+   ((λ { (con (inj₂ ((_ , _ , year , _ , instock) , _))) _ → not (⌊ year Nat.≟ 2015 ⌋ ∧ instock); _ _ → false }) ,
+      normal
+        (rearrS (con (right (prod var var))) var (inj₂ refl) rec)
+        (λ { (con (inj₂ ((_ , _ , year , _ , instock) , _))) → not (⌊ year Nat.≟ 2015 ⌋ ∧ instock); _ → false })) ∷
+   ((λ { ss (con (inj₂ ((vtitle , _) , _))) → is-just (findFirstMatch vtitle ss) ; _ _ → false }) ,
+      adaptive
+        (λ { ss (con (inj₂ ((vtitle , _) , _))) →
+             case (findFirstMatch vtitle ss) of
+               λ { (just (s' , ss')) → con (inj₂ (s' , ss')); _ → con (inj₁ tt) }; _ _ → con (inj₁ tt) })) ∷
+   ((λ _ _ → true) ,
+      adaptive
+        ((λ { ss (con (inj₂ ((vtitle , _) , _))) → con (inj₂ ((vtitle , "(to be updated)" , 2015 , 0 , true) , ss))
+            ; _ _ → con (inj₁ tt) }))) ∷ [])
 
-sbooks : ⟦ list SBookU ⟧ emptyTEnv
-sbooks = ("Harry Potter" , "JK Rowling" , 2015 , 950 , true) ∷ ("The Lord of the Rings" , "JRR Tolkien" , 1954 , 450 , true) ∷ ("The Swift Programming Language" , "Apple, Inc" , 2015 , 650 , false) ∷ []
+-- non-terminating
+bookstore : BiGUL BookstoreF (var zero) (var (suc zero))
+bookstore = fix bookstoreB
 
-vbooks' : ⟦ list VBookU ⟧ emptyTEnv
-vbooks' = ("Harry Potter" , 1850) ∷ ("The Hitchhiker's Guide to the Galaxy" , 550) ∷ []
+postulate bookstore-CompleteExpr : BiGULCompleteExpr BookstoreF bookstore
 
-vbooks'' : ⟦ list VBookU ⟧ emptyTEnv
-vbooks'' = []
+sbooks : μ BookstoreF zero
+sbooks = con (inj₂ (("Harry Potter"                   , "JK Rowling"  , 2015 , 950 , true ) ,
+         con (inj₂ (("The Lord of the Rings"          , "JRR Tolkien" , 1954 , 450 , true ) ,
+         con (inj₂ (("The Swift Programming Language" , "Apple, Inc"  , 2015 , 650 , false) ,
+         con (inj₁ tt)))))))
 
-vbooks : ⟦ list VBookU ⟧ emptyTEnv
-vbooks = ("Harry Potter" , 1950) ∷ []
+vbooks' : μ BookstoreF (suc zero)
+vbooks' = con (inj₂ (("Harry Potter"                         , 1850) ,
+          con (inj₂ (("The Hitchhiker's Guide to the Galaxy" ,  550) ,
+          con (inj₁ tt)))))
 
-test-get : Maybe (⟦ list VBookU ⟧ emptyTEnv)
-test-get = runPar (Lens.get (interp emptyF bookstore bookstore-CompleteExpr) sbooks)
+vbooks'' : μ BookstoreF (suc zero)
+vbooks'' = con (inj₁ tt)
 
-test-put : Maybe (⟦ list SBookU ⟧ emptyTEnv)
-test-put = runPar (Lens.put (interp emptyF bookstore bookstore-CompleteExpr) sbooks vbooks)
+vbooks : μ BookstoreF (suc zero)
+vbooks = con (inj₂ (("Harry Potter" , 1950) ,
+         con (inj₁ tt)))
 
-test-put' : Maybe (⟦ list SBookU ⟧ emptyTEnv)
-test-put' = runPar (Lens.put (interp emptyF bookstore bookstore-CompleteExpr) sbooks vbooks')
+test-get : Maybe (μ BookstoreF (suc zero))
+test-get = runPar (Lens.get (interp BookstoreF bookstore bookstore-CompleteExpr) sbooks)
 
-test-put'' : Maybe (⟦ list SBookU ⟧ emptyTEnv)
-test-put'' = runPar (Lens.put (interp emptyF bookstore bookstore-CompleteExpr) sbooks vbooks'')
+test-put : Maybe (μ BookstoreF zero)
+test-put = runPar (Lens.put (interp BookstoreF bookstore bookstore-CompleteExpr) sbooks vbooks)
+
+test-put' : Maybe (μ BookstoreF zero)
+test-put' = runPar (Lens.put (interp BookstoreF bookstore bookstore-CompleteExpr) sbooks vbooks')
+
+test-put'' : Maybe (μ BookstoreF zero)
+test-put'' = runPar (Lens.put (interp BookstoreF bookstore bookstore-CompleteExpr) sbooks vbooks'')
