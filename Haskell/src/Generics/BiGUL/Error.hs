@@ -1,6 +1,6 @@
 -- | Datatypes for error traces, produced by the standard interpreters in "Generics.BiGUL.Interpreter".
 
-module Generics.BiGUL.Error where
+module Generics.BiGUL.Error (BiGULTrace(..), BiGULError(..), PatError(..)) where
 
 import Generics.BiGUL
 

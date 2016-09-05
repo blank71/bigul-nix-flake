@@ -3,6 +3,8 @@
 
 * `Generics.BiGUL.Lib.List.align` changed to a prettier version
 
+* `Generics.BiGUL.PatternMatching` no longer exposed
+
 1.0.1 Changes
 =============
 
