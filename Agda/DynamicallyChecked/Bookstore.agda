@@ -55,14 +55,14 @@ bookstoreB : BiGUL BookstoreF (var zero) (var (suc zero)) → BiGUL BookstoreF (
 bookstoreB rec = case
   (((λ { (con (inj₁ tt)) (con (inj₁ tt)) → true; _ _ → false }) ,
       normal
-        (rearrV (con (left (k tt))) (k {G = one} tt) tt (skip (const tt)))
+        (rearrV (con (left (k tt))) (k {G = one} tt) tt (return refl) (skip (const tt)))
         (λ { (con (inj₁ tt)) → true; _ → false })) ∷
    ((λ { (con (inj₂ ((stitle , _) , _))) (con (inj₂ ((vtitle , _) , _))) → stitle == vtitle; _ _ → false }) ,
       normal
         (rearrS (con (right (prod (prod var (prod var (prod var (prod var var)))) var)))
                 (prod (prod var var) var)
                 ((inj₁ (inj₁ refl) , inj₁ (inj₂ (inj₂ (inj₂ (inj₁ refl))))) , inj₂ refl)
-           (rearrV (con (right var)) var refl
+           (rearrV (con (right var)) var refl (return refl)
               (prod replace rec)))
         (λ { (con (inj₂ ((_ , _ , year , _ , instock) , _))) → ⌊ year Nat.≟ 2015 ⌋ ∧ instock; _ → false })) ∷
    ((λ { (con (inj₂ ((_ , _ , year , _ , instock) , _))) (con (inj₁ tt)) → ⌊ year Nat.≟ 2015 ⌋ ∧ instock; _ _ → false }) ,
@@ -86,8 +86,6 @@ bookstoreB rec = case
 bookstore : BiGUL BookstoreF (var zero) (var (suc zero))
 bookstore = fix bookstoreB
 
-postulate bookstore-CompleteExpr : BiGULCompleteExpr BookstoreF bookstore
-
 sbooks : μ BookstoreF zero
 sbooks = con (inj₂ (("Harry Potter"                   , "JK Rowling"  , 2015 , 950 , true ) ,
          con (inj₂ (("The Lord of the Rings"          , "JRR Tolkien" , 1954 , 450 , true ) ,
@@ -107,13 +105,13 @@ vbooks = con (inj₂ (("Harry Potter" , 1950) ,
          con (inj₁ tt)))
 
 test-get : Maybe (μ BookstoreF (suc zero))
-test-get = runPar (Lens.get (interp BookstoreF bookstore bookstore-CompleteExpr) sbooks)
+test-get = runPar (Lens.get (interp BookstoreF bookstore) sbooks)
 
 test-put : Maybe (μ BookstoreF zero)
-test-put = runPar (Lens.put (interp BookstoreF bookstore bookstore-CompleteExpr) sbooks vbooks)
+test-put = runPar (Lens.put (interp BookstoreF bookstore) sbooks vbooks)
 
 test-put' : Maybe (μ BookstoreF zero)
-test-put' = runPar (Lens.put (interp BookstoreF bookstore bookstore-CompleteExpr) sbooks vbooks')
+test-put' = runPar (Lens.put (interp BookstoreF bookstore) sbooks vbooks')
 
 test-put'' : Maybe (μ BookstoreF zero)
-test-put'' = runPar (Lens.put (interp BookstoreF bookstore bookstore-CompleteExpr) sbooks vbooks'')
+test-put'' = runPar (Lens.put (interp BookstoreF bookstore) sbooks vbooks'')

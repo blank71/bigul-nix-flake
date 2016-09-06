@@ -25,9 +25,11 @@ mutual
     replace : {S : U n} → BiGUL S S
     prod    : {S V S' V' : U n} (b : BiGUL S V) (b' : BiGUL S' V') → BiGUL (S ⊗ S') (V ⊗ V')
     rearrS  : {S S' V : U n}
-              (spat : Pattern F S) (spat' : Pattern F S') (expr : Expr spat spat') (b : BiGUL S' V) → BiGUL S V
+              (spat : Pattern F S) (spat' : Pattern F S') (expr : Expr spat spat')
+              (b : BiGUL S' V) → BiGUL S V
     rearrV  : {S V V' : U n}
-              (vpat : Pattern F V) (vpat' : Pattern F V') (expr : Expr vpat vpat') (b : BiGUL S V') → BiGUL S V
+              (vpat : Pattern F V) (vpat' : Pattern F V') (expr : Expr vpat vpat') (c : CompleteExpr vpat vpat' expr)
+              (b : BiGUL S V') → BiGUL S V
     dep     : {S V V' : U n} (f : ⟦ V ⟧ (μ F) → ⟦ V' ⟧ (μ F)) (b : BiGUL S V) → BiGUL S (V ⊗ V')
     case    : {S V : U n} (branches : List (CaseBranch S V)) → BiGUL S V
     compose : {A B C : U n} (b : BiGUL A B) (b' : BiGUL B C) → BiGUL A C
@@ -41,37 +43,18 @@ mutual
 
 mutual
 
-  BiGULCompleteExpr : {S V : U n} → BiGUL S V → Set₁
-  BiGULCompleteExpr fail                       = ⊤
-  BiGULCompleteExpr (skip f)                   = ⊤
-  BiGULCompleteExpr replace                    = ⊤
-  BiGULCompleteExpr (prod b b')                = BiGULCompleteExpr b × BiGULCompleteExpr b'
-  BiGULCompleteExpr (rearrS spat spat' expr b) = BiGULCompleteExpr b
-  BiGULCompleteExpr (rearrV vpat vpat' expr b) = CompleteExpr vpat vpat' expr × BiGULCompleteExpr b
-  BiGULCompleteExpr (dep f b)                  = BiGULCompleteExpr b
-  BiGULCompleteExpr (case branches)            = CaseBranchesCompleteExpr  branches
-  BiGULCompleteExpr (compose b b')             = BiGULCompleteExpr b × BiGULCompleteExpr b'
+  interp : {S V : U n} (b : BiGUL S V) → ⟦ S ⟧ (μ F) ⇆ ⟦ V ⟧ (μ F)
+  interp fail                         = iso-lens empty-iso
+  interp (skip {V = V} f)             = skip-lens (U-dec V) f
+  interp replace                      = iso-lens id-iso
+  interp (prod b b')                  = interp b ↕ interp b'
+  interp (rearrS spat spat' expr b)   = source-rearrangement-lens spat spat' expr ↔ interp b
+  interp (rearrV vpat vpat' expr c b) = interp b ◁ sym-iso (view-rearrangement-iso vpat vpat' expr c)
+  interp (dep {V' = V'} f b)          = interp b ◁ sym-iso (dependency-iso f (U-dec V'))
+  interp (case {S} {V} branches)      = case-lens (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)) (interp-CaseBranch branches)
+  interp (compose b b')               = interp b ↔ interp b'
 
-  CaseBranchesCompleteExpr : {S V : U n} → List (CaseBranch S V) → Set₁
-  CaseBranchesCompleteExpr []                            = ⊤
-  CaseBranchesCompleteExpr ((p , normal b q) ∷ branches) = BiGULCompleteExpr b × CaseBranchesCompleteExpr branches
-  CaseBranchesCompleteExpr ((p , adaptive u) ∷ branches) = CaseBranchesCompleteExpr branches
-
-mutual
-
-  interp : {S V : U n} (b : BiGUL S V) → BiGULCompleteExpr b → ⟦ S ⟧ (μ F) ⇆ ⟦ V ⟧ (μ F)
-  interp fail                       c        = iso-lens empty-iso
-  interp (skip {V = V} f)           c        = skip-lens (U-dec V) f
-  interp replace                    c        = iso-lens id-iso
-  interp (prod b b')                (c , c') = interp b c ↕ interp b' c' 
-  interp (rearrS spat spat' expr b) c        = source-rearrangement-lens spat spat' expr ↔ interp b c
-  interp (rearrV vpat vpat' expr b) (c , c') = interp b c' ◁ sym-iso (view-rearrangement-iso vpat vpat' expr c)
-  interp (dep {V' = V'} f b)        c        = interp b c ◁ sym-iso (dependency-iso f (U-dec V'))
-  interp (case {S} {V} branches)    c        = case-lens (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)) (interp-CaseBranch branches c)
-  interp (compose b b')             (c , c') = interp b c ↔ interp b' c'
-
-  interp-CaseBranch : {S V : U n} (branches : List (CaseBranch S V)) → CaseBranchesCompleteExpr branches →
-                      List (Case.Branch (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)))
-  interp-CaseBranch []                            c        = []
-  interp-CaseBranch ((p , normal b q) ∷ branches) (c , c') = (p , normal (interp b c) q) ∷ interp-CaseBranch branches c'
-  interp-CaseBranch ((p , adaptive u) ∷ branches) c        = (p , adaptive u) ∷ interp-CaseBranch branches c
+  interp-CaseBranch : {S V : U n} (branches : List (CaseBranch S V)) → List (Case.Branch (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)))
+  interp-CaseBranch []                            = []
+  interp-CaseBranch ((p , normal b q) ∷ branches) = (p , normal (interp b) q) ∷ interp-CaseBranch branches
+  interp-CaseBranch ((p , adaptive u) ∷ branches) = (p , adaptive u) ∷ interp-CaseBranch branches
