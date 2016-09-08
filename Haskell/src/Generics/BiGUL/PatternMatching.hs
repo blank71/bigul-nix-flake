@@ -20,7 +20,7 @@ deconstruct (PConst c)    x         = if c == x then return () else throwError P
 deconstruct (l `PProd` r) (x, y)    = liftM2 (,) (modifyError PEProdL (deconstruct l x))
                                                  (modifyError PEProdR (deconstruct r y))
 deconstruct (PLeft  p)    (Left  x) = modifyError PELeft  (deconstruct p x)
-deconstruct (PLeft _)     _         = throwError PELeftMismatch
+deconstruct (PLeft  _)    _         = throwError PELeftMismatch
 deconstruct (PRight p)    (Right x) = modifyError PERight (deconstruct p x)
 deconstruct (PRight _)    _         = throwError PERightMismatch
 deconstruct (PIn p)       x         = modifyError PEIn    (deconstruct p (out x))
@@ -35,9 +35,9 @@ construct (PRight p)    x       = Right (construct p x)
 construct (PIn p)       x       = inn (construct p x)
 
 retrieve :: Direction env a -> env -> a
-retrieve  DVar      (Var x) = x
-retrieve (DLeft  d) (x, _)  = retrieve d x
-retrieve (DRight d) (_, y)  = retrieve d y
+retrieve  DVar      (Var x ) = x
+retrieve (DLeft  d) (env, _) = retrieve d env
+retrieve (DRight d) (_, env) = retrieve d env
 
 eval :: Expr env a -> env -> a
 eval (EDir d)      env = retrieve d env
@@ -52,7 +52,7 @@ uneval p (EDir d)     x         con = unevalDir p d x con
 uneval p (EConst c)   x         con = if c == x then return con else throwError PEConstantMismatch
 uneval p (EProd l r)  (x, y)    con = modifyError PEProdL (uneval p l x con) >>= modifyError PEProdR . uneval p r y
 uneval p (ELeft  e)   (Left  x) con = modifyError PELeft  (uneval p e x con)
-uneval p (ELeft _)    x         con = throwError PELeftMismatch
+uneval p (ELeft  _)   x         con = throwError PELeftMismatch
 uneval p (ERight e)   (Right x) con = modifyError PERight (uneval p e x con)
 uneval p (ERight _)   x         con = throwError PERightMismatch
 uneval p (EIn e)      x         con = modifyError PEIn    (uneval p e (out x) con)
@@ -72,33 +72,33 @@ unevalDir (PRight p)    d          x con          = modifyError PERight (unevalD
 unevalDir (PIn p)       d          x con          = modifyError PEIn    (unevalDir p d x con)
 
 fromContainerV :: Pat v env con -> con -> Either PatError env
-fromContainerV PVar              Nothing      = throwError PEValueUnrecoverable
-fromContainerV PVar              (Just v)     = return (Var v)
-fromContainerV PVar'             Nothing      = throwError PEValueUnrecoverable
-fromContainerV PVar'             (Just v)     = return (Var v)
-fromContainerV (PConst c)        con          = return ()
-fromContainerV (PProd patl patr) (conl, conr) = liftM2 (,) (modifyError PEProdL (fromContainerV patl conl))
-                                                           (modifyError PEProdR (fromContainerV patr conr))
-fromContainerV (PLeft pat)       con          = modifyError PELeft  (fromContainerV pat con)
-fromContainerV (PRight pat)      con          = modifyError PERight (fromContainerV pat con)
-fromContainerV (PIn pat)         con          = modifyError PEIn    (fromContainerV pat con)
+fromContainerV PVar          Nothing      = throwError PEValueUnrecoverable
+fromContainerV PVar          (Just v)     = return (Var v)
+fromContainerV PVar'         Nothing      = throwError PEValueUnrecoverable
+fromContainerV PVar'         (Just v)     = return (Var v)
+fromContainerV (PConst c)    con          = return ()
+fromContainerV (l `PProd` r) (conl, conr) = liftM2 (,) (modifyError PEProdL (fromContainerV l conl))
+                                                       (modifyError PEProdR (fromContainerV r conr))
+fromContainerV (PLeft  p)    con          = modifyError PELeft  (fromContainerV p con)
+fromContainerV (PRight p)    con          = modifyError PERight (fromContainerV p con)
+fromContainerV (PIn p)       con          = modifyError PEIn    (fromContainerV p con)
 
 fromContainerS :: Pat s env con -> env -> con -> env
-fromContainerS PVar              (Var s)     Nothing     = (Var s)
-fromContainerS PVar              (Var s)     (Just s')   = (Var s')
-fromContainerS PVar'             (Var s)     Nothing     = (Var s)
-fromContainerS PVar'             (Var s)     (Just s')   = (Var s')
-fromContainerS (PConst c)        _           _           = ()
-fromContainerS (PProd lpat rpat) (env, env') (con, con') = (fromContainerS lpat env con, fromContainerS rpat env' con')
-fromContainerS (PLeft pat)       env         con         = fromContainerS pat env con
-fromContainerS (PRight pat)      env         con         = fromContainerS pat env con
-fromContainerS (PIn pat)         env         con         = fromContainerS pat env con
+fromContainerS PVar          (Var s)      Nothing      = (Var s )
+fromContainerS PVar          (Var s)      (Just s')    = (Var s')
+fromContainerS PVar'         (Var s)      Nothing      = (Var s )
+fromContainerS PVar'         (Var s)      (Just s')    = (Var s')
+fromContainerS (PConst c)    _            _            = ()
+fromContainerS (l `PProd` r) (envl, envr) (conl, conr) = (fromContainerS l envl conl, fromContainerS r envr conr)
+fromContainerS (PLeft  p)    env          con          = fromContainerS p env con
+fromContainerS (PRight p)    env          con          = fromContainerS p env con
+fromContainerS (PIn p)       env          con          = fromContainerS p env con
 
 emptyContainer :: Pat v env con -> con
-emptyContainer PVar                = Nothing
-emptyContainer PVar'               = Nothing
-emptyContainer (PConst  c)         = ()
-emptyContainer (PProd rpatl rpatr) = (emptyContainer rpatl, emptyContainer rpatr)
-emptyContainer (PLeft pat        ) = emptyContainer pat
-emptyContainer (PRight pat       ) = emptyContainer pat
-emptyContainer (PIn  pat         ) = emptyContainer pat
+emptyContainer PVar          = Nothing
+emptyContainer PVar'         = Nothing
+emptyContainer (PConst c)    = ()
+emptyContainer (l `PProd` r) = (emptyContainer l, emptyContainer r)
+emptyContainer (PLeft  p)    = emptyContainer p
+emptyContainer (PRight p)    = emptyContainer p
+emptyContainer (PIn p)       = emptyContainer p

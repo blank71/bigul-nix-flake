@@ -104,8 +104,18 @@ deriveBiGULGeneric name = do
     do
       info <- reify name
       case info of
-        (TyConI (DataD [] name typeVars constructors _)) -> return (name, typeVars, constructors)
-        (TyConI (NewtypeD [] name typeVars constructor _)) -> return (name, typeVars, [constructor])
+#if __GLASGOW_HASKELL__ >= 800
+        (TyConI (DataD [] name typeVars _ constructors _)) ->
+#else
+        (TyConI (DataD [] name typeVars constructors _)) ->
+#endif
+          return (name, typeVars, constructors)
+#if __GLASGOW_HASKELL__ >= 800
+        (TyConI (NewtypeD [] name typeVars _ constructor _)) ->
+#else
+        (TyConI (NewtypeD [] name typeVars constructor _)) ->
+#endif
+          return (name, typeVars, [constructor])
         _ -> fail ("‘" ++ nameBase name ++ "’ is not in scope or not a (supported) datatype")
   ([nGeneric, nRep, nK1, nR, nU1, nSum, nProd, nV1, nS1, nSelector, nDataType],
    [vFrom, vTo, vK1, vL1, vR1, vU1, vProd, vSelName, vDataTypeName, vModuleName, vM1]) <-
@@ -125,7 +135,11 @@ deriveBiGULGeneric name = do
   return $ catMaybes selectorDataDMaybeList ++
            catMaybes (concat selectorDataTypeMaybeList) ++
            catMaybes (concat selectorInstanceDecList) ++
-           [InstanceD []
+           [InstanceD
+#if __GLASGOW_HASKELL__ >= 800
+              Nothing
+#endif
+              []
               (AppT (ConT nGeneric) (generateTypeVarsType name typeVars))
               [TySynInstD nRep
                  (TySynEqn
@@ -198,7 +212,12 @@ generateSelectorNames = mapM (\con ->
     })
 
 generateSelectorDataD :: [[Maybe Name]] -> [Maybe Dec]
-generateSelectorDataD names = map (fmap (\n -> DataD [] n [] [] [])) (concat names)
+generateSelectorDataD names =
+#if __GLASGOW_HASKELL__ >= 800
+  map (fmap (\n -> DataD [] n [] Nothing [] [])) (concat names)
+#else
+  map (fmap (\n -> DataD [] n [] [] [])) (concat names)
+#endif
 
 -- Selector DataType Generation
 generateSelectorDataType :: Name -> Name -> Name -> String -> [Maybe Name] -> [Maybe Dec]
@@ -207,11 +226,16 @@ generateSelectorDataType nDataType vDataTypeName vModuleName moduleName =
 
 generateSelectorDataType' :: Name -> Name -> Name -> String -> Maybe Name -> Maybe Dec
 generateSelectorDataType' nDataType vDataTypeName vModuleName moduleName (Just selectorName) =
-  Just $ InstanceD []
-    (AppT (ConT nDataType) (ConT selectorName))
-    [FunD vDataTypeName ([Clause [WildP] (NormalB (LitE (StringL (show selectorName)))) []]),
-     FunD vModuleName   ([Clause [WildP] (NormalB (LitE (StringL moduleName))) []])
-    ]
+  Just $
+    InstanceD
+#if __GLASGOW_HASKELL__ >= 800
+      Nothing
+#endif
+      []
+      (AppT (ConT nDataType) (ConT selectorName))
+      [FunD vDataTypeName ([Clause [WildP] (NormalB (LitE (StringL (show selectorName)))) []]),
+       FunD vModuleName   ([Clause [WildP] (NormalB (LitE (StringL moduleName))) []])
+      ]
 generateSelectorDataType' nDataType vDataTypeName vModuleName moduleName _ = Nothing
 
 -- Selector Instance Declaration generation
@@ -221,9 +245,14 @@ generateSelectorInstanceDec nSelector vSelName (names, (RecC _ sts)) = map (gene
 
 generateSelectorInstanceDec' :: Name -> Name -> (Maybe Name, THS.VarStrictType) -> Maybe Dec
 generateSelectorInstanceDec' nSelector vSelName (Just selectorName, (name, _, _)) =
-  Just $ InstanceD []
-            (AppT (ConT nSelector) (ConT selectorName))
-            [FunD vSelName ([Clause [WildP] (NormalB (LitE (StringL (nameBase name)))) []])]
+  Just $
+    InstanceD
+#if __GLASGOW_HASKELL__ >= 800
+      Nothing
+#endif
+      []
+      (AppT (ConT nSelector) (ConT selectorName))
+      [FunD vSelName ([Clause [WildP] (NormalB (LitE (StringL (nameBase name)))) []])]
 generateSelectorInstanceDec' _         _         _                          = Nothing
 
 -- generate type representation of polymorhpic type
@@ -246,12 +275,21 @@ lookupLRs conName = do
   info <- reify conName
   datatypeName <-
     case info of
+#if __GLASGOW_HASKELL__ >= 800
+      DataConI _ _ n -> return n
+#else
       DataConI _ _ n _ -> return n
+#endif
       _ -> fail $ "‘" ++ nameBase conName ++ "’ is not a data constructor"
   typeInfo <- reify datatypeName
   let cons = case typeInfo of
+#if __GLASGOW_HASKELL__ >= 800
+               TyConI (DataD _ _ _ _ cons _)   -> cons
+               TyConI (NewtypeD _ _ _ _ con _) -> [con]
+#else
                TyConI (DataD _ _ _ cons _)   -> cons
                TyConI (NewtypeD _ _ _ con _) -> [con]
+#endif
                _                             -> []
   return $ constructLRs (length cons) !!
              fromJust (List.findIndex (== conName) (map (\con -> case con of { NormalC n _ -> n; RecC n _ -> n}) cons))
@@ -261,12 +299,21 @@ lookupRecordLength conName = do
   info <- reify conName
   datatypeName <-
     case info of
+#if __GLASGOW_HASKELL__ >= 800
+      DataConI _ _ n -> return n
+#else
       DataConI _ _ n _ -> return n
+#endif
       _ -> fail $ "‘" ++ nameBase conName ++ "’ is not a data constructor"
   typeInfo <- reify datatypeName
   let cons = case typeInfo of
+#if __GLASGOW_HASKELL__ >= 800
+               TyConI (DataD _ _ _ _ cons _)   -> cons
+               TyConI (NewtypeD _ _ _ _ con _) -> [con]
+#else
                TyConI (DataD _ _ _ cons _)   -> cons
                TyConI (NewtypeD _ _ _ con _) -> [con]
+#endif
                _                             -> []
   return $ (\(RecC _ fs) -> length fs) (fromJust (List.find (\(RecC n _) -> n == conName) cons))
 
@@ -275,12 +322,21 @@ lookupRecordField conName fieldName = do
   info <- reify conName
   datatypeName <-
     case info of
+#if __GLASGOW_HASKELL__ >= 800
+      DataConI _ _ n -> return n
+#else
       DataConI _ _ n _ -> return n
+#endif
       _ -> fail $ "‘" ++ nameBase conName ++ "’ is not a data constructor"
   typeInfo <- reify datatypeName
   let cons = case typeInfo of
+#if __GLASGOW_HASKELL__ >= 800
+               TyConI (DataD _ _ _ _ cons _)   -> cons
+               TyConI (NewtypeD _ _ _ _ con _) -> [con]
+#else
                TyConI (DataD _ _ _ cons _)   -> cons
                TyConI (NewtypeD _ _ _ con _) -> [con]
+#endif
                _                             -> []
   case (List.findIndex (\(n,_,_) -> n == fieldName) ((\(RecC _ fs) -> fs) $ fromJust (List.find (\(RecC n _) -> n == conName) cons))) of
        Just res -> return res
@@ -715,12 +771,8 @@ mkEnvForUpdate (_:ds) = fail "Invalid syntax in update bindings (write ‘x1 = e
 
 patCond :: TH.Pat -> Q TH.Exp
 patCond p = do
-  (_, [htrue,hfalse]) <- lookupNames "Prelude" [] ["True", "False"]
-  var <- newName "x"
-  return $ case p of
-             TH.WildP -> LamE [VarP var] (ConE htrue)
-             _        -> LamE [VarP var] (CaseE (VarE var)
-                              [Match p (NormalB (ConE htrue)) [], Match WildP (NormalB (ConE hfalse)) []])
+  (_, [htrue]) <- lookupNames "Prelude" [] ["True"]
+  return (LamE [p] (ConE htrue))
 
 nameAdaptive :: Q TH.Exp
 nameAdaptive = lookupNames astNamespace [] ["Adaptive"] >>= \(_, [badaptive]) -> conE badaptive
@@ -793,7 +845,8 @@ normalSV :: (ExpOrPat a, ExpOrPat b, ExpOrPat c)
          -> c  -- ^ exit condition (unary predicate on the source)
          -> Q TH.Exp
 normalSV mps mpv mq =
-  [|\b -> (\s v -> $(toExp mps) s && $(toExp mpv) v, $(nameNormal) b $(toExp mq >>= patLambdaToPred)) |]
+  [| \b -> (\s v -> $(toExp mps >>= patLambdaToPred) s && $(toExp mpv >>= patLambdaToPred) v,
+            $(nameNormal) b $(toExp mq >>= patLambdaToPred)) |]
 
 -- | Construct an adaptive branch, for which a main condition on the source and view should be specified.
 --   The usual way of using 'adaptive' is

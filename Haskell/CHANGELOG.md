@@ -1,3 +1,34 @@
+1.0.2 Changes
+=============
+
+* `Generics.BiGUL.Lib.List.align` changed to a prettier version
+
+* `Generics.BiGUL.PatternMatching` no longer exposed
+
+1.0.1 Changes
+=============
+
+* GHC 8.0.1 compatibility
+
+  `Generics.BiGUL.TH` now works with template-haskell-2.11 (which is used by
+  GHC 8.0.1). Also, explanations of the GADT constructors in `Generics.BiGUL`
+  have been included in the haddock documentation.
+
+* `Generics.BiGUL.Checkpoint` added
+
+  This new `BiGUL` constructor lets the programmer display a customised message
+  in error traces.
+
+* Error fixes
+
+  - Fixed the glitch that `normalSV` does not convert boolean-valued lambdas
+    to total functions.
+
+  - Eliminated a “Pattern match(es) are overlapped” warning reported when
+    using patterns as conditions.
+
+  - Fixed a panic produced by `Generics.BiGUL.Interpreter.addCurrentBranchTrace`.
+
 1.0.0 Changes
 =============
 

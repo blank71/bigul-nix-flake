@@ -52,7 +52,7 @@ incrBranchNo t              = t
 
 addCurrentBranchTrace :: BiGULTrace -> BiGULTrace -> BiGULTrace
 addCurrentBranchTrace t (BTBranches ts) = BTBranches (t:ts)
-addCurrentBranchTrace t _               = error "panic: Generics.BiGUL.Error.addCurrentBranchTrace"
+addCurrentBranchTrace t u               = u
 
 -- | The putback semantics of a 'Generics.BiGUL.BiGUL' program.
 put :: BiGUL s v -> s -> v -> Maybe s
@@ -63,30 +63,32 @@ putTrace :: BiGUL s v -> s -> v -> BiGULTrace
 putTrace b s v = snd (runBiGULResult (putWithTrace b s v))
 
 putWithTrace :: BiGUL s v -> s -> v -> BiGULResult s
-putWithTrace (Fail str)      s       v       = errorResult (BEFail str)
-putWithTrace (Skip f)        s       v       = if f s == v then return s else errorResult BESkipMismatch
-putWithTrace  Replace        s       v       = return v
-putWithTrace (l `Prod` r)    (s, s') (v, v') =
+putWithTrace (Fail str)         s       v       = errorResult (BEFail str)
+putWithTrace (Skip f)           s       v       = if f s == v then return s else errorResult BESkipMismatch
+putWithTrace  Replace           s       v       = return v
+putWithTrace (l `Prod` r)       (s, s') (v, v') =
   liftM2 (,) (modifyTrace (BTNextSV "on the left of Prod"  s  v ) (putWithTrace l s  v ))
              (modifyTrace (BTNextSV "on the right of Prod" s' v') (putWithTrace r s' v'))
-putWithTrace (RearrS p e b)  s       v       = do
+putWithTrace (RearrS p e b)     s       v       = do
   env <- embedEither BESourcePatternMismatch (deconstruct p s)
   let m = eval e env
   s'  <- modifyTrace (BTNextSV "inside RearrS" m v) (putWithTrace b m v)
   con <- embedEither BEInvRearrFailed (uneval p e s' (emptyContainer p))
   return (construct p (fromContainerS p env con))
-putWithTrace (RearrV p e b)  s       v       = do
+putWithTrace (RearrV p e b)     s       v       = do
   v' <- embedEither BEViewPatternMismatch (deconstruct p v)
   let m = eval e v'
   modifyTrace (BTNextSV "inside RearrV" s m) (putWithTrace b s m)
-putWithTrace (Dep f b)       s       (v, v') =
+putWithTrace (Dep f b)          s       (v, v') =
   if f v == v' then modifyTrace (BTNextSV "inside Dep" s v) (putWithTrace b s v)
                else errorResult BEDependencyMismatch
-putWithTrace (Case bs)       s       v       = putCase bs s v
-putWithTrace (l `Compose` r) s       v       = do
+putWithTrace (Case bs)          s       v       = putCase bs s v
+putWithTrace (l `Compose` r)    s       v       = do
   m  <- modifyTrace (BTNextS "computing intermediate source" s) (getWithTrace l s)
   m' <- modifyTrace (BTNextSV "on the right of Compose" m v) (putWithTrace r m v)
   modifyTrace (BTNextSV "on the left of Compose" s m') (putWithTrace l s m')
+putWithTrace (Checkpoint str b) s    v          =
+  modifyTrace (BTNextSV ("checkpoint: " ++ str) s v) (putWithTrace b s v)
 
 getCaseBranch :: (s -> v -> Bool, CaseBranch s v) -> s -> BiGULResult v
 getCaseBranch (p, Normal b q) s =
@@ -137,28 +139,30 @@ getTrace :: BiGUL s v -> s -> BiGULTrace
 getTrace b s = snd (runBiGULResult (getWithTrace b s))
 
 getWithTrace :: BiGUL s v -> s -> BiGULResult v
-getWithTrace (Fail str)      s       = errorResult (BEFail str)
-getWithTrace (Skip f)        s       = return (f s)
-getWithTrace  Replace        s       = return s
-getWithTrace (l `Prod` r)    (s, s') =
+getWithTrace (Fail str)         s       = errorResult (BEFail str)
+getWithTrace (Skip f)           s       = return (f s)
+getWithTrace  Replace           s       = return s
+getWithTrace (l `Prod` r)       (s, s') =
   liftM2 (,) (modifyTrace (BTNextS "on the left of Prod"  s ) (getWithTrace l s ))
              (modifyTrace (BTNextS "on the right of Prod" s') (getWithTrace r s'))
-getWithTrace (RearrS p e b)  s       = do
+getWithTrace (RearrS p e b)     s       = do
   env <- embedEither BESourcePatternMismatch (deconstruct p s)
   let m = eval e env
   modifyTrace (BTNextS "inside RearrS" m) (getWithTrace b m)
-getWithTrace (RearrV p e b)  s       = do
+getWithTrace (RearrV p e b)     s       = do
   v'  <- modifyTrace (BTNextS "inside RearrV" s) (getWithTrace b s)
   con <- embedEither BEInvRearrFailed (uneval p e v' (emptyContainer p))
   env <- embedEither BEViewRecoveringFailed (fromContainerV p con)
   return (construct p env)
-getWithTrace (Dep f b)       s       = do
+getWithTrace (Dep f b)          s       = do
   v <- modifyTrace (BTNextS "inside Dep" s) (getWithTrace b s)
   return (v, f v)
-getWithTrace (Case bs)       s       = getCase bs s
-getWithTrace (l `Compose` r) s       = do
+getWithTrace (Case bs)          s       = getCase bs s
+getWithTrace (l `Compose` r)    s       = do
   m <- modifyTrace (BTNextS "on the left of Compose" s) (getWithTrace l s)
   modifyTrace (BTNextS "on the right of Compose" m) (getWithTrace r m)
+getWithTrace (Checkpoint str b) s       =
+  modifyTrace (BTNextS ("checkpoint: " ++ str) s) (getWithTrace b s)
 
 getCase :: [(s -> v -> Bool, CaseBranch s v)] -> s -> BiGULResult v
 getCase []             s =  BiGULResult (Nothing, BTBranches [])

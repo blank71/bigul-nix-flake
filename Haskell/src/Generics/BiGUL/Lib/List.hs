@@ -6,46 +6,45 @@ import Generics.BiGUL
 import Generics.BiGUL.TH
 import Generics.BiGUL.Lib
 
-import Control.Arrow ((***))
-import Data.Maybe (isJust, catMaybes)
+import Data.Maybe (isJust, fromJust, catMaybes)
+import Data.List (span)
 
 
 -- | List alignment. Operating only on the sources satisfying the source condition,
 --   and using the specified matching condition, 'align' finds for each view the first matching source
 --   that has not been matched with previous views, and updates the source using the inner program.
 --   If there is no matching source, one is created using the creation argument —
---   after creation, the created source should match with the view as determined by the matching condition.
+--   after creation, the created source should satisfy the source condition and
+--   match with the view as determined by the matching condition.
 --   For a source not matched with any view, the concealment argument is applied —
 --   if concealment computes to @Nothing@, the source is deleted;
 --   if concealment computes to @Just s'@, where @s'@ should not satisfy the source condition,
 --   the source is replaced by @s'@.
-align :: (Show a, Show b)
-      => (a -> Bool)       -- ^ source condition
-      -> (a -> b -> Bool)  -- ^ matching condition
-      -> BiGUL a b         -- ^ inner program
-      -> (b -> a)          -- ^ creation
-      -> (a -> Maybe a)    -- ^ concealment
-      -> BiGUL [a] [b]
+align :: forall s v. (Show s, Show v)
+      => (s -> Bool)       -- ^ source condition
+      -> (s -> v -> Bool)  -- ^ matching condition
+      -> BiGUL s v         -- ^ inner program
+      -> (v -> s)          -- ^ creation
+      -> (s -> Maybe s)    -- ^ concealment
+      -> BiGUL [s] [v]
 align p match b create conceal = Case
-  [ $(normalSV [| null . filter p |] [p| [] |] [| null . filter p |])
-    ==> $(rearrV [| \[] -> () |])$
-          skip ()
-  , $(adaptiveSV [p| _ |] [p| [] |])
-    ==> \ss _ -> catMaybes (map (\s -> if p s then conceal s else Just s) ss)
-  -- view is necessarily nonempty in the cases below
-  , $(normalSV [p| (p -> False):_ |] [p| _ |] [p| (p -> False):(null . filter p -> False) |])
-    ==> $(rearrS [| \(s:ss) -> ss |])$
-          align p match b create conceal
-  , $(normal [| \(s:ss) (v:vs) -> p s && match s v |] [p| (p -> True):_ |])
+  [ $(normalSV [p| [] |] [p| [] |] [p| [] |])
+    ==> $(update [p| _ |] [p| [] |] [d| |])
+  , $(normal [| \(s:_) (v:_) -> p s && match s v |] [| \(s:_) -> p s |])
     ==> $(update [p| x:xs |] [p| x:xs |] [d| x = b; xs = align p match b create conceal |])
-  , $(adaptive [| \ss (v:_) -> isJust (findFirst (\s -> p s && match s v) ss) ||
-                               let s = create v in p s && match s v |])
-    ==> \ss (v:_) -> maybe (create v:ss) (uncurry (:)) (findFirst (\s -> p s && match s v) ss)
+  , $(adaptive [| \(s:_) [] -> p s |])
+    ==> \ss _ -> let (prefix, remaining) = span p ss
+                 in  catMaybes (map conceal prefix) ++ remaining
+  , $(normal [| \(s:_) _ -> not (p s) |] [| \(s:_) -> not (p s) |])
+    ==> $(update [p| _:xs |] [p| xs |] [d| xs = align p match b create conceal |])
+  , $(adaptive [| \ss (v:_) -> isJust (findFirstMatch v ss) |])
+    ==> \ss (v:_) -> uncurry (:) (fromJust (findFirstMatch v ss))
+  , $(adaptiveSV [p| _ |] [| \(v:_) -> p (create v) |])
+    ==> \ss (v:_) -> create v : ss
   ]
   where
-    findFirst :: (a -> Bool) -> [a] -> Maybe (a, [a])
-    findFirst p [] = Nothing
-    findFirst p (x:xs) | p x       = Just (x, xs)
-    findFirst p (x:xs) | otherwise = fmap (id *** (x:)) (findFirst p xs)
-
-
+    findFirstMatch :: v -> [s] -> Maybe (s, [s])
+    findFirstMatch v []                        = Nothing
+    findFirstMatch v (s:ss) | p s && match s v = Just (s, ss)
+                            | otherwise        = do (s', ss') <- findFirstMatch v ss
+                                                    return (s', s:ss')

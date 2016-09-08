@@ -2,8 +2,8 @@
 
 \newif\ifanonymous
 
-%\anonymoustrue
-\anonymousfalse
+\anonymoustrue
+%\anonymousfalse
 
 %include polycode.fmt
 %
@@ -101,7 +101,7 @@
 %\preprintfooter{short description of paper}   % 'preprint' option specified.
 
 \title{The Under-Appreciated Put: Implementing Delta-Alignment in BiGUL}
-%\subtitle{Functional Pearl}
+\subtitle{A POPL Pearl Submission}
 
 \ifanonymous
 \authorinfo{}{}{}
@@ -117,9 +117,9 @@
 \maketitle
 
 \begin{abstract}
-There are two approaches to bidirectional programming.
-One is the get-based method where one writes |get| and
-|put| is automatically derived, and the other is
+There are two approaches to bidirectional programming:
+One is the get-based method where one writes |get|, and
+|put| is automatically derived; the other is
 the put-based method where one writes |put| and
 |get| is automatically derived.
 In this paper, we argue that the put-based method
@@ -132,7 +132,7 @@ them seamlessly in one framework, which
 would be nontrivial with the get-based method.
 We demonstrate how the matching/delta/generic lenses can be
 implemented in BiGUL, a putback-based
-bidirectional language.
+bidirectional language embedded in Haskell.
 \end{abstract}
 
 %\category{CR-number}{subcategory}{third-level}
@@ -169,6 +169,11 @@ import Prelude hiding (traverse)
 import Generics.Pointless.Combinators hiding (and)
 import Generics.Pointless.Functors hiding (Functor, (:+:), (:*:))
 import Generics.Pointless.HFunctors
+
+infixr 0 ==>
+(==>) :: (a -> b) -> a -> b
+(==>) = ($)
+
 \end{code}
 \end{comment}
 
@@ -177,7 +182,7 @@ import Generics.Pointless.HFunctors
 Bidirectional transformations are hot! They
 originated from the {\em view updating\/} mechanism in the
 database community~\cite{Bancilhon:81,Dayal:82,GoPZ88},
-and have been recently attracting a lot of attention
+and have been attracting a lot of attention
 from researchers in the communities of programming languages and 
 software engineering \cite{GRACE:09,HSST11},
 since the pioneering work of Foster {et al.} on 
@@ -230,9 +235,9 @@ it is preferable to write
 just a single program that can denote both transformations,
 which has motivated two different approaches:
 \begin{itemize}
-\item {\em Get-based Method}: allowing users to write |get|
+\item {\em Get-based method}: allowing users to write |get|
 and derive a suitable |put| \cite{Foster2007,MHNHT07,Bohannon:08,Barbosa2010,Hidaka:10,Hofmann2012,Pacheco2012};
-\item {\em Put-based Method}: allowing users to write |put|
+\item {\em Put-based method}: allowing users to write |put|
 and derive the unique |get| if there is one \cite{PaHF14,PachecoZH14,HuPF14,FischerHP15,Ko2016}.
 \end{itemize}
 
@@ -263,23 +268,38 @@ transformation \cite{CheneyGMS15}.
 
 Since |get| does not contain
 sufficient information for a system to automatically
-derive intentional update policies of |put|,
-in order to deal with various update policies of |put| in
-different contexts, significant extensions
+derive intended update policies of |put|,
+in order to deal with various update policies of |put| for solving
+different problems, significant extensions
 to the language for writing |get| are necessary.
-As a matter of fact, from the original get-based bidirectional
-language \emph{lenses} \cite{Foster2007}, we have seen
-many such extensions, e.g., the \emph{matching lenses}
-to deal with alignment policies \cite{Barbosa2010},
-the \emph{delta lenses} to deal with modification-sensitive update policies
-\cite{Diskin:2011,Hofmann2012}, and the \emph{generic lenses} to deal with
-any updates on inductive data structures \cite{Pacheco2012}.
+One representative problem is \emph{alignment}:
+Both the source and view are lists, and the \emph{get} direction is simply a map on lists.
+The \emph{put} direction, on the other hand, has a great amount of freedom:
+The elements of the view list may be inserted or deleted.
+A view deletion can only be reflected as a source deletion, if we want the get direction to be just a map;
+for an insertion, however, how do we create a corresponding source element from a usually less informative view element?
+The view list may be reordered.
+How do we determine which source element should be matched with each view element?
+\emph{Matching lenses}~\cite{Barbosa2010} were developed to be able to customize such policies.
+There are other finer-grained considerations:
+Given an updated view list, how do we decide whether an element is only modified --- so the corresponding source element also only needs modification --- or newly inserted --- so we should delete the corresponding source element and insert a new one?
+This requires tracking of how the view list is modified, and frameworks for expressing modification-sensitive update policies were developed~\cite{Diskin:2011,Hofmann2012}.
+We may want to go beyond lists to trees and in general any inductive data structures, and, of course, there is work on \emph{generic lenses} to deal with any updates on inductive data structures \cite{Pacheco2012}.
+%As a matter of fact, from the original get-based bidirectional
+%language \emph{lenses} \cite{Foster2007}, we have seen
+%many such extensions, e.g., the \emph{matching lenses}
+%to deal with alignment policies \cite{Barbosa2010},
+%the \emph{delta lenses} to deal with modification-sensitive update policies
+%\cite{Diskin:2011,Hofmann2012}, and the \emph{generic lenses} to deal with
+%any updates on inductive data structures \cite{Pacheco2012}.
 All these extensions, as seen in the related papers,
 are nontrivial, where one has to
 rework all the original lens framework by adding new information
 to |get| to indirectly control of the behavior of |put|, and to prove
 that the extension is sound in the sense that the new |get| and |put|
 are well-behaved.
+
+%\TODO{The above is too abstract and not self-contained. The reader won't be able to understand what the alignment problem is, and how it relates to the rectangle example. I think this is related to Prof Hu's question ``What is the old idea we want to explain?''. The old idea is alignment, and we have to explain it instead of just giving references.}
 
 In this paper, we put up
 the slogan ``One |put| for All'', in the sense that
@@ -289,8 +309,8 @@ but also enable us to systematically
 develop various domain-specific bidirectional languages and use
 them seamlessly in one framework, which
 would be nontrivial with the get-based method as seen above.
-After a brief review of BiGUL~\cite{Ko2016}, a putback-based
-bidirectional language, we demonstrate how it can be used to
+In the rest of this paper, after a brief review of BiGUL~\cite{Ko2016}, a putback-based
+bidirectional language embedded in Haskell, we demonstrate how it can be used to
 concisely implement the matching/delta/generic lenses that
 are guaranteed to be well-behaved.
 
@@ -303,6 +323,7 @@ are guaranteed to be well-behaved.
 
 %An under-appreciated fact about well-behaved lenses is that \emph{put} completely determines the behavior of the corresponding \emph{get} --- that is, given a \emph{put} function and two \emph{get} functions each of which forms a well-behaved lens when paired with the \emph{put} function, it must be the case that the two \emph{get} functions are pointwise equal. This fact was already noted by Foster in his PhD thesis~\cite{Foster2009} but had remained neglected until people dug up this idea and started exploring the possibility of specifying BXs in terms of \emph{put} \TODO{citations}.
 
+In this paper, we use BiGUL version 0.9, which is available on Hackage.
 Intuitively, think of a BiGUL program of type |BiGUL s v| as describing how to manipulate a state consisting of a source component of type~|s| and a view component of type~|v|; the goal is to copy all information in the view to proper places in the source.
 In the simplest case, the view has type~|()| and contains no information, and we can use |Skip :: BiGUL s ()| to leave the source unchanged;
 another simple case is when the view has the same type as the source, and we can use |Replace :: BiGUL s s| to replace the entire source with the view.
@@ -333,7 +354,7 @@ data Branch s v  =  Normal    (BiGUL s v)
                  |  Adaptive  (s -> v -> s)
 \end{spec}
 A branch can be a ``normal'' branch, in which case it is a BiGUL program of type |BiGUL s v|, or an ``adaptive'' branch, in which case it is a Haskell function of type |s -> v -> s|.
-The semantics of |Case| is largely as people would expect: executing the first branch whose associated predicate evaluates to true on the current state, and performing further updates when this branch is normal.
+Roughly speaking, the semantics of |Case| is largely as people would expect: executing the first branch whose associated predicate evaluates to true on the current state, and performing further updates when this branch is normal.
 More interestingly, when the chosen branch is adaptive, the source will be replaced by the result of evaluating the associated function on the current state, and the whole |Case| will be executed again.
 
 We introduce some extra notations for writing branches more easily.
@@ -358,8 +379,53 @@ There are also other variants of |normal| and |adaptive| that are suffixed with 
 %%%
 \section{Positional Alignment}
 
-The simplest alignment strategy is the positional one. The following types for
-source (|Source|) and view (|View|) are used for the running example.
+As a warm-up, let us try to describe in BiGUL the simplest alignment strategy, which matches elements at the same positions in the source and view lists.
+
+Suppose that a research institution has a listing of authors with their
+publication count and another listing with its researchers, where authors and
+researchers are respectively represented by the following types:
+%
+\begin{comment}
+\begin{code}
+type ID = Int
+type Name = String
+type Publications = Int
+\end{code}
+\end{comment}
+%
+\begin{code}
+type Author      = (ID, (  Name, Publications))
+type Researcher  = (ID,    Name)
+\end{code}
+%
+where |ID :: Int| is the identification number (id for short), |Name :: String|
+is the name of the author/researcher, and |Publications :: Int| is the number
+of publications of the author. The relation between an author and a researcher
+is straightforward: a researcher is an author without the publication count and
+thus ids and names of an author must match with the ones of the respective
+researcher.
+%
+This can be expressed using the BiGUL program:
+%
+\begin{code}
+arBX :: BiGUL Author Researcher
+arBX = Replace `Prod` $(rearrV   [| \ c -> (c, ()) |])
+                                 (Replace `Prod` Skip)
+\end{code}
+%
+First, we want to replace the source id (author) with the view id (researcher)
+and thus we use |Replace| on the left-hand side of a |Prod|, whose right-hand
+side will deal with the name part. Since there is a mismatch of shape
+between the source and the view in that part --- the source is a pair whilst
+the view is a single element --- we rearrange the view (researcher name) into a
+pair whose second component is an unit. After the rearrangement, we can use a
+|Prod| with a |Replace| in the left-hand side to replace the name using a
+|Replace| and with a |Skip| on the right-hand side ignoring the value of the
+view and keeping the value of the source (publication count) unchanged.
+
+\begin{comment}
+The following types for
+source (|Source|) and view (|View|) are used as a concrete running example:
 %
 \begin{code}
 type Source  = (Int, (Char, Int))
@@ -368,7 +434,9 @@ type View    = (Int, Char)
 %
 The first |Int| component of the pair should match the first |Int| component of the view,
 and the |Char| component of the source should match the |Char|
-component of the view. This relation between source and view can be expressed
+component of the view.
+\TODO{This is abstract. Can we make a concrete story giving the fields meanings, like saying the first |Int| is an id number, the second |Char| is a name, etc?}
+This relation between source and view can be expressed
 with the following BiGUL program:
 %
 \begin{code}
@@ -376,32 +444,41 @@ myBX :: BiGUL Source View
 myBX = Replace `Prod` $(rearrV   [| \ c -> (c, ()) |])
                                  (Replace `Prod` Skip)
 \end{code}
+\TODO{This is our first BiGUL program, and we should proceed more gently. Something along the line of ``The first thing we want to do is to replace the source id with the view id, so we write |Replace| on the left-hand side of a |Prod|, whose right-hand side will deal with the name part. For that part, there is a mismatch of shape between the source and view, however: The source is a pair, whereas the view is a single element. To make them match (so we can use |Prod|), one way is to rearrange the view into a pair whose second component is a unit. After the rearrangement, we can now use |Prod|, whose left-hand side is a |Replace|, to replace the name, and right-hand side is a |Skip|, keeping \ldots\ unchanged.''}
+\end{comment}
 
-Positional alignment for lists with elements of the above source and view types
-is pretty straightforward. No moves are taken into
-account, and elements are added or deleted at the end of the source. Just as
+The listings are represented by lists of the above types. So we have a list of
+authors and a list of researchers. With positional alignment, the relation
+between the two lists is simple: each element of the author list matches the
+element of researcher list at the same position. When performing any operation
+on the view (list of researchers), reordering of the elements (i.e., an element moved to another position) is not taken into
+account, and elements are added or deleted at the end of the source.
+Just as
 with any other programming practice, the BiGUL program must take into account
-the several possibilities of source and view values in the update process:
+the several possibilities of source and view values in the update process. For
+that, we specify a function (|arMapL|) to map positionally a list of researchers
+with a list of authors:
 %
 \begin{itemize}
   \item both source and view are empty, and we just
     |Skip|;
-  \item all elements of the view were processed, so we adapt the source by removing
-    the extra elements
+  \item all elements of the view were processed, so we adapt the source (explained below) by removing
+    the extra elements:
     |\ _ _ -> []|;
-    \item both source and view have elements, then we update with the head of both
-    source and view, and then recurse
-    |u `Prod` myMapL c u|;
-  \item the source does not have enough elements and create new ones
+    \item both source and view have elements, so we update with the head of both
+    source and view, and then recurse on the tail of the list:
+    |arBX `Prod` arMapL|;
+  \item the source does not have enough elements and we create a new one,
+    setting to 0 the number of publications of the new author:
     |\ _ ((k,v1) : _) -> [(k,(v1,0))]|.
 \end{itemize}
 %
-These actions are packed into a |Case| statement which selects the correct
+These possibilities are packed into a |Case| statement which selects the correct
 action for each situation:
 %
 \begin{code}
-myMapL :: BiGUL [Source] [View]
-myMapL = Case
+arMapL :: BiGUL [Author] [Researcher]
+arMapL = Case
   [ $(normalSV [p| [] |] [p| [] |])
       ==> $(rearrV [| \ [] -> () |]) Skip
   , $(adaptiveV [p| [] |])
@@ -409,7 +486,7 @@ myMapL = Case
   , $(normalSV [p| (_ : _) |] [p| (_ : _) |])
       ==> $(rearrV [| \ (v:vs) -> (v, vs) |])$
         $(rearrS [| \ (s:ss) -> (s, ss) |])$
-          myBX `Prod` myMapL
+          arBX `Prod` arMapL
   , $(adaptiveV [p| (_ : _) |])
       ==> \ _ ((k,v1) : _) -> [(k,(v1,0))]
   ]
@@ -441,42 +518,58 @@ element is created from the source element at the head of the list. Then, the
 |Case| statement looks for a normal branch, entering in the one where both
 source and view have elements, updating the heads and recursing.
 
-Running the |get| function with this BiGUL program, we obtain the following
+To demonstrate the BX functions, let
+\begin{code}
+source = [(0,("A.",3)),(1,("B.",5)),(2,("C.",8))]
+\end{code}
+%
+Running the |get| function on |source| with the |arMapL| BiGUL program, we obtain the following
 result:
 %
 \begin{lstlisting}
-@@>@@ get myMapL [(0,('a',0)),(1,('b',1)),(2,('c',2))]
-[(0,'a'),(1,'b'),(2,'c')]
+@@>@@ get arMapL source
+[(0,"A."),(1,"B."),(2,"C.")]
 \end{lstlisting}
 %
-We can perform the changes that we want to this view, e.g., modify the characters
-to upper case, and put that view back into the original source\footnote{The
-symbol \lstcontinueline{} denotes line continuation.}:
+Now, if we want to expand the last name of the authors/researchers, we just
+modify the result above and then put it back into the original source:
 %
 \begin{lstlisting}
-@@>@@ put myMapL [(0,('a',0)),(1,('b',1)),(2,('c',2))] [(0,'A'),(1,'B'),(2,'C')]
-[(0,('A',0)),(1,('B',1)),(2,('C',2))]
+@@>@@@@\hspace{1ex}@@put arMapL source [(0,"Ana"),(1,"Bob"),(2,"Carl")]
+[(0,("Ana",3)),(1,("Bob",5)),(2,("Carl",8))]
 \end{lstlisting}
 %
-Moreover, we can see the limitations of positional update when removing an
-element \lstinline!(1,'b')!:
+We can see that the original authors are updated according the changes made to
+the view.
+However, we can see the limitations of positional update when removing an
+element, e.g., \lstinline!(1,"B.")!:
 %
 \begin{lstlisting}
-@@>@@ put myMapL [(0,('a',0)),(1,('b',1)),(2,('c',2))] [(0,'a'),(2,'c')]
-[(0,('a',0)),(2,('c',1))]
+@@>@@ put arMapL source [(0,"A."),(2,"C.")]
+[(0,("A.",3)),(2,("C.",5))]
 \end{lstlisting}
 %
-or adding a new one \lstinline!(3,'d')! before the end:
+or adding a new one, e.g., \lstinline!(3,"D.")! before the end%
+\footnote{The symbol \lstcontinueline{} denotes line continuation.}:
 %
-\begin{lstlisting}
-@@>@@ put myMapL [(0,('a',0)),(1,('b',1)),(2,('c',2))] [(0,'a'),(1,'b'),(3,'d'),(2,'c')]
-[(0,('a',0)),(1,('b',1)),(3,('d',2)),(2,('c',0))]
+\begin{lstlisting}[breaklines=false]
+@@>@@ put arMapL source @@\lstcontinueline@@
+    [(0,"A."),(1,"B."),(3,"D."),(2,"C.")]
+[(0,("A.",3)),(1,("B.",5)),(3,("D.",8)),(2,("C.",0))]
 \end{lstlisting}
+%
+{\lstset{breakatwhitespace}
+Notice the number of publications. For the removal example, it is as
+\lstinline!(2,"C.")! was removed and \lstinline!(1,"B.")! was modified to
+\lstinline!(2,"C.")!.  For the addition example it is as \lstinline!(2,"C.")!
+was added at the end of the view, and \lstinline!(2,"C.")! from the original
+view was modified to \lstinline!(3,"D.")!.
+}
 
-The |myMapL| program can be generalized to work on lists with arbitrary values.
+The |arMapL| program can be generalized to work on lists with arbitrary values.
 For that, it must be parametrized with a \emph{create} function, to produce a
-source element from a view one, and with a BiGUL program to be run on the
-elements:
+source element from a view one as in the fourth branch of the |arMapL| |Case|,
+and with a BiGUL program to be run on the elements instead of |arBX|:
 \begin{code}
 mapL :: (v -> s) -> BiGUL s v -> BiGUL [s] [v]
 \end{code}
@@ -500,15 +593,24 @@ mapL c u = Case
 %%%
 \section{Key-Based Alignment}
 
+The positional alignment strategy is not the best regarding our example
+shown in the previous section. Looking at the types, we can define a better
+strategy using the ids to match the authors and researchers as it is done
+naturally in other contexts.
+
 More complex alignment strategies can be implemented using BiGUL. One example is
 a key-based one, where elements of the source and the view are paired based on a
 key component from each of the elements.
+Thus, we can use this strategy to implement a better alignment.
 
+One could implement a key-based alignment strategy using a structure similar to
+the positional alignment. However, a simpler approach is available.
 The idea to implement this strategy is to separate the program in two parts:
 %
 \begin{itemize}
   \item alignment of the elements;
-  \item the actual update.
+  \item the actual update, using a positional mapping which is sufficient when
+  the elements are aligned.
 \end{itemize}
 
 To align the elements, we must first be able to extract a key from source and
@@ -527,14 +629,14 @@ We consider that source and view are aligned if both have the same number of
 elements, and that the keys match element-wise.
 
 In the case that the two lists are not aligned, we define a function that adapts a
-source such that then they are aligned. This is performed by traversing the
+source such that when applied they become aligned. This is performed by traversing the
 view and fetching the first corresponding element in the original source. If
 such element is not present, we create it. At the end, source elements not
 present in view are discarded. The adaptation of the source can be implemented
 as:
 %
 \begin{code}
-keyMatchAdapt s v = Prelude.map getSourceElement v
+arKeyMatchAdapt s v = Prelude.map getSourceElement v
   where  getSourceElement ve =
            case Prelude.filter ((== fst ve) . fst) s of
              []        -> create ve
@@ -543,59 +645,59 @@ keyMatchAdapt s v = Prelude.map getSourceElement v
 \end{code}
 
 When the source and the view are aligned, a simple positional update, as defined
-in the previous section, can be used. Thus, putting it all together, we obtain a
+in the previous section, can be used. Thus, putting it all together, we obtain
 the following BiGUL program:
 %
 \begin{code}
-myKeyMatch ::  BiGUL [Source] [View]
-myKeyMatch = Case
-  [ $(normal [| isAligned |]) ==> myMapL
-  , $(adaptive [| \ _ _ -> True |]) ==> keyMatchAdapt ]
+arKeyMatch ::  BiGUL [Author] [Researcher]
+arKeyMatch = Case
+  [ $(normal [| isAligned |]) ==> arMapL
+  , $(adaptive [| \ _ _ -> True |]) ==> arKeyMatchAdapt ]
 \end{code}
 
-The result of running the |get| function with |myKeyMatch| is the same as with
-|myMapL| since they only differ in the alignment strategy:
+The result of running the |get| function with |arKeyMatch| is the same as with
+|arMapL| since they only differ in the alignment strategy:
 %
 \begin{lstlisting}
-@@>@@ get myKeyMatch @@\lstcontinueline@@
-    [(0,('a',0)),(1,('b',1)),(2,('c',2))]
-[(0,'a'),(1,'b'),(2,'c')]
+@@>@@ source
+[(0,("A.",3)),(1,("B.",5)),(2,("C.",8))]
+@@>@@ get arKeyMatch source
+[(0,"A."),(1,"B."),(2,"C.")]
 \end{lstlisting}
 %
 Running the |put| function also has the same result when the elements are the
 same and the order did not change:
 %
 \begin{lstlisting}
-@@>@@ put myKeyMatch @@\lstcontinueline@@
-    [(0,('a',0)),(1,('b',1)), (2,('c',2))] @@\lstcontinueline@@
-    [(0,'A'),(1,'B'),(2,'C')]
-[(0,('A',0)),(1,('B',1)),(2,('C',2))]
+@@>@@ put arKeyMatch source @@\lstcontinueline@@
+    [(0,"Ana"),(1,"Bob"),(2,"Carl")]
+[(0,("Ana",3)),(1,("Bob",5)),(2,("Carl",8))]
 \end{lstlisting}
 %
-However, when removing elements \lstinline!(1,'b')! or adding new ones
-\lstinline!(3,'d')!, key-based alignment is more precise than positional:
+However, when removing elements, e.g., \lstinline!(1,"B.")! or adding new ones,
+e.g., \lstinline!(3,"D.")!, key-based alignment is more precise than positional:
 %
 \begin{lstlisting}
-@@>@@ put myKeyMatch @@\lstcontinueline@@
-    [(0,('a',0)),(1,('b',1)),(2,('c',2))] @@\lstcontinueline@@
-    [(0,'a'),(2,'c'),(3,'d')]
-[(0,('a',0)),(2,('c',2)),(3,('d',0))]
+@@>@@ put arKeyMatch source [(0,"A."),(2,"C.")]
+[(0,("A.",3)),(2,("C.",8))]
+@@>@@ put arKeyMatch source @@\lstcontinueline@@
+    [(0,"A."),(1,"B."),(3,"D."),(2,"C.")]
+[(0,("A.",3)),(1,("B.",5)),(3,("D.",0)), @@\lstcontinueline@@
+  (2,("C.",8))]
 \end{lstlisting}
 %
 Nonetheless, key-based alignment also has its limitations, e.g., when modifying
-the key of an element (\lstinline!(1,'b')! to \lstinline!(3,'b')!):
+the key of an element (\lstinline!(1,"B.")! to \lstinline!(4,"B.")!):
 %
 \begin{lstlisting}
-@@>@@ put myKeyMatch @@\lstcontinueline@@
-    [(0,('a',0)),(1,('b',1)),(2,('c',2))] @@\lstcontinueline@@
-    [(0,'a'),(3,'b'),(2,'c')]
-[(0,('a',0)),(3,('b',0)),(2,('c',2))]
+@@>@@ put arKeyMatch source@@\hspace{1ex}@@[(0,"A."),(4,"B."),(2,"C.")]
+[(0,("A.",3)),(4,("B.",0)),(2,("C.",8))]
 \end{lstlisting}
 
 As with the positional update, this program can be generalized for key-based
-alignment on lists with arbitrary contents. For that, the |keyMatch| function
+alignment on lists with arbitrary contents. For that, the |arKeyMatch| function
 must be parametrized with a function to get a key component from the source, another
-function to get the key component from the view, and the create and BiGUL update
+function to get the key component from the view, and the create function and BiGUL update
 program as with |mapL|:
 %
 \begin{spec}
@@ -608,6 +710,24 @@ keyMatch  :: Eq k => (s -> k) -> (b -> k)
 %%%
 \section{Delta-Based List Alignment}
 
+The pattern used for the implementation of the key-based alignment strategy ---
+the separation of the alignment of source and view in a step and then the
+element-wise update in another one --- is actually very powerful and allows to
+implement much more complex alignment strategies.
+
+{\lstset{prebreak={},breakatwhitespace=true}
+For instance, going back to the running example, if one wants to change the id
+of a researcher alongside with other operations, that would not be possible with
+either the positional nor the key-based alignment strategies. More concretely,
+putting back \lstinline![(0,"A."),(1,"C.")]!, where \lstinline!(1,"B.")! was
+removed and \lstinline!(2,"C.")! was changed to \lstinline!(1,"C.")!, into
+\lstinline![(0,("A.",3)),(1,("B."),5),(2,("C.",8))]!
+would not yield the expected
+\lstinline![(0,("A.",3)),(1,("C.",8))]!. In this case, we are missing
+information about the operations performed which would lead to a correct update
+of the list of authors.
+}
+
 Alignment can be made more precise using information about how the view is modified.
 If we extract the relation of elements in the original
 view to the elements in the modified view, then the alignment performed when
@@ -615,7 +735,8 @@ updating the source can be completely correct.
 
 The relation of elements in the original view with the ones in the modified view
 can be defined by a mapping from the location of the element in the original
-artifact to the location of the element in the modified artifact. The location
+artifact to the location of the element in the modified artifact.
+The location
 can be defined as an integer index within the container
 %
 \begin{code}
@@ -661,16 +782,29 @@ The implementation of delta-based alignment is similar to the key-based one:
 \end{enumerate}
 %
 However, the delta in the source introduces a bit more complexity to deal with the
-additional information. Implementing this in the running example:
+additional information. We no longer use the keys of the elements to check if
+the lists are aligned, but we verify that purely based on the delta: If the
+identity delta of the source and the identity delta of the view are both equal
+to the given delta, then both source and view elements are aligned:
 %
 \begin{code}
-myAlignL'  ::  BiGUL ([Source], Delta) [View]
-myAlignL' = Case
-  [ $(normal [| \(s, d) v   ->  d == getIdL v
-                            &&  d == getIdL s |])
-      ==> $(rearrS [| \(s, _) -> s |]) myMapL
+isDeltaAlignedL (s,d) v = d == getIdL v && d == getIdL s
+\end{code}
+%
+When the source and the view are not aligned, we adapt the source similarly to
+the key-based alignment. However, in this case we also have the delta present in
+the source, which should be the same as both the source and the view after the
+adaptation so that we can perform the positional mapping.
+%
+Implementing this in the running example:
+%
+\begin{code}
+arAlignL'  ::  BiGUL ([Author], Delta) [Researcher]
+arAlignL' = Case
+  [ $(normal [| isDeltaAlignedL |])
+      ==> $(rearrS [| \(s, _) -> s |]) arMapL
   , $(adaptiveS [| const True |])
-      ==> \(s,d) v ->  let s' = myAdaptDeltaL s v d
+      ==> \(s,d) v ->  let s' = arAdaptDeltaL s v d
                        in (s', getIdL v) ]
 \end{code}
 %
@@ -689,9 +823,9 @@ delta, create missing view elements, and
 delete no longer existent view elements:
 %
 \begin{code}
-myAdaptDeltaL  :: [Source] -> [View] -> Delta
-               -> [Source]
-myAdaptDeltaL s v d =
+arAdaptDeltaL  :: [Author] -> [Researcher] -> Delta
+               -> [Author]
+arAdaptDeltaL s v d =
   Prelude.map idOrCreate (Set.elems $ locs v)
   where  idOrCreate i =  let  js = rngOf i d
                          in  if js /= Set.empty
@@ -707,10 +841,10 @@ However, having the delta paired with the source might be inconvenient. To deal 
 such situation, a wrapper is made that takes care of dealing with the delta:
 %
 \begin{code}
-myAlignL :: Delta -> BiGUL [Source] [View]
-myAlignL d = emb g p
-  where  g s    = get myAlignL' (s, getIdL s)
-         p s v  = fst $ put myAlignL' (s, d) v
+arAlignL :: Delta -> BiGUL [Author] [Researcher]
+arAlignL d = emb g p
+  where  g s    = get arAlignL' (s, getIdL s)
+         p s v  = fst $ put arAlignL' (s, d) v
 \end{code}
 %
 This wrapper implements directly the |get| and |put| functions (respectively |g|
@@ -726,25 +860,25 @@ so we know that |getIdL s = getIdL v|. Applying |fst| to both sides of the
 following equation gives us |GetPut|:
 %
 \begin{spec}
-put myAlignL' (s, getIdL v) (get myAlignL' (s, getIdL s))
+put arAlignL' (s, getIdL v) (get arAlignL' (s, getIdL s))
 == { getIdL v == getIdL s }
-put myAlignL' (s, getIdL s) (get myAlignL' (s, getIdL s))
-== { GetPut for myAlignL' }
+put arAlignL' (s, getIdL s) (get arAlignL' (s, getIdL s))
+== { GetPut for arAlignL' }
 (s, getIdL s)
 \end{spec}
 %
 \textsc{PutGet} -- this law states that the view after updating a source is the
 same as the one used for the update. As the result of the |put| function, let
-|(s', delta1) = put myAlignL' (s, delta) v|, thus |(s', delta1)| is consistent
+|(s', delta1) = put arAlignL' (s, delta) v|, thus |(s', delta1)| is consistent
 with |v| and |delta1 == getIdL s'|. Applying the |get| function~|g|:
 %
 \begin{spec}
-get myAlignL' (s', getIdl s')
+get arAlignL' (s', getIdl s')
 == { delta1 = getIdL s' }
-get myAlignL' (s', delta1)
+get arAlignL' (s', delta1)
 == { let binding }
-get myAlignL' (put myAlignL' (s, delta))
-== { PutGet for myAlignL' }
+get arAlignL' (put arAlignL' (s, delta))
+== { PutGet for arAlignL' }
 v
 \end{spec}
 
@@ -764,6 +898,11 @@ In order for an embedding to be well-behaved, running the |put| function should
 produce a source that when running |get| should return the view given to the
 former, as stated by the \textsc{GetPut} law and enforced by the case structure.
 Furthermore, the view should be completely defined by the source.
+It is interesting to note that the two-branch structure of |emb| is comparable with that of |arAlignL'|:
+The normal branch of |arAlignL'| deals with the case where the source and view are roughly consistent, i.e., aligned, but the elements are not yet completely synchronized pairwise; otherwise, when the source and view are too inconsistent, i.e., not aligned, the adaptive branch comes in and restores enough consistency such that the normal branch can take over.
+The normal branch of |emb|, on the other hand, applies when the source and view are fully consistent (as specified by~|g|), and its adaptive branch restores full consistency (by~|p|) when encountering inconsistent pairs of source and view.
+In short, |emb| is an extreme instance of the two-branch structure.
+
 
 To run the delta alignment, we thus need to provide a delta to the BiGUL
 program. With the running example, we can use the following deltas:
@@ -779,28 +918,27 @@ For the \emph{get} direction, the delta is ignored, and the result is the same
 as for the previous kinds of alignment:
 %
 \begin{lstlisting}
-@@>@@ get (myAlignL @@|d1|@@) @@\lstcontinueline@@
-    [(0,('a',0)),(1,('b',1)),(2,('c',2))]
-[(0,'a'),(1,'b'),(2,'c')]
+@@>@@ source
+[(0,("A.",3)),(1,("B.",5)),(2,("C.",8))]
+@@>@@ get (arAlignL @@|d1|@@) source
+[(0,"A."),(1,"B."),(2,"C.")]
 \end{lstlisting}
 %
 However, in the put direction, results may vary depending on the given delta,
 e.g., no changes are performed (using |d1|):
 %
 \begin{lstlisting}
-@@>@@ put (myAlignL @@|d1|@@) @@\lstcontinueline@@
-  [(0,('a',0)),(1,('b',1)),(2,('c',2))] @@\lstcontinueline@@
-  [(0,'A'),(1,'B'),(2,'C')]
-[(0,('A',0)),(1,('B',1)),(2,('C',2))]
+@@>@@ put (arAlignL @@|d1|@@) source @@\lstcontinueline@@
+    [(0,"A."),(1,"B."),(2,"C.")]
+[(0,("A.",3)),(1,("B.",5)),(2,("C.",8))]
 \end{lstlisting}
 %
 versus a swap between the last two elements (using |d2|):
 %
 \begin{lstlisting}
-@@>@@ put (myAlignL @@|d2|@@) @@\lstcontinueline@@
-    [(0,('a',0)),(1,('b',1)),(2,('c',2))] @@\lstcontinueline@@
-    [(0,'A'),(1,'B'),(2,'C')]
-[(0,('A',0)),(1,('B',2)),(2,('C',1))]
+@@>@@ put (arAlignL @@|d2|@@) source @@\lstcontinueline@@
+    [(0,"A."),(1,"B."),(2,"C.")]
+[(0,("A.",3)),(1,("B.",8)),(2,("C.",5))]
 \end{lstlisting}
 %
 Note that the elements were not swapped in the view, but the delta |d2|
@@ -812,10 +950,9 @@ A similar situation occurs when the view is not modified, but one element is not
 in the delta:
 %
 \begin{lstlisting}
-@@>@@ put (myAlignL @@|d3|@@) @@\lstcontinueline@@
-    [(0,('a',0)),(1,('b',1)),(2,('c',2))] @@\lstcontinueline@@
-    [(0,'A'),(1,'B'),(2,'C')]
-[(0,('A',0)),(1,('B',1)),(2,('C',0))]
+@@>@@ put (arAlignL @@|d3|@@) source @@\lstcontinueline@@
+    [(0,"A."),(1,"B."),(2,"C.")]
+[(0,("A.",3)),(1,("B.",5)),(2,("C.",0))]
 \end{lstlisting}
 %
 In this case, it is equivalent to remove the last element and inserting it
@@ -868,8 +1005,12 @@ alignL b c d = emb g p
 %%%
 \section{Delta-Based Tree Alignment}
 
-Another container where delta alignment can be implemented is a tree. Many kinds
-of trees exist, but we use binary tree with labels in the nodes:
+Lists are not the only structures capable of storing information, nor the only
+ones that are used in bidirectional transformation applications. However, other
+containers bring new challenges and we need to take them into account, e.g.,
+the shape of the container.
+One such container where delta alignment can be implemented is the tree. Many kinds
+of trees exist, but we use a binary tree with labels in the nodes:
 %
 \begin{code}
 data Tree a = Nil | Node a (Tree a) (Tree a)
@@ -945,9 +1086,9 @@ approach used in the other implementations:
 The adaptation function for tree can be
 %
 \begin{code}
-myAdaptDeltaT  :: Tree Source -> Tree View -> Delta
-               -> Tree Source
-myAdaptDeltaT s v d = Prelude.fmap idOrCreate (locsT v)
+arAdaptDeltaT  :: Tree Author -> Tree Researcher
+               -> Delta -> Tree Author
+arAdaptDeltaT s v d = Prelude.fmap idOrCreate (locsT v)
   where  idOrCreate i =
            let js = rngOf i d
            in  if js /= Set.empty
@@ -958,14 +1099,17 @@ myAdaptDeltaT s v d = Prelude.fmap idOrCreate (locsT v)
 %
 where we take advantage of the |fmap| function, deriving from the fact that |Tree| is a
 functor.
+This adaptation does two important tasks: it molds the source tree in order to
+match the shape of the view one; and, it aligns the elements in order to perform
+a positional update.
 
 The implementation of the positional tree update is similar to the one for
 lists, since both have only two data constructors. However, trees have double
 recursion which must be taken into account.
 %
 \begin{code}
-myMapT :: BiGUL (Tree Source) (Tree View)
-myMapT = Case
+arMapT :: BiGUL (Tree Author) (Tree Researcher)
+arMapT = Case
   [ $(normalSV [p| Nil |] [p| Nil |])
       ==> $(rearrV [| \ Nil -> () |]) Skip
   , $(adaptiveV [p| Nil |])
@@ -975,34 +1119,51 @@ myMapT = Case
                        -> (v, (vl, vr)) |]) $
              $(rearrS  [| \ (Node s sl sr)
                          -> (s, (sl, sr)) |])$
-                  myBX `Prod` (myMapT `Prod` myMapT)
+                  arBX `Prod` (arMapT `Prod` arMapT)
   , $(adaptiveV [p| (Node _ _ _) |])
       ==> \ _ (Node (k, v1) _ _) -> Node  (k, (v1, 0))
                                           Nil    Nil
   ]
 \end{code}
 
-Having the adaptation and the positional update, we can now define a delta-based
+Before implementing the delta-based alignment for trees, we must revisit the
+function to check if the source and the view are aligned. For the list case, the
+shape is isomorphic to naturals and thus we have the shape of a list equal to
+its length. This aspect is taken into account when verifying the identity delta
+of the list with the given delta. However, for trees this is different and we
+thus need to include another condition:
+%
+\begin{code}
+isDeltaAlignedT (s,d) v  =   d == getIdT v
+                         &&  d == getIdT s
+                         &&  locsT s == locsT v
+\end{code}
+%
+Comparing the positions of the source tree and the view one we ensure that both
+have the same shape.
+
+At this point, we can define a delta-based
 alignment for trees in a similar way as with lists:
 %
 \begin{code}
-myAlignT' :: BiGUL (Tree Source, Delta) (Tree View)
-myAlignT' = Case
-  [ $(normal [| \(s, d) v  ->  d == getIdT v
-                           &&  d == getIdT s |])
-      ==> $(rearrS [| \(s, _) -> s |]) myMapT
+arAlignT'
+  :: BiGUL (Tree Author, Delta) (Tree Researcher)
+arAlignT' = Case
+  [ $(normal [| isDeltaAlignedT |])
+      ==> $(rearrS [| \(s, _) -> s |]) arMapT
   , $(adaptiveS [| const True |])
-      ==> \(s,d) v ->  let s' = myAdaptDeltaT s v d
+      ==> \(s,d) v ->  let s' = arAdaptDeltaT s v d
                        in (s', getIdT v) ]
 \end{code}
 %
 and corresponding wrapper:
 %
 \begin{code}
-myAlignT :: Delta -> BiGUL (Tree Source) (Tree View)
-myAlignT d = emb g p
-  where  g s    = get myAlignT' (s, getIdT s)
-         p s v  = fst $ put myAlignT' (s, d) v
+arAlignT  :: Delta
+          -> BiGUL (Tree Author) (Tree Researcher)
+arAlignT d = emb g p
+  where  g s    = get arAlignT' (s, getIdT s)
+         p s v  = fst $ put arAlignT' (s, d) v
 \end{code}
 
 The application of |get| and |put| to trees is similar to the application of
@@ -1010,25 +1171,40 @@ them to lists. The |get| functions takes the source tree and produces a view
 tree where its elements are the view of their correspondence in the source:
 %
 \begin{lstlisting}
-@@>@@ get (myAlignT @@|d1|@@) (Node (1,('b',1)) @@\lstcontinueline@@
-      (Node (0,('a',0)) Nil Nil) @@\lstcontinueline@@
-      (Node (2,('c',2)) Nil Nil))
-Node (1,'b')  (Node (0,'a') Nil Nil) @@\lstcontinueline@@
-              (Node (2,'c') Nil Nil)
+@@>@@ get (arAlignT @@|d1|@@) (Node (1,("B.",5)) @@\lstcontinueline@@
+      (Node (0,("A.",3)) Nil Nil) @@\lstcontinueline@@
+      (Node (2,("C.",8)) Nil Nil))
+Node (1,"B.")  (Node (0,"A.") Nil Nil) @@\lstcontinueline@@
+               (Node (2,"C.") Nil Nil)
 \end{lstlisting}
 %
 The delta specification in the |put| transformation is the same as with lists:
 %
 \begin{lstlisting}
-@@>@@ put (myAlignT @@|d1|@@) @@\lstcontinueline@@
-    (Node (1,('b',1)) @@\lstcontinueline@@
-      (Node (0,('a',0)) Nil Nil) @@\lstcontinueline@@
-      (Node (2,('c',2)) Nil Nil)) @@\lstcontinueline@@
-    (Node (1,'B') @@\lstcontinueline@@
-      (Node (0,'A') Nil Nil) @@\lstcontinueline@@
-      (Node (2,'C') Nil Nil))
-Node (1,('B',1))  (Node (0,('A',0)) Nil Nil) @@\lstcontinueline@@
-                  (Node (2,('C',2)) Nil Nil)
+@@>@@ put (arAlignT @@|d1|@@) @@\lstcontinueline@@
+    (Node (1,("B.",5)) @@\lstcontinueline@@
+      (Node (0,("A.",3)) Nil Nil) @@\lstcontinueline@@
+      (Node (2,("C.",8)) Nil Nil)) @@\lstcontinueline@@
+    (Node (1,"B.") @@\lstcontinueline@@
+      (Node (0,"A.") Nil Nil) @@\lstcontinueline@@
+      (Node (2,"C.") Nil Nil))
+Node (1,("B",5))  (Node (0,("A.",3)) Nil Nil) @@\lstcontinueline@@
+                  (Node (2,("C.",8)) Nil Nil)
+\end{lstlisting}
+%
+We can also change the shape of a tree in the view:
+%
+\begin{lstlisting}
+@@>@@ put (arAlignT @@|d1|@@) @@\lstcontinueline@@
+    (Node (1,("B.",5)) @@\lstcontinueline@@
+      (Node (0,("A.",3)) Nil Nil) @@\lstcontinueline@@
+      (Node (2,("C.",8)) Nil Nil)) @@\lstcontinueline@@
+    (Node (0,"A.") Nil @@\lstcontinueline@@
+      (Node (1,"B.") Nil @@\lstcontinueline@@
+        (Node (2,"C.") Nil Nil)))
+Node (0,"A.",3) Nil @@\lstcontinueline@@
+  (Node (1,"B.",5) Nil @@\lstcontinueline@@
+    (Node (2,"C.",8) Nil Nil))
 \end{lstlisting}
 
 The delta alignment implementation can be generalized for arbitrary tree
@@ -1098,9 +1274,12 @@ alignT b c d = emb g p
 %%%
 \section{Generic Delta-Based Alignment}
 
-Delta-based alignment can also be implemented for other containers. The
-implementations for the list and tree cases are generalizable to other
-containers.
+We have explained how to do delta-based alignment for lists and then for trees,
+and these experiences actually make us sufficiently prepared to go generic!
+In this final installment, we show that delta-based alignment can be generically implemented for any other containers.
+%The
+%implementations for the list and tree cases are generalizable to other
+%containers.
 
 %%% Containers as Shape and Data
 \subsection{Containers as Shape and Data}
@@ -1118,6 +1297,31 @@ Thus, a polymorphic type \(T~a\) can be characterized by three functions:
 |data_ :: T a -> [a]| to extract the data;
 and, |recover :: (T (), [a]) -> T a| to rebuild the type value
 from its shape and data.
+For a list of researchers \lstinline!l = [(0,"A."),(1,"B."),(2,"C.")]! we have:
+%
+\begin{lstlisting}
+@@>@@ shape l
+[(),(),()]
+@@>@@ data_ l
+[(0,"A."),(1,"B."),(2,"C.")]
+@@>@@ recover (shape l, data_ l)
+[(0,"A."),(1,"B."),(2,"C.")]
+\end{lstlisting}
+%
+{\lstset{prebreak={}}
+and for a tree of researchers \lstinline!t = Node (1,"B.") (Node (0,"A.") Nil Nil) (Node (2,"C.") Nil Nil)!:
+}
+%
+\begin{lstlisting}
+@@>@@ shape t
+Node () (Node () Nil Nil) (Node () Nil Nil)
+@@>@@ data_ t
+[(0,"A."),(1,"B."),(2,"C.")]
+@@>@@ recover (shape t, data_ t)
+Node (1,"B.") (Node (0,"A.") Nil Nil) @@\lstcontinueline@@
+              (Node (2,"C.") Nil Nil)
+\end{lstlisting}
+%
 For flexibility, these functions are defined in a type class
 %
 \begin{spec}
@@ -1128,7 +1332,7 @@ class Shapely (t :: * -> *) where
 \end{spec}
 
 On top of these functions, it is possible to define new ones, e.g., |locs ::
-T a -> Set Loc| to get a all the locations of the data elements within the
+T a -> Set Loc| to get all the locations of the data elements within the
 container.
 
 %%% Positional Mapping
@@ -1167,8 +1371,11 @@ getId :: Shapely s => s a -> Delta
 getId = Set.map (\ l -> (l, l)) . locs
 \end{code}
 
-Starting with the adaptation, we can make use of the functions resulting from
-the fact that we can see a container as a shape and data. Therefore, we recover
+Firstly, we need a generalization of the adaptation process. With lists, we take
+the view and then insert the source elements at the correct positions. For
+trees, the process is similar: we flatten the source tree extracting its data in
+order to insert it into the shape of the view. Working with shapely types, this
+is achieved by recovering
 a container with the shape of the view, but with the data of the original source
 or with created data when new elements were added:
 %
@@ -1186,13 +1393,30 @@ adaptDelta c s v d = recover (newShape, newData)
 %
 With this function, any shapely type can be adapted, including lists and trees.
 
+Another aspect to take into account is to check if the source and view
+containers are aligned. With lists we just compare the given delta with the
+identity deltas of source and view. With trees, in addition to the conditions
+used with lists, we also check the extracted locations. Actually, the extracted
+locations contains the shape of the tree, which is what we need in order to
+verify that some change was performed to the view in addition to the delta. Thus,
+we check if the source and view are aligned with:
+%
+\begin{code}
+isDeltaAligned (s,d) v  =   d == getIdT v
+                        &&  d == getIdT s
+                        &&  shape s == shape v
+\end{code}
+%
+and use it directly in the alignment function where we perform a positional
+update when both source and view are aligned, or we adapt when they are not
+aligned:
+%
 \begin{code}
 align'  ::  (Shapely t, Positional t)
         =>  BiGUL s v -> (v -> s)
         ->  BiGUL (t s, Delta) (t v)
 align' b c = Case
-  [ $(normal [| \(s, d) v  ->  d == getId v
-                           &&  d == getId s |])
+  [ $(normal [| isDeltaAligned |])
       ==> $(rearrS [| \(s, _) -> s |]) (positionalMap c b)
   , $(adaptiveS [| const True |])
       ==> \(s,d) v ->  let s' = adaptDelta c s v d
@@ -1246,32 +1470,32 @@ implementation of delta-based alignment. The same function can be used for,
 e.g., lists:
 %
 \begin{lstlisting}
-@@>@@ put (keyAlign myBX myCreate fst fst) @@\lstcontinueline@@
-    [(0,('a',0)),(1,('b',1)),(2,('c',2))] @@\lstcontinueline@@
-    [(0,'A'),(1,'B'),(2,'C')]
-[(0,('A',0)),(1,('B',1)),(2,('C',2))]
+@@>@@ put (keyAlign arBX arCreate fst fst) @@\lstcontinueline@@
+    [(0,("A.",3)),(1,("B.",5)),(2,("C.",8))] @@\lstcontinueline@@
+    [(0,"A."),(1,"B."),(2,"C.")]
+[(0,("A.",3)),(1,("B.",5)),(2,("C.",8))]
 \end{lstlisting}
 %
 and for trees:
 %
 \begin{lstlisting}
-@@>@@ put (keyAlign myBX myCreate fst fst) @@\lstcontinueline@@
-    (Node (1,('b',1)) @@\lstcontinueline@@
-      (Node (0,('a',0)) Nil Nil) @@\lstcontinueline@@
-      (Node (2,('c',2)) Nil Nil)) @@\lstcontinueline@@
-    (Node (1,'B') @@\lstcontinueline@@
-      (Node (0,'A') Nil Nil) @@\lstcontinueline@@
-      (Node (2,'C') Nil Nil))
-Node (1,('B',1))  (Node (0,('A',0)) Nil Nil) @@\lstcontinueline@@
-                  (Node (2,('C',2)) Nil Nil)
+@@>@@ put (keyAlign arBX arCreate fst fst) @@\lstcontinueline@@
+    (Node (1,("B.",5)) @@\lstcontinueline@@
+      (Node (0,("A.",3)) Nil Nil) @@\lstcontinueline@@
+      (Node (2,("C.",8)) Nil Nil)) @@\lstcontinueline@@
+    (Node (1,"B.") @@\lstcontinueline@@
+      (Node (0,"A.") Nil Nil) @@\lstcontinueline@@
+      (Node (2,"C.") Nil Nil))
+Node (1,("B.",5)) (Node (0,("A.",3)) Nil Nil) @@\lstcontinueline@@
+                  (Node (2,("C.",8)) Nil Nil)
 \end{lstlisting}
 %
-where |myCreate (k, v1) = (k, (v1, 0))|.
+where |arCreate (k, v1) = (k, (v1, 0))|.
 %
 \begin{comment}
 \begin{code}
-myCreate :: View -> Source
-myCreate (k, v1) = (k, (v1, 0))
+arCreate :: Researcher -> Author
+arCreate (k, v1) = (k, (v1, 0))
 \end{code}
 \end{comment}
 
@@ -1282,11 +1506,13 @@ myCreate (k, v1) = (k, (v1, 0))
 \section{Conclusion}
 
 We hope to send the following two messages through this %pearl
-paper. One is that putback-based programming is not that 
-difficult in BiGUL, a simple but powerful put-based bidirectional
+paper. One is that putback-based bidirectional programming is not that 
+difficult in BiGUL, a simple but powerful putback-based
 language. The other is that a \emph{single} well-designed putback-based
-bidirectional programming language can serve as basis for developing
+bidirectional programming language can serve as the basis for developing
 many useful domain-specific bidirectional languages/libraries.
+We have shown that, with BiGUL alone, we can implement various alignment
+strategies which previously had to be implemented with separate bidirectional frameworks.
 %that allow both get-based and put-based bidirectional programming.
 
 %\appendix

@@ -1,6 +1,6 @@
 -- | Datatypes for error traces, produced by the standard interpreters in "Generics.BiGUL.Interpreter".
 
-module Generics.BiGUL.Error where
+module Generics.BiGUL.Error (BiGULTrace(..), BiGULError(..), PatError(..)) where
 
 import Generics.BiGUL
 
@@ -67,13 +67,16 @@ data BiGULError = BEFail String
                 | BEAdaptiveBranchMatched
                     -- ^ The branch is adaptive and hence ignored.
 
+indent :: String -> String
+indent = unlines . map ("  "++) . lines
+
 instance Show BiGULError where
-  show (BEFail str)                = "fail statement executed\n  " ++ str
+  show (BEFail str)                = "fail statement executed\n" ++ indent str
   show  BESkipMismatch             = "view not determined by the source"
-  show (BESourcePatternMismatch e) = "source pattern mismatch\n  " ++ show e
-  show (BEViewPatternMismatch e)   = "view pattern mismatch\n  " ++ show e
-  show (BEInvRearrFailed e)        = "inverse rearrangement failed\n  " ++ show e
-  show (BEViewRecoveringFailed e)  = "view recovering failed\n  " ++ show e
+  show (BESourcePatternMismatch e) = "source pattern mismatch\n" ++ indent (show e)
+  show (BEViewPatternMismatch e)   = "view pattern mismatch\n" ++ indent (show e)
+  show (BEInvRearrFailed e)        = "inverse rearrangement failed\n" ++ indent (show e)
+  show (BEViewRecoveringFailed e)  = "view recovering failed\n" ++ indent (show e)
   show  BEDependencyMismatch       = "second view component not determined by the first"
   show  BECaseExhausted            = "case exhausted"
   show  BEAdaptiveBranchRevisited  = "adaptive branch revisited"
