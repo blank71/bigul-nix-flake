@@ -7,7 +7,7 @@ The module `Generics.BiGUL.Lib.HuStudies` ([haddock documentation on Hackage](ht
 For more detail, see the following:
 
 * Hsiang-Shang Ko, Tao Zan, and Zhenjiang Hu. BiGUL: A formally verified core language for putback-based bidirectional programming. In [_Partial Evaluation and Program Manipulation_](http://conf.researchr.org/home/pepm-2016), PEPM’16, pages 61–72. ACM, 2016. http://dx.doi.org/10.1145/2847538.2847544.
-* Zhenjiang Hu and Hsiang-Shang Ko. Principle and Practice of Bidirectional Programming in BiGUL. (Draft manuscript for the [_Oxford Summer School on Bidirectional Transformations_](https://www.cs.ox.ac.uk/projects/tlcbx/ssbx/).)  http://www.prg.nii.ac.jp/project/bigul/tutorial.pdf.
+* Zhenjiang Hu and Hsiang-Shang Ko. Principle and Practice of Bidirectional Programming in BiGUL. (Draft manuscript for the [_Oxford Summer School on Bidirectional Transformations_](https://www.cs.ox.ac.uk/projects/tlcbx/ssbx/).) https://bitbucket.org/prl_tokyo/bigul/raw/master/SummerSchool16/paper/paper.pdf.
 
 ## Installation ##
 
