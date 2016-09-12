@@ -16,14 +16,11 @@ BiGUL works with [GHC](https://www.haskell.org/ghc/) 7.10 and above, and is rele
 cabal update
 cabal install BiGUL
 ```
-in the command line.
+in the command line (i.e., the standard way of installing Haskell packages).
 
-The most recent development version is maintained in the `master` branch. To install, first clone this git repository:
+The most recent development version (with changes not yet released to Hackage) is maintained in the `master` branch. To install the development version, first clone this git repository, and then invoke `cabal install` under the `Haskell/` subdirectory of the local copy of the repository:
 ```
 git clone https://bitbucket.org/prl_tokyo/BiGUL.git
-```
-and then invoke `cabal install` under the `Haskell/` subdirectory of the local copy of the repository:
-```
 cd BiGUL/Haskell/
 cabal update
 cabal install
