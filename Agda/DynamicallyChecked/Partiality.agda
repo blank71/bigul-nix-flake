@@ -206,6 +206,10 @@ strong-bind-snd {mx = mx} {f} fcomps = toFailedCompSeq aux
     aux | just x  | [ eq ] = fromFailedCompSeq (fcomps x)
     aux | nothing | [ eq ] = refl
 
+CompSeq-deterministic : {A : Set} {mx : Par A} {x x' : A} → CompSeq mx x → CompSeq mx x' → x ≡ x'
+CompSeq-deterministic mx↦x mx↦x' with trans (sym (fromCompSeq mx↦x)) (fromCompSeq mx↦x')
+CompSeq-deterministic mx↦x mx↦x' | refl = refl
+
 record Iso (A B : Set) : Set₁ where
   field
     to   : A → Par B
