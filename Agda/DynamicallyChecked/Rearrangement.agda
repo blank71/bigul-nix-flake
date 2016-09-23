@@ -79,8 +79,6 @@ uneval p (right pat)      expr             r       = uneval p pat expr r
 uneval p (prod lpat rpat) (lexpr , rexpr) (r , r') = uneval p rpat rexpr r' <=< uneval p lpat lexpr r
 uneval p (con pat)        expr             r       = uneval p pat expr r
 
--- properties shared by source and view rearrangement
-
 Consistent : {G : U n} (pat : Pattern F G) → PatResult pat → Container pat → Set
 Consistent     var              x        nothing  = ⊤
 Consistent {G} var              x        (just y) = x ≡ y
@@ -273,100 +271,14 @@ uneval-FullEmbedding p (prod lpat rpat) (lexpr , rexpr) (r , r') c (uneval↦ >>
   uneval-FullEmbedding p rpat rexpr r' _ uneval↦'
 uneval-FullEmbedding p (con pat)        expr r c uneval↦ = uneval-FullEmbedding p pat expr r c uneval↦
 
--- source rearrangement
-
-fromContainerS : {G : U n} (pat : Pattern F G) → PatResult pat → Container pat → PatResult pat
-fromContainerS var              r        (just x) = x
-fromContainerS var              r        nothing  = r
-fromContainerS (k x)            r        c        = tt
-fromContainerS (left  pat)      r        c        = fromContainerS pat r c
-fromContainerS (right pat)      r        c        = fromContainerS pat r c
-fromContainerS (prod lpat rpat) (r , r') (c , c') = fromContainerS lpat r c , fromContainerS rpat r' c'
-fromContainerS (con pat)        r        c        = fromContainerS pat r c
-
-fromContainerS-consistent-equal :
-  {G : U n} (pat : Pattern F G) (r : PatResult pat) (c : Container pat) → Consistent pat r c → fromContainerS pat r c ≡ r
-fromContainerS-consistent-equal var              r        (just .r) refl     = refl
-fromContainerS-consistent-equal var              r        nothing   p        = refl
-fromContainerS-consistent-equal (k x)            r        c         p        = refl
-fromContainerS-consistent-equal (left  pat)      r        c         p        = fromContainerS-consistent-equal pat r c p
-fromContainerS-consistent-equal (right pat)      r        c         p        = fromContainerS-consistent-equal pat r c p
-fromContainerS-consistent-equal (prod lpat rpat) (r , r') (c , c')  (p , p') =
-  cong₂ _,_ (fromContainerS-consistent-equal lpat r c p) (fromContainerS-consistent-equal rpat r' c' p')
-fromContainerS-consistent-equal (con pat)        r        c         p        = fromContainerS-consistent-equal pat r c p
-
-fromContainerS-eval-path :
-  {G : U n} (pat : Pattern F G) {T : U n} (path : VarPath pat T)
-  (x : ⟦ T ⟧ (μ F)) (c : Container pat) {r : PatResult pat} →
-  FullEmbedding-path pat path x c → eval-path pat path (fromContainerS pat r c) ≡ x
-fromContainerS-eval-path var              refl        x .(just x) refl = refl
-fromContainerS-eval-path (k x)            ()          _ c         fe
-fromContainerS-eval-path (left  pat)      path        x c         fe = fromContainerS-eval-path pat path x c fe
-fromContainerS-eval-path (right pat)      path        x c         fe = fromContainerS-eval-path pat path x c fe
-fromContainerS-eval-path (prod lpat rpat) (inj₁ path) x (c , c')  fe = fromContainerS-eval-path lpat path x c fe
-fromContainerS-eval-path (prod lpat rpat) (inj₂ path) x (c , c')  fe = fromContainerS-eval-path rpat path x c' fe
-fromContainerS-eval-path (con pat)        path        x c         fe = fromContainerS-eval-path pat path x c fe
-
-fromContainerS-eval :
-  {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) (expr : Expr pat pat')
-  (r' : PatResult pat') {r : PatResult pat} (c : Container pat) →
-  FullEmbedding pat pat' expr r' c → eval pat pat' expr (fromContainerS pat r c) ≡ r'
-fromContainerS-eval p var              path x  c fe = fromContainerS-eval-path p path x c fe
-fromContainerS-eval p (k x)            expr r' c fe = refl
-fromContainerS-eval p (left  pat)      expr r' c fe = fromContainerS-eval p pat expr r' c fe
-fromContainerS-eval p (right pat)      expr r' c fe = fromContainerS-eval p pat expr r' c fe
-fromContainerS-eval p (prod lpat rpat) (expr , expr') (r' , r'') c (fe , fe') =
-  cong₂ _,_ (fromContainerS-eval p lpat expr r' c fe) (fromContainerS-eval p rpat expr' r'' c fe')
-fromContainerS-eval p (con pat)        expr r' c fe = fromContainerS-eval p pat expr r' c fe
-
-private
-
-  put : {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) (expr : Expr pat pat') →
-        ⟦ G ⟧ (μ F) → ⟦ H ⟧ (μ F) → Par (⟦ G ⟧ (μ F))
-  put pat pat' expr x y = deconstruct pat  x >>= λ r  →
-                          deconstruct pat' y >>= λ r' →
-                          liftPar (construct pat ∘ fromContainerS pat r)
-                                  (uneval pat pat' expr r' (empty-container pat))
-
-  get : {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) →
-        Expr pat pat' → ⟦ G ⟧ (μ F) → Par (⟦ H ⟧ (μ F))
-  get pat pat' expr = liftPar (construct pat' ∘ eval pat pat' expr) ∘ deconstruct pat
- 
-  PutGet : {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) (expr : Expr pat pat')
-           {x : ⟦ G ⟧ (μ F)} {y : ⟦ H ⟧ (μ F)} {x' : ⟦ G ⟧ (μ F)} → put pat pat' expr x y ↦ x' → get pat pat' expr x' ↦ y
-  PutGet pat pat' expr (deconstruct-pat↦ >>= deconstruct-pat'↦ >>= uneval↦ >>= return refl) =
-    construct-deconstruct-inverse pat _ >>=
-    return (trans (cong (construct pat')
-                        (fromContainerS-eval pat pat' expr _ _ (uneval-FullEmbedding pat pat' expr _ _ uneval↦)))
-                  (deconstruct-construct-inverse pat' _ deconstruct-pat'↦))
-
-  GetPut : {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) (expr : Expr pat pat')
-           {x : ⟦ G ⟧ (μ F)} {y : ⟦ H ⟧ (μ F)} → get pat pat' expr x ↦ y → put pat pat' expr x y ↦ x 
-  GetPut pat pat' expr (_>>=_ {x = r} deconstruct↦ (return refl)) =
-    deconstruct↦ >>=
-    construct-deconstruct-inverse pat' (eval pat pat' expr _) >>=
-    let (c' , uneval↦ , consis) = eval-uneval pat pat' expr r (empty-container pat) (empty-container-consistent pat r)
-    in  uneval↦ >>= return (trans (cong (construct pat) (fromContainerS-consistent-equal pat r c' consis))
-                                  (deconstruct-construct-inverse pat _ deconstruct↦))
-
-source-rearrangement-lens : {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) (expr : Expr pat pat') →
-                            ⟦ G ⟧ (μ F) ⇆ ⟦ H ⟧ (μ F)
-source-rearrangement-lens pat pat' expr = record
-  { put = put pat pat' expr
-  ; get = get pat pat' expr
-  ; PutGet = PutGet pat pat' expr
-  ; GetPut = GetPut pat pat' expr }
-
--- view rearrangement
-
-fromContainerV : {G : U n} (pat : Pattern F G) → Container pat → Par (PatResult pat)
-fromContainerV  var             (just x) = return x
-fromContainerV  var             nothing  = fail
-fromContainerV (k x)            c        = return tt
-fromContainerV (left  pat)      c        = fromContainerV pat c
-fromContainerV (right pat)      c        = fromContainerV pat c
-fromContainerV (prod lpat rpat) (c , c') = liftPar₂ _,_ (fromContainerV lpat c) (fromContainerV rpat c')
-fromContainerV (con pat)        c        = fromContainerV pat c
+fromContainer : {G : U n} (pat : Pattern F G) → Container pat → Par (PatResult pat)
+fromContainer  var             (just x) = return x
+fromContainer  var             nothing  = fail
+fromContainer (k x)            c        = return tt
+fromContainer (left  pat)      c        = fromContainer pat c
+fromContainer (right pat)      c        = fromContainer pat c
+fromContainer (prod lpat rpat) (c , c') = liftPar₂ _,_ (fromContainer lpat c) (fromContainer rpat c')
+fromContainer (con pat)        c        = fromContainer pat c
 
 CheckTree : {G : U n} → Pattern F G → Set
 CheckTree pat = ⟦ pat ⟧ᴾ (const Bool)
@@ -459,7 +371,7 @@ uneval-AbsInterpCCT p (prod lpat rpat) (lexpr , rexpr) (r , r') c t abs (comp >>
 uneval-AbsInterpCCT p (con pat)        expr r c t abs comp = uneval-AbsInterpCCT p pat expr r c t abs comp
 
 completeCCT : {G : U n} (pat : Pattern F G) (c : Container pat) (t : CheckTree pat) →
-              AbsInterpCCT pat c t → completeCheckTree pat t ↦ tt → Σ[ r ∈ PatResult pat ] (fromContainerV pat c ↦ r)
+              AbsInterpCCT pat c t → completeCheckTree pat t ↦ tt → Σ[ r ∈ PatResult pat ] (fromContainer pat c ↦ r)
 completeCCT var              (just x) t        p        comp = x , return refl
 completeCCT var              nothing  true     ()       comp
 completeCCT var              nothing  false    p        ()
@@ -472,79 +384,83 @@ completeCCT (prod lpat rpat) (c , c') (t , t') (p , p') (comp >>= comp') =
   in  (r , r') , (r-comp >>= r'-comp >>= return refl)
 completeCCT (con pat)        c        t        p        comp = completeCCT pat c t p comp
 
-fromContainerV-consistent-complete :
+fromContainer-consistent-complete :
   {G : U n} (pat : Pattern F G) (r : PatResult pat) (c : Container pat) →
-  Consistent pat r c → {r' : PatResult pat} → fromContainerV pat c ↦ r' → r ≡ r'
-fromContainerV-consistent-complete {G} var         r (just .r) refl (return refl) = refl
-fromContainerV-consistent-complete     var         r nothing   p    ()
-fromContainerV-consistent-complete     (k x)       r c p comp = refl
-fromContainerV-consistent-complete     (left  pat) r c p comp = fromContainerV-consistent-complete pat r c p comp
-fromContainerV-consistent-complete     (right pat) r c p comp = fromContainerV-consistent-complete pat r c p comp
-fromContainerV-consistent-complete     (prod lpat rpat) (r , r') (c , c') (p , p') (comp >>= comp' >>= return refl) =
-  cong₂ _,_ (fromContainerV-consistent-complete lpat r c p comp) (fromContainerV-consistent-complete rpat r' c' p' comp')
-fromContainerV-consistent-complete     (con pat)   r c p comp = fromContainerV-consistent-complete pat r c p comp
+  Consistent pat r c → {r' : PatResult pat} → fromContainer pat c ↦ r' → r ≡ r'
+fromContainer-consistent-complete {G} var         r (just .r) refl (return refl) = refl
+fromContainer-consistent-complete     var         r nothing   p    ()
+fromContainer-consistent-complete     (k x)       r c p comp = refl
+fromContainer-consistent-complete     (left  pat) r c p comp = fromContainer-consistent-complete pat r c p comp
+fromContainer-consistent-complete     (right pat) r c p comp = fromContainer-consistent-complete pat r c p comp
+fromContainer-consistent-complete     (prod lpat rpat) (r , r') (c , c') (p , p') (comp >>= comp' >>= return refl) =
+  cong₂ _,_ (fromContainer-consistent-complete lpat r c p comp) (fromContainer-consistent-complete rpat r' c' p' comp')
+fromContainer-consistent-complete     (con pat)   r c p comp = fromContainer-consistent-complete pat r c p comp
 
-fromContainerV-eval-path :
+fromContainer-eval-path :
   {G : U n} (pat : Pattern F G) {T : U n} (path : VarPath pat T)
   (x : ⟦ T ⟧ (μ F)) (c : Container pat) {r : PatResult pat} →
-  FullEmbedding-path pat path x c → fromContainerV pat c ↦ r → eval-path pat path r ≡ x
-fromContainerV-eval-path var         refl x ._ refl (return refl)  = refl
-fromContainerV-eval-path (k _)       ()   x c  fe   fromContainerV↦
-fromContainerV-eval-path (left  pat) path x c  fe   fromContainerV↦ = fromContainerV-eval-path pat path x c fe fromContainerV↦
-fromContainerV-eval-path (right pat) path x c  fe   fromContainerV↦ = fromContainerV-eval-path pat path x c fe fromContainerV↦
-fromContainerV-eval-path (prod lpat rpat) (inj₁ path) x (c , c') fe (fromContainerV↦ >>= _ >>= return refl) =
-  fromContainerV-eval-path lpat path x c fe fromContainerV↦
-fromContainerV-eval-path (prod lpat rpat) (inj₂ path) x (c , c') fe (_ >>= fromContainerV↦ >>= return refl) =
-  fromContainerV-eval-path rpat path x c' fe fromContainerV↦
-fromContainerV-eval-path (con pat)   path x c  fe   fromContainerV↦ = fromContainerV-eval-path pat path x c fe fromContainerV↦
+  FullEmbedding-path pat path x c → fromContainer pat c ↦ r → eval-path pat path r ≡ x
+fromContainer-eval-path var         refl x ._ refl (return refl)  = refl
+fromContainer-eval-path (k _)       ()   x c  fe   fromContainer↦
+fromContainer-eval-path (left  pat) path x c  fe   fromContainer↦ = fromContainer-eval-path pat path x c fe fromContainer↦
+fromContainer-eval-path (right pat) path x c  fe   fromContainer↦ = fromContainer-eval-path pat path x c fe fromContainer↦
+fromContainer-eval-path (prod lpat rpat) (inj₁ path) x (c , c') fe (fromContainer↦ >>= _ >>= return refl) =
+  fromContainer-eval-path lpat path x c fe fromContainer↦
+fromContainer-eval-path (prod lpat rpat) (inj₂ path) x (c , c') fe (_ >>= fromContainer↦ >>= return refl) =
+  fromContainer-eval-path rpat path x c' fe fromContainer↦
+fromContainer-eval-path (con pat)   path x c  fe   fromContainer↦ = fromContainer-eval-path pat path x c fe fromContainer↦
 
-fromContainerV-eval :
+fromContainer-eval :
   {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) (expr : Expr pat pat')
   (r' : PatResult pat') {r : PatResult pat} (c : Container pat) →
-  FullEmbedding pat pat' expr r' c → fromContainerV pat c ↦ r → eval pat pat' expr r ≡ r'
-fromContainerV-eval p var              path x  c fe fromContainerV↦ = fromContainerV-eval-path p path x c fe fromContainerV↦
-fromContainerV-eval p (k x)            expr r' c fe fromContainerV↦ = refl
-fromContainerV-eval p (left  pat)      expr r' c fe fromContainerV↦ = fromContainerV-eval p pat expr r' c fe fromContainerV↦
-fromContainerV-eval p (right pat)      expr r' c fe fromContainerV↦ = fromContainerV-eval p pat expr r' c fe fromContainerV↦
-fromContainerV-eval p (prod lpat rpat) (lexpr , rexpr) (r' , r'') c (fe , fe') fromContainerV↦ =
-  cong₂ _,_ (fromContainerV-eval p lpat lexpr r' c fe fromContainerV↦)
-            (fromContainerV-eval p rpat rexpr r'' c fe' fromContainerV↦)
-fromContainerV-eval p (con pat)        expr r' c fe fromContainerV↦ = fromContainerV-eval p pat expr r' c fe fromContainerV↦
+  FullEmbedding pat pat' expr r' c → fromContainer pat c ↦ r → eval pat pat' expr r ≡ r'
+fromContainer-eval p var              path x  c fe fromContainer↦ = fromContainer-eval-path p path x c fe fromContainer↦
+fromContainer-eval p (k x)            expr r' c fe fromContainer↦ = refl
+fromContainer-eval p (left  pat)      expr r' c fe fromContainer↦ = fromContainer-eval p pat expr r' c fe fromContainer↦
+fromContainer-eval p (right pat)      expr r' c fe fromContainer↦ = fromContainer-eval p pat expr r' c fe fromContainer↦
+fromContainer-eval p (prod lpat rpat) (lexpr , rexpr) (r' , r'') c (fe , fe') fromContainer↦ =
+  cong₂ _,_ (fromContainer-eval p lpat lexpr r' c fe fromContainer↦)
+            (fromContainer-eval p rpat rexpr r'' c fe' fromContainer↦)
+fromContainer-eval p (con pat)        expr r' c fe fromContainer↦ = fromContainer-eval p pat expr r' c fe fromContainer↦
  
 private
 
+  to : {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) →
+       Expr pat pat' → ⟦ G ⟧ (μ F) → Par (⟦ H ⟧ (μ F))
+  to pat pat' expr = liftPar (construct pat' ∘ eval pat pat' expr) ∘ deconstruct pat
+ 
   from : {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) → Expr pat pat' → ⟦ H ⟧ (μ F) → Par (⟦ G ⟧ (μ F))
-  from pat pat' expr = liftPar (construct pat) ∘ fromContainerV pat <=<
+  from pat pat' expr = liftPar (construct pat) ∘ fromContainer pat <=<
                         flip (uneval pat pat' expr) (empty-container pat) <=< deconstruct pat'
   
   to-from-inverse :
     {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H)
     (expr : Expr pat pat') → CompleteExpr pat pat' expr →
-    {x : ⟦ G ⟧ (μ F)} {y : ⟦ H ⟧ (μ F)} → get pat pat' expr x ↦ y → from pat pat' expr y ↦ x
+    {x : ⟦ G ⟧ (μ F)} {y : ⟦ H ⟧ (μ F)} → to pat pat' expr x ↦ y → from pat pat' expr y ↦ x
   to-from-inverse pat pat' expr expr-complete (_>>=_ {x = r} deconstruct-pat-x↦x' (return refl)) =
     let (c' , comp' , p') = eval-uneval pat pat' expr r (empty-container pat) (empty-container-consistent pat r)
         (r' , r'-comp) = completeCCT pat c' (runCheckTree pat pat' expr (empty-checkTree pat))
                            (uneval-AbsInterpCCT pat pat' expr (eval pat pat' expr r)
                               (empty-container pat) (empty-checkTree pat) (empty-AbsInterpCCT pat) comp') expr-complete
     in  construct-deconstruct-inverse pat' _ >>= comp' >>= r'-comp >>=
-        return (trans (cong (construct pat) (sym (fromContainerV-consistent-complete pat r c' p' r'-comp)))
+        return (trans (cong (construct pat) (sym (fromContainer-consistent-complete pat r c' p' r'-comp)))
                       (deconstruct-construct-inverse pat _ deconstruct-pat-x↦x'))
   
   from-to-inverse :
     {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H)
     (expr : Expr pat pat') → CompleteExpr pat pat' expr →
-    {x : ⟦ G ⟧ (μ F)} {y : ⟦ H ⟧ (μ F)} → from pat pat' expr y ↦ x → get pat pat' expr x ↦ y
-  from-to-inverse pat pat' expr expr-complete (deconstruct-pat'↦ >>= uneval↦ >>= fromContainerV↦ >>= return refl) =
+    {x : ⟦ G ⟧ (μ F)} {y : ⟦ H ⟧ (μ F)} → from pat pat' expr y ↦ x → to pat pat' expr x ↦ y
+  from-to-inverse pat pat' expr expr-complete (deconstruct-pat'↦ >>= uneval↦ >>= fromContainer↦ >>= return refl) =
     construct-deconstruct-inverse pat _ >>=
     return (trans (cong (construct pat')
-                        (fromContainerV-eval pat pat' expr _ _
-                          (uneval-FullEmbedding pat pat' expr _ _ uneval↦) fromContainerV↦))
+                        (fromContainer-eval pat pat' expr _ _
+                          (uneval-FullEmbedding pat pat' expr _ _ uneval↦) fromContainer↦))
                   (deconstruct-construct-inverse pat' _ deconstruct-pat'↦))
 
-view-rearrangement-iso : {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) →
-                         (expr : Expr pat pat') → CompleteExpr pat pat' expr → ⟦ G ⟧ (μ F) ≅ ⟦ H ⟧ (μ F)
-view-rearrangement-iso pat pat' expr expr-complete = record
-  { to   = get  pat pat' expr
+rearrangement-iso : {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) →
+                    (expr : Expr pat pat') → CompleteExpr pat pat' expr → ⟦ G ⟧ (μ F) ≅ ⟦ H ⟧ (μ F)
+rearrangement-iso pat pat' expr expr-complete = record
+  { to   = to   pat pat' expr
   ; from = from pat pat' expr
   ; to-from-inverse = to-from-inverse pat pat' expr expr-complete
   ; from-to-inverse = from-to-inverse pat pat' expr expr-complete }

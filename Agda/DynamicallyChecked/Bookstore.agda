@@ -60,17 +60,20 @@ bookstoreB rec = case
    ((λ { (con (inj₂ ((stitle , _) , _))) (con (inj₂ ((vtitle , _) , _))) → stitle == vtitle; _ _ → false }) ,
       normal
         (rearrS (con (right (prod (prod var (prod var (prod var (prod var var)))) var)))
-                (prod (prod var var) var)
-                ((inj₁ (inj₁ refl) , inj₁ (inj₂ (inj₂ (inj₂ (inj₁ refl))))) , inj₂ refl)
-           (rearrV (con (right var)) var refl (return refl)
-              (prod replace rec)))
+                (prod (prod (prod var var) var) (prod var (prod var var)))
+                (((inj₁ (inj₁ refl) , inj₁ (inj₂ (inj₂ (inj₂ (inj₁ refl))))) , inj₂ refl) ,
+                 inj₁ (inj₂ (inj₁ refl)) , inj₁ (inj₂ (inj₂ (inj₁ refl))) , inj₁ (inj₂ (inj₂ (inj₂ (inj₂ refl)))))
+                ((return refl >>= return refl >>= return refl >>= return refl >>= return refl) >>= return refl)
+           (rearrV (con (right var)) (prod var (k {G = one} tt)) (refl , tt) (return refl)
+              (prod (prod replace rec) (skip (const tt)))))
         (λ { (con (inj₂ ((_ , _ , year , _ , instock) , _))) → ⌊ year Nat.≟ 2015 ⌋ ∧ instock; _ → false })) ∷
    ((λ { (con (inj₂ ((_ , _ , year , _ , instock) , _))) (con (inj₁ tt)) → ⌊ year Nat.≟ 2015 ⌋ ∧ instock; _ _ → false }) ,
       adaptive
         (λ ss _ → concealPrefix ss)) ∷
    ((λ { (con (inj₂ ((_ , _ , year , _ , instock) , _))) _ → not (⌊ year Nat.≟ 2015 ⌋ ∧ instock); _ _ → false }) ,
       normal
-        (rearrS (con (right (prod var var))) var (inj₂ refl) rec)
+        (rearrS (con (right (prod var var))) (prod var var) (inj₂ refl , inj₁ refl) (return refl >>= return refl)
+           (rearrV var (prod var (k {G = one} tt)) (refl , tt) (return refl) (prod rec (skip (const tt)))))
         (λ { (con (inj₂ ((_ , _ , year , _ , instock) , _))) → not (⌊ year Nat.≟ 2015 ⌋ ∧ instock); _ → false })) ∷
    ((λ { ss (con (inj₂ ((vtitle , _) , _))) → is-just (findFirstMatch vtitle ss) ; _ _ → false }) ,
       adaptive

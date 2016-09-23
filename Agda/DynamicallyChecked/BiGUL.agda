@@ -25,7 +25,7 @@ mutual
     replace : {S : U n} → BiGUL S S
     prod    : {S V S' V' : U n} (b : BiGUL S V) (b' : BiGUL S' V') → BiGUL (S ⊗ S') (V ⊗ V')
     rearrS  : {S S' V : U n}
-              (spat : Pattern F S) (spat' : Pattern F S') (expr : Expr spat spat')
+              (spat : Pattern F S) (spat' : Pattern F S') (expr : Expr spat spat') (c : CompleteExpr spat spat' expr)
               (b : BiGUL S' V) → BiGUL S V
     rearrV  : {S V V' : U n}
               (vpat : Pattern F V) (vpat' : Pattern F V') (expr : Expr vpat vpat') (c : CompleteExpr vpat vpat' expr)
@@ -48,8 +48,8 @@ mutual
   interp (skip {V = V} f)             = skip-lens (U-dec V) f
   interp replace                      = iso-lens id-iso
   interp (prod b b')                  = interp b ↕ interp b'
-  interp (rearrS spat spat' expr b)   = source-rearrangement-lens spat spat' expr ↔ interp b
-  interp (rearrV vpat vpat' expr c b) = interp b ◁ sym-iso (view-rearrangement-iso vpat vpat' expr c)
+  interp (rearrS spat spat' expr c b) = rearrangement-iso spat spat' expr c ▷ interp b
+  interp (rearrV vpat vpat' expr c b) = interp b ◁ sym-iso (rearrangement-iso vpat vpat' expr c)
   interp (dep {V' = V'} f b)          = interp b ◁ sym-iso (dependency-iso f (U-dec V'))
   interp (case {S} {V} branches)      = case-lens (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)) (interp-CaseBranch branches)
   interp (compose b b')               = interp b ↔ interp b'
