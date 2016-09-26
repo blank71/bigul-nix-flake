@@ -72,3 +72,9 @@ get-correctness : {S V : Set} (R : ℙ (S × V)) (l : S ⇆ V) (R' : ℙ (S × V
 get-correctness R l R' sound get↦ Rsv with sound _ Rsv
 get-correctness R l R' sound get↦ Rsv | (s' , put↦ , R's'v) with CompSeq-deterministic put↦ (Lens.GetPut l get↦)
 get-correctness R l R' sound get↦ Rsv | (s' , put↦ , R's'v) | refl = R's'v
+
+get-domain : {S V : Set} (R : ℙ (S × V)) (l : S ⇆ V) →
+             Sound R (Lens.put l) (uncurry _≡_ ∘ Product.map id proj₁) →
+             (s : S) → ∑ (R ∘ swap) s → ∃ λ v → Lens.get l s ↦ v
+get-domain R l sound s (v , Rsv) with sound (s , v) Rsv
+get-domain R l sound s (v , Rsv) | .s , put↦ , refl = v , Lens.PutGet l put↦
