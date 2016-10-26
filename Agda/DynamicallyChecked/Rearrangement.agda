@@ -423,7 +423,7 @@ fromContainer-eval p (prod lpat rpat) (lexpr , rexpr) (r' , r'') c (fe , fe') fr
             (fromContainer-eval p rpat rexpr r'' c fe' fromContainer↦)
 fromContainer-eval p (con pat)        expr r' c fe fromContainer↦ = fromContainer-eval p pat expr r' c fe fromContainer↦
  
-private
+module Components where
 
   to : {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) →
        Expr pat pat' → ⟦ G ⟧ (μ F) → Par (⟦ H ⟧ (μ F))
@@ -464,3 +464,4 @@ rearrangement-iso pat pat' expr expr-complete = record
   ; from = from pat pat' expr
   ; to-from-inverse = to-from-inverse pat pat' expr expr-complete
   ; from-to-inverse = from-to-inverse pat pat' expr expr-complete }
+  where open Components
