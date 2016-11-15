@@ -5,6 +5,9 @@
 
 * `Generics.BiGUL.PatternMatching` no longer exposed
 
+* `Generics.BiGUL.TH.deriveBiGULGeneric` no longer inserts `M1`
+  (meta-information) into the generic representation.
+
 1.0.1 Changes
 =============
 

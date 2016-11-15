@@ -117,68 +117,57 @@ deriveBiGULGeneric name = do
 #endif
           return (name, typeVars, [constructor])
         _ -> fail ("‘" ++ nameBase name ++ "’ is not in scope or not a (supported) datatype")
-  ([nGeneric, nRep, nK1, nR, nU1, nSum, nProd, nV1, nS1, nSelector, nDataType],
-   [vFrom, vTo, vK1, vL1, vR1, vU1, vProd, vSelName, vDataTypeName, vModuleName, vM1]) <-
+  ([nGeneric, nRep, nK1, nR, nU1, nSum, nProd, nV1, nS1, nDataType],
+   [vFrom, vTo, vK1, vL1, vR1, vU1, vProd, vSelName, vDataTypeName, vModuleName]) <-
     lookupNames "GHC.Generics"
-                ["Generic", "Rep", "K1", "R", "U1", ":+:", ":*:", "V1", "S1", "Selector", "Datatype"]
-                ["from", "to", "K1", "L1", "R1", "U1", ":*:", "selName", "datatypeName", "moduleName", "M1"]
+                ["Generic", "Rep", "K1", "R", "U1", ":+:", ":*:", "V1", "S1", "Datatype"]
+                ["from", "to", "K1", "L1", "R1", "U1", ":*:", "selName", "datatypeName", "moduleName"]
   env <- consToEnv constructors
-  selectorsNameList <- generateSelectorNames constructors
-  let selectorDataDMaybeList = generateSelectorDataD selectorsNameList
-  let selectorDataTypeMaybeList =
-        map (generateSelectorDataType nDataType vDataTypeName vModuleName (maybe "" id (nameModule name)))
-            selectorsNameList
-  let selectorNameAndConList = zip selectorsNameList constructors
-  let selectorInstanceDecList = map (generateSelectorInstanceDec nSelector vSelName) selectorNameAndConList
-  let fromClauses = map (constructFuncFromClause (vK1, vU1, vL1, vR1, vProd, vM1)) env
-  let toClauses   = map (constructFuncToClause (vK1, vU1, vL1, vR1, vProd, vM1)) env
-  return $ catMaybes selectorDataDMaybeList ++
-           catMaybes (concat selectorDataTypeMaybeList) ++
-           catMaybes (concat selectorInstanceDecList) ++
-           [InstanceD
+  let fromClauses = map (constructFuncFromClause (vK1, vU1, vL1, vR1, vProd)) env
+  let toClauses   = map (constructFuncToClause (vK1, vU1, vL1, vR1, vProd)) env
+  return [InstanceD
 #if __GLASGOW_HASKELL__ >= 800
-              Nothing
+            Nothing
 #endif
-              []
-              (AppT (ConT nGeneric) (generateTypeVarsType name typeVars))
-              [TySynInstD nRep
-                 (TySynEqn
-                    [generateTypeVarsType name typeVars]
-                    (constructorsToSum (nSum, nV1)
-                       (map (constructorToProduct (nK1, nR, nU1, nProd, nS1)) selectorNameAndConList))),
-               FunD vFrom fromClauses,
-               FunD vTo toClauses]
-            ]
+            []
+            (AppT (ConT nGeneric) (generateTypeVarsType name typeVars))
+            [TySynInstD nRep
+               (TySynEqn
+                  [generateTypeVarsType name typeVars]
+                  (constructorsToSum (nSum, nV1)
+                     (map (constructorToProduct (nK1, nR, nU1, nProd, nS1)) constructors))),
+             FunD vFrom fromClauses,
+             FunD vTo toClauses]
+         ]
 
 constructorsToSum :: (Name, Name) -> [Type] -> Type
 constructorsToSum (sum, v1) []  = ConT v1
 constructorsToSum (sum, v1) tps = foldr1 (\t1 t2 -> (ConT sum `AppT` t1) `AppT` t2) tps
 
-constructorToProduct :: (Name, Name, Name, Name, Name) -> ([Maybe Name], Con) -> Type
-constructorToProduct (k1, r, u1, prod, s1) (_,     NormalC _ [] ) = ConT u1
-constructorToProduct (k1, r, u1, prod, s1) (_,     NormalC _ sts) =
+constructorToProduct :: (Name, Name, Name, Name, Name) -> Con -> Type
+constructorToProduct (k1, r, u1, prod, s1) (NormalC _ [] ) = ConT u1
+constructorToProduct (k1, r, u1, prod, s1) (NormalC _ sts) =
   foldr1 (\t1 t2 -> (ConT prod `AppT` t1 ) `AppT` t2) (map (AppT (ConT k1 `AppT` ConT r) . snd) sts)
-constructorToProduct (k1, r, u1, prod, s1) (names, RecC    _ sts) =
-  foldr1 (\t1 t2 -> (ConT prod `AppT` t1 ) `AppT` t2)
-    (map (\(Just n, (_,_,t)) -> AppT (ConT s1 `AppT` ConT n) ((ConT k1 `AppT` ConT r) `AppT` t)) (zip names sts))
-constructorToProduct _                     (_,     c)             =
+constructorToProduct (k1, r, u1, prod, s1) (RecC    _ sts) =
+  foldr1 (\t1 t2 -> (ConT prod `AppT` t1 ) `AppT` t2) (map (\(_,_,t) -> (ConT k1 `AppT` ConT r) `AppT` t) sts)
+constructorToProduct _                     c               =
   error ("Constructor ‘" ++ nameBase (nameOfCon c) ++ "’ is of an unsupported kind")
 
 -- Bool indicates: if Normal then False else RecC True
-constructorToPatAndBody :: Con -> Q (Bool, Name, [Name])
-constructorToPatAndBody (NormalC name sts) = liftM (False, name,) (replicateM (length sts) (newName "var"))
-constructorToPatAndBody (RecC    name sts) = liftM (True , name,) (replicateM (length sts) (newName "var"))
+constructorToPatAndBody :: Con -> Q (Name, [Name])
+constructorToPatAndBody (NormalC name sts) = liftM (name,) (replicateM (length sts) (newName "var"))
+constructorToPatAndBody (RecC    name sts) = liftM (name,) (replicateM (length sts) (newName "var"))
 constructorToPatAndBody c                  =
   fail ("Constructor ‘" ++ nameBase (nameOfCon c) ++ "’ is of an unsupported kind")
 
-zipWithLRs :: [(Bool, Name, [Name])] ->  [(Bool, Name, [ConTag], [Name])]
-zipWithLRs nns = zipWith (\(b, n, ns) lrs -> (b, n, lrs, ns)) nns (constructLRs (length nns))
+zipWithLRs :: [(Name, [Name])] ->  [(Name, [ConTag], [Name])]
+zipWithLRs nns = zipWith (\(n, ns) lrs -> (n, lrs, ns)) nns (constructLRs (length nns))
 
-consToEnv :: [Con] -> Q [(Bool, Name, [ConTag], [Name])]
+consToEnv :: [Con] -> Q [(Name, [ConTag], [Name])]
 consToEnv cons = liftM zipWithLRs (mapM constructorToPatAndBody cons)
 
-constructFuncFromClause :: (Name, Name, Name, Name, Name, Name) -> (Bool, Name, [ConTag], [Name]) -> Clause
-constructFuncFromClause (vK1, vU1, vL1, vR1, vProd, vM1) (b, n, lrs, names) =
+constructFuncFromClause :: (Name, Name, Name, Name, Name) -> (Name, [ConTag], [Name]) -> Clause
+constructFuncFromClause (vK1, vU1, vL1, vR1, vProd) (n, lrs, names) =
   Clause [ConP n (map VarP names)] (NormalB (wrapLRs lrs (deriveGeneric names))) []
   where
     wrapLRs :: [ConTag] -> Exp -> Exp
@@ -187,11 +176,10 @@ constructFuncFromClause (vK1, vU1, vL1, vR1, vProd, vM1) (b, n, lrs, names) =
     deriveGeneric :: [Name] -> Exp
     deriveGeneric []    = ConE vU1
     deriveGeneric names = foldr1 (\e1 e2 -> (ConE vProd `AppE` e1) `AppE` e2)
-                            (map (\name -> if b then ConE vM1 `AppE` (ConE vK1 `AppE` VarE name)
-                                                else ConE vK1 `AppE` VarE name) names)
+                            (map (\name -> ConE vK1 `AppE` VarE name) names)
 
-constructFuncToClause :: (Name, Name, Name, Name, Name, Name) -> (Bool, Name, [ConTag], [Name])  -> Clause
-constructFuncToClause (vK1, vU1, vL1, vR1, vProd, vM1) (b, n, lrs, names) =
+constructFuncToClause :: (Name, Name, Name, Name, Name) -> (Name, [ConTag], [Name])  -> Clause
+constructFuncToClause (vK1, vU1, vL1, vR1, vProd) (n, lrs, names) =
   Clause [wrapLRs lrs (deriveGeneric names)] (NormalB (foldl (\e1 name -> e1 `AppE` (VarE name)) (ConE n) names) ) []
   where
     wrapLRs :: [ConTag] -> TH.Pat -> TH.Pat
@@ -200,8 +188,7 @@ constructFuncToClause (vK1, vU1, vL1, vR1, vProd, vM1) (b, n, lrs, names) =
     deriveGeneric :: [Name] -> TH.Pat
     deriveGeneric []    = ConP vU1 []
     deriveGeneric names = foldr1 (\p1 p2 -> ConP vProd [p1, p2])
-                            (map (\name -> if b then (ConP vM1 ((:[]) (ConP vK1 ((:[]) (VarP name)))))
-                                                else (ConP vK1 ((:[]) (VarP name)))) names)
+                            (map (\name -> ConP vK1 ((:[]) (VarP name))) names)
 
 -- construct selector names from constructors
 generateSelectorNames :: [Con] -> Q [[Maybe Name]]
