@@ -48,9 +48,9 @@ mutual
   interp (skip {V = V} f)             = skip-lens (U-dec V) f
   interp replace                      = iso-lens id-iso
   interp (prod b b')                  = interp b ↕ interp b'
-  interp (rearrS spat spat' expr c b) = rearrangement-iso spat spat' expr c ▷ interp b
-  interp (rearrV vpat vpat' expr c b) = interp b ◁ sym-iso (rearrangement-iso vpat vpat' expr c)
-  interp (dep {V' = V'} f b)          = interp b ◁ sym-iso (dependency-iso f (U-dec V'))
+  interp (rearrS spat spat' expr c b) = rearrangement-iso spat spat' expr c ▸ interp b
+  interp (rearrV vpat vpat' expr c b) = interp b ◂ sym-iso (rearrangement-iso vpat vpat' expr c)
+  interp (dep {V' = V'} f b)          = interp b ◂ sym-iso (dependency-iso f (U-dec V'))
   interp (case {S} {V} branches)      = case-lens (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)) (interp-CaseBranch branches)
   interp (compose b b')               = interp b ↔ interp b'
 

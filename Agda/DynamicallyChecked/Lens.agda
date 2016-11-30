@@ -66,7 +66,7 @@ skip-lens {S} {V} _≟_ f = record
     GetPut {s} | no neq with neq refl
     GetPut {s} | no neq | ()
 
-infixr 3 _↔_ _↕_ _◁_ _▷_
+infixr 3 _↔_ _↕_ _◂_ _▸_
 
 _↔_ : {A B C : Set} → A ⇆ B → B ⇆ C → A ⇆ C
 l ↔ r = record
@@ -75,15 +75,15 @@ l ↔ r = record
   ; PutGet = λ { (get-l-a↦b >>= put-r-b↦b' >>= put-l-a-b'↦a') → Lens.PutGet l put-l-a-b'↦a' >>= Lens.PutGet r put-r-b↦b' }
   ; GetPut = λ { (get-l-a↦b >>= get-r-b↦c) → get-l-a↦b >>= Lens.GetPut r get-r-b↦c >>= Lens.GetPut l get-l-a↦b } }
 
-_◁_ : {A B C : Set} → A ⇆ B → B ≅ C → A ⇆ C
-l ◁ iso = record
+_◂_ : {A B C : Set} → A ⇆ B → B ≅ C → A ⇆ C
+l ◂ iso = record
   { put = λ a c → Iso.from iso c >>= Lens.put l a
   ; get = Iso.to iso <=< Lens.get l
   ; PutGet = λ { (from-v↦v' >>= put-s-v'↦s') → Lens.PutGet l put-s-v'↦s' >>= Iso.from-to-inverse iso from-v↦v' }
   ; GetPut = λ { (get-s↦v >>= to-v↦v') → Iso.to-from-inverse iso to-v↦v' >>= Lens.GetPut l get-s↦v } } 
 
-_▷_ : {A B C : Set} → A ≅ B → B ⇆ C → A ⇆ C
-iso ▷ l = iso-lens iso ↔ l
+_▸_ : {A B C : Set} → A ≅ B → B ⇆ C → A ⇆ C
+iso ▸ l = iso-lens iso ↔ l
 
 _↕_ : {A B C D : Set} → A ⇆ B → C ⇆ D → A × C ⇆ B × D
 l ↕ r = record

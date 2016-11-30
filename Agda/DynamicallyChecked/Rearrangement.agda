@@ -423,6 +423,39 @@ fromContainer-eval p (prod lpat rpat) (lexpr , rexpr) (r' , r'') c (fe , fe') fr
             (fromContainer-eval p rpat rexpr r'' c fe' fromContainer↦)
 fromContainer-eval p (con pat)        expr r' c fe fromContainer↦ = fromContainer-eval p pat expr r' c fe fromContainer↦
  
+eval-injective :
+  {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) (expr : Expr pat pat') (c : CompleteExpr pat pat' expr)
+  {r r' : PatResult pat} → eval pat pat' expr r ≡ eval pat pat' expr r' → r ≡ r'
+eval-injective pat pat' expr expr-complete {r} {r'} eq
+  with eval-uneval pat pat' expr r  (empty-container pat) (empty-container-consistent pat r )
+     | eval-uneval pat pat' expr r' (empty-container pat) (empty-container-consistent pat r')
+eval-injective pat pat' expr expr-complete {r} {r'} eq
+  | c  , uneval-eval↦c  , consistent-r-c
+  | c' , uneval-eval↦c' , consistent-r'-c'
+  with trans (sym (fromCompSeq uneval-eval↦c))
+             (trans (cong (λ r → runPar (uneval pat pat' expr r (empty-container pat))) eq)
+                    (fromCompSeq uneval-eval↦c'))
+eval-injective pat pat' expr expr-complete {r} {r'} eq
+  | c  , _ , consistent-r-c
+  | .c , uneval-eval↦c , consistent-r'-c
+  | refl
+  with completeCCT pat c _
+         (uneval-AbsInterpCCT pat pat' expr (eval pat pat' expr r')
+            (empty-container pat) (empty-checkTree pat) (empty-AbsInterpCCT pat) uneval-eval↦c) expr-complete
+eval-injective pat pat' expr expr-complete {r} {r'} eq
+  | c  , _ , consistent-r-c
+  | .c , uneval-eval↦c , consistent-r'-c
+  | refl
+  | r'' , fromContainer↦r''
+  with fromContainer-consistent-complete pat r' c consistent-r'-c fromContainer↦r''
+eval-injective pat pat' expr expr-complete {r} {r'} eq
+  | c  , _ , consistent-r-c
+  | .c , uneval-eval↦c , consistent-r'-c
+  | refl
+  | .r' , fromContainer↦r'
+  | refl
+  = fromContainer-consistent-complete pat r c consistent-r-c fromContainer↦r'
+
 module Components where
 
   to : {G : U n} (pat : Pattern F G) {H : U n} (pat' : Pattern F H) →

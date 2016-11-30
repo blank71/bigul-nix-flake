@@ -172,5 +172,11 @@ module PatternMatching {n : ℕ} {F : Functor n} where
     ; from = return ∘ construct pat
     ; to-from-inverse = return ∘ deconstruct-construct-inverse pat _
     ; from-to-inverse = λ { {_} {._} (return refl) → construct-deconstruct-inverse pat _ } }
+    
+  construct-injective : {G : U n} (pat : Pattern F G) {x y : PatResult pat} → construct pat x ≡ construct pat y → x ≡ y
+  construct-injective pat {x} {y}  eq with trans (sym (fromCompSeq (construct-deconstruct-inverse pat x)))
+                                                 (trans (cong (runPar ∘ deconstruct pat) eq)
+                                                        (fromCompSeq (construct-deconstruct-inverse pat y)))
+  construct-injective pat {x} {.x} eq | refl = refl
 
 open PatternMatching public
