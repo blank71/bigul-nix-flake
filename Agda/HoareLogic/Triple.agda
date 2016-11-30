@@ -54,10 +54,6 @@ _⋈_ : {A B C : Set} → ℙ (A × B) → ℙ (A × C) → ℙ (A × B × C)
 _•_ : {A B C : Set} → ℙ (A × B) → ℙ (B × C) → ℙ (A × C)
 R • S = ∑ ((R ∘ swap) ⋈ S)
 
--- find a largest predicate on B for filtering R such that the result is included in S
-_\\_ : {A B : Set} → ℙ (A × B) → ℙ (A × B) → ℙ B
-(R \\ S) b = ∀ a → R (a , b) → S (a , b)
-
 Sound : {S V : Set} → ℙ (S × V) → (S → V → Par S) → ℙ (S × S × V) → Set₁
 Sound {S} {V} R f R' = (sv : S × V) → let (s , v) = sv in R (s , v) → Σ[ s' ∈ S ] ((f s v ↦ s') × R' (s' , s , v))
 
