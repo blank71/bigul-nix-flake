@@ -8,7 +8,7 @@ open import DynamicallyChecked.Partiality
 open import DynamicallyChecked.Lens
 open import DynamicallyChecked.Rearrangement
 open DynamicallyChecked.Rearrangement.Components
-open import HoareLogic.Triple
+open import HoareLogic.Semantics
 
 open import Function
 open import Data.Product
@@ -146,19 +146,19 @@ rearrV-soundness vpat vpat' expr c l R R' l-sound (s , v) (r , R-s-r , Match-v-r
                                  (construct-injective vpat' (fromEval vpat vpat' expr v' Eval-r'-v'))))
                   Match-v-r)
 
-rearrS-soundness :
-  {V : Set} {G H : U n} (spat : Pattern F G) (spat' : Pattern F H) (expr : Expr spat spat')
-  (c : CompleteExpr spat spat' expr) (l : ⟦ H ⟧ (μ F) ⇆ V) →
-  (R : ℙ (PatResult spat × V)) (R' : ℙ (PatResult spat × PatResult spat × V)) →
-  Sound ((Eval spat spat' expr ∘ swap) • R) (Lens.put l)
-        (λ { (s' , s , v) → ∃ λ { (r' , r) → R' (r' , r , v) × Eval spat spat' expr (r' , s') × Eval spat spat' expr (r , s) } }) →
-  Sound (Match spat • R) (Lens.put (rearrangement-iso spat spat' expr c ▸ l))
-        (λ { (s' , s , v) → ∃ λ { (r' , r) → R' (r' , r , v) × Match spat (s' , r') × Match spat (s , r) } })
-rearrS-soundness spat spat' expr c l R R' l-sound (s , v) (r , Match-s-r , R-r-v) =
-  let new-s = construct spat' (eval spat spat' expr r)
-      (s' , l-new-s-v↦s' , (new-r' , new-r) , R'-new-r'-new-r-v , Eval-new-r'-s' , Eval-new-r-new-s) =
-        l-sound (new-s , v) (r , toEval spat spat' expr , R-r-v)
-  in  {!!}
+-- rearrS-soundness :
+--   {V : Set} {G H : U n} (spat : Pattern F G) (spat' : Pattern F H) (expr : Expr spat spat')
+--   (c : CompleteExpr spat spat' expr) (l : ⟦ H ⟧ (μ F) ⇆ V) →
+--   (R : ℙ (PatResult spat × V)) (R' : ℙ (PatResult spat × PatResult spat × V)) →
+--   Sound ((Eval spat spat' expr ∘ swap) • R) (Lens.put l)
+--         (λ { (s' , s , v) → ∃ λ { (r' , r) → R' (r' , r , v) × Eval spat spat' expr (r' , s') × Eval spat spat' expr (r , s) } }) →
+--   Sound (Match spat • R) (Lens.put (rearrangement-iso spat spat' expr c ▸ l))
+--         (λ { (s' , s , v) → ∃ λ { (r' , r) → R' (r' , r , v) × Match spat (s' , r') × Match spat (s , r) } })
+-- rearrS-soundness spat spat' expr c l R R' l-sound (s , v) (r , Match-s-r , R-r-v) =
+--   let new-s = construct spat' (eval spat spat' expr r)
+--       (s' , l-new-s-v↦s' , (new-r' , new-r) , R'-new-r'-new-r-v , Eval-new-r'-s' , Eval-new-r-new-s) =
+--         l-sound (new-s , v) (r , toEval spat spat' expr , R-r-v)
+--   in  {!!}
 
 {-
 

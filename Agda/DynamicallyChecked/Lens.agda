@@ -43,24 +43,24 @@ iso-lens iso = record
   ; PutGet = Iso.from-to-inverse iso
   ; GetPut = Iso.to-from-inverse iso }
 
+skip-put : {S V : Set} → Decidable (_≡_ {A = V}) → (S → V) → S → V → Par S
+skip-put _≟_ f s v with f s ≟ v
+skip-put _≟_ f s v | yes _ = return s
+skip-put _≟_ f s v | no  _ = fail
+
 skip-lens : {S V : Set} → Decidable (_≡_ {A = V}) → (S → V) → S ⇆ V
 skip-lens {S} {V} _≟_ f = record
-  { put = put
+  { put = skip-put _≟_ f
   ; get = return ∘ f
   ; PutGet = λ put↦ → return (PutGet put↦)
   ; GetPut = λ { {_} {._} (return refl) → GetPut } }
-  where
-    put : S → V → Par S
-    put s v with f s ≟ v
-    put s v | yes _ = return s
-    put s v | no  _ = fail
-    
-    PutGet : {s : S} {v : V} {s' : S} → put s v ↦ s' → f s' ≡ v
+  where  
+    PutGet : {s : S} {v : V} {s' : S} → skip-put _≟_ f s v ↦ s' → f s' ≡ v
     PutGet {s} {v} put↦          with f s ≟ v
     PutGet         (return refl) | yes refl = refl
     PutGet         ()            | no  _
     
-    GetPut : {s : S} → put s (f s) ↦ s
+    GetPut : {s : S} → skip-put _≟_ f s (f s) ↦ s
     GetPut {s} with f s ≟ f s
     GetPut {s} | yes _  = return refl
     GetPut {s} | no neq with neq refl

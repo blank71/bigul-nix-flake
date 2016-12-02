@@ -20,6 +20,9 @@ elimBranchType : {l : Level} {A : Set l} → ((S ⇆ V) → (S → Bool) → A) 
 elimBranchType g h (normal l q) = g l q
 elimBranchType g h (adaptive f) = h f
 
+isNormal : BranchType → Bool
+isNormal = elimBranchType (λ _ _ → true) (λ _ → false)
+
 Branch : Set₁
 Branch = (S → V → Bool) × BranchType
 
