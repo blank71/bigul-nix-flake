@@ -23,7 +23,7 @@ mutual
 
   data Triple {n : ℕ} {F : Functor n} : {S V : U n} →
               ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F)) → BiGUL F S V → ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F)) → Set₁ where
-    skip   : {S V : U n} (f : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F)) →
+    skip   : {S V : U n} {f : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F)} →
              Triple (uncurry _≡_ ∘ Product.map f id) (skip {S = S} {V} f) (uncurry _≡_ ∘ Product.map id proj₁)
     rearrV : {S V V' : U n}
              {vpat : Pattern F V} {vpat' : Pattern F V'} {expr : Expr vpat vpat'} {c : CompleteExpr vpat vpat' expr}
@@ -63,10 +63,12 @@ mutual
                CaseBranchTriple R R' ReentryCond bs ((p , adaptive f) ∷ bs') →
                CaseBranchTriple R R' ReentryCond ((p , adaptive f) ∷ bs) bs'
 
+infixr 5 _∷ᴺ_ _∷ᴬ_
+
 soundness : {n : ℕ} {F : Functor n} {S V : U n}
             {R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} {b : BiGUL F S V} {R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} →
             Triple R b R' → Sound R (Lens.put (interp b)) R'
-soundness {V = V} (skip f) = skip-soundness (U-dec V) f
+soundness {V = V} (skip {f = f}) = skip-soundness (U-dec V) f
 soundness (rearrV {vpat' = vpat'} {c = c} {b} R R' t) = rearrV-soundness _ vpat' _ c (interp b) R R' (soundness t)
 soundness {n} {F} {S} {V} (case {bs = bs} {R} {R'} ts dom) =
   case-soundness (interp-CaseBranch bs) R R'

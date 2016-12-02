@@ -1,0 +1,22 @@
+module HoareLogic.Utilities where
+
+open import Level
+open import Data.Sum
+open import Data.Bool
+open import Relation.Nullary
+open import Relation.Nullary.Decidable
+open import Relation.Binary.PropositionalEquality
+
+
+trueFromWitness : {l : Level} {P : Set l} {d : Dec P} → P → ⌊ d ⌋ ≡ true
+trueFromWitness {d = yes _} p = refl
+trueFromWitness {d = no ¬p} p with ¬p p
+trueFromWitness {d = no ¬p} p | ()
+
+trueToWitness : {l : Level} {P : Set l} {d : Dec P} → ⌊ d ⌋ ≡ true → P
+trueToWitness {d = yes p} eq = p
+trueToWitness {d = no ¬p} ()
+
+boolExcludedMiddle : {b : Bool} → b ≡ true ⊎ b ≡ false
+boolExcludedMiddle {true } = inj₁ refl
+boolExcludedMiddle {false} = inj₂ refl
