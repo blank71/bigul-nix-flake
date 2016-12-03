@@ -10,6 +10,7 @@ open import HoareLogic.Triple
 open import HoareLogic.Utilities
 
 open import Function
+open import Data.Empty
 open import Data.Product as Product
 open import Data.Sum as Sum
 open import Data.Bool
@@ -56,21 +57,6 @@ replace²-equal-view-correctness =
     (prod _ _ replace _ _ replace)
     (λ { {(x' , y') , (x , y) , (z , w)} ((x'≡z , y'≡w) , z≡w) → trans x'≡z (trans z≡w (sym y'≡w)) , cong₂ _,_ x'≡z y'≡w })
 
-updateSquare : BiGUL emptyF (kℕ ⊗ kℕ) kℕ
-updateSquare = rearrV var (prod var var) (refl , refl) (return refl) replace²
-
-updateSquare-correctness : Triple Π updateSquare (λ { ((w' , h') , _ , v) → w' ≡ v × h' ≡ v })
-updateSquare-correctness =
-  conseq
-    (λ _ → _ , tt , refl)
-    (rearrV Π (λ { ((w' , h') , _ , v) → w' ≡ v × h' ≡ v })
-       (conseq
-          (λ { {(w , h) , (vl , vr)} (x , _ , eqa , eqb) → trans (sym eqa) eqb })
-          replace²-equal-view-correctness
-          (λ { {(w' , h') , (w , h) , (vl , vr)} ((w'≡h' , w',h'≡vl,vr) , x , _ , x≡vl , x≡vr) →
-               h' , (w'≡h' , refl) , trans (cong proj₂ w',h'≡vl,vr) (trans (sym x≡vr) x≡vl) , cong proj₂ w',h'≡vl,vr })))
-    (λ { {(w' , h') , (w , h) , v} ((x , (w'≡x , h'≡x) , v≡x) , _) → trans w'≡x (sym v≡x) , trans h'≡x (sym v≡x) })
-
 updateWidth : BiGUL emptyF (kℕ ⊗ kℕ) kℕ
 updateWidth = rearrV var (prod {H = one} var (k tt)) (refl , tt) (return refl) (prod replace (skip (const tt)))
 
@@ -84,3 +70,26 @@ updateWidth-correctness =
           (prod _ _ replace _ _ skip)
           (λ { {(.v , .h) , (w , h) , (v , _)} ((refl , refl) , _) → _ , (refl , refl) , refl , refl })))
     (λ { {(w' , .h) , (w , h) , v} ((._ , (eq , refl) , refl) , _) → eq , refl })
+
+updateSquare : BiGUL emptyF (kℕ ⊗ kℕ) kℕ
+updateSquare =
+  case
+    (((λ { (w , _) v → ⌊ w Nat.≟ v ⌋ }) ,
+      normal (skip proj₁)
+             (const true)) ∷
+     (((λ _ _ → true) ,
+      adaptive (λ { _ v → (v , v) }))) ∷ [])
+
+updateSquare-correctness : Triple Π updateSquare (λ { ((w' , h') , (w , h) , v) → w' ≡ v × (w ≡ v → h' ≡ h) × (w ≢ v → w' ≡ h') })
+updateSquare-correctness =
+  case
+    (((conseq
+         (λ { {(w , h) , v} (_ , e , _) → trueToWitness e })
+         skip
+         (λ { {.(w , h) , (w , h) , v} (refl , _ , e , _) →
+              (trueToWitness e , (λ _ → refl) , (λ w≢v → ⊥-elim (w≢v (trueToWitness e)))) , (e , tt) , refl })) ,
+      (λ _ → tt)) ∷ᴺ
+     ((λ { {(w , h) , v} (tt , _ , ne , _) → tt , inj₁ (trueFromWitness refl) }) ,
+      (λ { {(w' , h') , (w , h) , v} ((_ , _ , ne , _) , (w'≡v , v≡v→h'≡v , _)) →
+           w'≡v , (λ w≡v → ⊥-elim (falseToWitness ne w≡v)) , (λ _ → trans w'≡v (sym (v≡v→h'≡v refl))) })) ∷ᴬ [])
+    (λ _ → Sum.map id < id , const (inj₁ refl) > boolExcludedMiddle)
