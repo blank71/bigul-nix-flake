@@ -63,9 +63,9 @@ Sound : {S V : Set} → ℙ (S × V) → (S → V → Par S) → ℙ (S × S × 
 Sound {S} {V} R f R' = (sv : S × V) → let (s , v) = sv in R (s , v) → Σ[ s' ∈ S ] ((f s v ↦ s') × R' (s' , s , v))
 
 consequence : {S V : Set} (R : ℙ (S × V)) (f : S → V → Par S) (R' : ℙ (S × S × V)) → Sound R f R' →
-              (Q : ℙ (S × V)) → Q ⊆ R → (Q' : ℙ (S × S × V)) → R' ∩ (R ∘ proj₂) ⊆ Q' → Sound Q f Q'
-consequence R f R' sound Q Q⊆R Q' R'∩R∘proj₂⊆Q' (s , v) Q-s-v =
-  let (s' , f-s-v↦s' , R'-s'-s-v) = sound (s , v) (Q⊆R Q-s-v) in s' , f-s-v↦s' , R'∩R∘proj₂⊆Q' (R'-s'-s-v , Q⊆R Q-s-v)
+              (Q : ℙ (S × V)) → Q ⊆ R → (Q' : ℙ (S × S × V)) → R' ∩ (Q ∘ proj₂) ⊆ Q' → Sound Q f Q'
+consequence R f R' sound Q Q⊆R Q' R'∩Q∘proj₂⊆Q' (s , v) Q-s-v =
+  let (s' , f-s-v↦s' , R'-s'-s-v) = sound (s , v) (Q⊆R Q-s-v) in s' , f-s-v↦s' , R'∩Q∘proj₂⊆Q' (R'-s'-s-v , Q-s-v)
 
 get-correctness : {S V : Set} (R : ℙ (S × V)) (l : S ⇆ V) (R' : ℙ (S × V)) →
                   Sound R (Lens.put l) (R' ∘ Product.map id proj₂) →
@@ -80,9 +80,35 @@ hippocratic-triple : {S V : Set} (R : ℙ (S × V)) (l : S ⇆ V) →
 hippocratic-triple R l sound s v Rsv with sound (s , v) Rsv
 hippocratic-triple R l sound s v Rsv | .s , put↦ , refl = Lens.PutGet l put↦
 
+fail-soundness : {S V : Set} (R' : ℙ (S × S × V)) → Sound ∅ (Lens.put (iso-lens empty-iso)) R'
+fail-soundness _ _ ()
+
 skip-soundness : {S V : Set} (_≟_ : Decidable (_≡_ {A = V})) (f : S → V) →
                  Sound (uncurry _≡_ ∘ Product.map f id) (Lens.put (skip-lens _≟_ f)) (uncurry _≡_ ∘ Product.map id proj₁)
 skip-soundness _≟_ f (s , v) f-s≡v with f s ≟ v
 skip-soundness _≟_ f (s , v) f-s≡v | yes _     = s , return refl , refl
 skip-soundness _≟_ f (s , v) f-s≡v | no  f-s≢v with f-s≢v f-s≡v
 skip-soundness _≟_ f (s , v) f-s≡v | no  f-s≢v | ()
+
+replace-soundness : {A : Set} → Sound Π (Lens.put (iso-lens (id-iso {A}))) (uncurry _≡_ ∘ Product.map id proj₂)
+replace-soundness (s , v) _ = v , return refl , refl
+
+prod-soundness : {A B C D : Set}
+                 (R : ℙ (A × C)) (R' : ℙ (A × A × C)) (l : A ⇆ C) → Sound R (Lens.put l) R' →
+                 (S : ℙ (B × D)) (S' : ℙ (B × B × D)) (r : B ⇆ D) → Sound S (Lens.put r) S' →
+                 Sound (λ { ((a , b) , (c , d)) → R (a , c) × S (b , d) }) (Lens.put (l ↕ r))
+                       (λ { ((a' , b') , (a , b) , (c , d)) → R' (a' , a , c) × S' (b' , b , d) })
+prod-soundness R R' l l-sound S S' r r-sound ((a , b) , (c , d)) (R-a-c , S-b-d) =
+  let (a' , l-a-c↦a' , R'-a'-a-c) = l-sound (a , c) R-a-c
+      (b' , r-b-d↦b' , S'-b'-b-d) = r-sound (b , d) S-b-d
+  in  (a' , b') , (l-a-c↦a' >>= r-b-d↦b' >>= return refl) , (R'-a'-a-c , S'-b'-b-d)
+
+dep-soundness : {S V V' : Set} (f : V → V') (dec : Decidable {A = V'} _≡_) (l : S ⇆ V)
+                (R : ℙ (S × (V × V'))) (R' : ℙ (S × S × (V × V'))) →
+                Sound (R ∘ Product.map id < id , f >) (Lens.put l) (R' ∘ Product.map id (Product.map id < id , f >)) →
+                Sound ((uncurry _≡_ ∘ Product.map f id ∘ proj₂) ∩ R) (Lens.put (l ◂ sym-iso (dependency-iso f dec))) R'
+dep-soundness f dec l R R' l-sound (s , (v , .(f v))) (refl , R-s-v-fv) with dec (f v) (f v)
+dep-soundness f dec l R R' l-sound (s , (v , .(f v))) (refl , R-s-v-fv) | yes _ =
+  Product.map id (Product.map (return refl >>=_) id) (l-sound (s , v) R-s-v-fv)
+dep-soundness f dec l R R' l-sound (s , (v , .(f v))) (refl , R-s-v-fv) | no neq with neq refl
+dep-soundness f dec l R R' l-sound (s , (v , .(f v))) (refl , R-s-v-fv) | no neq | ()

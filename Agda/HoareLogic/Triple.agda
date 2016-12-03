@@ -23,24 +23,35 @@ mutual
 
   data Triple {n : ℕ} {F : Functor n} : {S V : U n} →
               ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F)) → BiGUL F S V → ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F)) → Set₁ where
-    skip   : {S V : U n} {f : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F)} →
-             Triple (uncurry _≡_ ∘ Product.map f id) (skip {S = S} {V} f) (uncurry _≡_ ∘ Product.map id proj₁)
-    rearrV : {S V V' : U n}
-             {vpat : Pattern F V} {vpat' : Pattern F V'} {expr : Expr vpat vpat'} {c : CompleteExpr vpat vpat' expr}
-             {b : BiGUL F S V'} (R : ℙ (⟦ S ⟧ (μ F) × PatResult vpat)) (R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × PatResult vpat)) →
-             Triple (R • Eval vpat vpat' expr) b
-                    (λ { (s' , s , v) → ∃ λ r → R' (s' , s , r) × Eval vpat vpat' expr (r , v) }) →
-             Triple (R • (Match vpat ∘ swap)) (rearrV vpat vpat' expr c b)
-                    (λ { (s' , s , v) → ∃ λ r → R' (s' , s , r) × Match vpat (v , r) })
-    case   : {S V : U n} {bs : List (CaseBranch F S V)}
-             {R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} {R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} →
-             CaseBranchTriple R R'
-               ((NormalCaseDomain (List.map (Product.map id (elimCaseBranchType (λ _ _ → true) (λ _ → false))) bs))) bs [] →
-             R ⊆ CaseDomain (List.map proj₁ bs) →
-             Triple R (case bs) R'
-    conseq : {S V : U n} {b : BiGUL F S V}
-             {R Q : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} {R' Q' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} →
-             Q ⊆ R → Triple R b R' → R' ∩ (R ∘ proj₂) ⊆ Q' → Triple Q b Q'
+    fail    : {S V : U n} {R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} → Triple ∅ (fail {S = S} {V}) R'
+    skip    : {S V : U n} {f : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F)} →
+              Triple (uncurry _≡_ ∘ Product.map f id) (skip {S = S} {V} f) (uncurry _≡_ ∘ Product.map id proj₁)
+    replace : {S : U n} → Triple Π (replace {S = S}) (uncurry _≡_ ∘ Product.map id proj₂)
+    prod    : {Sl Vl Sr Vr : U n}
+              (Rl : ℙ (⟦ Sl ⟧ (μ F) × ⟦ Vl ⟧ (μ F))) (Rl' : ℙ (⟦ Sl ⟧ (μ F) × ⟦ Sl ⟧ (μ F) × ⟦ Vl ⟧ (μ F))) {l : BiGUL F Sl Vl} → Triple Rl l Rl' →
+              (Rr : ℙ (⟦ Sr ⟧ (μ F) × ⟦ Vr ⟧ (μ F))) (Rr' : ℙ (⟦ Sr ⟧ (μ F) × ⟦ Sr ⟧ (μ F) × ⟦ Vr ⟧ (μ F))) {r : BiGUL F Sr Vr} → Triple Rr r Rr' →
+              Triple (λ { ((sl , sr) , (vl , vr)) → Rl (sl , vl) × Rr (sr , vr) }) (prod l r)
+                     (λ { ((sl' , sr') , (sl , sr) , (vl , vr)) → Rl' (sl' , sl , vl) × Rr' (sr' , sr , vr) })
+    rearrV  : {S V V' : U n}
+              {vpat : Pattern F V} {vpat' : Pattern F V'} {expr : Expr vpat vpat'} {c : CompleteExpr vpat vpat' expr}
+              {b : BiGUL F S V'} (R : ℙ (⟦ S ⟧ (μ F) × PatResult vpat)) (R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × PatResult vpat)) →
+              Triple (R • Eval vpat vpat' expr) b
+                     (λ { (s' , s , v) → ∃ λ r → R' (s' , s , r) × Eval vpat vpat' expr (r , v) }) →
+              Triple (R • (Match vpat ∘ swap)) (rearrV vpat vpat' expr c b)
+                     (λ { (s' , s , v) → ∃ λ r → R' (s' , s , r) × Match vpat (v , r) })
+    dep     : {S V V' : U n} {f : ⟦ V ⟧ (μ F) → ⟦ V' ⟧ (μ F)} {b : BiGUL F S V}
+              (R : ℙ (⟦ S ⟧ (μ F) × (⟦ V ⟧ (μ F) × ⟦ V' ⟧ (μ F)))) {R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × (⟦ V ⟧ (μ F) × ⟦ V' ⟧ (μ F)))} →
+              Triple (R ∘ Product.map id < id , f >) b (R' ∘ Product.map id (Product.map id < id , f >)) →
+              Triple ((uncurry _≡_ ∘ Product.map f id ∘ proj₂) ∩ R) (dep {S = S} {V} {V'} f b) R'
+    case    : {S V : U n} {bs : List (CaseBranch F S V)}
+              {R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} {R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} →
+              CaseBranchTriple R R'
+                ((NormalCaseDomain (List.map (Product.map id (elimCaseBranchType (λ _ _ → true) (λ _ → false))) bs))) bs [] →
+              R ⊆ CaseDomain (List.map proj₁ bs) →
+              Triple R (case bs) R'
+    conseq  : {S V : U n} {b : BiGUL F S V}
+              {R Q : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} {R' Q' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} →
+              Q ⊆ R → Triple R b R' → R' ∩ (Q ∘ proj₂) ⊆ Q' → Triple Q b Q'
 
   data CaseBranchTriple {n : ℕ} {F : Functor n} {S V : U n}
                         (R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))) (R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F)))
@@ -68,8 +79,12 @@ infixr 5 _∷ᴺ_ _∷ᴬ_
 soundness : {n : ℕ} {F : Functor n} {S V : U n}
             {R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} {b : BiGUL F S V} {R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} →
             Triple R b R' → Sound R (Lens.put (interp b)) R'
+soundness fail = fail-soundness _
 soundness {V = V} (skip {f = f}) = skip-soundness (U-dec V) f
+soundness replace = replace-soundness
+soundness (prod Rl Rl' {l} tl Rr Rr' {r} tr) = prod-soundness Rl Rl' (interp l) (soundness tl) Rr Rr' (interp r) (soundness tr)
 soundness (rearrV {vpat' = vpat'} {c = c} {b} R R' t) = rearrV-soundness _ vpat' _ c (interp b) R R' (soundness t)
+soundness (dep {V' = V'} {f} {b} R {R'} t) = dep-soundness f (U-dec V') (interp b) R R' (soundness t)
 soundness {n} {F} {S} {V} (case {bs = bs} {R} {R'} ts dom) =
   case-soundness (interp-CaseBranch bs) R R'
     (subst (BranchSound R R' (interp-CaseBranch bs) [] ∘ NormalCaseDomain)
