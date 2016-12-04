@@ -25,7 +25,3 @@ falseFromWitness {d = no _ } ¬p = refl
 falseToWitness : {l : Level} {P : Set l} {d : Dec P} → ⌊ d ⌋ ≡ false → ¬ P
 falseToWitness {d = yes p} ()
 falseToWitness {d = no ¬p} eq = ¬p
-
-boolExcludedMiddle : {b : Bool} → b ≡ true ⊎ b ≡ false
-boolExcludedMiddle {true } = inj₁ refl
-boolExcludedMiddle {false} = inj₂ refl

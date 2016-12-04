@@ -39,7 +39,7 @@ emb-correctness g p PutGet =
   case ((conseq (λ { (_ , cond , _) → trueToWitness cond }) skip
                 (λ { {.s , s , v} (refl , _ , equa , _) → trueToWitness equa , (equa , tt) , refl }) , (λ _ → tt)) ∷ᴺ
         ((λ _ → tt , inj₁ (trueFromWitness PutGet)) , (λ { (_ , eq) → eq })) ∷ᴬ [])
-       (λ _ → Sum.map id < id , const (inj₁ refl) > boolExcludedMiddle)
+       (λ _ → inj₂ (inj₁ refl))
 
 emptyF : Functor 0
 emptyF ()
@@ -92,4 +92,4 @@ updateSquare-correctness =
      ((λ { {(w , h) , v} (tt , _ , ne , _) → tt , inj₁ (trueFromWitness refl) }) ,
       (λ { {(w' , h') , (w , h) , v} ((_ , _ , ne , _) , (w'≡v , v≡v→h'≡v , _)) →
            w'≡v , (λ w≡v → ⊥-elim (falseToWitness ne w≡v)) , (λ _ → trans w'≡v (sym (v≡v→h'≡v refl))) })) ∷ᴬ [])
-    (λ _ → Sum.map id < id , const (inj₁ refl) > boolExcludedMiddle)
+    (λ _ → inj₂ (inj₁ refl))

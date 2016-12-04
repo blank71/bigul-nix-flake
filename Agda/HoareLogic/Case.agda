@@ -15,14 +15,38 @@ open import Data.List as List
 open import Relation.Binary.PropositionalEquality
 
 
+DecCaseDomain : List (S → V → Bool) → ℙ (S × V)
+DecCaseDomain []       = ∅
+DecCaseDomain (c ∷ cs) = (True ∘ uncurry c) ∪ ((False ∘ uncurry c) ∩ DecCaseDomain cs)
+
 CaseDomain : List (S → V → Bool) → ℙ (S × V)
 CaseDomain []       = ∅
-CaseDomain (p ∷ ps) = (True ∘ uncurry p) ∪ ((False ∘ uncurry p) ∩ CaseDomain ps)
+CaseDomain (c ∷ cs) = (True ∘ uncurry c) ∪ CaseDomain cs
+
+toDecCaseDomain : (cs : List (S → V → Bool)) → CaseDomain cs ⊆ DecCaseDomain cs
+toDecCaseDomain []               ()
+toDecCaseDomain (c ∷ cs)         (inj₁ c-true) = inj₁ c-true
+toDecCaseDomain (c ∷ cs) {s , v} (inj₂ cs-dom) with c s v
+toDecCaseDomain (c ∷ cs)         (inj₂ cs-dom) | true  = inj₁ refl
+toDecCaseDomain (c ∷ cs)         (inj₂ cs-dom) | false = inj₂ (refl , toDecCaseDomain cs cs-dom)
+
+NormalDecCaseDomain : List ((S → V → Bool) × Bool) → ℙ (S × V)
+NormalDecCaseDomain []                 = ∅
+NormalDecCaseDomain ((c , true ) ∷ bs) = (True ∘ uncurry c) ∪ ((False ∘ uncurry c) ∩ NormalDecCaseDomain bs)
+NormalDecCaseDomain ((c , false) ∷ bs) = (False ∘ uncurry c) ∩ NormalDecCaseDomain bs
 
 NormalCaseDomain : List ((S → V → Bool) × Bool) → ℙ (S × V)
-NormalCaseDomain []                      = ∅
-NormalCaseDomain ((p , true ) ∷ bs) = (True ∘ uncurry p) ∪ ((False ∘ uncurry p) ∩ NormalCaseDomain bs)
-NormalCaseDomain ((p , false) ∷ bs) = (False ∘ uncurry p) ∩ NormalCaseDomain bs
+NormalCaseDomain []                 = ∅
+NormalCaseDomain ((c , true ) ∷ bs) = (True ∘ uncurry c) ∪ NormalCaseDomain bs
+NormalCaseDomain ((c , false) ∷ bs) = (False ∘ uncurry c) ∩ NormalCaseDomain bs
+
+toNormalDecCaseDomain : (bs : List ((S → V → Bool) × Bool)) → NormalCaseDomain bs ⊆ NormalDecCaseDomain bs
+toNormalDecCaseDomain []                         ()
+toNormalDecCaseDomain ((c , true ) ∷ bs)         (inj₁ c-true) = inj₁ c-true
+toNormalDecCaseDomain ((c , true ) ∷ bs) {s , v} (inj₂ bs-dom) with c s v
+toNormalDecCaseDomain ((c , true ) ∷ bs)         (inj₂ bs-dom) | true  = inj₁ refl
+toNormalDecCaseDomain ((c , true ) ∷ bs)         (inj₂ bs-dom) | false = inj₂ (refl , toNormalDecCaseDomain bs bs-dom)
+toNormalDecCaseDomain ((c , false) ∷ bs)         (c-false , bs-dom) = c-false , toNormalDecCaseDomain bs bs-dom
 
 OutOfDomain : List (S → V → Bool) → ℙ (S × V)
 OutOfDomain []       = Π
@@ -62,7 +86,7 @@ check-diversion-success ((p , adaptive f) ∷ bs) s v (p-s-v≡false , outd) (q-
 case-soundness-reentry :
   (bs bs' : List Branch) (R : ℙ (S × V)) (R' : ℙ (S × S × V)) (cont : S → Par S) (ReentryCond : ℙ (S × V)) →
   BranchSound R R' bs bs' ReentryCond → RangeDisjoint bs bs' →
-  (s : S) (v : V) → R (s , v) → NormalCaseDomain (List.map (Product.map id isNormal) bs) (s , v) → OutOfDomain (List.map proj₁ bs') (s , v) →
+  (s : S) (v : V) → R (s , v) → NormalDecCaseDomain (List.map (Product.map id isNormal) bs) (s , v) → OutOfDomain (List.map proj₁ bs') (s , v) →
   Σ[ s' ∈ S ] ((put-with-adaptation bs bs' s v cont ↦ s') × R' (s' , s , v))
 case-soundness-reentry []                      bs' R R' cont ReentryCond sound disj s v sRv ()  out
 case-soundness-reentry ((p , normal l q) ∷ bs) bs' R R' cont ReentryCond (b-sound , sound) (b-disj , disj) s v sRv (inj₁ p-s-v≡true) out
@@ -80,7 +104,7 @@ case-soundness-reentry ((p , adaptive f) ∷ bs) bs' R R' cont ReentryCond (_ , 
 case-soundness-main :
   (bs bs' : List Branch) (R : ℙ (S × V)) (R' : ℙ (S × S × V)) (cont : S → Par S) (ReentryCond : ℙ (S × V)) →
   BranchSound R R' bs bs' ReentryCond → RangeDisjoint bs bs' →
-  (s : S) (v : V) → R (s , v) → CaseDomain (List.map proj₁ bs) (s , v) → OutOfDomain (List.map proj₁ bs') (s , v) →
+  (s : S) (v : V) → R (s , v) → DecCaseDomain (List.map proj₁ bs) (s , v) → OutOfDomain (List.map proj₁ bs') (s , v) →
   ((s'' : S) → R (s'' , v) → ReentryCond (s'' , v) → Σ[ s' ∈ S ] ((cont s'' ↦ s') × R' (s' , s'' , v))) →
   Σ[ s' ∈ S ] ((put-with-adaptation bs bs' s v cont ↦ s') × R' (s' , s , v))
 case-soundness-main []             bs' R R' cont ReentryCond sound disj s v sRv ()  out cont-sound
@@ -104,5 +128,5 @@ case-soundness : (bs : List Branch) (R : ℙ (S × V)) (R' : ℙ (S × S × V)) 
                  Sound R (Lens.put (case-lens bs)) R'
 case-soundness bs R R' sound dom disj (s , v) sRv =
   case-soundness-main bs [] R R'
-    (λ s' → put-with-adaptation bs [] s' v (const fail)) (NormalCaseDomain (List.map (Product.map id isNormal) bs)) sound disj s v sRv (dom sRv) tt
-    (λ s' s'Rv dom' → case-soundness-reentry bs [] R R' (const fail) (NormalCaseDomain (List.map (Product.map id isNormal) bs)) sound disj s' v s'Rv dom' tt)
+    (λ s' → put-with-adaptation bs [] s' v (const fail)) (NormalCaseDomain (List.map (Product.map id isNormal) bs)) sound disj s v sRv (toDecCaseDomain (List.map proj₁ bs) (dom sRv)) tt
+    (λ s' s'Rv dom' → case-soundness-reentry bs [] R R' (const fail) (NormalCaseDomain (List.map (Product.map id isNormal) bs)) sound disj s' v s'Rv (toNormalDecCaseDomain (List.map (Product.map id isNormal) bs) dom') tt)
