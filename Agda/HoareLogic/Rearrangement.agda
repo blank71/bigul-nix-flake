@@ -6,6 +6,7 @@ module HoareLogic.Rearrangement {n : ℕ} {F : Functor n} where
 open import DynamicallyChecked.Utilities
 open import DynamicallyChecked.Partiality
 open import DynamicallyChecked.Lens
+open import DynamicallyChecked.Universe
 open import DynamicallyChecked.Rearrangement
 open DynamicallyChecked.Rearrangement.Components
 open import HoareLogic.Semantics
@@ -146,30 +147,23 @@ rearrV-soundness vpat vpat' expr c l R R' l-sound (s , v) (r , R-s-r , Match-v-r
                                  (construct-injective vpat' (fromEval vpat vpat' expr v' Eval-r'-v'))))
                   Match-v-r)
 
--- rearrS-soundness :
---   {V : Set} {G H : U n} (spat : Pattern F G) (spat' : Pattern F H) (expr : Expr spat spat')
---   (c : CompleteExpr spat spat' expr) (l : ⟦ H ⟧ (μ F) ⇆ V) →
---   (R : ℙ (PatResult spat × V)) (R' : ℙ (PatResult spat × PatResult spat × V)) →
---   Sound ((Eval spat spat' expr ∘ swap) • R) (Lens.put l)
---         (λ { (s' , s , v) → ∃ λ { (r' , r) → R' (r' , r , v) × Eval spat spat' expr (r' , s') × Eval spat spat' expr (r , s) } }) →
---   Sound (Match spat • R) (Lens.put (rearrangement-iso spat spat' expr c ▸ l))
---         (λ { (s' , s , v) → ∃ λ { (r' , r) → R' (r' , r , v) × Match spat (s' , r') × Match spat (s , r) } })
--- rearrS-soundness spat spat' expr c l R R' l-sound (s , v) (r , Match-s-r , R-r-v) =
---   let new-s = construct spat' (eval spat spat' expr r)
---       (s' , l-new-s-v↦s' , (new-r' , new-r) , R'-new-r'-new-r-v , Eval-new-r'-s' , Eval-new-r-new-s) =
---         l-sound (new-s , v) (r , toEval spat spat' expr , R-r-v)
---   in  {!!}
-
-{-
-
-R  : ℙ (⟦ H ⟧ (μ F) × V)
-R' : ℙ (⟦ H ⟧ (μ F) × ⟦ H ⟧ (μ F) × V)
- { R }  b  { (∑ (Eval b) ∘ proj₁) ∩ R' }
------------------------------------------
- { Rearr f • R }  rearrS f b  { R' }
-
- { R • Eval pat pat' expr } b { R' • Eval pat pat' expr }
---------------------------------------------
- { R • (Match pat ∘ swap) } rearrV f b { R' • (Match pat ∘ swap) }
-
--}
+rearrS-soundness :
+  {V : Set} {G H : U n} (spat : Pattern F G) (tpat : Pattern F H) (expr : Expr spat tpat)
+  (c : CompleteExpr spat tpat expr) (l : ⟦ H ⟧ (μ F) ⇆ V) →
+  (R : ℙ (PatResult spat × V)) (R' : ℙ (PatResult spat × PatResult spat × V)) →
+  Sound ((Eval spat tpat expr ∘ swap) • R) (Lens.put l)
+        (λ { (t' , t , v) → ∃ λ { (r' , r) → R' (r' , r , v) × Eval spat tpat expr (r' , t') × Eval spat tpat expr (r , t) } }) →
+  Sound (Match spat • R) (Lens.put (rearrangement-iso spat tpat expr c ▸ l))
+        (λ { (s' , s , v) → ∃ λ { (r' , r) → R' (r' , r , v) × Match spat (s' , r') × Match spat (s , r) } })
+rearrS-soundness spat tpat expr c l R R' l-sound (s , v) (r , Match-s-r , R-r-v) =
+  let t = construct tpat (eval spat tpat expr r)
+      (t' , l-t-v↦t' , (rr' , rr) , R'-rr'-rr-v , Eval-rr'-t' , Eval-rr-t) =
+        l-sound (t , v) (r , toEval spat tpat expr , R-r-v)
+  in  construct spat rr' ,
+      ((fromMatch spat s Match-s-r >>= return refl) >>= l-t-v↦t' >>=
+       Lens.GetPut (iso-lens (rearrangement-iso spat tpat expr c))
+                   (construct-deconstruct-inverse spat rr' >>= (return (fromEval spat tpat expr t' Eval-rr'-t')))) ,
+      (rr' , rr) , R'-rr'-rr-v , (toMatch spat (construct spat rr') (construct-deconstruct-inverse spat rr')) ,
+      subst (λ r → Match spat (s , r))
+            (sym (eval-injective spat tpat expr c (construct-injective tpat (fromEval spat tpat expr t Eval-rr-t))))
+            Match-s-r

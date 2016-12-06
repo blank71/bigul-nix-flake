@@ -32,12 +32,19 @@ mutual
               (Rr : ℙ (⟦ Sr ⟧ (μ F) × ⟦ Vr ⟧ (μ F))) (Rr' : ℙ (⟦ Sr ⟧ (μ F) × ⟦ Sr ⟧ (μ F) × ⟦ Vr ⟧ (μ F))) {r : BiGUL F Sr Vr} → Triple Rr r Rr' →
               Triple (λ { ((sl , sr) , (vl , vr)) → Rl (sl , vl) × Rr (sr , vr) }) (prod l r)
                      (λ { ((sl' , sr') , (sl , sr) , (vl , vr)) → Rl' (sl' , sl , vl) × Rr' (sr' , sr , vr) })
-    rearrV  : {S V V' : U n}
-              {vpat : Pattern F V} {vpat' : Pattern F V'} {expr : Expr vpat vpat'} {c : CompleteExpr vpat vpat' expr}
-              {b : BiGUL F S V'} (R : ℙ (⟦ S ⟧ (μ F) × PatResult vpat)) (R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × PatResult vpat)) →
-              Triple (R • Eval vpat vpat' expr) b
-                     (λ { (s' , s , v) → ∃ λ r → R' (s' , s , r) × Eval vpat vpat' expr (r , v) }) →
-              Triple (R • (Match vpat ∘ swap)) (rearrV vpat vpat' expr c b)
+    rearrS  : {S T V : U n}
+              {spat : Pattern F S} {tpat : Pattern F T} {expr : Expr spat tpat} {c : CompleteExpr spat tpat expr}
+              {b : BiGUL F T V} (R : ℙ (PatResult spat × ⟦ V ⟧ (μ F))) (R' : ℙ (PatResult spat × PatResult spat × ⟦ V ⟧ (μ F))) →
+              Triple ((Eval spat tpat expr ∘ swap) • R) b
+                     (λ { (t' , t , v) → ∃ λ { (r' , r) → R' (r' , r , v) × Eval spat tpat expr (r' , t') × Eval spat tpat expr (r , t) } }) →
+              Triple (Match spat • R) (rearrS spat tpat expr c b)
+                     (λ { (s' , s , v) → ∃ λ { (r' , r) → R' (r' , r , v) × Match spat (s' , r') × Match spat (s , r) } })
+    rearrV  : {S V W : U n}
+              {vpat : Pattern F V} {wpat : Pattern F W} {expr : Expr vpat wpat} {c : CompleteExpr vpat wpat expr}
+              {b : BiGUL F S W} (R : ℙ (⟦ S ⟧ (μ F) × PatResult vpat)) (R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × PatResult vpat)) →
+              Triple (R • Eval vpat wpat expr) b
+                     (λ { (s' , s , v) → ∃ λ r → R' (s' , s , r) × Eval vpat wpat expr (r , v) }) →
+              Triple (R • (Match vpat ∘ swap)) (rearrV vpat wpat expr c b)
                      (λ { (s' , s , v) → ∃ λ r → R' (s' , s , r) × Match vpat (v , r) })
     dep     : {S V V' : U n} {f : ⟦ V ⟧ (μ F) → ⟦ V' ⟧ (μ F)} {b : BiGUL F S V}
               (R : ℙ (⟦ S ⟧ (μ F) × (⟦ V ⟧ (μ F) × ⟦ V' ⟧ (μ F)))) {R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × (⟦ V ⟧ (μ F) × ⟦ V' ⟧ (μ F)))} →
@@ -83,7 +90,8 @@ soundness fail = fail-soundness _
 soundness {V = V} (skip {f = f}) = skip-soundness (U-dec V) f
 soundness replace = replace-soundness
 soundness (prod Rl Rl' {l} tl Rr Rr' {r} tr) = prod-soundness Rl Rl' (interp l) (soundness tl) Rr Rr' (interp r) (soundness tr)
-soundness (rearrV {vpat' = vpat'} {c = c} {b} R R' t) = rearrV-soundness _ vpat' _ c (interp b) R R' (soundness t)
+soundness (rearrS {tpat = tpat} {c = c} {b} R R' t) = rearrS-soundness _ tpat _ c (interp b) R R' (soundness t)
+soundness (rearrV {wpat = wpat} {c = c} {b} R R' t) = rearrV-soundness _ wpat _ c (interp b) R R' (soundness t)
 soundness (dep {V' = V'} {f} {b} R {R'} t) = dep-soundness f (U-dec V') (interp b) R R' (soundness t)
 soundness {n} {F} {S} {V} (case {bs = bs} {R} {R'} ts dom) =
   case-soundness (interp-CaseBranch bs) R R'
