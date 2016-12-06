@@ -60,8 +60,8 @@ OutOfRange = foldr (_∩_ ∘ invertRange ∘ proj₂) Π
 
 RangeDisjoint : List Branch → List Branch → Set
 RangeDisjoint []             bs' = ⊤
-RangeDisjoint ((p , b) ∷ bs) bs' = elimBranchType (λ l q → (True ∘ q) ⊆ OutOfRange bs') (λ f → ⊤) b ×
-                                   RangeDisjoint bs ((p , b) ∷ bs')
+RangeDisjoint ((p , normal l q) ∷ bs) bs' = ((True ∘ q) ⊆ OutOfRange bs') × RangeDisjoint bs ((p , normal l q) ∷ bs')
+RangeDisjoint ((p , adaptive f) ∷ bs) bs' = RangeDisjoint bs ((p , adaptive f) ∷ bs')
 
 BranchSound : (R : ℙ (S × V)) (R' : ℙ (S × S × V)) → List Branch → List Branch → ℙ (S × V) → Set₁
 BranchSound R R' []             bs' ReentryCond = ⊤
@@ -94,10 +94,10 @@ case-soundness-reentry ((p , normal l q) ∷ bs) bs' R R' cont ReentryCond (b-so
   let (s' , l-s-v↦s' , s'R'v , (p-s'-v≡true , outd-s'-v) , q-s'≡true) = b-sound (s , v) (sRv , p-s-v≡true , out)
   in  s' , (l-s-v↦s' >>= assert p-s'-v≡true then assert q-s'≡true then
             check-diversion-success bs' s' v outd-s'-v (b-disj q-s'≡true) >>= return refl) , s'R'v
-case-soundness-reentry ((p , normal l q) ∷ bs) bs' R R' cont ReentryCond (_ , sound) (_ , disj) s v sRv (inj₂ (p-s-v≡false , dom)) out
+case-soundness-reentry ((p , normal l q) ∷ bs) bs' R R' cont ReentryCond (_ , sound) (b-disj , disj) s v sRv (inj₂ (p-s-v≡false , dom)) out
   rewrite p-s-v≡false =
   case-soundness-reentry bs ((p , normal l q) ∷ bs') R R' cont ReentryCond sound disj s v sRv dom (p-s-v≡false , out)
-case-soundness-reentry ((p , adaptive f) ∷ bs) bs' R R' cont ReentryCond (_ , sound) (_ , disj) s v sRv (p-s-v≡false , dom) out
+case-soundness-reentry ((p , adaptive f) ∷ bs) bs' R R' cont ReentryCond (_ , sound) disj s v sRv (p-s-v≡false , dom) out
   rewrite p-s-v≡false =
   case-soundness-reentry bs ((p , adaptive f) ∷ bs') R R' cont ReentryCond sound disj s v sRv dom (p-s-v≡false , out)
 
@@ -113,13 +113,16 @@ case-soundness-main ((p , normal l q) ∷ bs) bs' R R' cont ReentryCond (b-sound
   let (s' , l-s-v↦s' , s'R'v , (p-s'-v≡true , outd-s'-v) , q-s'≡true) = b-sound (s , v) (sRv , p-s-v≡true , out)
   in  s' , (l-s-v↦s' >>= assert p-s'-v≡true then assert q-s'≡true then
             check-diversion-success bs' s' v outd-s'-v (b-disj q-s'≡true) >>= return refl) , s'R'v
-case-soundness-main ((p , adaptive f) ∷ bs) bs' R R' cont ReentryCond (lift (b-reentry , b-sound) , sound) (_ , disj) s v sRv (inj₁ p-s-v≡true) out cont-sound
+case-soundness-main ((p , adaptive f) ∷ bs) bs' R R' cont ReentryCond (lift (b-reentry , b-sound) , sound) disj s v sRv (inj₁ p-s-v≡true) out cont-sound
   rewrite p-s-v≡true = let (f-s-v-R-v , reentry) = b-reentry (sRv , p-s-v≡true , out)
                            (s' , cont↦ , R'-s') = cont-sound (f s v) f-s-v-R-v reentry
                        in  s' , cont↦ , b-sound ((sRv , p-s-v≡true , out) , R'-s')
-case-soundness-main ((p , b) ∷ bs) bs' R R' cont ReentryCond (_ , sound) (_ , disj) s v sRv (inj₂ (p-s-v≡false , dom)) out cont-sound
+case-soundness-main ((p , normal l q) ∷ bs) bs' R R' cont ReentryCond (_ , sound) (b-disj , disj) s v sRv (inj₂ (p-s-v≡false , dom)) out cont-sound
   rewrite p-s-v≡false =
-  case-soundness-main bs ((p , b) ∷ bs') R R' cont ReentryCond sound disj s v sRv dom (p-s-v≡false , out) cont-sound
+  case-soundness-main bs ((p , normal l q) ∷ bs') R R' cont ReentryCond sound disj s v sRv dom (p-s-v≡false , out) cont-sound
+case-soundness-main ((p , adaptive f) ∷ bs) bs' R R' cont ReentryCond (_ , sound) disj s v sRv (inj₂ (p-s-v≡false , dom)) out cont-sound
+  rewrite p-s-v≡false =
+  case-soundness-main bs ((p , adaptive f) ∷ bs') R R' cont ReentryCond sound disj s v sRv dom (p-s-v≡false , out) cont-sound
 
 case-soundness : (bs : List Branch) (R : ℙ (S × V)) (R' : ℙ (S × S × V)) →
                  BranchSound R R' bs [] (NormalCaseDomain (List.map (Product.map id isNormal) bs)) →

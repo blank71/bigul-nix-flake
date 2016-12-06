@@ -124,5 +124,5 @@ soundness {n} {F} {S} {V} (case {bs = bs} {R} {R'} ts dom) =
                               RangeDisjoint (interp-CaseBranch bs) (interp-CaseBranch bs')
     case-disjointness-lemma [] = tt
     case-disjointness-lemma {bs' = bs'} ((t , x) ∷ᴺ ts) = case-out-of-range-lemma bs' ∘ x , case-disjointness-lemma ts
-    case-disjointness-lemma (_ ∷ᴬ ts) = tt , case-disjointness-lemma ts
+    case-disjointness-lemma (_ ∷ᴬ ts) = case-disjointness-lemma ts
 soundness (conseq q t q') = consequence _ _ _ (soundness t) _ q _ q'
