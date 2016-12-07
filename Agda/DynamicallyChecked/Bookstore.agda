@@ -108,13 +108,13 @@ vbooks = con (inj₂ (("Harry Potter" , 1950) ,
          con (inj₁ tt)))
 
 test-get : Maybe (μ BookstoreF (suc zero))
-test-get = runPar (Lens.get (interp BookstoreF bookstore) sbooks)
+test-get = runPar (Lens.get (interp bookstore) sbooks)
 
 test-put : Maybe (μ BookstoreF zero)
-test-put = runPar (Lens.put (interp BookstoreF bookstore) sbooks vbooks)
+test-put = runPar (Lens.put (interp bookstore) sbooks vbooks)
 
 test-put' : Maybe (μ BookstoreF zero)
-test-put' = runPar (Lens.put (interp BookstoreF bookstore) sbooks vbooks')
+test-put' = runPar (Lens.put (interp bookstore) sbooks vbooks')
 
 test-put'' : Maybe (μ BookstoreF zero)
-test-put'' = runPar (Lens.put (interp BookstoreF bookstore) sbooks vbooks'')
+test-put'' = runPar (Lens.put (interp bookstore) sbooks vbooks'')
