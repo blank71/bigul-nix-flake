@@ -1,0 +1,414 @@
+===========================================================================
+                          POPL 2017 Review #332A
+                    Updated 30 Sep 2016 10:22:18am EDT
+---------------------------------------------------------------------------
+Paper #332: The Under-Appreciated Put: Implementing Delta-Alignment in
+            BiGUL
+---------------------------------------------------------------------------
+
+                      Overall merit: C. Weak paper, though I will not fight
+                                        strongly against it
+                         Confidence: Y. I am knowledgeable in this area,
+                                        but not an expert
+
+                         ===== Paper summary =====
+
+This paper shows that a put-based approach to the bidirectional transformation problem is very expressive.  They code a number of different solutions to the alignment problem using the put-based bidirectional language BiGul. Examples in the paper include positional alignment for lists, key-based alignment for lists, delta-based alignment for lists, delta-based alignment for trees, delta-based alignment for arbitrary containers, and then how to use delta-based alignment strategies to recover key-based alignments.
+
+                           ===== Strengths =====
+
++ The framework is able to express a variety of bidirectional transforms in a single framework, many of which had previously appeared as individual published research results.
+
++ In each of the case studies, the code is relatively short.  
+
++ The presentation is relatively clear, working through examples of increasing complexity.
+
++ The BiGUL library is available on Hackage.
+
+                          ===== Weaknesses =====
+
+- It is not clear from the paper to what extent the functions defined are new.  Briefly scanning the related work on put lenses I didn’t see anything like this systematic working through of examples, which could make this paper a very good pearl.  However, the paper would be stronger if it made this case itself.  
+
+- One of the examples required the user to write a get/put lens by hand, which undercuts the value of the bidirectional vision.
+
+- The paper does not include a discussion of the limits of the approach.  What lenses cannot be written, or cannot be written easily, in this approach? 
+
+- Reading the code requires fluency in Haskell (which could be mitigated if the authors explained the code in a bit more detail).
+
+- There are a number of places where the presentation can be improved by providing additional information; some suggestions for such places are listed below.
+
+AFTER PC MEETING
+Pearls need to be held to very high standards of clarity and scholarly precision. Based on extensive online discussions, I an convinced that this paper does not meet that standard. It is likely to promulgate more confusion than it clears up, and as a result, the paper should be rejected.
+
+                      ===== Comments for author =====
+
+p. 1 “put′” —> “putHeight’”
+p. 1 In the body of putHeight’’, the “x” should be a multiplication sign.  As it is, it looks like it is an unbound variable x.
+
+p. 3  In the arMapL example, the case for both lists empty seems like a very complicated way to say “do nothing”:
+  $(normalSV [p | [] |] [p | [] |]) =⇒ $(rearrV [| λ[ ] → () |]) Skip
+
+p. 3 What is the type of get in the BiGUL language?  The example:
+       > get arMapL source [(0,"A."),(1,"B."),(2,"C.")]
+     suggests it is not the typically type for get, given on page 1:
+       get :: Source → View
+     (And similarly for put.)
+
+p. 3 Given that the paper is about updating data, you should be consistent about your     
+     representation of data. In the arMap example, source has names “A.” “B.” and “C.” 
+     which are later matched with “Ana”, “Bob”, and “Carl.”
+
+Sec. 4 The first two paragraphs seem to both say the same thing.  Perhaps one should be cut.
+
+p. 4  The key match approach requires the invariant that the keys are unique in the view and the source.  It’s probably worth pointing that out.  What happens with this invariant is broken?  Presumably it is the programmers’ responsibility to maintain the invariant?
+
+p. 4 How is getId related to getIdL?
+
+p. 5 Using an example where you have to directly define get and put functions undercuts the value of the bidirectional vision.  How often to BiGUL users have to define their own get/put functions?
+
+p. 5 How does the user produce the necessary deltas?  Constructing them by hand seems error-prone!
+
+p. 7  It would be helpful to have pictures to illustrate the tree updates.
+
+===========================================================================
+                          POPL 2017 Review #332B
+                     Updated 22 Sep 2016 7:34:01am EDT
+---------------------------------------------------------------------------
+Paper #332: The Under-Appreciated Put: Implementing Delta-Alignment in
+            BiGUL
+---------------------------------------------------------------------------
+
+                      Overall merit: C. Weak paper, though I will not fight
+                                        strongly against it
+                         Confidence: Z. I am not an expert; my evaluation
+                                        is that of an informed outsider
+
+                         ===== Paper summary =====
+
+This pearl shows that put-based bidirectional programming is not that
+difficult in a language called BiGUL. Moreover, it shows that BiGUL
+can serve as the basis for developing many useful domain-specific
+bidirectional methods as libraries: positional, key-based, and
+delta-based alignment for lists, trees, and generic containers. This
+is notable, since according to the authors in the predominant
+get-based bidirectional programming method these techniques were
+implemented only in separate languages and seem hard to combine.
+
+                           ===== Strengths =====
+
++ Pearl challenges the established get-based techniques for
+  bidirectional transformations and should lead to interesting
+  discussions at POPL.
+
++ The pearl is well written and accessible to a general POPL audience.
+
+                          ===== Weaknesses =====
+
+# Updated after PC discussion #
+
+- The results do not seem of sufficient weight and value for POPL. Pearls need to be held to very high standards of clarity and scholarly precision. This paper does not meet that standard. It is likely to promulgate more confusion than it clears up.
+
+- The paper does not explain well enough how put based techniques work: in particular not mentioning that put is partial is a huge omission which makes the paper's comparison to get-based techniques that do enforce totality misleading.
+
+- The paper's framing of its results do not reflect the state of the art in an accurate and scholarly way: the difference between get- and put- based techniques is that for the former one intuitively obtains the put by adding annotations to the get, while in the latter one writes the put directly.
+
+                      ===== Comments for author =====
+
+I have no prior experience with bidirectional transformations, so I
+cannot assess the novelty of this or how it compares to get-based
+techniques, still I found the proposed put-based technique interesting
+and the paper accessible and pleasant to read. Below are some
+suggestion for further improving presentation.
+
+Introduction reads nice and is accessible to a general
+audience. Section 2 on the contrary seems a bit too fast and there are
+no simple examples to guide the reader. Section 3 gets better again
+via the simple example at the beginning; it would still be nice to
+show what get and put one would intuitively get from the arBX program.
+
+On the arMapL it becomes rather evident to me that the notation you
+use for pattern matching and rearrangements is very clunky for a human
+to parse. One has to squint quite hard to understand where all these
+dollar signs belong, etc. Concrete syntax does matter, especially for
+a pearl, and it would be great if you could simplify it.
+
+`$(rearrV [| λ[ ] → () |]) Skip` seems to be a common pattern, already
+appearing for the second time (since arBX could probably be rewritten
+to use it to). Why not just define Skip like this?
+
+pg 4. `getId artifact` -- what exactly is `artifact`, getting a bit
+lost here ... finally understood that this equality check will later
+be important, might want to make that more explicit
+
+pg 4. The `getId` function ... -- but what you show below is called
+`getIdL`; this seems unnecessarily confusing. Also `getIdL` uses a
+function called `locs` that's not really explained anywhere.
+
+pg 4. "If the identity delta of the source and the identity delta of
+the view are both equal to the given delta, then both source and view
+elements are aligned" -- This is a bit unnatural to me, so you're
+requiring that d is an identity delta; this is a super strong
+condition, but I guess you have a way to make a source and a view
+satisfy this, right? So why are you still keeping the identity delta
+around, is it just so that you can use adaptive later?
+
+pg 5. arAlignL is defined in terms of both `get` and `put`, which
+might appall BX purists. This is fine because this get and put are
+very simple and you can prove the monad laws for it? In any case you
+might want to explain a bit more, since you keep using the `emb`
+wrapper in the next examples (see question below)
+
+pg 5. the `Dep` combinator in `emb` was never explained.
+
+pg 6. "The adaptation function for tree" -- trees (plural)
+
+      ===== Questions for authors to address in rebuttal period =====
+
+The paper should explain how the lens laws are dynamically enforced.
+
+===========================================================================
+                          POPL 2017 Review #332C
+                     Updated 24 Sep 2016 3:10:58pm EDT
+---------------------------------------------------------------------------
+Paper #332: The Under-Appreciated Put: Implementing Delta-Alignment in
+            BiGUL
+---------------------------------------------------------------------------
+
+                      Overall merit: D. Reject
+                         Confidence: X. I am an expert in this area
+
+                         ===== Paper summary =====
+
+Demonstrates how to use BiGUL (a previously published bidirectional language
+embedded in Haskell) to encode a variety of "alignment" strategies for
+bidirectional programs over lists, trees, and other data structures.
+
+                           ===== Strengths =====
+
+- Bidirectional programming is interesting
+- Alignment issues are one of the main challenges in designing good
+  bidirectional languages
+
+                          ===== Weaknesses =====
+
+- The paper's primary claim, reflected in the title and throughout the text,
+  is that the "put-based bidirectional programming" that it demonstrates is
+  novel and under-appreciated.  This claim is wrong: bidirectional
+  programming (in the sense of "lenses" a la Foster et al) has always been
+  put-based.
+- The technical parts of the paper are quite hard to follow.
+
+                      ===== Comments for author =====
+
+Bidirectional programming (in the sense of "lenses" a la Foster et al) has
+ALWAYS been about writing "put" functions.  For example, the introduction to
+[9] says it this way:
+
+ -  In general, there are many ways to equip a given get function with a
+   putback function to form a well-behaved and total lens; we need some
+   means of specifying which putback is intended that is natural for the
+   application domain and that does not involve onerous proof obligations or
+   checking of side conditions. We adopt a linguistic approach to this
+   issue, proposing a set of lens combinators—a small domain-specific
+   language—in which every expression simultaneously specifies both a get
+   function and the corresponding putback.
+
+Strictly speaking, this says that their lenses are a way of writing both put
+and get directions together.  But it is easy to see that the get direction
+of any well-behaved lens is uniquely determined by its put.  For example,
+Foster's 2010 PhD dissertation records this fact:
+
+ -  2.2.5 Lemma: For all basic lenses l1 ∈ S⇐⇒V and l2 ∈ S⇐⇒V, if l1.put v s
+   = l2.put v s for every view v in V and source s in S, then l1.get s =
+   l2.get s for every sources in S.
+
+So the original language of lens combinators (and all subsequent refinements
+of it, in particular those described in references [2], [3], and [12]) is
+already a language for writing put functions.  
+
+
+Bogus claims aside, the paper is quite difficult to read.  In particular,
+section 2, which introduces the BiGUL primitives, is far too dense to
+understand exactly what these primitives do (much less to be conviced that
+they necessarily satisfy the lens laws!).  This makes the rest of the paper
+essentially impossible to follow in detail.
+
+------
+Added after PC discussion:
+
+Since the author response disagreed so strongly with my review, I spent some
+more time on the paper, and I have some additional comments.
+
+- "the review takes none of this paper’s evidence into account and
+  rejects the paper based solely on an old misconception. This treatment is
+  exactly what hinders scientific advancement."
+
+In my original review, I pointed out two main issues with the paper:
+- 1) Its characterization of prior work seems wrong.
+- 2) The description of BiGUL was hard for me to understand in detail, which
+then made the rest of the paper hard to understand.
+
+For (1), let's look at the paper.
+- The abstract begins like this: "There are two approaches to bidirectional
+programming: One is the get-based method where one writes get, and put is
+automatically derived."
+- Then the intro gives a long list of get-based methods, again saying that
+they allow users to "derive" a suitable put.  (It doesn't say
+"automatically" here, but the word "derive" is repeated, and the reader has
+been told nothing to make them suspect that "automatically" is not also
+meant here.)
+- The next paragraph says "The get-based method has been intensively studied
+for over ten years and got much appreciated. It is attractive, because get
+is easy to write, and if the system knows how to derive a put, there would
+be no additional burden for users to go from unidirectional to
+bidirectional."  Again, the strong implication is that it is the "system,"
+not the programmer, that is deriving the put.
+- The next paragraph repeats the same strong implication: "the get-based
+method hardly describes the full behavior of a bidirectional transformation,
+so automatically derived put may not match the programmers’ intention, which
+would prevent it from being used in practice."  This seems to be saying very
+clearly that get-based methods do _not_ permit the programmer to describe
+the full behavior of a bidirectional transformation.
+- The next paragraph ("Since get does not...") is the only place in the
+intro where there is a hint that previous get-based papers might have used
+the strategy of including enough information in their get-based combinators
+to determine the update policy.  But it doesn't imply that any previous
+papers except [2], [17], and [18] actually did this.
+- The final paragraph, "a good language for programming put can not only
+give full control over the behavior of bidirectional transformations..."
+returns to the implication that get-based languages do not give full control
+over the behavior of bidirectional transformations.  (Otherwise, if all
+lens-like languages give such control, why call it out explicitly here as a
+contribution?)
+
+The summary of the difference between get-based and put-based designs in the
+author response...
+
+- "More generally, a lens always denote a pair of get and put, and when
+designing lenses we need to consider both directions and make them
+well-behaved. It is when it comes to using the lenses that the distinction
+between the get- and put-based approaches becomes meaningful. Previous
+lenses are designed such that the programmer thinks mainly in the get
+direction (often ending up having to mix the two directions though), whereas
+our putback-based approach lets the programmer construct programs purely in
+the put direction. Our paper offers new evidence to support the
+putback-based approach..."
+
+... strikes me as an accurate characterization of the differences between
+the approaches.  I wish the abstract and introduction had followed this
+approach.  As written in the submission, I find them seriously misleading.
+
+
+Next, about (2)...
+
+- "Regarding Section 2, the purpose of this paper is not to propose a new
+  bidirectional language, but to show the putback-based way of thinking,
+  using BiGUL as the expository language. Thus, Section 2 is about
+  describing the necessary aspects of the language in order for the reader
+  to understand the remaining of the paper without having to be familiar
+  with BiGUL..."
+
+My concerns about section 2 were not just that there were no proofs: I
+simply could not understand the combinators being described.  For example,
+the rearrS combinator there takes a function f from s -> s' and a BiGUL s' v
+and produces a BiGUL s v that, it seems, implements its put operation by
+taking an s and a v, using f to transform the s into an s', and using the
+given BiGUL to put the v argument into this s'.  I don't understand how this
+can ultimately result in an s -- i.e., it seems like rearrS should also be
+provided with a function f^-1 from s' to s (and a proof that it is the
+inverse of f!).  (Referring to the PEPM paper did not help me understand:
+there, the rearr combinator does explicitly take an isomorphism as an
+argument, as I expected.)
+
+A related confusion was that, from the explanation in the paper, it is
+difficult to understand how the Case combinator works -- specifically, I
+have difficulty imagining what the "get" direction could do in the Adaptive
+case: what the programmer provides is an arbitrary function of type s->v->s,
+and I don't see how this can be automatically "inverted" to obtain a
+function of type s->v.  Here, again, the PEPM paper is no help, since the
+type of the arguments to Case are different between the PEPM paper and the
+POPL submission: In the PEPM paper, the predicate to each case branch has
+type s->bool (and I can follow the explanation of how the get function can
+then work, the key insight being that the final case branch taken in the put
+direction must necessarily be a normal one, not an adaptive one), while in
+the POPL submission its type is s->v->bool, and the explanation in the PEPM
+paper doesn't work any more.  Looking at the Haskell code, I see that it is
+doing something clever to come up with a v that it can use, but I don't
+fully understand it.
+
+- ..."not about a full description of the language and proofs of the
+  well-behavedness laws, which can be found in the original BiGUL paper
+  [16]. In that paper, the proofs are all formalised with a proof assistant,
+  which should clear any doubt."
+
+Incidentally, in the process of trying to understand Section 2, I discovered
+that there are actually _three_ definitions of Case in play -- one from
+section 2 of the present paper...
+
+  data Branch s v =
+      Normal (BiGUL s v) 
+    | Adaptive (s -> v -> s)
+
+... one in Haskell (from Hackage)...
+
+  data CaseBranch s v =
+      Normal (BiGUL s v) (s -> Bool)
+    | Adaptive (s -> v -> s)
+
+... and one in Agda (which is what was formally verified):
+
+   data CaseSBranchType (S V : U n) : Set₁ where
+     normal   : BiGUL S V → CaseSBranchType S V
+     adaptive : (⟦ S ⟧ (μ F) → Par (⟦ S ⟧ (μ F))) → CaseSBranchType S V
+
+(The Agda one is a little hard to read, but the adaptive case seems to take
+a partial function from s to s -- there is no v to the left of the final
+arrow.)  This discrepancy invalidates the assertion in the author response
+that the combinators in section 2 have been mechanically verified and are
+thus beyond any doubt.  (This is not to say that the combinators are _not_
+well behaved -- I am willing to believe they are.  But the claim that this
+has been verified formally seems wrong.)
+
+
+Finally, after putting a couple more hours into trying to understand section
+2, I do feel, now, that I understand it reasonably well.  On this basis, I
+was able to read the rest of the paper again and get more out of it.  I do
+like the compactness of the examples, the clean way that alignment is dealt
+with, and the way the list-based one generalizes to trees.  The Case
+combinator itself is also nice (though I remain puzzled about when it can
+fail, in both directions).  Thus, I agree that the paper has technical
+value, though it seems light for POPL.  (I realize that it was submitted as
+a pearl, so technical novelty is not required.  But even as a pearl the
+novel part -- the examples with alignment -- is only about 4 pages.)
+
+===========================================================================
+       Rebuttal Response by Jorge Mendes <jorgemendes@di.uminho.pt>
+---------------------------------------------------------------------------
+We apologise that, due to the length restriction, we can only choose the more important questions to answer, and in fact has to run over the limit to properly respond to reviewer C’s critical comments.
+
+To reviewers A & B
+------------------
+
+Regarding `emb`: Every BiGUL program is guaranteed to be well-behaved, including `emb`. This well-behavedness is partial, however: For example, the PutGet law is formulated as “if `put s v` successfully computes to `s'`, then `get s'` will successfully compute to `v`”. If `emb` receives a bad pair of put and get functions, transformations will fail (but still satisfy the laws vacuously). We don’t often use `emb` — one situation in which we use `emb` is when defining small operations on primitive datatypes, like “plus/minus 1” for Int, because BiGUL is mainly designed to support algebraic datatypes. Our use of `emb` in the paper is different but still justifiable, since we are simply using it to wrap a pair of put and get functions derived from a single BiGUL program, which is the only thing we need to maintain, and we have also shown that it is easy to prove that the pair of derived functions is well-behaved, so the transformations will succeed.
+
+Regarding `Dep`: When we write a put program, the view cannot be arbitrarily discarded. Otherwise we won’t be able to recover it from the updated source by get, unless that view can be determined from the rest of the view and the updated source. That is what `Dep` is for.
+
+Regarding discussion of limits: Since the paper is a pearl, we think its aim is to bring out the thought patterns underlying putback-based programming by working through a series of concrete examples, instead of focusing on the general abilities of BiGUL.
+
+Regarding producing deltas: They can be obtained in different ways:
+
+  - a special editor can keep track of how the view is modified by the user and produce a corresponding delta;
+  - a diff algorithm can be applied to the old and new views to obtain it, as we demonstrated with the `keyDelta` function.
+
+To reviewer C
+-------------
+
+It is easy to find the get-based way of thinking in the literature. To also quote Foster’s thesis, he stated below Lemma 2.2.6 that
+
+> [l]ens programmers often feel like they are writing the forward transformation > (because the names of primitives typically connote the forward transformation) > and getting the backward transformation “for free[.]”
+
+This fact can be observed, for example, in Figure 8 of Foster et al.’s TOPLAS paper [9], which clearly shows that their lens program is supposed to be constructed like writing get; for a second example, Bohannon et al’s relational lenses are written like a database query, i.e., the get transformation.  Inevitably they have to add annotations to gain more control of the put behaviour, but that makes constructing and understanding such programs more awkward, having to think in both directions.
+
+More generally, a lens always denote a pair of get and put, and when *designing* lenses we need to consider both directions and make them well-behaved. It is when it comes to *using* the lenses that the distinction between the get- and put-based approaches becomes meaningful. Previous lenses are designed such that the programmer thinks mainly in the get direction (often ending up having to mix the two directions though), whereas our putback-based approach lets the programmer construct programs purely in the put direction. Our paper offers new evidence to support the putback-based approach, and has explained, in terms of concrete examples, how to program in a putback-based way to reviewers A & B reasonably well, whereas the review takes none of this paper’s evidence into account and rejects the paper based solely on an old misconception. This treatment is exactly what hinders scientific advancement.
+
+Regarding Section 2, the purpose of this paper is not to propose a new bidirectional language, but to show the putback-based way of thinking, using BiGUL as the expository language. Thus, Section 2 is about describing the necessary aspects of the language in order for the reader to understand the remaining of the paper without having to be familiar with BiGUL, not about a full description of the language and proofs of the well-behavedness laws, which can be found in the original BiGUL paper [16]. In that paper, the proofs are all formalised with a proof assistant, which should clear any doubt.
