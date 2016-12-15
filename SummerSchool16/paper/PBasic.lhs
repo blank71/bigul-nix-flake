@@ -220,6 +220,7 @@ Just 4
 \end{verbatim}
 
 \subsection{Case}
+\label{sec:PBasic.Case}
 
 The |Case| combinator is for case analysis, which is very useful.
 The general structure is as follows.
