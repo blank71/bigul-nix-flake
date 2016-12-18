@@ -366,15 +366,29 @@ data Pat a where
   PIn     ::  InOut a => Pat (F a) -> Pat a
 \end{spec}
 A pattern can be a (nameless) variable, a constant, a product, a |Left| or |Right| injection (for the |Either| type), or a generic constructor, and its target type is given as the index in its type.
-So, for example, |PProd| cannot be used to match an |Either| value.
-The |InOut| typeclass contains the types which are isomorphic to (and therefore interconvertible with) a sum-of-products representation.
-For example, |[a]| is an instance of |InOut|, and |F [a]|, an isomorphic sum-of-products representation of |[a]|, is |Either () (a, [a])|.
+For example, the pattern |PLeft (PConst ())| has type |Pat (Either () b)|, and can only be used to match those values of type |Either () b| (and matching succeeds only for the value |Left ()|).
+The |InOut| typeclass contains the types that are isomorphic to (and therefore interconvertible with) a sum-of-products representation.
 The isomorphism is witnessed by
 \[ |inn :: InOut a => F a -> a| \qquad\text{and}\qquad |out :: InOut a => a -> F a| \]
-These two functions will be used to define pattern matching and evaluation.
+which will be used to define pattern matching and evaluation.
+For example, |[a]| is an instance of |InOut|, and |F [a]|, an isomorphic sum-of-products representation of |[a]|, is |Either () (a, [a])|.
+The two functions witnessing the isomorphism for lists are defined by
+\begin{spec}
+inn (Left   ())       = []
+inn (Right  (x, xs))  = x:xs
+
+out []       = Left    ()
+out (x:xs)   = Right   (x, xs)
+\end{spec}
 
 How do we define pattern matching?
 As we mentioned above, the result of matching a value against a pattern is an environment indexed by the variable positions of the pattern.
+For example, matching a list against the cons pattern
+\begin{equation}
+|PIn (PRight (PProd PVar PVar))|
+\label{eq:cons-pattern}
+\end{equation}
+should produce an environment containing its head and tail.
 Here we want a safe (but not necessarily efficient) representation of the environment type, in the sense that the indices into the environment should be exactly the variable positions of the pattern, and we want that to be enforced statically by typechecking.
 In other words, this environment type depends on the pattern, and a way to compute this type is to encode it as a second index of the |Pat| datatype:
 \begin{spec}
@@ -384,14 +398,18 @@ data Pat a env where
   PProd   ::  Pat a  a'  -> Pat b b' b'' -> Pat (a, b) (a', b')
   PLeft   ::  Pat a  a'  -> Pat (Either a b) a'
   PRight  ::  Pat b  b'  -> Pat (Either a b) b'
-  PIn     ::  InOut a => Pat (F a) b c -> Pat a b
+  PIn     ::  InOut a => Pat (F a) b -> Pat a b
 \end{spec}
-Notice that an environment type is just a product of |Var| types.
+Notice that an environment type is just a product of |Var| types --- for example, the environment type computed for the cons pattern~(\ref{eq:cons-pattern}) is
+\begin{equation}
+|(Var a, Var [a])|
+\label{eq:cons-environment}
+\end{equation}
 We will talk about |Var| later, which is simply defined by
 \begin{spec}
 newtype Var a = Var a
 \end{spec}
-Now we can define the pattern matching operation:
+Now we can define the (strongly typed) pattern matching operation:
 \begin{spec}
 deconstruct :: Pat a env -> a -> Maybe env
 deconstruct PVar           x          = return (Var x)
@@ -416,7 +434,7 @@ construct (PIn p)        env           = inn (construct p env)
 \end{spec}
 Precisely speaking, we have
 \[ |deconstruct p x| = |Just e| \quad\Leftrightarrow\quad |construct p e| = |x| \]
-for all |p :: Pat a env|, |x :: a|, and |e :: env|, establishing a partial isomorphism between |env| and~|a|.
+for all |p :: Pat a env|, |x :: a|, and |e :: env|, establishing a (half-) partial isomorphism between |env| and~|a|.
 
 Now consider view rearrangement, which evaluates a ``simple'' pattern-\break{}matching $\lambda$-expression on the view and continues execution with the transformed view.
 The body of the $\lambda$-expression refers to the variables appearing in the pattern.
@@ -431,6 +449,7 @@ data Direction env a where
 \end{spec}
 The type of a direction is indexed by the environment type it points into and the component type it points to.
 Note that the type of |DVar| is specified to work with only environment types marked with |Var|; this is for ensuring that a direction goes all the way down to an actual component at a variable position of the pattern, rather than stopping half-way and pointing to a sub-tree which include more than one component.
+For example, for the environment type~(\ref{eq:cons-environment}) for the cons pattern, only two directions are valid, namely |DLeft DVar| and |DRight DVar|, whereas |DVar| alone would point to the entire environment instead of one of the variable positions, and is ruled out by typechecking (in the sense that it is impossible for |DVar| to have type |Direction (Var a, Var [a]) b| for any~|b|).
 It is easy to extract a component from an environment following a direction:
 \begin{spec}
 retrieve :: Direction env a -> env -> a
@@ -448,6 +467,16 @@ data Expr env a where
   ERight  ::  Expr env b  -> Expr env (Either a b)
   EIn     ::  (InOut a) => Expr env (F a) -> Expr env a
 \end{spec}
+For example, the rearranging $\lambda$-expression
+\begin{equation}
+|\(x:xs) -> (x, xs)|
+\label{eq:cons-to-pair}
+\end{equation}
+is represented by the cons pattern~(\ref{eq:cons-pattern}) and the pair expression
+\begin{equation}
+|EProd (EDir (DLeft DVar)) (EDir (DRight DVar))|
+\label{eq:pair-expression}
+\end{equation}
 Evaluating an expression under an environment is similar to inverse pattern matching:
 \begin{spec}
 eval :: Expr env a -> env -> a
@@ -462,16 +491,21 @@ The type of |RearrV| is then:
 \begin{spec}
 RearrV :: Pat v env -> Expr env v' -> BiGUL s v' -> BiGUL s v
 \end{spec}
-And its |put| behavior is simply:
+Note that in the type of |RearrV|, the types of the pattern and expression share the same environment type index, ensuring that the directions in the expression can only refer to the variable positions in the pattern.
+And the |put| behavior of |RearrV| is simply:
 \begin{spec}
 put (RearrV p e b) s v = do  env <- deconstruct p v
                              put b s (eval e env)
 \end{spec}
 
-For the |get| direction, after executing the inner BiGUL program to obtain an intermediate view, we should reverse the roles of the pattern and body in the $\lambda$-expression, using the latter as a pattern to match the intermediate view.
-This intermediate view will be decomposed, and eventually each of its components will be paired with a direction indicating which variable position the component should go into.
-We can prepare a ``container'' shaped like the pattern, whose variable positions are initially empty.
-Whenever we reach a component and a direction, we try to put that component into the place in the container pointed to by the direction; if two components are put into the same position twice (indicating that the $\lambda$-expression uses a variable more than once), then they must be equal.
+For the |get| direction, after executing the inner BiGUL program to obtain an intermediate view, we should reverse the roles of the pattern and body in the rearranging $\lambda$-expression |\p -> e| , using~|e| as a (possibly non-linear) pattern to match the intermediate view, and computing the final view by evaluating~|p|.
+For example, the |put| direction of view rearrangement with the $\lambda$-expression~(\ref{eq:cons-to-pair}) turns a view list into a pair, on which the inner program operates; in the |get| direction, the inner program will extract from the source an intermediate view pair, which should be converted back to a list by the inverse $\lambda$-expression |\(x, xs) -> (x:xs)|.
+In more detail, given an intermediate view pair |(x, xs)|, we match it with the pair expression~(\ref{eq:pair-expression}), and see that $x$~is associated with the direction |DLeft DVar| and |xs| with |DRight DVar|.
+From such associations we can reconstruct an environment of type~(\ref{eq:cons-environment}) with |x| and |xs| in the right places, and then we can evaluate the cons pattern~(\ref{eq:cons-pattern}) in this reconstructed environment, arriving at the final view |x:xs|.
+
+In general, the intermediate view will be decomposed according to the body expression, and eventually each of its components will be paired with a direction indicating which variable position the component should go into in the reconstructed environment.
+To do the reconstruction, we can prepare a ``container'' which is similar to an environment except that the variable positions are initially empty.
+For each pair of a component and a direction, we try to put that component into the place in the container pointed to by the direction; if two components are put into the same position twice (indicating that the $\lambda$-expression uses a variable more than once), then they must be equal.
 In the end, we check that all places in the container are filled, and then use it as an environment to evaluate the pattern.
 Again, to compute the type of containers from a pattern, we add a third index to |Pat|:
 \begin{spec}
@@ -484,7 +518,12 @@ data Pat a env con where
   PIn     ::  InOut a => Pat (F a) b c -> Pat a b c
 \end{spec}
 A container type is just like an environment type except that the variable positions give rise to |Maybe| instead of |Var|.
-The first step --- matching a value with an \emph{expression} --- can then be implemented as:
+For the cons example, the computed container type is
+\begin{equation}
+|(Maybe a, Maybe [a])|
+\label{eq:cons-container}
+\end{equation}
+The first step --- matching a value with an expression --- can then be implemented as:
 \begin{spec}
 uneval :: Pat a env con -> Expr env b -> b -> con -> Maybe con
 uneval p (EDir d)     x          con = unevalD p d x con
@@ -542,6 +581,10 @@ get (RearrV p e b)  s = do  v'   <- get b s
                             env  <- fromContainerV p con
                             return (construct p env)
 \end{spec}
+To be concrete, let us go through the steps of inverse rearranging in the cons example.
+Starting from an intermediate view |(x, xs)| and an empty container |(Nothing, Nothing)| of type~(\ref{eq:cons-container}), |uneval| will invoke |unevalD| twice, the first time updating the container to |(Just x, Nothing)| and the second time to |(Just x,| |Just xs)|.
+The resulting container is full, and thus |fromContainerV| will successfully turn it into an environment |(Var x, Var xs)| of type~(\ref{eq:cons-environment}), in which we evaluate the cons pattern~(\ref{eq:cons-pattern}) and obtain |x:xs|.
+
 Conceptually, this is just reversing pattern matching and expression evaluation. To actually prove the well-behavedness, though, we need to reason about stateful computation (which is what |uneval| essentially is), which involves coming up with suitable invariants and proving that they are maintained throughout the computation.
 %It is somewhat tedious, but can be done without a problem.
 
