@@ -20,7 +20,7 @@ import Text.ParserCombinators.Parsec.Pos
 \end{code}
 }
 
-When we mention the \emph{front-end} of a compiler, we usually think of a \emph{parser} that turns concrete syntax, which is designed to be programmer-friendly and provides convenient syntactic sugar, into abstract syntax, which is concise, structured, and easily manipulable by the compiler back-end.
+When we mention the \emph{front-end} of a compiler, we usually think of a \emph{parser} that turns \emph{concrete syntax}, which is designed to be programmer-friendly and provides convenient syntactic sugar, into \emph{abstract syntax}, which is concise, structured, and easily manipulable by the compiler back-end.
 There is another direction, though, in which a \emph{printer} turns abstract syntax back into concrete syntax.
 This is useful, for example, for reporting the result of compiler optimizations done on abstract syntax to the programmer, who knows only concrete syntax.
 In this case, though, we would want to print the optimized program in a form that is as close to the original program as possible, so the programmer can spot what are changed --- and not changed --- correctly and more easily.
@@ -47,7 +47,7 @@ data Arith  =  Num Int
             |  Sub  Arith Arith
   deriving Show
 \end{code}
-This is a nice representation for the compiler, but we cannot expect the programmer to write something like ``|Sub (Num 1) (Add (Num 2) (Num 3))|'', and should provide a concrete syntax so they can write ``$1 - (2+3)$''.
+This is a nice representation for the compiler, but we cannot expect the programmer to write something like ``|Sub (Num 1) (Add (Num 2) (Num 3))|'', and should provide a concrete syntax so that they can write ``$1 - (2+3)$''.
 Such a concrete syntax is usually defined in terms of a BNF grammar:
 \begin{spec}
 Exp     ->  Exp '+' Factor
@@ -208,7 +208,7 @@ For these cases, we need adaptation.
 Corresponding to each branch we have already written, we add an adaptive branch which looks at the shape of the view only, throws away a mismatched source, and creates an incomplete one whose shape matches that of the view; the source will be complete created through recursive processing.
 For example, corresponding to the plus/addition branch, we write:
 \begin{spec}
-S(adaptiveSV (P(_)) (P(Add _ _)))
+$(adaptiveSV [p| _ |] [p| Add _ _ |])
   ==> \ _ _ -> Plus ENull FNull
 \end{spec}
 The full programs are:
@@ -310,7 +310,7 @@ the above abstract syntax tree can be printed as:
 Just -(1+1)
 \end{verbatim}
 
-\subsection{A domain-codeific language}
+\subsection{A domain-specific language}
 
 As a final remark, the above programs may look long, but at the core of them are merely the correspondences between concrete production rules and abstract constructors.
 We can design a domain-specific language (DSL) that expresses such correspondences concisely, and then expand programs in this DSL into BiGUL.
@@ -327,4 +327,4 @@ For example, all the programs we have written can be generated from the followin
   Sub (Num 0) r +> '-' (r +> Factor);
   f             +> '(' (f +> Exp) ')';
 \end{verbatim}
-See our draft paper\footnote{\url{http://www.prg.nii.ac.jp/members/zhu/papers/sle2016_draft.pdf}} for more interesting experiments about reflective printing, done on a more realistic imperative language.
+See our SLE 2016 paper~\cite{Zhu-BiYacc} for more interesting experiments about reflective printing, done on a more realistic imperative language.
