@@ -44,7 +44,7 @@ While the get-based approach is friendly,
 a |get| function may not be injective, so there may exist
 many possible |put| functions that can be combined with it to form a
 valid BX and there is no way to control the choice of |put| through
-the change of |get|. 
+the definition of |get|. 
 This ambiguity of put is what makes bidirectional
 programming challenging and unpredictable in practice.
 
@@ -84,7 +84,7 @@ check validity of |put| without mentioning |get|.
 The following are two important properties on |put|.
 \begin{itemize}
 \item 
- The first, that we call \emph{view determination}, says that equivalence 
+ The first, which we call \emph{view determination}, says that equivalence 
 of updated sources produced by a |put| implies equivalence of views that are put back.
 \begin{align*}
 	\label{PutDet}
@@ -93,7 +93,7 @@ of updated sources produced by a |put| implies equivalence of views that are put
 \end{align*}
 Note that the view determination implies that |put s| is injective (with |s=s'|).
 
-\item The second, that we call \emph{source stability}, denotes a slightly stronger notion of surjectivity for every source:
+\item The second, which we call \emph{source stability}, denotes a slightly stronger notion of surjectivity for every source:
 \begin{align*}
 	\label{PutStable}
 	\tag*{\textsc{SourceStability}}
@@ -118,7 +118,7 @@ putback-based bidirectional language,
 which grew out of the work \cite{PaHF14,PaZH14}.
 We shall demonstrate how to program with BiGUL, explain the
 principle behind BiGUL, and show its applications in
-developing various of bidirectional transformations.
+developing various bidirectional transformations.
 
 
 

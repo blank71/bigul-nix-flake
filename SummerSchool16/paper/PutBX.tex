@@ -375,7 +375,7 @@ While the get-based approach is friendly,
 a \ensuremath{\Varid{get}} function may not be injective, so there may exist
 many possible \ensuremath{\Varid{put}} functions that can be combined with it to form a
 valid BX and there is no way to control the choice of \ensuremath{\Varid{put}} through
-the change of \ensuremath{\Varid{get}}. 
+the definition of \ensuremath{\Varid{get}}. 
 This ambiguity of put is what makes bidirectional
 programming challenging and unpredictable in practice.
 
@@ -415,7 +415,7 @@ check validity of \ensuremath{\Varid{put}} without mentioning \ensuremath{\Varid
 The following are two important properties on \ensuremath{\Varid{put}}.
 \begin{itemize}
 \item 
- The first, that we call \emph{view determination}, says that equivalence 
+ The first, which we call \emph{view determination}, says that equivalence 
 of updated sources produced by a \ensuremath{\Varid{put}} implies equivalence of views that are put back.
 \begin{align*}
 	\label{PutDet}
@@ -424,7 +424,7 @@ of updated sources produced by a \ensuremath{\Varid{put}} implies equivalence of
 \end{align*}
 Note that the view determination implies that \ensuremath{\Varid{put}\;\Varid{s}} is injective (with \ensuremath{\Varid{s}\mathrel{=}s^\prime}).
 
-\item The second, that we call \emph{source stability}, denotes a slightly stronger notion of surjectivity for every source:
+\item The second, which we call \emph{source stability}, denotes a slightly stronger notion of surjectivity for every source:
 \begin{align*}
 	\label{PutStable}
 	\tag*{\textsc{SourceStability}}
@@ -449,7 +449,7 @@ putback-based bidirectional language,
 which grew out of the work \cite{PaHF14,PaZH14}.
 We shall demonstrate how to program with BiGUL, explain the
 principle behind BiGUL, and show its applications in
-developing various of bidirectional transformations.
+developing various bidirectional transformations.
 
 
 
