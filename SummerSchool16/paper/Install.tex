@@ -13,14 +13,13 @@ content for importing BiGUL modules.
 \begin{verbatim}
 {-# LANGUAGE FlexibleContexts, TemplateHaskell, TypeFamilies #-}
 import Generics.BiGUL
+import Generics.BiGUL.Interpreter
 import Generics.BiGUL.TH
 import Generics.BiGUL.Lib
 \end{verbatim}
 Then load it using the GHC interactive interpreter.
 \begin{verbatim}
 > ghci test.hs
-GHCi, version 7.10.3: http://www.haskell.org/ghc/  :? for help
-Prelude>~/Repositories/prl_tokyo/bigul/SummerSchool16> ghci test.hs
 GHCi, version 7.10.3: http://www.haskell.org/ghc/  :? for help
 [1 of 1] Compiling Main             ( test.hs, interpreted )
 Ok, modules loaded: Main.

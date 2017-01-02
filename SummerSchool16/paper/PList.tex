@@ -364,14 +364,16 @@
 
 }
 
-In this section, we show many list functions can be bidirectionalized
+In this section, we demosntrate that
+many list functions can be bidirectionalized
 using BiGUL. To show the correspondence with the original list functions,
 we prefix
-the original forward function names with "lens". Note that the forward
-function can be automatically derived from the new putback transformation
+the original forward function names with "lens". Note that in our context,
+the original forward
+functions can be automatically derived from the new putback transformations
 by calling \ensuremath{\Varid{get}}.
 
-We shall focus on \ensuremath{\Varid{foldr}}, which is a simple but useful higher order function on lists:\begin{hscode}\SaveRestoreHook
+We shall focus on bidirectionalize \ensuremath{\Varid{foldr}}, a simple but useful higher order function on lists:\begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{21}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -383,7 +385,7 @@ We shall focus on \ensuremath{\Varid{foldr}}, which is a simple but useful highe
 \>[21]{}\mathrel{=}\Varid{f}\;\Varid{x}\;(\Varid{foldr}\;\Varid{f}\;\Varid{e}\;\Varid{xs}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-where many interesting functions can be defined in \ensuremath{\Varid{foldr}}\begin{hscode}\SaveRestoreHook
+where many interesting functions can be defined in terms of \ensuremath{\Varid{foldr}}:\begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -398,7 +400,7 @@ where many interesting functions can be defined in \ensuremath{\Varid{foldr}}\be
 \>[3]{}\Varid{sort}\mathrel{=}\Varid{foldr}\;\Varid{insert}\;[\mskip1.5mu \mskip1.5mu]{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-First, we develop a putback version for \ensuremath{\Varid{foldr}}.
+We start by developing a putback version for \ensuremath{\Varid{foldr}}.
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -406,11 +408,16 @@ First, we develop a putback version for \ensuremath{\Varid{foldr}}.
 \column{9E}{@{}l@{}}%
 \column{12}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{14}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{16}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{15}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{19}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{21}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{59}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{25}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{60}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[B]{}\Varid{lensFoldr}\mathbin{::}(\Conid{Show}\;\Varid{a},\Conid{Show}\;\Varid{b})\Rightarrow \Conid{BiGUL}\;(\Varid{a},\Varid{b})\;\Varid{b}\to (\Varid{b}\to \Conid{Bool})\to \Conid{BiGUL}\;([\mskip1.5mu \Varid{a}\mskip1.5mu],\Varid{b})\;\Varid{b}{}\<[E]%
+\>[B]{}\Varid{lensFoldr}\mathbin{::}{}\<[15]%
+\>[15]{}(\Conid{Show}\;\Varid{a},\Conid{Show}\;\Varid{b})\Rightarrow {}\<[E]%
+\\
+\>[15]{}\Conid{BiGUL}\;(\Varid{a},\Varid{b})\;\Varid{b}\to (\Varid{b}\to \Conid{Bool})\to \Conid{BiGUL}\;([\mskip1.5mu \Varid{a}\mskip1.5mu],\Varid{b})\;\Varid{b}{}\<[E]%
 \\
 \>[B]{}\Varid{lensFoldr}\;\Varid{bx}\;\Varid{pv}\mathrel{=}{}\<[E]%
 \\
@@ -423,39 +430,42 @@ First, we develop a putback version for \ensuremath{\Varid{foldr}}.
 \>[14]{}\Longrightarrow\lambda (\Varid{x},\Varid{y})\;\Varid{v}\to ([\mskip1.5mu \mskip1.5mu],\Varid{y}){}\<[E]%
 \\
 \>[9]{},{}\<[9E]%
-\>[12]{}\mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda (\Varid{s},\anonymous )\;\Varid{v}\to \Varid{null}\;\Varid{s}\mid \mskip1.5mu]\;[\mskip1.5mu \mid \lambda (\Varid{s},\anonymous )\to \Varid{null}\;\Varid{s}\mid \mskip1.5mu]){}\<[E]%
+\>[12]{}\mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda (\Varid{xs},\anonymous )\;\Varid{v}\to \Varid{null}\;\Varid{xs}\mid \mskip1.5mu]\;[\mskip1.5mu \mid \lambda (\Varid{xs},\anonymous )\to \Varid{null}\;\Varid{xs}\mid \mskip1.5mu]){}\<[E]%
 \\
 \>[12]{}\hsindent{2}{}\<[14]%
-\>[14]{}\Longrightarrow\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda \Varid{v}\to ((),\Varid{v})\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\>[14]{}\Longrightarrow{}\<[19]%
+\>[19]{}\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda \Varid{v}\to ((),\Varid{v})\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
 \\
-\>[14]{}\hsindent{7}{}\<[21]%
-\>[21]{}\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid (\anonymous ,\Varid{v})\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid ((),\Varid{v})\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{d}\mid \Varid{v}\mathrel{=}\Conid{Replace}\mid \mskip1.5mu]){}\<[E]%
+\>[19]{}\hsindent{6}{}\<[25]%
+\>[25]{}\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid (\anonymous ,\Varid{v})\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid ((),\Varid{v})\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{d}\mid \Varid{v}\mathrel{=}\Conid{Replace}\mid \mskip1.5mu]){}\<[E]%
 \\
 \>[9]{},{}\<[9E]%
-\>[12]{}\mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \mid \lambda (\Varid{s},\anonymous )\to not\;(\Varid{null}\;\Varid{s})\mid \mskip1.5mu]){}\<[E]%
+\>[12]{}\mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \mid \lambda (\Varid{xs},\anonymous )\to not\;(\Varid{null}\;\Varid{xs})\mid \mskip1.5mu]){}\<[E]%
 \\
 \>[12]{}\hsindent{2}{}\<[14]%
-\>[14]{}\Longrightarrow\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda ((\Varid{x}\mathbin{:}\Varid{xs}),\Varid{e})\to (\Varid{x},(\Varid{xs},\Varid{e})){}\<[59]%
-\>[59]{}\mid \mskip1.5mu]){}\<[E]%
+\>[14]{}\Longrightarrow{}\<[19]%
+\>[19]{}\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda ((\Varid{x}\mathbin{:}\Varid{xs}),\Varid{e})\to (\Varid{x},(\Varid{xs},\Varid{e})){}\<[60]%
+\>[60]{}\mid \mskip1.5mu])\;{}\<[E]%
 \\
-\>[14]{}\hsindent{2}{}\<[16]%
-\>[16]{}(\Conid{Replace}\mathbin{`\Conid{Prod}`}\Varid{lensFoldr}\;\Varid{bx}\;\Varid{pv})\mathbin{`\Conid{Compose}`}\Varid{bx}{}\<[E]%
+\>[19]{}\hsindent{2}{}\<[21]%
+\>[21]{}(\Conid{Replace}\mathbin{`\Conid{Prod}`}\Varid{lensFoldr}\;\Varid{bx}\;\Varid{pv})\mathbin{`\Conid{Compose}`}\Varid{bx}{}\<[E]%
 \\
 \>[9]{}\mskip1.5mu]{}\<[9E]%
 \ColumnHook
 \end{hscode}\resethooks
-\ensuremath{\Varid{lengFoldr}\;\Varid{bx}\;\Varid{pv}} is to synchronize source \ensuremath{(\Varid{xs},\Varid{v})} with view \ensuremath{\Varid{v'}}.
-If \ensuremath{\Varid{v'}} satisfies \ensuremath{\Varid{pv}}, it will stop. Otherwise,
-it will recursively apply \ensuremath{\Varid{bx}} rightwards over the elements of \ensuremath{\Varid{xs}}.
+The above \ensuremath{\Varid{lensFoldr}\;\Varid{bx}\;\Varid{pv}} updates source \ensuremath{(\Varid{xs},\Varid{y})} with view \ensuremath{\Varid{v}}.
+If \ensuremath{\Varid{v}} satisfies \ensuremath{\Varid{pv}}, it will try to stop by adapting \ensuremath{\Varid{xs}} to \ensuremath{[\mskip1.5mu \mskip1.5mu]}.
+Or it will recursively apply \ensuremath{\Varid{bx}} rightwards over
+the elements of \ensuremath{\Varid{xs}}: if \ensuremath{\Varid{xs}} is empty, it will just embed \ensuremath{\Varid{v}} to \ensuremath{\Varid{y}};
+otherwise it will rearrange the source for the recursive call.
 \ignore{
 lensFilter :: (a->Bool) -> BiGUL [a] [a]
 lensInsert :: Ord a => BiGUL (a,[a]{-sorted-}) [a]{-sorted-}
 lensSort :: Ord a => BiGUL [a] [a]
 }
 
-Next, we show that many list functions can be bidirectionalized using
-\ensuremath{\Varid{lensFoldr}}. As the first example, we consider bidirectionalize \ensuremath{\Varid{map}}.
-It can be easily defined in terms of \ensuremath{\Varid{lensFoldr}}.
+With \ensuremath{\Varid{lensFoldr}}, we can redefine many list functions from the putback point
+of view. As the first example, \ensuremath{\Varid{map}} can be defined in terms of \ensuremath{\Varid{lensFoldr}}.
 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -479,8 +489,14 @@ It can be easily defined in terms of \ensuremath{\Varid{lensFoldr}}.
 \>[21]{}\Varid{bx}\mathbin{`\Conid{Prod}`}\Conid{Replace}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-
-For testing, we define
+\begin{tabbing}\tt
+~\char42{}PList\char62{}~put~\char40{}lensMap~dec1\char41{}~\char40{}\char91{}0\char46{}\char46{}10\char93{}\char44{}\char91{}\char93{}\char41{}~\char91{}100\char46{}\char46{}110\char93{}\\
+\tt ~Just~\char40{}\char91{}99\char44{}100\char44{}101\char44{}102\char44{}103\char44{}104\char44{}105\char44{}106\char44{}107\char44{}108\char44{}109\char93{}\char44{}\char91{}\char93{}\char41{}\\
+\tt ~\char42{}PList\char62{}~get~\char40{}lensMap~dec1\char41{}~\char40{}\char91{}1\char46{}\char46{}10\char93{}\char44{}\char91{}\char93{}\char41{}\\
+\tt ~Just~\char91{}2\char44{}3\char44{}4\char44{}5\char44{}6\char44{}7\char44{}8\char44{}9\char44{}10\char44{}11\char93{}
+\end{tabbing}
+Here, for testing, we embed into our framework
+the bijective functions for increasing and decreasing an integer by \ensuremath{\mathrm{1}}.
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -497,27 +513,17 @@ For testing, we define
 \>[10]{}\Varid{p}\;\Varid{s}\;\Varid{v}\mathrel{=}\Varid{v}\mathbin{-}\mathrm{1}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-\begin{tabbing}\tt
-~\char42{}PList\char62{}~put~\char40{}lensMap~dec1\char41{}~\char40{}\char91{}0\char46{}\char46{}10\char93{}\char44{}\char91{}\char93{}\char41{}~\char91{}100\char46{}\char46{}110\char93{}\\
-\tt ~Just~\char40{}\char91{}99\char44{}100\char44{}101\char44{}102\char44{}103\char44{}104\char44{}105\char44{}106\char44{}107\char44{}108\char44{}109\char93{}\char44{}\char91{}\char93{}\char41{}\\
-\tt ~\char42{}PList\char62{}~get~\char40{}lensMap~dec1\char41{}~\char40{}\char91{}1\char46{}\char46{}10\char93{}\char44{}\char91{}\char93{}\char41{}\\
-\tt ~Just~\char91{}2\char44{}3\char44{}4\char44{}5\char44{}6\char44{}7\char44{}8\char44{}9\char44{}10\char44{}11\char93{}
-\end{tabbing}
-Now we give another example of \ensuremath{\Varid{reverse}}.
+ 
+The second example is to bidirectinalize \ensuremath{\Varid{reverse}}, which is to reverse the
+elements of a list.
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{16}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{18}{@{}>{\hspre}c<{\hspost}@{}}%
-\column{18E}{@{}l@{}}%
-\column{21}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{22}{@{}>{\hspre}c<{\hspost}@{}}%
 \column{22E}{@{}l@{}}%
-\column{24}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{25}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{27}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{31}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{33}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{35}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[B]{}\Varid{lensReverse}\mathbin{::}\Conid{Show}\;\Varid{a}\Rightarrow \Conid{BiGUL}\;[\mskip1.5mu \Varid{a}\mskip1.5mu]\;[\mskip1.5mu \Varid{a}\mskip1.5mu]{}\<[E]%
 \\
@@ -541,7 +547,21 @@ Now we give another example of \ensuremath{\Varid{reverse}}.
 \>[33]{}\Varid{lensFoldr}\;(\Varid{lensSwap}\mathbin{`\Conid{Compose}`}\Varid{lensSnoc})\;\Varid{null}{}\<[E]%
 \\
 \>[22]{}\mskip1.5mu]{}\<[22E]%
-\\[\blanklineskip]%
+\ColumnHook
+\end{hscode}\resethooks
+When the source is shorter than the view, we add more elements to the source
+by filling in it with the elements of the view (Note that this is one option;
+we could do other ways by, say, duplicating elements in the source). When the source is long enough, we decompose the view into a snoc-list using \ensuremath{\Varid{lensSnoc}}, and use it
+to update the cons-list of the source.
+\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{18}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{18E}{@{}l@{}}%
+\column{21}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{24}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{31}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{35}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[B]{}\Varid{lensSnoc}\mathbin{::}\Conid{Show}\;\Varid{a}\Rightarrow \Conid{BiGUL}\;([\mskip1.5mu \Varid{a}\mskip1.5mu],\Varid{a})\;[\mskip1.5mu \Varid{a}\mskip1.5mu]{}\<[E]%
 \\
 \>[B]{}\Varid{lensSnoc}\mathrel{=}\Conid{Case}\;{}\<[18]%
@@ -576,6 +596,7 @@ Now we give another example of \ensuremath{\Varid{reverse}}.
 \>[B]{}\Varid{lensSwap}\mathrel{=}\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{x},\Varid{y})\to (\Varid{y},\Varid{x})\mid \mskip1.5mu])\;\Conid{Replace}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
+
 Below are some testing examples.
 \begin{tabbing}\tt
 ~\char42{}PList\char62{}~put~lensSnoc~\char40{}\char91{}2\char44{}3\char44{}4\char93{}\char44{}1\char41{}~\char91{}10\char44{}11\char44{}12\char44{}13\char93{}\\
@@ -594,6 +615,12 @@ Below are some testing examples.
 \tt ~\char42{}PList\char62{}~get~lensReverse~\char91{}1\char46{}\char46{}10\char93{}\\
 \tt ~Just~\char91{}10\char44{}9\char44{}8\char44{}7\char44{}6\char44{}5\char44{}4\char44{}3\char44{}2\char44{}1\char93{}
 \end{tabbing}
+
+It is worth noting that our definition of \ensuremath{\Varid{lensFoldr}} is just one
+candidate putback function for \ensuremath{\Varid{foldr}}, and there are many others.
+This reflects the fact
+that one \ensuremath{\Varid{foldr}} can have many \ensuremath{\Varid{put}}s, each describing different
+updating strategy.
 
 \ignore{
 \subsection{Efficiency Issue: \ensuremath{\Varid{lensFoldr}}}

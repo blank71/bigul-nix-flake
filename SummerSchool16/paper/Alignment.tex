@@ -333,7 +333,7 @@
 
 
 
-\section{Positional, key-based, and delta-based list alignment}
+\section{Position-based, key-based, and delta-based list alignment}
 \label{sec:alignment}
 
 \ignore{
@@ -426,7 +426,7 @@ For example, here is a sample payroll database:
 \>[47]{}))\mskip1.5mu]{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-Suppose that the human resource department, which is in charge of hiring or sacking employees, has no say on salary numbers, so the entries of the database are presented to them only as pairs of ids and names:
+Suppose that the human resource department is in charge of hiring or sacking employees but has no say on salary numbers, so the entries of the database are presented to them only as pairs of ids and names:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -444,18 +444,24 @@ on which they can make modifications.
 It is easy to write a BiGUL program to synchronize the source and view elements:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{7}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[B]{}\Varid{bx}\mathbin{::}\Conid{BiGUL}\;\Conid{Source}\;\Conid{View}{}\<[E]%
 \\
-\>[B]{}\Varid{bx}\mathrel{=}\Conid{Replace}\mathbin{`\Conid{Prod}`}\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{n},\anonymous )\to \Varid{n}\mid \mskip1.5mu])\;\Conid{Replace}{}\<[E]%
+\>[B]{}\Varid{bx}\mathrel{=}{}\<[7]%
+\>[7]{}\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda (\Varid{id},\Varid{name})\to (\Varid{id},(\Varid{name},()))\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\\
+\>[7]{}\hsindent{2}{}\<[9]%
+\>[9]{}\Conid{Replace}\mathbin{`\Conid{Prod}`}(\Conid{Replace}\mathbin{`\Conid{Prod}`}\Conid{Skip}\;(\Varid{const}\;())){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-The problem is then how to determine the correspondences between sources and views in the two lists, so \ensuremath{\Varid{bx}} can be applied to the right pairs.
+The problem is then how the correspondences between sources and views in the two lists can be determined, so that \ensuremath{\Varid{bx}} can be applied to the right pairs.
 
-\subsection{Positional alignment}
+\subsection{Position-based alignment}
 
 As a first exercise, we consider the simplest strategy, which matches source and view elements by their positions in the lists.
-If the source list has more elements than the view list, the extra elements at the tail are simply dropped; if the former has less elements, then new source elements have to be created, which we can specify as a function:
+If the source list has more elements than the view list, the extra elements at the tail are simply dropped; if the source list has less elements, then new source elements have to be created, which we can specify as a function:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -466,7 +472,7 @@ If the source list has more elements than the view list, the extra elements at t
 \end{hscode}\resethooks
 The salary is set to zero, which can be taken care of by the accounting department later, for example.
 In general, we can abstract the source and view types and \ensuremath{\Varid{bx}} and \ensuremath{\Varid{cr}} as parameters, so the alignment program we write can be widely applicable.
-Here is how we implement positional alignment, which is fairly standard:
+Here is how we implement position-based alignment, which is fairly standard:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -505,17 +511,17 @@ Here is how we implement positional alignment, which is fairly standard:
 \ColumnHook
 \end{hscode}\resethooks
 The normal branches deal with the situations where both lists are empty or non-empty, and the adaptive branches remove or create elements when the lengths of the two lists differ.
-In the normal branches, we use a new operation \ensuremath{\Varid{update}}, which is a more compact syntax for the common programming pattern in which both the source and view are rearranged into a product and then further updates are performed on corresponding components.
+In the normal branches, we use a new operation \ensuremath{\Varid{update}}, which is a more compact syntax for the ubiquitous BiGUL programming pattern in which both the source and view are rearranged into a product and then further updates are performed on corresponding components.
 For example, the \ensuremath{\Varid{update}} in the second normal branch is shorthand for:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{5}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[B]{}\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{x}\mathbin{:}\Varid{xs})\to (\Varid{x},\Varid{xs})\mid \mskip1.5mu]){}\<[E]%
+\>[B]{}\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{x}\mathbin{:}\Varid{xs})\to (\Varid{x},\Varid{xs})\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda (\Varid{x}\mathbin{:}\Varid{xs})\to (\Varid{x},\Varid{xs})\mid \mskip1.5mu])\;{}\<[E]%
+\>[3]{}\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda (\Varid{x}\mathbin{:}\Varid{xs})\to (\Varid{x},\Varid{xs})\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Varid{b}\mathbin{`\Conid{Prod}`}\Varid{posAlign}\;\Varid{b}\;\Varid{c}{}\<[E]%
@@ -524,7 +530,7 @@ For example, the \ensuremath{\Varid{update}} in the second normal branch is shor
 
 The \ensuremath{\Varid{get}} direction of \ensuremath{\Varid{posAlign}} does exactly what we want it to do:
 \begin{tabbing}\tt
-~\char42{}Main\char62{}~get~\char40{}posAlign~bx~cr\char41{}~employees\\
+~\char42{}\char62{}~get~\char40{}posAlign~bx~cr\char41{}~employees\\
 \tt ~Just~\char91{}\char40{}0\char44{}\char34{}Zhenjiang\char34{}\char41{}\char44{}\char40{}1\char44{}\char34{}Josh\char34{}\char41{}\char44{}\char40{}2\char44{}\char34{}Jeremy\char34{}\char41{}\char93{}
 \end{tabbing}
 It should be quite obvious, though, that the \ensuremath{\Varid{put}} direction is not so useful for our purpose.
@@ -546,7 +552,7 @@ If we sack Josh:
 \end{hscode}\resethooks
 then the database will updated to:
 \begin{tabbing}\tt
-~\char42{}Main\char62{}~put~\char40{}posAlign~bx~cr\char41{}~employees~updatedEmployees0\\
+~\char42{}\char62{}~put~\char40{}posAlign~bx~cr\char41{}~employees~updatedEmployees0\\
 \tt ~Just~\char91{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}2\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}400\char41{}\char41{}\char93{}
 \end{tabbing}
 where Jeremy inadvertently gets Josh's original salary.
@@ -568,7 +574,7 @@ Even if we do not remove any employee, we may still want to reorder them:
 \end{hscode}\resethooks
 and now everyone gets a wrong salary:
 \begin{tabbing}\tt
-~\char42{}Main\char62{}~put~\char40{}posAlign~bx~cr\char41{}~employees~updatedEmployees1\\
+~\char42{}\char62{}~put~\char40{}posAlign~bx~cr\char41{}~employees~updatedEmployees1\\
 \tt ~Just~\char91{}\char40{}2\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}400\char41{}\char41{}\char44{}\char40{}1\char44{}\char40{}\char34{}Josh\char34{}\char44{}2000\char41{}\char41{}\char93{}
 \end{tabbing}
 This first exercise shows that the alignment problem is inherently one that should be solved from the \ensuremath{\Varid{put}} direction.
@@ -578,7 +584,7 @@ It is easy to implement the \ensuremath{\Varid{get}} direction correctly, but wh
 
 A more reasonable strategy is to match source and view elements by some \emph{key} value.
 In our example, we can use the id as the key.
-Key-based alignment might seem much more complex than positional alignment, but, in fact, we can just revise \ensuremath{\Varid{posAlign}} to get a BiGUL program for key-based alignment!
+Key-based alignment might seem much more complex than position-based alignment, but, in fact, we can just revise \ensuremath{\Varid{posAlign}} to get a BiGUL program for key-based alignment!
 
 First of all, we need to somehow obtain the keys.
 In our example, on both the source and view we can use \ensuremath{\Varid{fst}} to extract the key value.
@@ -595,8 +601,6 @@ In general, we can further parametrize the alignment program with key extraction
 \\
 \>[11]{}\Rightarrow {}\<[11E]%
 \>[15]{}(\Varid{a}\to \Varid{k})\to (\Varid{b}\to \Varid{k})\to \Conid{BiGUL}\;\Varid{a}\;\Varid{b}\to (\Varid{b}\to \Varid{a})\to \Conid{BiGUL}\;[\mskip1.5mu \Varid{a}\mskip1.5mu]\;[\mskip1.5mu \Varid{b}\mskip1.5mu]{}\<[E]%
-\\
-\>[B]{}\Varid{keyAlign}\;\Varid{ks}\;\Varid{kv}\;\Varid{b}\;\Varid{c}\mathrel{=}\Conid{Case}\;\bot {}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 The first normal branch of \ensuremath{\Varid{posAlign}} still works perfectly.
@@ -694,20 +698,20 @@ This gives us key-based alignment:
 \ColumnHook
 \end{hscode}\resethooks
 
-Back to our employment example.
+Back to our payroll database example.
 The \ensuremath{\Varid{get}} direction behaves the same:
 \begin{tabbing}\tt
-~\char42{}Main\char62{}~get~\char40{}keyAlign~fst~fst~bx~cr\char41{}~employees\\
+~\char42{}\char62{}~get~\char40{}keyAlign~fst~fst~bx~cr\char41{}~employees\\
 \tt ~Just~\char91{}\char40{}0\char44{}\char34{}Zhenjiang\char34{}\char41{}\char44{}\char40{}1\char44{}\char34{}Josh\char34{}\char41{}\char44{}\char40{}2\char44{}\char34{}Jeremy\char34{}\char41{}\char93{}
 \end{tabbing}
-Unlike positional alignment, view element deletion can now be reflected correctly:
+Unlike position-based alignment, view element deletion can now be reflected correctly:
 \begin{tabbing}\tt
-~\char42{}Main\char62{}~put~\char40{}keyAlign~fst~fst~bx~cr\char41{}~employees~updatedEmployees0\\
+~\char42{}\char62{}~put~\char40{}keyAlign~fst~fst~bx~cr\char41{}~employees~updatedEmployees0\\
 \tt ~Just~\char91{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}2\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}2000\char41{}\char41{}\char93{}
 \end{tabbing}
 And reordering as well:
 \begin{tabbing}\tt
-~\char42{}Main\char62{}~put~\char40{}keyAlign~fst~fst~bx~cr\char41{}~employees~updatedEmployees1\\
+~\char42{}\char62{}~put~\char40{}keyAlign~fst~fst~bx~cr\char41{}~employees~updatedEmployees1\\
 \tt ~Just~\char91{}\char40{}2\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}2000\char41{}\char41{}\char44{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}1\char44{}\char40{}\char34{}Josh\char34{}\char44{}400\char41{}\char41{}\char93{}
 \end{tabbing}
 
@@ -732,7 +736,7 @@ If, for example, we decide to assign a different id to Josh:
 \end{hscode}\resethooks
 Then the effect is the same as sacking Josh and then hiring him again, whose salary is thus reset:
 \begin{tabbing}\tt
-~\char42{}Main\char62{}~put~\char40{}keyAlign~fst~fst~bx~cr\char41{}~employees~updatedEmployees2\\
+~\char42{}\char62{}~put~\char40{}keyAlign~fst~fst~bx~cr\char41{}~employees~updatedEmployees2\\
 \tt ~Just~\char91{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}100\char44{}\char40{}\char34{}Josh\char34{}\char44{}0\char41{}\char41{}\char44{}\char40{}1\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}400\char41{}\char41{}\char93{}
 \end{tabbing}
 The problem is that we cannot distinguish modification from deletion and insertion pairs.
@@ -740,14 +744,14 @@ To be able to have such distinction, we introduce the notion of \emph{deltas}, w
 
 \subsection{Delta-based alignment}
 
-A delta between a source list and a view list is a list of pairs of associated positions:
+A (horizontal) \emph{delta} between a source list and a view list is a list of pairs of associated positions:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[B]{}\mathbf{type}\;\Conid{Delta}\mathrel{=}[\mskip1.5mu (\mathit{Int},\mathit{Int})\mskip1.5mu]{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-For example, the delta we have in mind between \ensuremath{\Varid{employees}} and \ensuremath{\Varid{updatedEmployees2}} is \ensuremath{[\mskip1.5mu (\mathrm{0},\mathrm{0}),(\mathrm{1},\mathrm{1}),(\mathrm{2},\mathrm{2})\mskip1.5mu]}, which, in particular, associates the source and view entries for Josh since \ensuremath{(\mathrm{2},\mathrm{2})} is included, instead of \ensuremath{[\mskip1.5mu (\mathrm{0},\mathrm{0}),(\mathrm{1},\mathrm{1})\mskip1.5mu]}, which indicates that Josh's source entry is not associated with any view entry and should be deleted, and that Josh's view entry is not associated with any source entry and is thus new.
+For example, the delta we have in mind between the source list \ensuremath{\Varid{employees}} and the view list \ensuremath{\Varid{updatedEmployees2}} is \ensuremath{[\mskip1.5mu (\mathrm{0},\mathrm{0}),(\mathrm{1},\mathrm{1}),(\mathrm{2},\mathrm{2})\mskip1.5mu]}, which, in particular, associates the source and view entries for Josh since \ensuremath{(\mathrm{2},\mathrm{2})} is included, instead of \ensuremath{[\mskip1.5mu (\mathrm{0},\mathrm{0}),(\mathrm{1},\mathrm{1})\mskip1.5mu]}, which indicates that Josh's source entry is not associated with any view entry and should be deleted, and that Josh's view entry is not associated with any source entry and is thus new.
 Deltas can easily represent reordering as well.
 For example, we would supply the delta between \ensuremath{\Varid{employees}} and \ensuremath{\Varid{updatedEmployees1}} as \ensuremath{[\mskip1.5mu (\mathrm{0},\mathrm{1}),(\mathrm{1},\mathrm{2}),(\mathrm{2},\mathrm{0})\mskip1.5mu]}, associating the 0th element in the source --- namely the one for Zhenjiang --- with the 1st element in the view, and so on.
 
@@ -768,13 +772,11 @@ The type we use for the delta-based alignment program is thus:
 \\
 \>[13]{}\Rightarrow {}\<[13E]%
 \>[17]{}\Conid{BiGUL}\;\Varid{s}\;\Varid{v}\to (\Varid{v}\to \Varid{s})\to \Conid{BiGUL}\;([\mskip1.5mu \Varid{s}\mskip1.5mu],\Conid{Delta})\;[\mskip1.5mu \Varid{v}\mskip1.5mu]{}\<[E]%
-\\
-\>[B]{}\Varid{deltaAlign}\;\Varid{b}\;\Varid{c}\mathrel{=}\Conid{Case}\;\bot {}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 
 Here we take a simpler approach to implementing \ensuremath{\Varid{deltaAlign}}, analyzing the problem into just two cases:
-The delta can tell us either that the source and view elements are all in correspondence, so a simple positional alignment suffices, or that we need to do some rearrangement of the source elements, which can be done by adaptation.
+The delta can tell us either that the source and view elements are all in correspondence, in which case a simple position-based alignment suffices, or that we need to do some rearrangement of the source elements, which can be done by adaptation.
 In BiGUL:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -784,6 +786,7 @@ In BiGUL:
 \column{12}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{13}{@{}>{\hspre}c<{\hspost}@{}}%
 \column{13E}{@{}l@{}}%
+\column{15}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{17}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{18}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{23}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -806,10 +809,13 @@ In BiGUL:
 \>[B]{}\Varid{deltaAlign}\;\Varid{b}\;\Varid{c}\mathrel{=}\Conid{Case}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}[\mskip1.5mu \mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda (\Varid{ss},\Varid{d})\;\Varid{vs}\to \Varid{length}\;\Varid{ss}\equiv \Varid{length}\;\Varid{vs}\mathrel{\wedge}\Varid{d}\equiv \Varid{idDelta}\;\Varid{ss}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]){}\<[E]%
+\>[3]{}[\mskip1.5mu \mathbin{\$}(\Varid{normal}\;{}\<[15]%
+\>[15]{}[\mskip1.5mu \mid \lambda (\Varid{ss},\Varid{d})\;\Varid{vs}\to \Varid{length}\;\Varid{ss}\equiv \Varid{length}\;\Varid{vs}\mathrel{\wedge}\Varid{d}\equiv \Varid{idDelta}\;\Varid{ss}\mid \mskip1.5mu]\;{}\<[E]%
+\\
+\>[15]{}[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{ss},\anonymous )\to \Varid{ss}\mid \mskip1.5mu])\mathbin{\$}\Varid{posAlign}\;\Varid{b}\;\Varid{c}{}\<[E]%
+\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda \Varid{vs}\to (\Varid{vs},())\mid \mskip1.5mu])\mathbin{\$}\Varid{posAlign}\;\Varid{b}\;\Varid{c}\mathbin{`\Conid{Prod}`}\Conid{Skip}\;(\Varid{const}\;()){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
 \>[3]{},\mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \mathbin{\char92 \char95 }\anonymous \to \Varid{otherwise}\mid \mskip1.5mu]){}\<[E]%
@@ -836,12 +842,12 @@ In BiGUL:
 \end{hscode}\resethooks
 The source and view lists are in full correspondence if and only if they have the same length and the delta associates all their elements positionally.
 This full positional delta can be computed by \ensuremath{\Varid{idDelta}}.
-When this is the case, it suffices to call \ensuremath{\Varid{posAlign}} to carry out an element-wise synchronization, since no rearrangement is required.
+When this is the case, it suffices to call \ensuremath{\Varid{posAlign}} to carry out element-wise synchronization, since no rearrangement is required.
 Otherwise, we enter the adaptive branch, which constructs a new source list in full correspondence with the view list, drawing elements from the original source list or create new ones as the delta dictates.
 The new source list is in full correspondence with the view list, so the delta we pair with it is the one computed by \ensuremath{\Varid{idDelta}}.
 
-Only when performing \ensuremath{\Varid{put}} does supplying a delta make sense.
-When performing \ensuremath{\Varid{get}}, however, we still need to supply a delta since it is part of the source; but there is natural choice, which is \ensuremath{\Varid{idDelta}}.
+Only when performing \ensuremath{\Varid{put}} does a delta make sense.
+When performing \ensuremath{\Varid{get}}, however, we still need to supply a delta since it is part of the source; but there is a natural choice, namely \ensuremath{\Varid{idDelta}}.
 So we define:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -871,17 +877,17 @@ So we define:
 It is easy to prove that, given the same \ensuremath{\Varid{b}}~and~\ensuremath{\Varid{c}}, these two functions do form a lens.
 The key observation is that the delta produced by \ensuremath{\Varid{put}\;(\Varid{deltaAlign}\;\Varid{b}\;\Varid{c})} is necessarily one computed by \ensuremath{\Varid{idDelta}}, so, for example, in \ref{eq:PutGet}, throwing away the delta in the \ensuremath{\Varid{put}} direction is fine because it can be recomputed by \ensuremath{\Varid{idDelta}}, and the \ensuremath{\Varid{get}} direction can resume from exactly the same source pair.
 
-Back to our example. We can now update the id of Josh without resetting his salary by providing a full delta indicating that there are only in-place updates:
+Back to our example. We can now update Josh's id without resetting his salary by providing a full delta indicating that there are only in-place updates:
 \begin{tabbing}\tt
-~\char42{}Main\char62{}~putDeltaAlign~bx~cr~employees\\
-\tt ~~~~~~~~~~\char91{}\char40{}0\char44{}0\char41{}\char44{}~\char40{}1\char44{}1\char41{}\char44{}~\char40{}2\char44{}2\char41{}\char93{}~updatedEmployees2\\
+~\char42{}\char62{}~putDeltaAlign~bx~cr~employees\\
+\tt ~~~~~~\char91{}\char40{}0\char44{}0\char41{}\char44{}~\char40{}1\char44{}1\char41{}\char44{}~\char40{}2\char44{}2\char41{}\char93{}~updatedEmployees2\\
 \tt ~Just~\char91{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}100\char44{}\char40{}\char34{}Josh\char34{}\char44{}400\char41{}\char41{}\char44{}\char40{}1\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}2000\char41{}\char41{}\char93{}
 \end{tabbing}
-Besides obvious things like reordering, we can also do some fairly subtle things now:
-If we actually sack Josh and replace him with a new Josh (inheriting the original Josh's id) whose salary should be reset to be re-considered, we can say so by providing a partial delta:
+Besides obvious modifications like reordering, we can also do some fairly subtle modifications now:
+If we actually sack Josh and replace him with a new Josh (inheriting the original Josh's id) whose salary should be reset (to be re-considered by the accounting department), we can say so by providing a partial delta:
 \begin{tabbing}\tt
-~\char42{}Main\char62{}~putDeltaAlign~bx~cr~employees~\char91{}\char40{}0\char44{}0\char41{}\char44{}~\char40{}2\char44{}2\char41{}\char93{}\\
-\tt ~~~~~~~~~~\char61{}\char60{}\char60{}~getDeltaAlign~bx~cr~employees\\
+~\char42{}\char62{}~putDeltaAlign~bx~cr~employees~\char91{}\char40{}0\char44{}0\char41{}\char44{}~\char40{}2\char44{}2\char41{}\char93{}\\
+\tt ~~~~~~\char61{}\char60{}\char60{}~getDeltaAlign~bx~cr~employees\\
 \tt ~Just~\char91{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}1\char44{}\char40{}\char34{}Josh\char34{}\char44{}0\char41{}\char41{}\char44{}\char40{}2\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}2000\char41{}\char41{}\char93{}
 \end{tabbing}
 
@@ -913,8 +919,8 @@ and further parametrize \ensuremath{\Varid{putDeltaAlign}}:
 \>[B]{}\Varid{putDeltaAlignS}\;\Varid{dst}\;\Varid{b}\;\Varid{c}\;\Varid{ss}\;\Varid{vs}\mathrel{=}\Varid{putDeltaAlign}\;\Varid{b}\;\Varid{c}\;\Varid{ss}\;(\Varid{dst}\;\Varid{ss}\;\Varid{vs})\;\Varid{vs}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-Positional alignment and key-based alignment can then be seen as special cases of delta-based alignment using specific delta-computing strategies.
-For positional alignment, we simply compute the identity delta:
+Position-based and key-based alignment can then be seen as special cases of delta-based alignment using specific delta-computing strategies.
+For position-based alignment, we simply compute the identity delta:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -950,11 +956,11 @@ And for key-based alignment, we compute a delta associating source and view elem
 \>[22]{}(\Varid{v},\Varid{j})\leftarrow \Varid{zip}\;\Varid{vs}\;[\mskip1.5mu \mathrm{0}\mathinner{\ldotp\ldotp}\mskip1.5mu]\mskip1.5mu]{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-We can check that these strategies indeed give us positional and key-based alignment:
+We can check that these strategies indeed give us position-based and key-based alignment:
 \begin{tabbing}\tt
-~\char42{}Main\char62{}~putDeltaAlignS~byPosition~bx~cr~employees~updatedEmployees0\\
+~\char42{}\char62{}~putDeltaAlignS~byPosition~bx~cr~employees~updatedEmployees0\\
 \tt ~Just~\char91{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}2\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}400\char41{}\char41{}\char93{}\\
 \tt ~\\
-\tt ~\char42{}Main\char62{}~putDeltaAlignS~\char40{}byKey~fst~fst\char41{}~bx~cr~employees~updatedEmployees1\\
+\tt ~\char42{}\char62{}~putDeltaAlignS~\char40{}byKey~fst~fst\char41{}~bx~cr~employees~updatedEmployees1\\
 \tt ~Just~\char91{}\char40{}2\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}2000\char41{}\char41{}\char44{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}1\char44{}\char40{}\char34{}Josh\char34{}\char44{}400\char41{}\char41{}\char93{}
 \end{tabbing}
