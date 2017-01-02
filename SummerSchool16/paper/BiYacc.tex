@@ -360,7 +360,7 @@
 \end{hscode}\resethooks
 }
 
-When we mention the \emph{front-end} of a compiler, we usually think of a \emph{parser} that turns concrete syntax, which is designed to be programmer-friendly and provides convenient syntactic sugar, into abstract syntax, which is concise, structured, and easily manipulable by the compiler back-end.
+When we mention the \emph{front-end} of a compiler, we usually think of a \emph{parser} that turns \emph{concrete syntax}, which is designed to be programmer-friendly and provides convenient syntactic sugar, into \emph{abstract syntax}, which is concise, structured, and easily manipulable by the compiler back-end.
 There is another direction, though, in which a \emph{printer} turns abstract syntax back into concrete syntax.
 This is useful, for example, for reporting the result of compiler optimizations done on abstract syntax to the programmer, who knows only concrete syntax.
 In this case, though, we would want to print the optimized program in a form that is as close to the original program as possible, so the programmer can spot what are changed --- and not changed --- correctly and more easily.
@@ -405,7 +405,7 @@ Consider the following abstract syntax of arithmetic expressions consisting of i
 \>[3]{}\mathbf{deriving}\;\Conid{Show}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-This is a nice representation for the compiler, but we cannot expect the programmer to write something like ``\ensuremath{\Conid{Sub}\;(\Conid{Num}\;\mathrm{1})\;(\Conid{Add}\;(\Conid{Num}\;\mathrm{2})\;(\Conid{Num}\;\mathrm{3}))}'', and should provide a concrete syntax so they can write ``$1 - (2+3)$''.
+This is a nice representation for the compiler, but we cannot expect the programmer to write something like ``\ensuremath{\Conid{Sub}\;(\Conid{Num}\;\mathrm{1})\;(\Conid{Add}\;(\Conid{Num}\;\mathrm{2})\;(\Conid{Num}\;\mathrm{3}))}'', and should provide a concrete syntax so that they can write ``$1 - (2+3)$''.
 Such a concrete syntax is usually defined in terms of a BNF grammar:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -851,7 +851,7 @@ For example, corresponding to the plus/addition branch, we write:
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[B]{}{\color[gray]{0.6}^\$(}\Varid{adaptiveSV}\;{\color[gray]{0.6}[\mskip1.5mu \textit p\kern-2pt\mid }\;\anonymous \;{\color[gray]{0.6}\mid \mskip1.5mu]}\;{\color[gray]{0.6}[\mskip1.5mu \textit p\kern-2pt\mid }\;\Conid{Add}\;\anonymous \;\anonymous \;{\color[gray]{0.6}\mid \mskip1.5mu]}{\color[gray]{0.6})}{}\<[E]%
+\>[B]{}\mathbin{\$}(\Varid{adaptiveSV}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Add}\;\anonymous \;\anonymous \mid \mskip1.5mu]){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
 \>[3]{}\Longrightarrow\lambda \anonymous \;\anonymous \to \Conid{Plus}\;\Conid{ENull}\;\Conid{FNull}{}\<[E]%
@@ -1042,7 +1042,7 @@ the above abstract syntax tree can be printed as:
 \tt ~Just~\char45{}\char40{}1\char43{}1\char41{}
 \end{tabbing}
 
-\subsection{A domain-codeific language}
+\subsection{A domain-specific language}
 
 As a final remark, the above programs may look long, but at the core of them are merely the correspondences between concrete production rules and abstract constructors.
 We can design a domain-specific language (DSL) that expresses such correspondences concisely, and then expand programs in this DSL into BiGUL.
@@ -1059,4 +1059,4 @@ For example, all the programs we have written can be generated from the followin
 \tt ~~~Sub~\char40{}Num~0\char41{}~r~\char43{}\char62{}~\char39{}\char45{}\char39{}~\char40{}r~\char43{}\char62{}~Factor\char41{}\char59{}\\
 \tt ~~~f~~~~~~~~~~~~~\char43{}\char62{}~\char39{}\char40{}\char39{}~\char40{}f~\char43{}\char62{}~Exp\char41{}~\char39{}\char41{}\char39{}\char59{}
 \end{tabbing}
-See our draft paper\footnote{\url{http://www.prg.nii.ac.jp/members/zhu/papers/sle2016_draft.pdf}} for more interesting experiments about reflective printing, done on a more realistic imperative language.
+See our SLE 2016 paper~\cite{Zhu-BiYacc} for more interesting experiments about reflective printing, done on a more realistic imperative language.

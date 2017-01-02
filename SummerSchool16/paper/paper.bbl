@@ -89,4 +89,9 @@ Zan, T., Liu, L., Ko, H., Hu, Z.: Brul: {A} putback-based bidirectional
   April 8, 2016. {CEUR} Workshop Proceedings, vol. 1571, pp. 77--89.
   CEUR-WS.org (2016), \url{http://ceur-ws.org/Vol-1571/paper_3.pdf}
 
+\bibitem{Zhu-BiYacc}
+Zhu, Z., Zhang, Y., Ko, H.S., Martins, P., Saraiva, J., Hu, Z.: Parsing and
+  reflective printing, bidirectionally. In: Software Language Engineering. pp.
+  2--14. SLE'16, ACM (2016)
+
 \end{thebibliography}
