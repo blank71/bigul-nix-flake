@@ -55,7 +55,7 @@ on which they can make modifications.
 It is easy to write a BiGUL program to synchronize the source and view elements:
 \begin{code}
 bx :: BiGUL Source View
-bx =  $(rearrV [| \(id, name) -> (id, (name, ())) |])$
+bx =  $(rearrV (Q( \(id, name) -> (id, (name, ())) )))$
         Replace `Prod` (Replace `Prod` Skip (const ()))
 \end{code}
 The problem is then how the correspondences between sources and views in the two lists can be determined, so that |bx| can be applied to the right pairs.
@@ -74,24 +74,17 @@ Here is how we implement position-based alignment, which is fairly standard:
 \begin{code}
 posAlign :: (Show s, Show v) => BiGUL s v -> (v -> s) -> BiGUL [s] [v]
 posAlign b c = Case
-  [ $(normalSV [p| [] |] [p| [] |] [p| [] |])
-    ==> $(update [p| [] |] [p| [] |] [d| |])
-  , $(normalSV [p| _ : _ |] [p| _ : _ |] [p| _ : _ |])
-    ==> $(update [p| x:xs |] [p| x:xs |] [d| x = b; xs = posAlign b c |])
-  , $(adaptiveSV [p| _ : _ |] [p| [] |])
+  [ $(normalSV (P( [] )) (P( [] )) (P( [] )))
+    ==> $(update (P( [] )) (P( [] )) (D( )))
+  , $(normalSV (P( _ : _ )) (P( _ : _ )) (P( _ : _ )))
+    ==> $(update (P( x:xs )) (P( x:xs )) (D( x = b; xs = posAlign b c )))
+  , $(adaptiveSV (P( _ : _ )) (P( [] )))
     ==> \ _ _ -> []
-  , $(adaptiveSV [p| [] |] [p| _ : _ |])
+  , $(adaptiveSV (P( [] )) (P( _ : _ )))
     ==> \ _ (v : _) -> [c v]
   ]
 \end{code}
 The normal branches deal with the situations where both lists are empty or non-empty, and the adaptive branches remove or create elements when the lengths of the two lists differ.
-In the normal branches, we use a new operation |update|, which is a more compact syntax for the ubiquitous BiGUL programming pattern in which both the source and view are rearranged into a product and then further updates are performed on corresponding components.
-For example, the |update| in the second normal branch is shorthand for:
-\begin{spec}
-$(rearrS [| \(x:xs) -> (x, xs) |])$
-  $(rearrV [| \(x:xs) -> (x, xs) |])$
-    b `Prod` posAlign b c
-\end{spec}
 
 The |get| direction of |posAlign| does exactly what we want it to do:
 \begin{verbatim}
@@ -151,16 +144,16 @@ This gives us key-based alignment:
 keyAlign  ::  forall s v k. (Show s, Show v, Eq k)
           =>  (s -> k) -> (v -> k) -> BiGUL s v -> (v -> s) -> BiGUL [s] [v]
 keyAlign ks kv b c = Case
-  [ $(normalSV [p| [] |] [p| [] |] [p| [] |])
-    ==> $(update [p| [] |] [p| [] |] [d| |])
-  , $(normal [| \(s:ss) (v:vs) -> ks s == kv v |] [p| _ : _ |])
-    ==> $(update [p| x:xs |]  [p| x:xs |]
-                              [d| x = b; xs = keyAlign ks kv b c |])
-  , $(adaptiveSV [p| _ : _ |] [p| [] |])
+  [ $(normalSV (P( [] )) (P( [] )) (P( [] )))
+    ==> $(update (P( [] )) (P( [] )) (D( )))
+  , $(normal (Q( \(s:ss) (v:vs) -> ks s == kv v )) (P( _ : _ )))
+    ==> $(update (P( x:xs ))  (P( x:xs ))
+                              (D( x = b; xs = keyAlign ks kv b c )))
+  , $(adaptiveSV (P( _ : _ )) (P( [] )))
     ==> \ _ _ -> []
-  , $(adaptive [| \ss (v:vs) -> kv v `elem` map ks ss |])
+  , $(adaptive (Q( \ss (v:vs) -> kv v `elem` map ks ss )))
     ==> \ss (v : _) -> uncurry (:) (extract (kv v) ss)
-  , $(adaptiveSV [p| _ |] [p| _ : _ |])
+  , $(adaptiveSV (P( _ )) (P( _ : _ )))
     ==> \ss (v : _) -> c v : ss
   ]
   where
@@ -233,10 +226,10 @@ idDelta ss  =   [ (i, i) | i <- [0..length ss] ]
 deltaAlign  ::  (Show s, Show v)
             =>  BiGUL s v -> (v -> s) -> BiGUL ([s], Delta) [v]
 deltaAlign b c = Case
-  [ $(normal  [| \(ss, d) vs -> length ss == length vs && d == idDelta ss |]
-              [p| _ |])
-    ==> $(rearrV [| \vs -> (vs, ()) |])$ posAlign b c `Prod` Skip (const ())
-  , $(adaptive [| \_ _ -> otherwise |])
+  [ $(normal  (Q( \(ss, d) vs -> length ss == length vs && d == idDelta ss ))
+              (P( _ )))
+    ==> $(rearrV (Q( \vs -> (vs, ()) )))$ posAlign b c `Prod` Skip (const ())
+  , $(adaptive (Q( \ _ _ -> otherwise )))
     ==>  \(ss, d) vs ->
            let   d'   = map swap d
                  ss'  = [ maybe (c v) (ss !!) (lookup j d') | (v, j) <- zip vs [0..] ]

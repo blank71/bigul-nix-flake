@@ -1,5 +1,11 @@
 %include polycode.fmt
 
+%format $ = "{^\$}"
+%format (Q(x)) = "[\kern-1.5pt[\," x "\,]\kern-1.5pt]"
+%format (P(x)) = "\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\," x "\,]\kern-1.5pt]"
+%format (D(x)) = "{^\mathbb{D}}[\kern-1.5pt[\," x "\,]\kern-1.5pt]"
+%format ... = "\ldots"
+
 %format <=> = "\Leftrightarrow"
 % format { = "\lbag"
 % format } = "\rbag"
@@ -299,10 +305,5 @@
 %format generateDS = generate "_{ " `plus` ", " cks "}" 
 %format aggregateD = aggregate
 
-%format (S(x)) = "{\color[gray]{0.6}^\$(}" x "{\color[gray]{0.6})}"
-%format (P(x)) = "{\color[gray]{0.6}" [ "\textit p\kern-2pt" | "}\;" x "\;{\color[gray]{0.6}" |] "}"
-%format (Q(x)) = "{\color[gray]{0.6}" [| "}\;" x "\;{\color[gray]{0.6}" |] "}"
-%format (D(x)) = "{\color[gray]{0.6}" [ "\rlap{\kern-.5pt\textit d}\phantom p\kern-2pt" | "}\;" x "\;{\color[gray]{0.6}" |] "}"
 %format ==> = "\Longrightarrow"
-
 %format Int = "\mathit{Int}"

@@ -258,6 +258,7 @@
 \EndFmtInput
 %
 
+
 % format { = "\lbag"
 % format } = "\rbag"
 
@@ -330,8 +331,8 @@
 
 
 
-
 \section{Bidirectionalizing relational queries with BiGUL}
+\label{sec:Brul}
 
 \ignore{
 
@@ -525,9 +526,9 @@ the data of this type, we need to declare
 \>[B]{}\mbox{\onelinecomment  for showing error message.}{}\<[E]%
 \\
 \>[B]{}\Varid{berror}\;\Varid{s}{}\<[11]%
-\>[11]{}\mathrel{=}\Varid{error}\mathbin{\$}\text{\tt \char34 updated~record~according~to~functional~dependency~shall~not~satisfy~p,~related~source~record:~\char34}\plus \Varid{show}\;\Varid{s}{}\<[E]%
+\>[11]{}\mathrel{=}\Varid{error}{^\$}\text{\tt \char34 updated~record~according~to~functional~dependency~shall~not~satisfy~p,~related~source~record:~\char34}\plus \Varid{show}\;\Varid{s}{}\<[E]%
 \\
-\>[B]{}\Varid{berrorn}\;\Varid{s}\mathrel{=}\Varid{error}\mathbin{\$}\text{\tt \char34 updated~record~according~to~functional~dependency~shall~satisfy~p,~related~source~record:~\char34}\plus \Varid{show}\;\Varid{s}{}\<[E]%
+\>[B]{}\Varid{berrorn}\;\Varid{s}\mathrel{=}\Varid{error}{^\$}\text{\tt \char34 updated~record~according~to~functional~dependency~shall~satisfy~p,~related~source~record:~\char34}\plus \Varid{show}\;\Varid{s}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 
@@ -683,37 +684,37 @@ into two cases (the third and the fourth cases of \ensuremath{\Varid{pAlign}}).
 \>[B]{}\Varid{pAlign}\;\Varid{p}\;\Varid{ks}\;\Varid{kv}\;\Varid{b}\;\Varid{c}\;\Varid{h}\mathrel{=}\Conid{Case}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}[\mskip1.5mu \mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]){}\<[E]%
+\>[3]{}[\mskip1.5mu {^\$}(\Varid{normalSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,[\mskip1.5mu \mskip1.5mu]\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,[\mskip1.5mu \mskip1.5mu]\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,[\mskip1.5mu \mskip1.5mu]\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{d}\mid \mid \mskip1.5mu]){}\<[E]%
+\>[5]{}\Longrightarrow{^\$}(\Varid{update}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,[\mskip1.5mu \mskip1.5mu]\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,[\mskip1.5mu \mskip1.5mu]\,]\kern-1.5pt]\;{^\mathbb{D}}[\kern-1.5pt[\,\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda (\Varid{s}\mathbin{:}\Varid{ss})\;(\Varid{v}\mathbin{:}\Varid{vs})\to \Varid{p}\;\Varid{s}\mathrel{\wedge}\Varid{ks}\;\Varid{s}\equiv \Varid{kv}\;\Varid{v}\mid \mskip1.5mu]\;[\mskip1.5mu \mid \lambda (\Varid{s}\mathbin{:}\Varid{ss})\to \Varid{p}\;\Varid{s}\mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{normal}\;[\kern-1.5pt[\,\lambda (\Varid{s}\mathbin{:}\Varid{ss})\;(\Varid{v}\mathbin{:}\Varid{vs})\to \Varid{p}\;\Varid{s}\mathrel{\wedge}\Varid{ks}\;\Varid{s}\equiv \Varid{kv}\;\Varid{v}\,]\kern-1.5pt]\;[\kern-1.5pt[\,\lambda (\Varid{s}\mathbin{:}\Varid{ss})\to \Varid{p}\;\Varid{s}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid \Varid{x}\mathbin{:}\Varid{xs}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Varid{x}\mathbin{:}\Varid{xs}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{d}\mid \Varid{x}\mathrel{=}\Varid{b};\Varid{xs}\mathrel{=}\Varid{pAlign}\;\Varid{p}\;\Varid{ks}\;\Varid{kv}\;\Varid{b}\;\Varid{c}\;\Varid{h}\mid \mskip1.5mu]){}\<[E]%
+\>[5]{}\Longrightarrow{^\$}(\Varid{update}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Varid{x}\mathbin{:}\Varid{xs}\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Varid{x}\mathbin{:}\Varid{xs}\,]\kern-1.5pt]\;{^\mathbb{D}}[\kern-1.5pt[\,\Varid{x}\mathrel{=}\Varid{b};\Varid{xs}\mathrel{=}\Varid{pAlign}\;\Varid{p}\;\Varid{ks}\;\Varid{kv}\;\Varid{b}\;\Varid{c}\;\Varid{h}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \lambda (\Varid{s}\mathbin{:}\Varid{ss})\;\Varid{v}\to \Varid{p}\;\Varid{s}\mathrel{\wedge}\Varid{null}\;\Varid{v}\mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{adaptive}\;[\kern-1.5pt[\,\lambda (\Varid{s}\mathbin{:}\Varid{ss})\;\Varid{v}\to \Varid{p}\;\Varid{s}\mathrel{\wedge}\Varid{null}\;\Varid{v}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Longrightarrow\lambda (\Varid{s}\mathbin{:}\Varid{ss})\;\Varid{v}\to \Varid{maybe}\;[\mskip1.5mu \mskip1.5mu]\;(\mathbin{:}[\mskip1.5mu \mskip1.5mu])\;(\Varid{h}\;\Varid{s})\plus \Varid{ss}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda (\Varid{s}\mathbin{:}\Varid{ss})\;\Varid{v}\to not\;(\Varid{p}\;\Varid{s})\mid \mskip1.5mu]\;[\mskip1.5mu \mid \lambda (\Varid{s}\mathbin{:}\Varid{ss})\to not\;(\Varid{p}\;\Varid{s})\mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{normal}\;[\kern-1.5pt[\,\lambda (\Varid{s}\mathbin{:}\Varid{ss})\;\Varid{v}\to not\;(\Varid{p}\;\Varid{s})\,]\kern-1.5pt]\;[\kern-1.5pt[\,\lambda (\Varid{s}\mathbin{:}\Varid{ss})\to not\;(\Varid{p}\;\Varid{s})\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mathbin{:}\Varid{xs}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Varid{xs}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{d}\mid \Varid{xs}\mathrel{=}\Varid{pAlign}\;\Varid{p}\;\Varid{ks}\;\Varid{kv}\;\Varid{b}\;\Varid{c}\;\Varid{h}\mid \mskip1.5mu]){}\<[E]%
+\>[5]{}\Longrightarrow{^\$}(\Varid{update}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \mathbin{:}\Varid{xs}\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Varid{xs}\,]\kern-1.5pt]\;{^\mathbb{D}}[\kern-1.5pt[\,\Varid{xs}\mathrel{=}\Varid{pAlign}\;\Varid{p}\;\Varid{ks}\;\Varid{kv}\;\Varid{b}\;\Varid{c}\;\Varid{h}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \lambda \Varid{ss}\;(\Varid{v}\mathbin{:}\Varid{vs})\to \Varid{kv}\;\Varid{v}\in \Varid{map}\;\Varid{ks}\;(\Varid{filter}\;\Varid{p}\;\Varid{ss})\mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{adaptive}\;[\kern-1.5pt[\,\lambda \Varid{ss}\;(\Varid{v}\mathbin{:}\Varid{vs})\to \Varid{kv}\;\Varid{v}\in \Varid{map}\;\Varid{ks}\;(\Varid{filter}\;\Varid{p}\;\Varid{ss})\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Longrightarrow\lambda \Varid{ss}\;(\Varid{v}\mathbin{:\char95 })\to \Varid{uncurry}\;(\mathbin{:})\;(\Varid{extract}\;(\Varid{kv}\;\Varid{v})\;\Varid{ss}){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{adaptiveSV}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mathbin{:\char95 }\mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{adaptiveSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \mathbin{:\char95 }\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Longrightarrow\lambda \Varid{ss}\;(\Varid{v}\mathbin{:\char95 })\to \Varid{filterCheck}\;\Varid{p}\;(\Varid{c}\;\Varid{v})\mathbin{:}\Varid{ss}{}\<[E]%
@@ -803,52 +804,52 @@ extend the fourth case of \ensuremath{\Varid{pAlign}} to apply \ensuremath{\Vari
 \>[B]{}\Varid{relAlign}\;\Varid{p}\;\Varid{ks}\;\Varid{kv}\;\Varid{b}\;\Varid{c}\;\Varid{h}\;\Varid{fd}\mathrel{=}\Conid{Case}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}[\mskip1.5mu \mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]){}\<[E]%
+\>[3]{}[\mskip1.5mu {^\$}(\Varid{normalSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,[\mskip1.5mu \mskip1.5mu]\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,[\mskip1.5mu \mskip1.5mu]\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,[\mskip1.5mu \mskip1.5mu]\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid [\mskip1.5mu \mskip1.5mu]\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{d}\mid \mid \mskip1.5mu]){}\<[E]%
+\>[5]{}\Longrightarrow{^\$}(\Varid{update}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,[\mskip1.5mu \mskip1.5mu]\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,[\mskip1.5mu \mskip1.5mu]\,]\kern-1.5pt]\;{^\mathbb{D}}[\kern-1.5pt[\,\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda (\Varid{s}\mathbin{:}\Varid{ss})\;(\Varid{v}\mathbin{:}\Varid{vs})\to \Varid{p}\;\Varid{s}\mathrel{\wedge}\Varid{ks}\;\Varid{s}\equiv \Varid{kv}\;\Varid{v}\mid \mskip1.5mu]\;[\mskip1.5mu \mid \lambda (\Varid{s}\mathbin{:}\Varid{ss})\to \Varid{p}\;\Varid{s}\mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{normal}\;[\kern-1.5pt[\,\lambda (\Varid{s}\mathbin{:}\Varid{ss})\;(\Varid{v}\mathbin{:}\Varid{vs})\to \Varid{p}\;\Varid{s}\mathrel{\wedge}\Varid{ks}\;\Varid{s}\equiv \Varid{kv}\;\Varid{v}\,]\kern-1.5pt]\;[\kern-1.5pt[\,\lambda (\Varid{s}\mathbin{:}\Varid{ss})\to \Varid{p}\;\Varid{s}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid \Varid{x}\mathbin{:}\Varid{xs}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Varid{x}\mathbin{:}\Varid{xs}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{d}\mid \Varid{x}\mathrel{=}\Varid{b};\Varid{xs}\mathrel{=}\Varid{relAlign}\;\Varid{p}\;\Varid{ks}\;\Varid{kv}\;\Varid{b}\;\Varid{c}\;\Varid{h}\;\Varid{fd}\mid \mskip1.5mu]){}\<[E]%
+\>[5]{}\Longrightarrow{^\$}(\Varid{update}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Varid{x}\mathbin{:}\Varid{xs}\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Varid{x}\mathbin{:}\Varid{xs}\,]\kern-1.5pt]\;{^\mathbb{D}}[\kern-1.5pt[\,\Varid{x}\mathrel{=}\Varid{b};\Varid{xs}\mathrel{=}\Varid{relAlign}\;\Varid{p}\;\Varid{ks}\;\Varid{kv}\;\Varid{b}\;\Varid{c}\;\Varid{h}\;\Varid{fd}\,]\kern-1.5pt]){}\<[E]%
 \\[\blanklineskip]%
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \lambda (\Varid{s}\mathbin{:}\Varid{ss})\;\Varid{v}\to \Varid{p}\;\Varid{s}\mathrel{\wedge}\Varid{null}\;\Varid{v}\mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{adaptive}\;[\kern-1.5pt[\,\lambda (\Varid{s}\mathbin{:}\Varid{ss})\;\Varid{v}\to \Varid{p}\;\Varid{s}\mathrel{\wedge}\Varid{null}\;\Varid{v}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Longrightarrow\lambda (\Varid{s}\mathbin{:}\Varid{ss})\;\Varid{v}\to \Varid{maybe}\;[\mskip1.5mu \mskip1.5mu]\;((\mathbin{:}[\mskip1.5mu \mskip1.5mu])\mathbin{\circ}\Varid{filterCheck}\;\Varid{p}\mathbin{\circ}\Varid{fd})\;(\Varid{h}\;\Varid{s})\plus \Varid{ss}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda (\Varid{s}\mathbin{:}\Varid{ss})\;\Varid{v}\to not\;(\Varid{p}\;\Varid{s})\mid \mskip1.5mu]\;[\mskip1.5mu \mid \lambda (\Varid{s}\mathbin{:}\Varid{ss})\to not\;(\Varid{p}\;\Varid{s})\mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{normal}\;[\kern-1.5pt[\,\lambda (\Varid{s}\mathbin{:}\Varid{ss})\;\Varid{v}\to not\;(\Varid{p}\;\Varid{s})\,]\kern-1.5pt]\;[\kern-1.5pt[\,\lambda (\Varid{s}\mathbin{:}\Varid{ss})\to not\;(\Varid{p}\;\Varid{s})\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Longrightarrow\Conid{Case}{}\<[E]%
 \\
 \>[5]{}\hsindent{1}{}\<[6]%
-\>[6]{}[\mskip1.5mu \mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \lambda (\Varid{s}\mathbin{:\char95 })\;\anonymous \to \Varid{fd}\;\Varid{s}\not\equiv \Varid{s}\mid \mskip1.5mu]){}\<[E]%
+\>[6]{}[\mskip1.5mu {^\$}(\Varid{adaptive}\;[\kern-1.5pt[\,\lambda (\Varid{s}\mathbin{:\char95 })\;\anonymous \to \Varid{fd}\;\Varid{s}\not\equiv \Varid{s}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[6]{}\hsindent{3}{}\<[9]%
 \>[9]{}\Longrightarrow\lambda (\Varid{s}\mathbin{:}\Varid{ss})\;\anonymous \to \Varid{filterCheck}\;(not\mathbin{\circ}\Varid{p})\;(\Varid{fd}\;\Varid{s})\mathbin{:}\Varid{ss}{}\<[E]%
 \\
 \>[5]{}\hsindent{1}{}\<[6]%
-\>[6]{},\mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mathbin{|\char92 \char95 }\anonymous \to \Conid{True}\mid \mskip1.5mu]\;[\mskip1.5mu \mid \Varid{const}\;\Conid{True}\mid \mskip1.5mu]){}\<[E]%
+\>[6]{},{^\$}(\Varid{normal}\;[\kern-1.5pt[\,\mathbin{\char92 \char95 }\anonymous \to \Conid{True}\,]\kern-1.5pt]\;[\kern-1.5pt[\,\Varid{const}\;\Conid{True}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[6]{}\hsindent{3}{}\<[9]%
-\>[9]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mathbin{:}\Varid{xs}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Varid{xs}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{d}\mid \Varid{xs}\mathrel{=}\Varid{relAlign}\;\Varid{p}\;\Varid{ks}\;\Varid{kv}\;\Varid{b}\;\Varid{c}\;\Varid{h}\;\Varid{fd}\mid \mskip1.5mu]){}\<[E]%
+\>[9]{}\Longrightarrow{^\$}(\Varid{update}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \mathbin{:}\Varid{xs}\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Varid{xs}\,]\kern-1.5pt]\;{^\mathbb{D}}[\kern-1.5pt[\,\Varid{xs}\mathrel{=}\Varid{relAlign}\;\Varid{p}\;\Varid{ks}\;\Varid{kv}\;\Varid{b}\;\Varid{c}\;\Varid{h}\;\Varid{fd}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[5]{}\hsindent{1}{}\<[6]%
 \>[6]{}\mskip1.5mu]{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \lambda \Varid{ss}\;(\Varid{v}\mathbin{:}\Varid{vs})\to \Varid{kv}\;\Varid{v}\in \Varid{map}\;\Varid{ks}\;(\Varid{filter}\;\Varid{p}\;\Varid{ss})\mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{adaptive}\;[\kern-1.5pt[\,\lambda \Varid{ss}\;(\Varid{v}\mathbin{:}\Varid{vs})\to \Varid{kv}\;\Varid{v}\in \Varid{map}\;\Varid{ks}\;(\Varid{filter}\;\Varid{p}\;\Varid{ss})\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Longrightarrow\lambda \Varid{ss}\;(\Varid{v}\mathbin{:\char95 })\to \Varid{uncurry}\;(\mathbin{:})\;(\Varid{extract}\;(\Varid{kv}\;\Varid{v})\;\Varid{ss}){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{adaptiveSV}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mathbin{:\char95 }\mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{adaptiveSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \mathbin{:\char95 }\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Longrightarrow\lambda \Varid{ss}\;(\Varid{v}\mathbin{:\char95 })\to \Varid{filterCheck}\;\Varid{p}\;(\Varid{c}\;\Varid{v})\mathbin{:}\Varid{ss}{}\<[E]%
@@ -922,13 +923,13 @@ The first \textsc{BiGUL} program is \ensuremath{\Varid{u0}} below.
 \>[5]{}(\lambda \Varid{v}\to (\Varid{v}\mathbin{!!}\mathrm{0},\Varid{v}\mathbin{!!}\mathrm{2})){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid (\Varid{t}\mathbin{:}\anonymous \mathbin{:}\Varid{r}\mathbin{:}\Varid{a}\mathbin{:}\Varid{q}\mathbin{:}[\mskip1.5mu \mskip1.5mu])\mid \mskip1.5mu]\;{}\<[E]%
+\>[5]{}{^\$}(\Varid{update}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,(\Varid{t}\mathbin{:}\anonymous \mathbin{:}\Varid{r}\mathbin{:}\Varid{a}\mathbin{:}\Varid{q}\mathbin{:}[\mskip1.5mu \mskip1.5mu])\,]\kern-1.5pt]\;{}\<[E]%
 \\
 \>[5]{}\hsindent{9}{}\<[14]%
-\>[14]{}[\mskip1.5mu \Varid{p}\mid (\Varid{t}\mathbin{:}\Varid{r}\mathbin{:}\Varid{a}\mathbin{:}\Varid{q}\mathbin{:}[\mskip1.5mu \mskip1.5mu])\mid \mskip1.5mu]\;{}\<[E]%
+\>[14]{}\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,(\Varid{t}\mathbin{:}\Varid{r}\mathbin{:}\Varid{a}\mathbin{:}\Varid{q}\mathbin{:}[\mskip1.5mu \mskip1.5mu])\,]\kern-1.5pt]\;{}\<[E]%
 \\
 \>[5]{}\hsindent{9}{}\<[14]%
-\>[14]{}[\mskip1.5mu \Varid{d}\mid \Varid{t}\mathrel{=}\Conid{Replace};\Varid{r}\mathrel{=}\Conid{Replace};\Varid{a}\mathrel{=}\Conid{Replace};\Varid{q}\mathrel{=}\Conid{Replace}\mid \mskip1.5mu]){}\<[E]%
+\>[14]{}{^\mathbb{D}}[\kern-1.5pt[\,\Varid{t}\mathrel{=}\Conid{Replace};\Varid{r}\mathrel{=}\Conid{Replace};\Varid{a}\mathrel{=}\Conid{Replace};\Varid{q}\mathrel{=}\Conid{Replace}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}(\lambda (\Varid{t}\mathbin{:}\Varid{r}\mathbin{:}\Varid{a}\mathbin{:}\Varid{q}\mathbin{:}[\mskip1.5mu \mskip1.5mu])\to (\Varid{t}\mathbin{:}\Varid{d}\mathbin{:}\Varid{r}\mathbin{:}\Varid{a}\mathbin{:}\Varid{q}\mathbin{:}[\mskip1.5mu \mskip1.5mu])){}\<[E]%
@@ -986,13 +987,13 @@ we can simply change the last line of \ensuremath{\Varid{u0}} and get \ensuremat
 \>[5]{}(\lambda \Varid{v}\to (\Varid{v}\mathbin{!!}\mathrm{0},\Varid{v}\mathbin{!!}\mathrm{2})){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid (\Varid{t}\mathbin{:}\anonymous \mathbin{:}\Varid{r}\mathbin{:}\Varid{a}\mathbin{:}\Varid{q}\mathbin{:}[\mskip1.5mu \mskip1.5mu])\mid \mskip1.5mu]\;{}\<[E]%
+\>[5]{}{^\$}(\Varid{update}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,(\Varid{t}\mathbin{:}\anonymous \mathbin{:}\Varid{r}\mathbin{:}\Varid{a}\mathbin{:}\Varid{q}\mathbin{:}[\mskip1.5mu \mskip1.5mu])\,]\kern-1.5pt]\;{}\<[E]%
 \\
 \>[5]{}\hsindent{9}{}\<[14]%
-\>[14]{}[\mskip1.5mu \Varid{p}\mid (\Varid{t}\mathbin{:}\Varid{r}\mathbin{:}\Varid{a}\mathbin{:}\Varid{q}\mathbin{:}[\mskip1.5mu \mskip1.5mu])\mid \mskip1.5mu]\;{}\<[E]%
+\>[14]{}\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,(\Varid{t}\mathbin{:}\Varid{r}\mathbin{:}\Varid{a}\mathbin{:}\Varid{q}\mathbin{:}[\mskip1.5mu \mskip1.5mu])\,]\kern-1.5pt]\;{}\<[E]%
 \\
 \>[5]{}\hsindent{9}{}\<[14]%
-\>[14]{}[\mskip1.5mu \Varid{d}\mid \Varid{t}\mathrel{=}\Conid{Replace};\Varid{r}\mathrel{=}\Conid{Replace};\Varid{a}\mathrel{=}\Conid{Replace};\Varid{q}\mathrel{=}\Conid{Replace}\mid \mskip1.5mu]){}\<[E]%
+\>[14]{}{^\mathbb{D}}[\kern-1.5pt[\,\Varid{t}\mathrel{=}\Conid{Replace};\Varid{r}\mathrel{=}\Conid{Replace};\Varid{a}\mathrel{=}\Conid{Replace};\Varid{q}\mathrel{=}\Conid{Replace}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}(\lambda (\Varid{t}\mathbin{:}\Varid{r}\mathbin{:}\Varid{a}\mathbin{:}\Varid{q}\mathbin{:}[\mskip1.5mu \mskip1.5mu])\to (\Varid{t}\mathbin{:}\Varid{d}\mathbin{:}\Varid{r}\mathbin{:}\Varid{a}\mathbin{:}\Varid{q}\mathbin{:}[\mskip1.5mu \mskip1.5mu])){}\<[E]%
@@ -1065,27 +1066,27 @@ We omit the definition of \ensuremath{\Varid{fdFun}} here.
 \\[\blanklineskip]%
 \>[B]{}\Varid{brul0}\mathbin{::}\Conid{BiGUL}\;\Conid{Source}\;\Conid{View}{}\<[E]%
 \\
-\>[B]{}\Varid{brul0}\mathrel{=}\Varid{emb}\;(\lambda \Varid{s}\to \Varid{fromJust}\mathbin{\$}\Varid{get}\;(\Varid{u0}\;\Varid{d}\;\Varid{id})\;\Varid{s})\;{}\<[E]%
+\>[B]{}\Varid{brul0}\mathrel{=}\Varid{emb}\;(\lambda \Varid{s}\to \Varid{fromJust}{^\$}\Varid{get}\;(\Varid{u0}\;\Varid{d}\;\Varid{id})\;\Varid{s})\;{}\<[E]%
 \\
 \>[B]{}\hsindent{19}{}\<[19]%
-\>[19]{}(\lambda \Varid{s}\;\Varid{v}\to \Varid{fromJust}\mathbin{\$}\Varid{put}\;(\Varid{u0}\;\Varid{d}\;(\Varid{fdFun}\;\Varid{sfdMap}\;\Varid{vfdMap}\;\Varid{svMap}\;\Varid{v}))\;\Varid{s}\;\Varid{v}){}\<[E]%
+\>[19]{}(\lambda \Varid{s}\;\Varid{v}\to \Varid{fromJust}{^\$}\Varid{put}\;(\Varid{u0}\;\Varid{d}\;(\Varid{fdFun}\;\Varid{sfdMap}\;\Varid{vfdMap}\;\Varid{svMap}\;\Varid{v}))\;\Varid{s}\;\Varid{v}){}\<[E]%
 \\[\blanklineskip]%
-\>[B]{}\Varid{tb0}\mathrel{=}\Varid{showTable}\mathbin{\$}\Varid{fromJust}\mathbin{\$}\Varid{put}\;\Varid{brul0}\;\Varid{s}\;\Varid{v}{}\<[E]%
+\>[B]{}\Varid{tb0}\mathrel{=}\Varid{showTable}{^\$}\Varid{fromJust}{^\$}\Varid{put}\;\Varid{brul0}\;\Varid{s}\;\Varid{v}{}\<[E]%
 \\
-\>[B]{}\Varid{tf0}\mathrel{=}\Varid{showTable}\mathbin{\$}\Varid{fromJust}\mathbin{\$}\Varid{get}\;\Varid{brul0}\;\Varid{s}{}\<[E]%
+\>[B]{}\Varid{tf0}\mathrel{=}\Varid{showTable}{^\$}\Varid{fromJust}{^\$}\Varid{get}\;\Varid{brul0}\;\Varid{s}{}\<[E]%
 \\[\blanklineskip]%
 \>[B]{}\mbox{\onelinecomment }{}\<[E]%
 \\[\blanklineskip]%
 \>[B]{}\Varid{brul1}\mathbin{::}\Conid{BiGUL}\;\Conid{Source}\;\Conid{View}{}\<[E]%
 \\
-\>[B]{}\Varid{brul1}\mathrel{=}\Varid{emb}\;(\lambda \Varid{s}\to \Varid{fromJust}\mathbin{\$}\Varid{get}\;(\Varid{u1}\;\Varid{d}\;\Varid{id})\;\Varid{s})\;{}\<[E]%
+\>[B]{}\Varid{brul1}\mathrel{=}\Varid{emb}\;(\lambda \Varid{s}\to \Varid{fromJust}{^\$}\Varid{get}\;(\Varid{u1}\;\Varid{d}\;\Varid{id})\;\Varid{s})\;{}\<[E]%
 \\
 \>[B]{}\hsindent{12}{}\<[12]%
-\>[12]{}(\lambda \Varid{s}\;\Varid{v}\to \Varid{fromJust}\mathbin{\$}\Varid{put}\;(\Varid{u1}\;\Varid{d}\;(\Varid{fdFun}\;\Varid{sfdMap}\;\Varid{vfdMap}\;\Varid{svMap}\;\Varid{v}))\;\Varid{s}\;\Varid{v}){}\<[E]%
+\>[12]{}(\lambda \Varid{s}\;\Varid{v}\to \Varid{fromJust}{^\$}\Varid{put}\;(\Varid{u1}\;\Varid{d}\;(\Varid{fdFun}\;\Varid{sfdMap}\;\Varid{vfdMap}\;\Varid{svMap}\;\Varid{v}))\;\Varid{s}\;\Varid{v}){}\<[E]%
 \\[\blanklineskip]%
-\>[B]{}\Varid{tb1}\mathrel{=}\Varid{showTable}\mathbin{\$}\Varid{fromJust}\mathbin{\$}\Varid{put}\;\Varid{brul1}\;\Varid{s}\;\Varid{v}{}\<[E]%
+\>[B]{}\Varid{tb1}\mathrel{=}\Varid{showTable}{^\$}\Varid{fromJust}{^\$}\Varid{put}\;\Varid{brul1}\;\Varid{s}\;\Varid{v}{}\<[E]%
 \\
-\>[B]{}\Varid{tf1}\mathrel{=}\Varid{showTable}\mathbin{\$}\Varid{fromJust}\mathbin{\$}\Varid{get}\;\Varid{brul1}\;\Varid{s}{}\<[E]%
+\>[B]{}\Varid{tf1}\mathrel{=}\Varid{showTable}{^\$}\Varid{fromJust}{^\$}\Varid{get}\;\Varid{brul1}\;\Varid{s}{}\<[E]%
 \\[\blanklineskip]%
 \>[B]{}\mbox{\onelinecomment  Define the functional dependency on view}{}\<[E]%
 \\

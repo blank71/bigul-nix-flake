@@ -3,6 +3,7 @@
 %include lhs2TeX-macros.lhs
 
 \section{Parsing and reflective printing}
+\label{sec:BiYacc}
 
 \ignore{
 \begin{code}
@@ -173,78 +174,78 @@ pFactorArith  =   Case undefined
 \end{spec}
 The branch for plus and addition can then be written as:
 \begin{spec}
-$(update  [p| Plus l r |] [p| Add l r |]
-          [d| l = pExpArith; r = pFactorArith |])
+$(update  (P( Plus l r )) (P( Add l r ))
+          (D( l = pExpArith; r = pFactorArith )))
 \end{spec}
 Following the same line of thought, we can fill in other branches to relate all abstract constructors with concrete production rules:
 \begin{spec}
 pExpArith  ::  BiGUL Exp Arith
 pExpArith  =   Case
-  [ $(normalSV [p| Plus _ _ |] [p| Add _ _ |] [p| Plus _ _ |])
-    ==> $(update  [p| Plus l r |] [p| Add l r |]
-                  [d| l = pExpArith; r = pFactorArith |])
-  , $(normalSV [p| Minus _ _ |] [p| Sub _ _ |] [p| Minus _ _ |])
-    ==> $(update  [p| Minus l r |] [p| Sub l r |]
-                  [d| l = pExpArith; r = pFactorArith |])
-  , $(normalSV [p| EF _ |] [p| _ |] [p| EF _ |])
-    ==> $(update  [p| EF t |] [p| t |]
-                  [d| t = pFactorArith |])
+  [ $(normalSV (P( Plus _ _ )) (P( Add _ _ )) (P( Plus _ _ )))
+    ==> $(update  (P( Plus l r )) (P( Add l r ))
+                  (D( l = pExpArith; r = pFactorArith )))
+  , $(normalSV (P( Minus _ _ )) (P( Sub _ _ )) (P( Minus _ _ )))
+    ==> $(update  (P( Minus l r )) (P( Sub l r ))
+                  (D( l = pExpArith; r = pFactorArith )))
+  , $(normalSV (P( EF _ )) (P( _ )) (P( EF _ )))
+    ==> $(update  (P( EF t )) (P( t ))
+                  (D( t = pFactorArith )))
   ]
 
 pFactorArith  ::  BiGUL Factor Arith
 pFactorArith  =   Case
-  [ $(normalSV [p| Lit _ |] [p| Num _ |] [p| Lit _ |])
-    ==> $(update [p| Lit i |] [p| Num i |] [d| i = Replace |])
-  , $(normalSV [p| Neg _ |] [p| Sub (Num 0) _ |] [p| Neg _ |])
-    ==> $(update [p| Neg t |] [p| Sub (Num 0) t |] [d| t = pFactorArith |])
-  , $(normalSV [p| Paren _ |] [p| _ |] [p| Paren _ |])
-    ==> $(update [p| Paren t |] [p| t |] [d| t = pExpArith |])
+  [ $(normalSV (P( Lit _ )) (P( Num _ )) (P( Lit _ )))
+    ==> $(update (P( Lit i )) (P( Num i )) (D( i = Replace )))
+  , $(normalSV (P( Neg _ )) (P( Sub (Num 0) _ )) (P( Neg _ )))
+    ==> $(update (P( Neg t )) (P( Sub (Num 0) t )) (D( t = pFactorArith )))
+  , $(normalSV (P( Paren _ )) (P( _ )) (P( Paren _ )))
+    ==> $(update (P( Paren t )) (P( t )) (D( t = pExpArith )))
   ]
 \end{spec}
 
 This covers only ``normal'' cases though, namely when the source and view are ``the same'' except for parentheses and literals.
 What about the cases when the source and view have mismatched shapes?
 For these cases, we need adaptation.
-Corresponding to each branch we have already written, we add an adaptive branch which looks at the shape of the view only, throws away a mismatched source, and creates an incomplete one whose shape matches that of the view; the source will be complete created through recursive processing.
+Corresponding to each branch we have already written, we add an adaptive branch which looks at the shape of the view only, throws away a mismatched source, and creates an incomplete one whose shape matches that of the view; the source will be completely created through recursive processing.
 For example, corresponding to the plus/addition branch, we write:
 \begin{spec}
-$(adaptiveSV [p| _ |] [p| Add _ _ |])
+$(adaptiveSV (P( _ )) (P( Add _ _ )))
   ==> \ _ _ -> Plus ENull FNull
 \end{spec}
 The full programs are:
 \begin{code}
 pExpArith  ::  BiGUL Exp Arith
 pExpArith  =   Case
-  [ $(normalSV [p| Plus _ _ |] [p| Add _ _ |] [p| Plus _ _ |])
-    ==> $(update [p| Plus l r |] [p| Add l r |]
-                 [d| l = pExpArith; r = pFactorArith |])
-  , $(normalSV [p| Minus _ _ |] [p| Sub _ _ |] [p| Minus _ _ |])
-    ==> $(update [p| Minus l r |] [p| Sub l r |]
-                 [d| l = pExpArith; r = pFactorArith |])
-  , $(normalSV [p| EF _ |] [p| _ |] [p| EF _ |])
-    ==> $(update [p| EF t |] [p| t |]
-                 [d| t = pFactorArith |])
-  , $(adaptiveSV [p| _ |] [p| Add _ _ |])
+  [ $(normalSV (P( Plus _ _ )) (P( Add _ _ )) (P( Plus _ _ )))
+    ==> $(update (P( Plus l r )) (P( Add l r ))
+                 (D( l = pExpArith; r = pFactorArith )))
+  , $(normalSV (P( Minus _ _ )) (P( Sub _ _ )) (P( Minus _ _ )))
+    ==> $(update (P( Minus l r )) (P( Sub l r ))
+                 (D( l = pExpArith; r = pFactorArith )))
+  , $(normalSV (P( EF _ )) (P( _ )) (P( EF _ )))
+    ==> $(update (P( EF t )) (P( t ))
+                 (D( t = pFactorArith )))
+  , $(adaptiveSV (P( _ )) (P( Add _ _ )))
     ==> \ _ _ -> Plus ENull FNull
-  , $(adaptiveSV [p| _ |] [p| Sub _ _ |])
+  , $(adaptiveSV (P( _ )) (P( Sub _ _ )))
     ==> \ _ _ -> Minus ENull FNull
-  , $(adaptiveSV [p| _ |] [p| _ |])
+  , $(adaptiveSV (P( _ )) (P( _ )))
     ==> \ _ _ -> EF FNull
   ]
 
 pFactorArith  ::  BiGUL Factor Arith
 pFactorArith  =   Case
-  [ $(normalSV [p| Lit _ |] [p| Num _ |] [p| Lit _ |])
-    ==> $(update [p| Lit i |] [p| Num i |] [d| i = Replace |])
-  , $(normalSV [p| Neg _ |] [p| Sub (Num 0) _ |] [p| Neg _ |])
-    ==> $(update [p| Neg t |] [p| Sub (Num 0) t |] [d| t = pFactorArith |])
-  , $(normalSV [p| Paren _ |] [p| _ |] [p| Paren _ |])
-    ==> $(update [p| Paren t |] [p| t |] [d| t = pExpArith |])
-  , $(adaptiveSV [p| _ |] [p| Num _ |])
+  [ $(normalSV (P( Lit _ )) (P( Num _ )) (P( Lit _ )))
+    ==> $(update (P( Lit i )) (P( Num i )) (D( i = Replace )))
+  , $(normalSV (P( Neg _ )) (P( Sub (Num 0) _ )) (P( Neg _ )))
+    ==> $(update (P( Neg t )) (P( Sub (Num 0) t )) (D( t = pFactorArith )))
+  , $(normalSV (P( Paren _ )) (P( _ )) (P( Paren _ )))
+    ==> $(update (P( Paren t )) (P( t )) (D( t = pExpArith )))
+  , $(adaptiveSV (P( _ )) (P( Num _ )))
     ==> \ _ _ -> Lit 0
-  , $(adaptiveSV [p| _ |] [p| Sub (Num 0) _ |])
+  , $(adaptiveSV (P( _ )) (P( Sub (Num 0) _ )))
     ==> \ _ _ -> Neg FNull
-  , $(adaptiveSV [p| _ |] [p| _ |])
+  , $(adaptiveSV (P( _ )) (P( _ )))
     ==> \ _ _ -> Paren ENull
   ]
 \end{code}
@@ -301,7 +302,7 @@ You have probably noticed that the subtraction is reflected as a binary minus in
 This behavior is easily customizable:
 By adding an adaptive branch before the one dealing generically with |Sub| in |pExpArith|:
 \begin{spec}
-$(adaptiveSV [p| _ |] [p| Sub (Num 0) _ |])
+$(adaptiveSV (P( _ )) (P( Sub (Num 0) _ )))
   ==> \ _ _ -> EF FNull
 \end{spec}
 the above abstract syntax tree can be printed as:

@@ -260,6 +260,7 @@
 \EndFmtInput
 %
 
+
 % format { = "\lbag"
 % format } = "\rbag"
 
@@ -332,8 +333,8 @@
 
 
 
-
 \section{Parsing and reflective printing}
+\label{sec:BiYacc}
 
 \ignore{
 \begin{hscode}\SaveRestoreHook
@@ -755,10 +756,10 @@ The branch for plus and addition can then be written as:
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{11}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[B]{}\mathbin{\$}(\Varid{update}\;{}\<[11]%
-\>[11]{}[\mskip1.5mu \Varid{p}\mid \Conid{Plus}\;\Varid{l}\;\Varid{r}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Add}\;\Varid{l}\;\Varid{r}\mid \mskip1.5mu]\;{}\<[E]%
+\>[B]{}{^\$}(\Varid{update}\;{}\<[11]%
+\>[11]{}\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Plus}\;\Varid{l}\;\Varid{r}\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Add}\;\Varid{l}\;\Varid{r}\,]\kern-1.5pt]\;{}\<[E]%
 \\
-\>[11]{}[\mskip1.5mu \Varid{d}\mid \Varid{l}\mathrel{=}\Varid{pExpArith};\Varid{r}\mathrel{=}\Varid{pFactorArith}\mid \mskip1.5mu]){}\<[E]%
+\>[11]{}{^\mathbb{D}}[\kern-1.5pt[\,\Varid{l}\mathrel{=}\Varid{pExpArith};\Varid{r}\mathrel{=}\Varid{pFactorArith}\,]\kern-1.5pt]){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 Following the same line of thought, we can fill in other branches to relate all abstract constructors with concrete production rules:
@@ -782,31 +783,31 @@ Following the same line of thought, we can fill in other branches to relate all 
 \>[16]{}\Conid{Case}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}[\mskip1.5mu \mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \Conid{Plus}\;\anonymous \;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Add}\;\anonymous \;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Plus}\;\anonymous \;\anonymous \mid \mskip1.5mu]){}\<[E]%
+\>[3]{}[\mskip1.5mu {^\$}(\Varid{normalSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Plus}\;\anonymous \;\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Add}\;\anonymous \;\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Plus}\;\anonymous \;\anonymous \,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;{}\<[19]%
-\>[19]{}[\mskip1.5mu \Varid{p}\mid \Conid{Plus}\;\Varid{l}\;\Varid{r}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Add}\;\Varid{l}\;\Varid{r}\mid \mskip1.5mu]\;{}\<[E]%
+\>[5]{}\Longrightarrow{^\$}(\Varid{update}\;{}\<[19]%
+\>[19]{}\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Plus}\;\Varid{l}\;\Varid{r}\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Add}\;\Varid{l}\;\Varid{r}\,]\kern-1.5pt]\;{}\<[E]%
 \\
-\>[19]{}[\mskip1.5mu \Varid{d}\mid \Varid{l}\mathrel{=}\Varid{pExpArith};\Varid{r}\mathrel{=}\Varid{pFactorArith}\mid \mskip1.5mu]){}\<[E]%
+\>[19]{}{^\mathbb{D}}[\kern-1.5pt[\,\Varid{l}\mathrel{=}\Varid{pExpArith};\Varid{r}\mathrel{=}\Varid{pFactorArith}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \Conid{Minus}\;\anonymous \;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Sub}\;\anonymous \;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Minus}\;\anonymous \;\anonymous \mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{normalSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Minus}\;\anonymous \;\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Sub}\;\anonymous \;\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Minus}\;\anonymous \;\anonymous \,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;{}\<[19]%
-\>[19]{}[\mskip1.5mu \Varid{p}\mid \Conid{Minus}\;\Varid{l}\;\Varid{r}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Sub}\;\Varid{l}\;\Varid{r}\mid \mskip1.5mu]\;{}\<[E]%
+\>[5]{}\Longrightarrow{^\$}(\Varid{update}\;{}\<[19]%
+\>[19]{}\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Minus}\;\Varid{l}\;\Varid{r}\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Sub}\;\Varid{l}\;\Varid{r}\,]\kern-1.5pt]\;{}\<[E]%
 \\
-\>[19]{}[\mskip1.5mu \Varid{d}\mid \Varid{l}\mathrel{=}\Varid{pExpArith};\Varid{r}\mathrel{=}\Varid{pFactorArith}\mid \mskip1.5mu]){}\<[E]%
+\>[19]{}{^\mathbb{D}}[\kern-1.5pt[\,\Varid{l}\mathrel{=}\Varid{pExpArith};\Varid{r}\mathrel{=}\Varid{pFactorArith}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \Conid{EF}\;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{EF}\;\anonymous \mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{normalSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{EF}\;\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{EF}\;\anonymous \,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;{}\<[19]%
-\>[19]{}[\mskip1.5mu \Varid{p}\mid \Conid{EF}\;\Varid{t}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Varid{t}\mid \mskip1.5mu]\;{}\<[E]%
+\>[5]{}\Longrightarrow{^\$}(\Varid{update}\;{}\<[19]%
+\>[19]{}\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{EF}\;\Varid{t}\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Varid{t}\,]\kern-1.5pt]\;{}\<[E]%
 \\
-\>[19]{}[\mskip1.5mu \Varid{d}\mid \Varid{t}\mathrel{=}\Varid{pFactorArith}\mid \mskip1.5mu]){}\<[E]%
+\>[19]{}{^\mathbb{D}}[\kern-1.5pt[\,\Varid{t}\mathrel{=}\Varid{pFactorArith}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
 \>[3]{}\mskip1.5mu]{}\<[E]%
@@ -820,22 +821,22 @@ Following the same line of thought, we can fill in other branches to relate all 
 \>[19]{}\Conid{Case}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}[\mskip1.5mu \mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \Conid{Lit}\;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Num}\;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Lit}\;\anonymous \mid \mskip1.5mu]){}\<[E]%
+\>[3]{}[\mskip1.5mu {^\$}(\Varid{normalSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Lit}\;\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Num}\;\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Lit}\;\anonymous \,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid \Conid{Lit}\;\Varid{i}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Num}\;\Varid{i}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{d}\mid \Varid{i}\mathrel{=}\Conid{Replace}\mid \mskip1.5mu]){}\<[E]%
+\>[5]{}\Longrightarrow{^\$}(\Varid{update}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Lit}\;\Varid{i}\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Num}\;\Varid{i}\,]\kern-1.5pt]\;{^\mathbb{D}}[\kern-1.5pt[\,\Varid{i}\mathrel{=}\Conid{Replace}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \Conid{Neg}\;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Sub}\;(\Conid{Num}\;\mathrm{0})\;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Neg}\;\anonymous \mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{normalSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Neg}\;\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Sub}\;(\Conid{Num}\;\mathrm{0})\;\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Neg}\;\anonymous \,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid \Conid{Neg}\;\Varid{t}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Sub}\;(\Conid{Num}\;\mathrm{0})\;\Varid{t}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{d}\mid \Varid{t}\mathrel{=}\Varid{pFactorArith}\mid \mskip1.5mu]){}\<[E]%
+\>[5]{}\Longrightarrow{^\$}(\Varid{update}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Neg}\;\Varid{t}\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Sub}\;(\Conid{Num}\;\mathrm{0})\;\Varid{t}\,]\kern-1.5pt]\;{^\mathbb{D}}[\kern-1.5pt[\,\Varid{t}\mathrel{=}\Varid{pFactorArith}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \Conid{Paren}\;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Paren}\;\anonymous \mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{normalSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Paren}\;\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Paren}\;\anonymous \,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid \Conid{Paren}\;\Varid{t}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Varid{t}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{d}\mid \Varid{t}\mathrel{=}\Varid{pExpArith}\mid \mskip1.5mu]){}\<[E]%
+\>[5]{}\Longrightarrow{^\$}(\Varid{update}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Paren}\;\Varid{t}\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Varid{t}\,]\kern-1.5pt]\;{^\mathbb{D}}[\kern-1.5pt[\,\Varid{t}\mathrel{=}\Varid{pExpArith}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
 \>[3]{}\mskip1.5mu]{}\<[E]%
@@ -845,13 +846,13 @@ Following the same line of thought, we can fill in other branches to relate all 
 This covers only ``normal'' cases though, namely when the source and view are ``the same'' except for parentheses and literals.
 What about the cases when the source and view have mismatched shapes?
 For these cases, we need adaptation.
-Corresponding to each branch we have already written, we add an adaptive branch which looks at the shape of the view only, throws away a mismatched source, and creates an incomplete one whose shape matches that of the view; the source will be complete created through recursive processing.
+Corresponding to each branch we have already written, we add an adaptive branch which looks at the shape of the view only, throws away a mismatched source, and creates an incomplete one whose shape matches that of the view; the source will be completely created through recursive processing.
 For example, corresponding to the plus/addition branch, we write:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[B]{}\mathbin{\$}(\Varid{adaptiveSV}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Add}\;\anonymous \;\anonymous \mid \mskip1.5mu]){}\<[E]%
+\>[B]{}{^\$}(\Varid{adaptiveSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Add}\;\anonymous \;\anonymous \,]\kern-1.5pt]){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
 \>[3]{}\Longrightarrow\lambda \anonymous \;\anonymous \to \Conid{Plus}\;\Conid{ENull}\;\Conid{FNull}{}\<[E]%
@@ -879,46 +880,46 @@ The full programs are:
 \>[16]{}\Conid{Case}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}[\mskip1.5mu \mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \Conid{Plus}\;\anonymous \;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Add}\;\anonymous \;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Plus}\;\anonymous \;\anonymous \mid \mskip1.5mu]){}\<[E]%
+\>[3]{}[\mskip1.5mu {^\$}(\Varid{normalSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Plus}\;\anonymous \;\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Add}\;\anonymous \;\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Plus}\;\anonymous \;\anonymous \,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid \Conid{Plus}\;\Varid{l}\;\Varid{r}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Add}\;\Varid{l}\;\Varid{r}\mid \mskip1.5mu]\;{}\<[E]%
+\>[5]{}\Longrightarrow{^\$}(\Varid{update}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Plus}\;\Varid{l}\;\Varid{r}\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Add}\;\Varid{l}\;\Varid{r}\,]\kern-1.5pt]\;{}\<[E]%
 \\
 \>[5]{}\hsindent{13}{}\<[18]%
-\>[18]{}[\mskip1.5mu \Varid{d}\mid \Varid{l}\mathrel{=}\Varid{pExpArith};\Varid{r}\mathrel{=}\Varid{pFactorArith}\mid \mskip1.5mu]){}\<[E]%
+\>[18]{}{^\mathbb{D}}[\kern-1.5pt[\,\Varid{l}\mathrel{=}\Varid{pExpArith};\Varid{r}\mathrel{=}\Varid{pFactorArith}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \Conid{Minus}\;\anonymous \;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Sub}\;\anonymous \;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Minus}\;\anonymous \;\anonymous \mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{normalSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Minus}\;\anonymous \;\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Sub}\;\anonymous \;\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Minus}\;\anonymous \;\anonymous \,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid \Conid{Minus}\;\Varid{l}\;\Varid{r}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Sub}\;\Varid{l}\;\Varid{r}\mid \mskip1.5mu]\;{}\<[E]%
+\>[5]{}\Longrightarrow{^\$}(\Varid{update}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Minus}\;\Varid{l}\;\Varid{r}\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Sub}\;\Varid{l}\;\Varid{r}\,]\kern-1.5pt]\;{}\<[E]%
 \\
 \>[5]{}\hsindent{13}{}\<[18]%
-\>[18]{}[\mskip1.5mu \Varid{d}\mid \Varid{l}\mathrel{=}\Varid{pExpArith};\Varid{r}\mathrel{=}\Varid{pFactorArith}\mid \mskip1.5mu]){}\<[E]%
+\>[18]{}{^\mathbb{D}}[\kern-1.5pt[\,\Varid{l}\mathrel{=}\Varid{pExpArith};\Varid{r}\mathrel{=}\Varid{pFactorArith}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \Conid{EF}\;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{EF}\;\anonymous \mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{normalSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{EF}\;\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{EF}\;\anonymous \,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid \Conid{EF}\;\Varid{t}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Varid{t}\mid \mskip1.5mu]\;{}\<[E]%
+\>[5]{}\Longrightarrow{^\$}(\Varid{update}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{EF}\;\Varid{t}\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Varid{t}\,]\kern-1.5pt]\;{}\<[E]%
 \\
 \>[5]{}\hsindent{13}{}\<[18]%
-\>[18]{}[\mskip1.5mu \Varid{d}\mid \Varid{t}\mathrel{=}\Varid{pFactorArith}\mid \mskip1.5mu]){}\<[E]%
+\>[18]{}{^\mathbb{D}}[\kern-1.5pt[\,\Varid{t}\mathrel{=}\Varid{pFactorArith}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{adaptiveSV}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Add}\;\anonymous \;\anonymous \mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{adaptiveSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Add}\;\anonymous \;\anonymous \,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Longrightarrow\lambda \anonymous \;\anonymous \to \Conid{Plus}\;\Conid{ENull}\;\Conid{FNull}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{adaptiveSV}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Sub}\;\anonymous \;\anonymous \mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{adaptiveSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Sub}\;\anonymous \;\anonymous \,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Longrightarrow\lambda \anonymous \;\anonymous \to \Conid{Minus}\;\Conid{ENull}\;\Conid{FNull}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{adaptiveSV}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{adaptiveSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Longrightarrow\lambda \anonymous \;\anonymous \to \Conid{EF}\;\Conid{FNull}{}\<[E]%
@@ -935,37 +936,37 @@ The full programs are:
 \>[19]{}\Conid{Case}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{}[\mskip1.5mu \mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \Conid{Lit}\;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Num}\;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Lit}\;\anonymous \mid \mskip1.5mu]){}\<[E]%
+\>[3]{}[\mskip1.5mu {^\$}(\Varid{normalSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Lit}\;\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Num}\;\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Lit}\;\anonymous \,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid \Conid{Lit}\;\Varid{i}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Num}\;\Varid{i}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{d}\mid \Varid{i}\mathrel{=}\Conid{Replace}\mid \mskip1.5mu]){}\<[E]%
+\>[5]{}\Longrightarrow{^\$}(\Varid{update}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Lit}\;\Varid{i}\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Num}\;\Varid{i}\,]\kern-1.5pt]\;{^\mathbb{D}}[\kern-1.5pt[\,\Varid{i}\mathrel{=}\Conid{Replace}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \Conid{Neg}\;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Sub}\;(\Conid{Num}\;\mathrm{0})\;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Neg}\;\anonymous \mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{normalSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Neg}\;\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Sub}\;(\Conid{Num}\;\mathrm{0})\;\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Neg}\;\anonymous \,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid \Conid{Neg}\;\Varid{t}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Sub}\;(\Conid{Num}\;\mathrm{0})\;\Varid{t}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{d}\mid \Varid{t}\mathrel{=}\Varid{pFactorArith}\mid \mskip1.5mu]){}\<[E]%
+\>[5]{}\Longrightarrow{^\$}(\Varid{update}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Neg}\;\Varid{t}\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Sub}\;(\Conid{Num}\;\mathrm{0})\;\Varid{t}\,]\kern-1.5pt]\;{^\mathbb{D}}[\kern-1.5pt[\,\Varid{t}\mathrel{=}\Varid{pFactorArith}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \Conid{Paren}\;\anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Paren}\;\anonymous \mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{normalSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Paren}\;\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Paren}\;\anonymous \,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
-\>[5]{}\Longrightarrow\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid \Conid{Paren}\;\Varid{t}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Varid{t}\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{d}\mid \Varid{t}\mathrel{=}\Varid{pExpArith}\mid \mskip1.5mu]){}\<[E]%
+\>[5]{}\Longrightarrow{^\$}(\Varid{update}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Paren}\;\Varid{t}\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Varid{t}\,]\kern-1.5pt]\;{^\mathbb{D}}[\kern-1.5pt[\,\Varid{t}\mathrel{=}\Varid{pExpArith}\,]\kern-1.5pt]){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{adaptiveSV}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Num}\;\anonymous \mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{adaptiveSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Num}\;\anonymous \,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Longrightarrow\lambda \anonymous \;\anonymous \to \Conid{Lit}\;\mathrm{0}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{adaptiveSV}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Sub}\;(\Conid{Num}\;\mathrm{0})\;\anonymous \mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{adaptiveSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Sub}\;(\Conid{Num}\;\mathrm{0})\;\anonymous \,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Longrightarrow\lambda \anonymous \;\anonymous \to \Conid{Neg}\;\Conid{FNull}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
-\>[3]{},\mathbin{\$}(\Varid{adaptiveSV}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]){}\<[E]%
+\>[3]{},{^\$}(\Varid{adaptiveSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \,]\kern-1.5pt]){}\<[E]%
 \\
 \>[3]{}\hsindent{2}{}\<[5]%
 \>[5]{}\Longrightarrow\lambda \anonymous \;\anonymous \to \Conid{Paren}\;\Conid{ENull}{}\<[E]%
@@ -1030,7 +1031,7 @@ By adding an adaptive branch before the one dealing generically with \ensuremath
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[B]{}\mathbin{\$}(\Varid{adaptiveSV}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \Conid{Sub}\;(\Conid{Num}\;\mathrm{0})\;\anonymous \mid \mskip1.5mu]){}\<[E]%
+\>[B]{}{^\$}(\Varid{adaptiveSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\Conid{Sub}\;(\Conid{Num}\;\mathrm{0})\;\anonymous \,]\kern-1.5pt]){}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
 \>[3]{}\Longrightarrow\lambda \anonymous \;\anonymous \to \Conid{EF}\;\Conid{FNull}{}\<[E]%

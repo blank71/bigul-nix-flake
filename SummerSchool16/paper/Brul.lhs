@@ -1,6 +1,7 @@
 %include lhs2TeX-macros.lhs
 
 \section{Bidirectionalizing relational queries with BiGUL}
+\label{sec:Brul}
 
 \ignore{
 
@@ -223,17 +224,17 @@ pAlign :: forall s v k. (Show s, Show v, Eq k)
             -> (s -> Maybe s) {- conceal function -}
             -> BiGUL [s] [v]
 pAlign p ks kv b c h = Case
-  [ $(normalSV [p| [] |] [p| [] |] [p| [] |])
-    ==> $(update [p| [] |] [p| [] |] [d| |])
-  , $(normal [| \(s:ss) (v:vs) -> p s && ks s == kv v |] [| \(s:ss) -> p s |])
-    ==> $(update [p| x:xs |] [p| x:xs |] [d| x = b; xs = pAlign p ks kv b c h |])
-  , $(adaptive [| \(s:ss) v -> p s && null v|])
+  [ $(normalSV (P( [] )) (P( [] )) (P( [] )))
+    ==> $(update (P( [] )) (P( [] )) (D( )))
+  , $(normal (Q( \(s:ss) (v:vs) -> p s && ks s == kv v )) (Q( \(s:ss) -> p s )))
+    ==> $(update (P( x:xs )) (P( x:xs )) (D( x = b; xs = pAlign p ks kv b c h )))
+  , $(adaptive (Q( \(s:ss) v -> p s && null v)))
     ==> \(s:ss) v -> maybe [] (:[]) (h s) ++ ss
-  , $(normal [| \(s:ss) v -> not (p s) |] [| \(s:ss) -> not (p s) |])
-    ==> $(update [p| _:xs |] [p| xs |] [d| xs = pAlign p ks kv b c h |])
-  , $(adaptive [| \ss (v:vs) -> kv v `elem` map ks (filter p ss) |])
+  , $(normal (Q( \(s:ss) v -> not (p s) )) (Q( \(s:ss) -> not (p s) )))
+    ==> $(update (P( _:xs )) (P( xs )) (D( xs = pAlign p ks kv b c h )))
+  , $(adaptive (Q( \ss (v:vs) -> kv v `elem` map ks (filter p ss) )))
     ==> \ss (v:_) -> uncurry (:) (extract (kv v) ss)
-  , $(adaptiveSV [p| _ |] [p| _:_ |])
+  , $(adaptiveSV (P( _ )) (P( _:_ )))
     ==> \ss (v:_) -> filterCheck p (c v) : ss
   ]
   where
@@ -274,23 +275,23 @@ relAlign :: forall s v k. (Show s, Show v, Eq k, Eq s)
             -> (s -> s) {- dependency maintaining function -}
             -> BiGUL [s] [v]
 relAlign p ks kv b c h fd = Case
-  [ $(normalSV [p| [] |] [p| [] |] [p| [] |])
-    ==> $(update [p| [] |] [p| [] |] [d| |])
-  , $(normal [| \(s:ss) (v:vs) -> p s && ks s == kv v |] [| \(s:ss) -> p s |])
-    ==> $(update [p| x:xs |] [p| x:xs |] [d| x = b; xs = relAlign p ks kv b c h fd |])
+  [ $(normalSV (P( [] )) (P( [] )) (P( [] )))
+    ==> $(update (P( [] )) (P( [] )) (D( )))
+  , $(normal (Q( \(s:ss) (v:vs) -> p s && ks s == kv v )) (Q( \(s:ss) -> p s )))
+    ==> $(update (P( x:xs )) (P( x:xs )) (D( x = b; xs = relAlign p ks kv b c h fd )))
 
-  , $(adaptive [| \(s:ss) v -> p s && null v|])
+  , $(adaptive (Q( \(s:ss) v -> p s && null v)))
     ==> \(s:ss) v -> maybe [] ((:[]) . filterCheck p . fd) (h s) ++ ss
-  , $(normal [| \(s:ss) v -> not (p s) |] [| \(s:ss) -> not (p s) |])
+  , $(normal (Q( \(s:ss) v -> not (p s) )) (Q( \(s:ss) -> not (p s) )))
     ==> Case
-     [ $(adaptive [| \(s:_) _ -> fd s /= s |])
+     [ $(adaptive (Q( \(s:_) _ -> fd s /= s )))
         ==> \(s:ss) _ -> filterCheck (not.p) (fd s) : ss
-     , $(normal [|\_ _ -> True |] [| const True |])
-        ==> $(update [p| _:xs |] [p| xs |] [d| xs = relAlign p ks kv b c h fd |])
+     , $(normal (Q(\_ _ -> True )) (Q( const True )))
+        ==> $(update (P( _:xs )) (P( xs )) (D( xs = relAlign p ks kv b c h fd )))
      ]
-  , $(adaptive [| \ss (v:vs) -> kv v `elem` map ks (filter p ss) |])
+  , $(adaptive (Q( \ss (v:vs) -> kv v `elem` map ks (filter p ss) )))
     ==> \ss (v:_) -> uncurry (:) (extract (kv v) ss)
-  , $(adaptiveSV [p| _ |] [p| _:_ |])
+  , $(adaptiveSV (P( _ )) (P( _:_ )))
     ==> \ss (v:_) -> filterCheck p (c v) : ss
   ]
   where
@@ -322,9 +323,9 @@ u0 d =
     (\r -> (r !! 4) > RInt 2)
     (\s -> (s !! 0, s!!3))
     (\v -> (v !! 0, v !! 2))
-    $(update [p| (t: _: r: a: q: [])|]
-             [p| (t: r: a: q: []) |]
-             [d| t = Replace; r = Replace; a = Replace; q = Replace |])
+    $(update (P( (t: _: r: a: q: [])))
+             (P( (t: r: a: q: []) ))
+             (D( t = Replace; r = Replace; a = Replace; q = Replace )))
     (\(t: r: a: q: []) -> (t: d: r: a: q: []))
     (\rs -> Nothing)
 \end{code}
@@ -361,9 +362,9 @@ u1 d =
     (\r -> (r !! 4) > RInt 2)
     (\s -> (s !! 0, s!!3))
     (\v -> (v !! 0, v !! 2))
-    $(update [p| (t: _: r: a: q: [])|]
-             [p| (t: r: a: q: []) |]
-             [d| t = Replace; r = Replace; a = Replace; q = Replace |])
+    $(update (P( (t: _: r: a: q: [])))
+             (P( (t: r: a: q: []) ))
+             (D( t = Replace; r = Replace; a = Replace; q = Replace )))
     (\(t: r: a: q: []) -> (t: d: r: a: q: []))
     (\(t: d: r: a: _: []) -> Just (t: d: r: a: RInt 0:[]))
 \end{code}

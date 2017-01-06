@@ -1,3 +1,5 @@
+% !TEX root = paper.tex
+
 %% ODER: format ==         = "\mathrel{==}"
 %% ODER: format /=         = "\neq "
 %
@@ -258,6 +260,7 @@
 \EndFmtInput
 %
 
+
 % format { = "\lbag"
 % format } = "\rbag"
 
@@ -330,8 +333,8 @@
 
 
 
-
 \section{Bidirectional programming on lists}
+\label{sec:lists}
 
 \ignore{
 
@@ -364,7 +367,7 @@
 
 }
 
-In this section, we demosntrate that
+In this section, we demonstrate that
 many list functions can be bidirectionalized
 using BiGUL. To show the correspondence with the original list functions,
 we prefix
@@ -373,7 +376,7 @@ the original forward
 functions can be automatically derived from the new putback transformations
 by calling \ensuremath{\Varid{get}}.
 
-We shall focus on bidirectionalize \ensuremath{\Varid{foldr}}, a simple but useful higher order function on lists:\begin{hscode}\SaveRestoreHook
+We shall focus on bidirectionalizing \ensuremath{\Varid{foldr}}, a simple but useful higher-order function on lists:\begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{21}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -388,16 +391,22 @@ We shall focus on bidirectionalize \ensuremath{\Varid{foldr}}, a simple but usef
 where many interesting functions can be defined in terms of \ensuremath{\Varid{foldr}}:\begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{14}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{sum}\mathrel{=}\Varid{foldr}\;(\mathbin{+})\;\mathrm{0}{}\<[E]%
+\>[3]{}\Varid{sum}{}\<[14]%
+\>[14]{}\mathrel{=}\Varid{foldr}\;(\mathbin{+})\;\mathrm{0}{}\<[E]%
 \\
-\>[3]{}\Varid{map}\;\Varid{f}\mathrel{=}\Varid{foldr}\;(\lambda \Varid{a}\;\Varid{r}\to \Varid{f}\;\Varid{a}\mathbin{:}\Varid{r})\;[\mskip1.5mu \mskip1.5mu]{}\<[E]%
+\>[3]{}\Varid{map}\;\Varid{f}{}\<[14]%
+\>[14]{}\mathrel{=}\Varid{foldr}\;(\lambda \Varid{a}\;\Varid{r}\to \Varid{f}\;\Varid{a}\mathbin{:}\Varid{r})\;[\mskip1.5mu \mskip1.5mu]{}\<[E]%
 \\
-\>[3]{}\Varid{filter}\;\Varid{p}\mathrel{=}\Varid{foldr}\;(\lambda \Varid{a}\;\Varid{r}\to \mathbf{if}\;\Varid{p}\;\Varid{a}\;\mathbf{then}\;\Varid{a}\mathbin{:}\Varid{r}\;\mathbf{else}\;\Varid{r})\;[\mskip1.5mu \mskip1.5mu]{}\<[E]%
+\>[3]{}\Varid{filter}\;\Varid{p}{}\<[14]%
+\>[14]{}\mathrel{=}\Varid{foldr}\;(\lambda \Varid{a}\;\Varid{r}\to \mathbf{if}\;\Varid{p}\;\Varid{a}\;\mathbf{then}\;\Varid{a}\mathbin{:}\Varid{r}\;\mathbf{else}\;\Varid{r})\;[\mskip1.5mu \mskip1.5mu]{}\<[E]%
 \\
-\>[3]{}\Varid{reverse}\;\Varid{p}\mathrel{=}\Varid{foldr}\;(\lambda \Varid{a}\;\Varid{r}\to \Varid{r}\plus [\mskip1.5mu \Varid{a}\mskip1.5mu])\;[\mskip1.5mu \mskip1.5mu]{}\<[E]%
+\>[3]{}\Varid{reverse}\;\Varid{p}{}\<[14]%
+\>[14]{}\mathrel{=}\Varid{foldr}\;(\lambda \Varid{a}\;\Varid{r}\to \Varid{r}\plus [\mskip1.5mu \Varid{a}\mskip1.5mu])\;[\mskip1.5mu \mskip1.5mu]{}\<[E]%
 \\
-\>[3]{}\Varid{sort}\mathrel{=}\Varid{foldr}\;\Varid{insert}\;[\mskip1.5mu \mskip1.5mu]{}\<[E]%
+\>[3]{}\Varid{sort}{}\<[14]%
+\>[14]{}\mathrel{=}\Varid{foldr}\;\Varid{insert}\;[\mskip1.5mu \mskip1.5mu]{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 We start by developing a putback version for \ensuremath{\Varid{foldr}}.
@@ -406,49 +415,48 @@ We start by developing a putback version for \ensuremath{\Varid{foldr}}.
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{9}{@{}>{\hspre}c<{\hspost}@{}}%
 \column{9E}{@{}l@{}}%
-\column{12}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{14}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{15}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{19}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{21}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{25}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{60}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{12}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{12E}{@{}l@{}}%
+\column{13}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{16}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{18}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{20}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{62}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[B]{}\Varid{lensFoldr}\mathbin{::}{}\<[15]%
-\>[15]{}(\Conid{Show}\;\Varid{a},\Conid{Show}\;\Varid{b})\Rightarrow {}\<[E]%
+\>[B]{}\Varid{lensFoldr}{}\<[12]%
+\>[12]{}\mathbin{::}{}\<[12E]%
+\>[16]{}(\Conid{Show}\;\Varid{a},\Conid{Show}\;\Varid{b}){}\<[E]%
 \\
-\>[15]{}\Conid{BiGUL}\;(\Varid{a},\Varid{b})\;\Varid{b}\to (\Varid{b}\to \Conid{Bool})\to \Conid{BiGUL}\;([\mskip1.5mu \Varid{a}\mskip1.5mu],\Varid{b})\;\Varid{b}{}\<[E]%
+\>[12]{}\Rightarrow {}\<[12E]%
+\>[16]{}\Conid{BiGUL}\;(\Varid{a},\Varid{b})\;\Varid{b}\to (\Varid{b}\to \Conid{Bool})\to \Conid{BiGUL}\;([\mskip1.5mu \Varid{a}\mskip1.5mu],\Varid{b})\;\Varid{b}{}\<[E]%
 \\
 \>[B]{}\Varid{lensFoldr}\;\Varid{bx}\;\Varid{pv}\mathrel{=}{}\<[E]%
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
 \>[3]{}\Conid{Case}\;{}\<[9]%
 \>[9]{}[\mskip1.5mu {}\<[9E]%
-\>[12]{}\mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \lambda (\Varid{x},\Varid{y})\;\Varid{v}\to \Varid{pv}\;\Varid{v}\mathrel{\wedge}\Varid{length}\;\Varid{x}\not\equiv \mathrm{0}\mid \mskip1.5mu]){}\<[E]%
+\>[13]{}{^\$}(\Varid{adaptive}\;[\kern-1.5pt[\,\lambda (\Varid{x},\Varid{y})\;\Varid{v}\to \Varid{pv}\;\Varid{v}\mathrel{\wedge}\Varid{length}\;\Varid{x}\not\equiv \mathrm{0}\,]\kern-1.5pt]){}\<[E]%
 \\
-\>[12]{}\hsindent{2}{}\<[14]%
-\>[14]{}\Longrightarrow\lambda (\Varid{x},\Varid{y})\;\Varid{v}\to ([\mskip1.5mu \mskip1.5mu],\Varid{y}){}\<[E]%
-\\
-\>[9]{},{}\<[9E]%
-\>[12]{}\mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda (\Varid{xs},\anonymous )\;\Varid{v}\to \Varid{null}\;\Varid{xs}\mid \mskip1.5mu]\;[\mskip1.5mu \mid \lambda (\Varid{xs},\anonymous )\to \Varid{null}\;\Varid{xs}\mid \mskip1.5mu]){}\<[E]%
-\\
-\>[12]{}\hsindent{2}{}\<[14]%
-\>[14]{}\Longrightarrow{}\<[19]%
-\>[19]{}\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda \Varid{v}\to ((),\Varid{v})\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
-\\
-\>[19]{}\hsindent{6}{}\<[25]%
-\>[25]{}\mathbin{\$}(\Varid{update}\;[\mskip1.5mu \Varid{p}\mid (\anonymous ,\Varid{v})\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid ((),\Varid{v})\mid \mskip1.5mu]\;[\mskip1.5mu \Varid{d}\mid \Varid{v}\mathrel{=}\Conid{Replace}\mid \mskip1.5mu]){}\<[E]%
+\>[13]{}\Longrightarrow\lambda (\Varid{x},\Varid{y})\;\Varid{v}\to ([\mskip1.5mu \mskip1.5mu],\Varid{y}){}\<[E]%
 \\
 \>[9]{},{}\<[9E]%
-\>[12]{}\mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \mid \lambda (\Varid{xs},\anonymous )\to not\;(\Varid{null}\;\Varid{xs})\mid \mskip1.5mu]){}\<[E]%
+\>[13]{}{^\$}(\Varid{normal}\;[\kern-1.5pt[\,\lambda (\Varid{xs},\anonymous )\;\Varid{v}\to \Varid{null}\;\Varid{xs}\,]\kern-1.5pt]\;[\kern-1.5pt[\,\lambda (\Varid{xs},\anonymous )\to \Varid{null}\;\Varid{xs}\,]\kern-1.5pt]){}\<[E]%
 \\
-\>[12]{}\hsindent{2}{}\<[14]%
-\>[14]{}\Longrightarrow{}\<[19]%
-\>[19]{}\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda ((\Varid{x}\mathbin{:}\Varid{xs}),\Varid{e})\to (\Varid{x},(\Varid{xs},\Varid{e})){}\<[60]%
-\>[60]{}\mid \mskip1.5mu])\;{}\<[E]%
+\>[13]{}\Longrightarrow{}\<[18]%
+\>[18]{}{^\$}(\Varid{rearrV}\;[\kern-1.5pt[\,\lambda \Varid{v}\to ((),\Varid{v})\,]\kern-1.5pt]){^\$}{}\<[E]%
 \\
-\>[19]{}\hsindent{2}{}\<[21]%
-\>[21]{}(\Conid{Replace}\mathbin{`\Conid{Prod}`}\Varid{lensFoldr}\;\Varid{bx}\;\Varid{pv})\mathbin{`\Conid{Compose}`}\Varid{bx}{}\<[E]%
+\>[18]{}\hsindent{2}{}\<[20]%
+\>[20]{}{^\$}(\Varid{update}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,(\anonymous ,\Varid{v})\,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,((),\Varid{v})\,]\kern-1.5pt]\;{^\mathbb{D}}[\kern-1.5pt[\,\Varid{v}\mathrel{=}\Conid{Replace}\,]\kern-1.5pt]){}\<[E]%
+\\
+\>[9]{},{}\<[9E]%
+\>[13]{}{^\$}(\Varid{normalSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \,]\kern-1.5pt]\;[\kern-1.5pt[\,\lambda (\Varid{xs},\anonymous )\to not\;(\Varid{null}\;\Varid{xs})\,]\kern-1.5pt]){}\<[E]%
+\\
+\>[13]{}\Longrightarrow{}\<[18]%
+\>[18]{}{^\$}(\Varid{rearrS}\;[\kern-1.5pt[\,\lambda ((\Varid{x}\mathbin{:}\Varid{xs}),\Varid{e})\to (\Varid{x},(\Varid{xs},\Varid{e}))\,]\kern-1.5pt]{}\<[62]%
+\>[62]{}){^\$}{}\<[E]%
+\\
+\>[18]{}\hsindent{2}{}\<[20]%
+\>[20]{}(\Conid{Replace}\mathbin{`\Conid{Prod}`}\Varid{lensFoldr}\;\Varid{bx}\;\Varid{pv})\mathbin{`\Conid{Compose}`}\Varid{bx}{}\<[E]%
 \\
 \>[9]{}\mskip1.5mu]{}\<[9E]%
 \ColumnHook
@@ -483,7 +491,7 @@ of view. As the first example, \ensuremath{\Varid{map}} can be defined in terms 
 \>[B]{}\hsindent{4}{}\<[4]%
 \>[4]{}\mathbf{where}\;{}\<[11]%
 \>[11]{}\Varid{bx'}\mathrel{=}{}\<[18]%
-\>[18]{}\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda (\Varid{v}\mathbin{:}\Varid{vs})\to (\Varid{v},\Varid{vs})\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\>[18]{}{^\$}(\Varid{rearrV}\;[\kern-1.5pt[\,\lambda (\Varid{v}\mathbin{:}\Varid{vs})\to (\Varid{v},\Varid{vs})\,]\kern-1.5pt]){^\$}{}\<[E]%
 \\
 \>[18]{}\hsindent{3}{}\<[21]%
 \>[21]{}\Varid{bx}\mathbin{`\Conid{Prod}`}\Conid{Replace}{}\<[E]%
@@ -514,39 +522,38 @@ the bijective functions for increasing and decreasing an integer by \ensuremath{
 \ColumnHook
 \end{hscode}\resethooks
  
-The second example is to bidirectinalize \ensuremath{\Varid{reverse}}, which is to reverse the
+The second example is to bidirectionalize \ensuremath{\Varid{reverse}}, which is to reverse the
 elements of a list.
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{16}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{22}{@{}>{\hspre}c<{\hspost}@{}}%
-\column{22E}{@{}l@{}}%
-\column{25}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{27}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{33}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{9E}{@{}l@{}}%
+\column{12}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{17}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{19}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[B]{}\Varid{lensReverse}\mathbin{::}\Conid{Show}\;\Varid{a}\Rightarrow \Conid{BiGUL}\;[\mskip1.5mu \Varid{a}\mskip1.5mu]\;[\mskip1.5mu \Varid{a}\mskip1.5mu]{}\<[E]%
 \\
-\>[B]{}\Varid{lensReverse}\mathrel{=}{}\<[16]%
-\>[16]{}\Conid{Case}\;{}\<[22]%
-\>[22]{}[\mskip1.5mu {}\<[22E]%
+\>[B]{}\Varid{lensReverse}\mathrel{=}{}\<[E]%
 \\
-\>[22]{}\hsindent{3}{}\<[25]%
-\>[25]{}\mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \lambda \Varid{s}\;\Varid{v}\to \Varid{length}\;\Varid{s}\mathbin{<}\Varid{length}\;\Varid{v}\mid \mskip1.5mu]){}\<[E]%
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Conid{Case}\;{}\<[9]%
+\>[9]{}[\mskip1.5mu {}\<[9E]%
+\>[12]{}{^\$}(\Varid{adaptive}\;[\kern-1.5pt[\,\lambda \Varid{s}\;\Varid{v}\to \Varid{length}\;\Varid{s}\mathbin{<}\Varid{length}\;\Varid{v}\,]\kern-1.5pt]){}\<[E]%
 \\
-\>[25]{}\hsindent{2}{}\<[27]%
-\>[27]{}\Longrightarrow\lambda \Varid{s}\;\Varid{v}\to \Varid{v}{}\<[E]%
+\>[12]{}\Longrightarrow\lambda \Varid{s}\;\Varid{v}\to \Varid{v}{}\<[E]%
 \\
-\>[22]{},{}\<[22E]%
-\>[25]{}\mathbin{\$}(\Varid{normalSV}\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \Varid{p}\mid \anonymous \mid \mskip1.5mu]\;[\mskip1.5mu \mid \lambda \Varid{s}\to \Conid{True}\mid \mskip1.5mu]){}\<[E]%
+\>[9]{},{}\<[9E]%
+\>[12]{}{^\$}(\Varid{normalSV}\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \,]\kern-1.5pt]\;\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\,\anonymous \,]\kern-1.5pt]\;[\kern-1.5pt[\,\lambda \Varid{s}\to \Conid{True}\,]\kern-1.5pt]){}\<[E]%
 \\
-\>[25]{}\hsindent{2}{}\<[27]%
-\>[27]{}\Longrightarrow\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda \Varid{s}\to (\Varid{s},[\mskip1.5mu \mskip1.5mu])\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\>[12]{}\Longrightarrow{}\<[17]%
+\>[17]{}{^\$}(\Varid{rearrS}\;[\kern-1.5pt[\,\lambda \Varid{s}\to (\Varid{s},[\mskip1.5mu \mskip1.5mu])\,]\kern-1.5pt]){^\$}{}\<[E]%
 \\
-\>[27]{}\hsindent{6}{}\<[33]%
-\>[33]{}\Varid{lensFoldr}\;(\Varid{lensSwap}\mathbin{`\Conid{Compose}`}\Varid{lensSnoc})\;\Varid{null}{}\<[E]%
+\>[17]{}\hsindent{2}{}\<[19]%
+\>[19]{}\Varid{lensFoldr}\;(\Varid{lensSwap}\mathbin{`\Conid{Compose}`}\Varid{lensSnoc})\;\Varid{null}{}\<[E]%
 \\
-\>[22]{}\mskip1.5mu]{}\<[22E]%
+\>[9]{}\mskip1.5mu]{}\<[9E]%
 \ColumnHook
 \end{hscode}\resethooks
 When the source is shorter than the view, we add more elements to the source
@@ -555,45 +562,55 @@ we could do other ways by, say, duplicating elements in the source). When the so
 to update the cons-list of the source.
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{18}{@{}>{\hspre}c<{\hspost}@{}}%
-\column{18E}{@{}l@{}}%
-\column{21}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{24}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{31}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{35}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{9}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{9E}{@{}l@{}}%
+\column{11}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{11E}{@{}l@{}}%
+\column{12}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{15}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{18}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{20}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[B]{}\Varid{lensSnoc}\mathbin{::}\Conid{Show}\;\Varid{a}\Rightarrow \Conid{BiGUL}\;([\mskip1.5mu \Varid{a}\mskip1.5mu],\Varid{a})\;[\mskip1.5mu \Varid{a}\mskip1.5mu]{}\<[E]%
+\>[B]{}\Varid{lensSnoc}{}\<[11]%
+\>[11]{}\mathbin{::}{}\<[11E]%
+\>[15]{}\Conid{Show}\;\Varid{a}\Rightarrow \Conid{BiGUL}\;([\mskip1.5mu \Varid{a}\mskip1.5mu],\Varid{a})\;[\mskip1.5mu \Varid{a}\mskip1.5mu]{}\<[E]%
 \\
-\>[B]{}\Varid{lensSnoc}\mathrel{=}\Conid{Case}\;{}\<[18]%
-\>[18]{}[\mskip1.5mu {}\<[18E]%
-\>[21]{}\mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda \Varid{s}\;\Varid{v}\to \Varid{length}\;\Varid{v}\equiv \mathrm{1}\mid \mskip1.5mu]\;[\mskip1.5mu \mid \lambda (\Varid{s},\anonymous )\to \Varid{null}\;\Varid{s}\mid \mskip1.5mu]){}\<[E]%
+\>[B]{}\Varid{lensSnoc}{}\<[11]%
+\>[11]{}\mathrel{=}{}\<[11E]%
 \\
-\>[21]{}\hsindent{3}{}\<[24]%
-\>[24]{}\Longrightarrow\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda [\mskip1.5mu \Varid{v}\mskip1.5mu]\to ([\mskip1.5mu \mskip1.5mu],\Varid{v})\mid \mskip1.5mu])\;\Conid{Replace}{}\<[E]%
+\>[B]{}\hsindent{3}{}\<[3]%
+\>[3]{}\Conid{Case}\;{}\<[9]%
+\>[9]{}[\mskip1.5mu {}\<[9E]%
+\>[12]{}{^\$}(\Varid{normal}\;[\kern-1.5pt[\,\lambda \Varid{s}\;\Varid{v}\to \Varid{length}\;\Varid{v}\equiv \mathrm{1}\,]\kern-1.5pt]\;[\kern-1.5pt[\,\lambda (\Varid{s},\anonymous )\to \Varid{null}\;\Varid{s}\,]\kern-1.5pt]){}\<[E]%
 \\
-\>[18]{},{}\<[18E]%
-\>[21]{}\mathbin{\$}(\Varid{normal}\;[\mskip1.5mu \mid \lambda (\Varid{s},\anonymous )\;\Varid{v}\to \Varid{length}\;\Varid{s}\mathbin{>}\mathrm{0}\mid \mskip1.5mu]\;[\mskip1.5mu \mid \lambda (\Varid{s},\anonymous )\to \Varid{length}\;\Varid{s}\mathbin{>}\mathrm{0}\mid \mskip1.5mu]){}\<[E]%
+\>[12]{}\Longrightarrow{^\$}(\Varid{rearrV}\;[\kern-1.5pt[\,\lambda [\mskip1.5mu \Varid{v}\mskip1.5mu]\to ([\mskip1.5mu \mskip1.5mu],\Varid{v})\,]\kern-1.5pt])\;\Conid{Replace}{}\<[E]%
 \\
-\>[21]{}\hsindent{3}{}\<[24]%
-\>[24]{}\Longrightarrow\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{y}\mathbin{:}\Varid{ys},\Varid{x})\to (\Varid{y},(\Varid{ys},\Varid{x}))\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\>[9]{},{}\<[9E]%
+\>[12]{}{^\$}(\Varid{normal}\;[\kern-1.5pt[\,\lambda (\Varid{s},\anonymous )\;\Varid{v}\to \Varid{length}\;\Varid{s}\mathbin{>}\mathrm{0}\,]\kern-1.5pt]\;[\kern-1.5pt[\,\lambda (\Varid{s},\anonymous )\to \Varid{length}\;\Varid{s}\mathbin{>}\mathrm{0}\,]\kern-1.5pt]){}\<[E]%
 \\
-\>[24]{}\hsindent{7}{}\<[31]%
-\>[31]{}\mathbin{\$}(\Varid{rearrV}\;[\mskip1.5mu \mid \lambda (\Varid{v}\mathbin{:}\Varid{vs})\to (\Varid{v},\Varid{vs})\mid \mskip1.5mu])\mathbin{\$}{}\<[E]%
+\>[12]{}\Longrightarrow{^\$}(\Varid{rearrS}\;[\kern-1.5pt[\,\lambda (\Varid{y}\mathbin{:}\Varid{ys},\Varid{x})\to (\Varid{y},(\Varid{ys},\Varid{x}))\,]\kern-1.5pt]){^\$}{}\<[E]%
 \\
-\>[31]{}\hsindent{4}{}\<[35]%
-\>[35]{}\Conid{Replace}\mathbin{`\Conid{Prod}`}\Varid{lensSnoc}{}\<[E]%
+\>[12]{}\hsindent{6}{}\<[18]%
+\>[18]{}{^\$}(\Varid{rearrV}\;[\kern-1.5pt[\,\lambda (\Varid{v}\mathbin{:}\Varid{vs})\to (\Varid{v},\Varid{vs})\,]\kern-1.5pt]){^\$}{}\<[E]%
 \\
-\>[18]{},{}\<[18E]%
-\>[21]{}\mathbin{\$}(\Varid{adaptive}\;[\mskip1.5mu \mid \lambda (\Varid{s},\anonymous )\;\Varid{v}\to \Varid{null}\;\Varid{s}\mid \mskip1.5mu]){}\<[E]%
+\>[18]{}\hsindent{2}{}\<[20]%
+\>[20]{}\Conid{Replace}\mathbin{`\Conid{Prod}`}\Varid{lensSnoc}{}\<[E]%
 \\
-\>[21]{}\hsindent{3}{}\<[24]%
-\>[24]{}\Longrightarrow\lambda (\Varid{s},\Varid{x})\;\anonymous \to ([\mskip1.5mu \bot \mskip1.5mu],\Varid{x}){}\<[E]%
+\>[9]{},{}\<[9E]%
+\>[12]{}{^\$}(\Varid{adaptive}\;[\kern-1.5pt[\,\lambda (\Varid{s},\anonymous )\;\Varid{v}\to \Varid{null}\;\Varid{s}\,]\kern-1.5pt]){}\<[E]%
 \\
-\>[18]{}\mskip1.5mu]{}\<[18E]%
+\>[12]{}\Longrightarrow\lambda (\Varid{s},\Varid{x})\;\anonymous \to ([\mskip1.5mu \bot \mskip1.5mu],\Varid{x}){}\<[E]%
+\\
+\>[9]{}\mskip1.5mu]{}\<[9E]%
 \\[\blanklineskip]%
-\>[B]{}\Varid{lensSwap}\mathbin{::}(\Conid{Show}\;\Varid{a},\Conid{Show}\;\Varid{b})\Rightarrow \Conid{BiGUL}\;(\Varid{a},\Varid{b})\;(\Varid{b},\Varid{a}){}\<[E]%
+\>[B]{}\Varid{lensSwap}{}\<[11]%
+\>[11]{}\mathbin{::}{}\<[11E]%
+\>[15]{}(\Conid{Show}\;\Varid{a},\Conid{Show}\;\Varid{b})\Rightarrow \Conid{BiGUL}\;(\Varid{a},\Varid{b})\;(\Varid{b},\Varid{a}){}\<[E]%
 \\
-\>[B]{}\Varid{lensSwap}\mathrel{=}\mathbin{\$}(\Varid{rearrS}\;[\mskip1.5mu \mid \lambda (\Varid{x},\Varid{y})\to (\Varid{y},\Varid{x})\mid \mskip1.5mu])\;\Conid{Replace}{}\<[E]%
+\>[B]{}\Varid{lensSwap}{}\<[11]%
+\>[11]{}\mathrel{=}{}\<[11E]%
+\>[15]{}{^\$}(\Varid{rearrS}\;[\kern-1.5pt[\,\lambda (\Varid{x},\Varid{y})\to (\Varid{y},\Varid{x})\,]\kern-1.5pt])\;\Conid{Replace}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 
@@ -631,16 +648,16 @@ times as the number of calls of \ensuremath{\Conid{Compose}}. Put it more concre
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{put}\;(\Varid{lensFoldr}\;\Varid{bx}\;(\Varid{const}\;\Conid{True}))\;([\mskip1.5mu \Varid{x1},\Varid{x2},\mathbin{...},\Varid{xn}\mskip1.5mu],\Varid{e})\;\Varid{v}{}\<[E]%
+\>[3]{}\Varid{put}\;(\Varid{lensFoldr}\;\Varid{bx}\;(\Varid{const}\;\Conid{True}))\;([\mskip1.5mu \Varid{x1},\Varid{x2},\ldots,\Varid{xn}\mskip1.5mu],\Varid{e})\;\Varid{v}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 would call\begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{get}\;(\Varid{lensFoldr}\;\Varid{bx}\;(\Varid{const}\;\Conid{True}))\;([\mskip1.5mu \Varid{x2},\mathbin{...},\Varid{xn}\mskip1.5mu],\Varid{e}),{}\<[E]%
+\>[3]{}\Varid{get}\;(\Varid{lensFoldr}\;\Varid{bx}\;(\Varid{const}\;\Conid{True}))\;([\mskip1.5mu \Varid{x2},\ldots,\Varid{xn}\mskip1.5mu],\Varid{e}),{}\<[E]%
 \\
-\>[3]{}\mathbin{...},{}\<[E]%
+\>[3]{}\ldots,{}\<[E]%
 \\
 \>[3]{}\Varid{get}\;(\Varid{lensFoldr}\;\Varid{bx}\;(\Varid{const}\;\Conid{True}))\;([\mskip1.5mu \mskip1.5mu],\Varid{e})\mathbin{\circ}{}\<[E]%
 \ColumnHook

@@ -18,6 +18,7 @@ National Institute of Informatics, Japan\\
 \usepackage{graphicx}
 \usepackage{amssymb}
 \usepackage{amsmath}
+\usepackage{mathtools}
 %\usepackage{amsthm}
 \usepackage{enumerate}
 \usepackage{xspace}
@@ -50,16 +51,14 @@ National Institute of Informatics, Japan\\
 Putback-based bidirectional programming allows the programmer to write
 only one putback transformation, from which the unique corresponding
 forward transformation is derived for free. A key distinguishing
-feature of putback-based bidirectional programming is its full control
-over the bidirectional behavior, which is important to specify
+feature of putback-based bidirectional programming is full control
+over the bidirectional behavior, which is important for specifying
 intended bidirectional transformations without any ambiguity.
-
-In this tutorial, we will introduce BiGUL, a simple but powerful
-putback-based bidirectional programming language, explaining its
-principle, showing how to develop various of bidirectional
-transformations in BiGUL, demonstrating its application to adaptive
-software development, and highlighting important issues and challenges
-for future work.
+In this tutorial, we will introduce BiGUL, a simple yet powerful
+putback-based bidirectional programming language, explaining the underlying
+principles and showing how various kinds of bidirectional
+applications can be developed in BiGUL.
+%and highlighting important issues and challenges for future work.
 
 \ignore{
 three slots:
@@ -91,7 +90,7 @@ Schedule:
 \input{Alignment}
 \input{Brul}
 \input{BiYacc}
-\input{Conclusion}
+%\input{Conclusion}
 
 \bibliographystyle{splncs03}
 %\bibliographystyle{abbrvnat}

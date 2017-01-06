@@ -3,8 +3,9 @@
 %include lhs2TeX-macros.lhs
 
 \section{BiGUL's Bidirectionality}
+\label{sec:bidirectionality}
 
-We have been writing |put| programs, usually having a corresponding |get| in mind but not explicitly describing it, and yet BiGUL is capable of finding the right |get| behaviour as if it could our mind. How?
+We have been writing |put| programs, usually having a corresponding |get| in mind but not explicitly describing it, and yet BiGUL is capable of finding the right |get| behaviour as if it could read our mind. How?
 We will see that, when writing a BiGUL program, we are always simultaneously describing both a |put| function and a |get| function, which are guaranteed to be a well-behaved pair.
 And the ``mind-reading'' ability is far from magic:
 It is the consequence of the fact that well-behavedness directly implies that |get| is uniquely determined by |put|, which is the main motivation for designing a putback-based language.
@@ -25,7 +26,7 @@ satisfying two well-behavedness laws:
 |get s| = \rlap{|Just v|}\phantom{|Just s'|} \quad&\Rightarrow\quad |put s v| = |Just s| \tag{\textsc{GetPut}} \label{eq:GetPut}
 \end{align}
 \end{definition}
-In the original formulation~\cite{Lenses}, a lens refers to just a pair of functions having the right types, and one needs to explicitly say ``well-behaved lens'' to mean a well-behaved pair; we will, however, talk about well-behaved lenses only, so we build well-behavedness into our definition of lenses by default.
+In the original formulation~\cite{Lenses}, a lens refers to just a pair of functions having the right types, and one needs to explicitly say ``well-behaved lens'' to mean a well-behaved pair; we will, however, discuss well-behaved lenses only, so we build well-behavedness into our definition of lenses by default.
 Also note that this definition models partial transformations explicitly as |Maybe|-valued functions: |put| and |get| are \emph{total} functions that can nevertheless produce |Nothing| to indicate failure.
 
 From this definition of well-behavedness, we can immediately prove what might be called the ``fundamental theorem'' of putback-based bidirectional programming:
@@ -405,7 +406,7 @@ Notice that an environment type is just a product of |Var| types --- for example
 |(Var a, Var [a])|
 \label{eq:cons-environment}
 \end{equation}
-We will talk about |Var| later, which is simply defined by
+We will discuss |Var| later, which is simply defined by
 \begin{spec}
 newtype Var a = Var a
 \end{spec}
