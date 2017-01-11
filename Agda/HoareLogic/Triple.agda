@@ -12,10 +12,13 @@ open import HoareLogic.Case
 
 open import Level using (lift)
 open import Function
+open import Data.Empty
 open import Data.Product as Product
 open import Data.Bool
 open import Data.Nat as Nat
+open import Data.Nat.Properties
 open import Data.List as List
+open import Relation.Nullary
 open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
 
@@ -144,11 +147,18 @@ expandTriple :
   {n : ℕ} {F : Functor n} {S V : U n} (f : BiGUL F S V → BiGUL F S V)
   (measure : ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F) → ℕ) →
   (R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))) (R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))) →
-  ((n : ℕ) (rec : BiGUL F S V) → ((m : ℕ) → m < n → Triple (R ∩ ((_≡ m) ∘ measure)) rec R') →
+  ((n : ℕ) (rec : BiGUL F S V) → ((m : ℕ) → Triple (R ∩ ((_≡ m) ∘ measure) ∩ (λ _ → m < n)) rec R') →
                                  Triple (R ∩ ((_≡ n) ∘ measure)) (f rec) R') →
-  (n : ℕ) (m : ℕ) → m ≤ n → Triple (R ∩ ((_≡ m) ∘ measure)) (expand (suc n) f) R'
-expandTriple f measure R R' g zero    .zero    z≤n      = g zero fail (λ _ ())
-expandTriple f measure R R' g (suc n) .zero    z≤n      = g zero (f (expand n f)) (λ _ ())
-expandTriple f measure R R' g (suc n) (suc m) (s≤s m≤n) =
-  g (suc m) (f (expand n f))
-    (λ { m' (s≤s m'≤m) → expandTriple f measure R R' g n m' (DecTotalOrder.trans Nat.decTotalOrder m'≤m m≤n) })
+  (l n : ℕ) → n ≤ l → Triple (R ∩ ((_≡ n) ∘ measure)) (expand (suc l) f) R'
+expandTriple f measure R R' g zero   .zero z≤n     = g zero fail (λ m → conseq (λ { (_ , _ , ()) }) fail proj₁)
+expandTriple f measure R R' g (suc l) n    n≤suc-l = g n (expand (suc l) f) aux
+  where
+    aux : (m : ℕ) → Triple (R ∩ ((_≡ m) ∘ measure) ∩ (λ _ → m < n)) (expand (suc l) f) R'
+    aux m with suc m ≤? n
+    aux m | yes m<n = conseq (Product.map id proj₁)
+                             (expandTriple f measure R R' g l m
+                                (≤-pred (DecTotalOrder.trans Nat.decTotalOrder m<n n≤suc-l)))
+                             proj₁
+    aux m | no ¬m<n = conseq (λ { (_ , _ , m<n) → ⊥-elim (¬m<n m<n) })
+                             (expandTriple f measure R R' g l l (DecTotalOrder.refl Nat.decTotalOrder))
+                             proj₁
