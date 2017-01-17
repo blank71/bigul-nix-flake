@@ -54,7 +54,7 @@ replace²-equal-view-correctness : Triple (uncurry _≡_ ∘ proj₂) replace² 
 replace²-equal-view-correctness =
   conseq
     (λ _ → tt , tt)
-    (prod _ _ replace _ _ replace)
+    (prod replace replace)
     (λ { {(x' , y') , (x , y) , (z , w)} ((x'≡z , y'≡w) , z≡w) → trans x'≡z (trans z≡w (sym y'≡w)) , cong₂ _,_ x'≡z y'≡w })
 
 updateWidth : BiGUL emptyF (kℕ ⊗ kℕ) kℕ
@@ -67,7 +67,7 @@ updateWidth-correctness =
     (rearrV Π (λ { ((w' , h') , (_ , h) , v) → w' ≡ v × h' ≡ h })
        (conseq
           (λ _ → tt , refl)
-          (prod _ _ replace _ _ skip)
+          (prod replace skip)
           (λ { {(.v , .h) , (w , h) , (v , _)} ((refl , refl) , _) → _ , (refl , refl) , refl , refl })))
     (λ { {(w' , .h) , (w , h) , v} ((._ , (eq , refl) , refl) , _) → eq , refl })
 
