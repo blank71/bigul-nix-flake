@@ -79,6 +79,10 @@ extract keq ks kv v (s ∷ᴹ ss) | no  _ with extract keq ks kv v ss
 extract keq ks kv v (s ∷ᴹ ss) | no  _ | []ᴹ         = s ∷ᴹ []ᴹ
 extract keq ks kv v (s ∷ᴹ ss) | no  _ | (s' ∷ᴹ ss') = s' ∷ᴹ s ∷ᴹ ss'
 
+headMatch : {K : Set} → Decidable (_≡_ {A = K}) → (S → K) → (V → K) → ListS → ListV → Bool
+headMatch keq ks kv (s ∷ᴹ _) (v ∷ᴹ _) = ⌊ keq (ks s) (kv v) ⌋
+headMatch keq ks kv _        _        = false
+
 keyAlignᴮ : {K : Set} → Decidable (_≡_ {A = K}) → (S → K) → (V → K) → BiGUL F Sᵁ Vᵁ → (V → S) →
             BiGUL F (var zero) (var (suc zero)) → BiGUL F (var zero) (var (suc zero))
 keyAlignᴮ keq ks kv b c rec = case
@@ -87,7 +91,7 @@ keyAlignᴮ keq ks kv b c rec = case
       (rearrV (con (left (k tt))) (k {G = one} tt) tt (return refl)
          (skip (const tt)))
       (λ { []ᴹ → true; _ → false })) ∷
-   ((λ { (s ∷ᴹ _) (v ∷ᴹ _) → ⌊ keq (ks s) (kv v) ⌋ ; _ _ → false }) ,
+   (headMatch keq ks kv ,
     normal
       (rearrS (con (right (prod var var))) (prod var var) (inj₁ refl , inj₂ refl) (return refl >>= return refl)
          (rearrV (con (right (prod var var))) (prod var var) ((inj₁ refl , inj₂ refl)) (return refl >>= return refl)
@@ -95,7 +99,7 @@ keyAlignᴮ keq ks kv b c rec = case
       (λ { (_ ∷ᴹ _) → true; _ → false })) ∷
    ((λ { (_ ∷ᴹ _) []ᴹ → true ; _ _ → false }) ,
     adaptive (λ _ _ → []ᴹ)) ∷
-   ((λ { ss (v ∷ᴹ _) → ⌊ Any.any (keq (kv v)) (List.map ks (toList₀ ss)) ⌋; _ _ → false }) ,
+   ((λ { ss (v ∷ᴹ _) → ⌊ Any.any (λ s → keq (ks s) (kv v)) (toList₀ ss) ⌋; _ _ → false }) ,
     adaptive (λ { ss (v ∷ᴹ _) → extract keq ks kv v ss; ss _ → ss })) ∷
    ((λ { _ (_ ∷ᴹ _) → true; _ _ → false }) ,
     adaptive (λ { ss (v ∷ᴹ _) → c v ∷ᴹ ss; ss _ → ss } )) ∷ [])
@@ -122,6 +126,107 @@ Post ks kv R' (ss' , ss , vs) =
 
 pred-lemma : {m n : ℕ} → suc m ≡ n → pred n < n
 pred-lemma refl = DecTotalOrder.refl Nat.decTotalOrder
+
+-- firstMatch : {K : Set} (keq : Decidable (_≡_ {A = K})) (ks : S → K) (vk : K) (ss : List S) →
+--              Any (λ s → ks s ≡ vk) ss →
+--              Σ[ i ∈ Any (λ s → ks s ≡ vk) ss ] Count (λ s → ks s ≡ vk) (zero , take (toℕ (index i)) ss)
+-- firstMatch keq ks vk []       ()
+-- firstMatch keq ks vk (s ∷ ss) i              with keq (ks s) vk
+-- firstMatch keq ks vk (s ∷ ss) i              | yes ks-s≡vk = here ks-s≡vk , []
+-- firstMatch keq ks vk (s ∷ ss) (here ks-s≡vk) | no  ks-s≢vk with ks-s≢vk ks-s≡vk
+-- firstMatch keq ks vk (s ∷ ss) (here ks-s≡vk) | no  ks-s≢vk | ()
+-- firstMatch keq ks vk (s ∷ ss) (there i     ) | no  ks-s≢vk = Product.map there (ks-s≢vk ∷ⁿ_) (firstMatch keq ks vk ss i)
+
+extract-reentry :
+  {K : Set} (keq : Decidable (_≡_ {A = K})) (ks : S → K) (kv : V → K) (ss : ListS) (v : V) (vs : ListV) →
+  Any (λ s → ks s ≡ kv v) (toList₀ ss) → headMatch keq ks kv (extract keq ks kv v ss) (v ∷ᴹ vs) ≡ true
+extract-reentry keq ks kv []ᴹ       v vs ()
+extract-reentry keq ks kv (s ∷ᴹ ss) v vs i                with keq (ks s) (kv v)
+extract-reentry keq ks kv (s ∷ᴹ ss) v vs i                | yes ks-s≡kv-v = trueFromWitness ks-s≡kv-v
+extract-reentry keq ks kv (s ∷ᴹ ss) v vs (here ks-s≡kv-v) | no  ks-s≢kv-v with ks-s≢kv-v ks-s≡kv-v
+extract-reentry keq ks kv (s ∷ᴹ ss) v vs (here ks-s≡kv-v) | no  ks-s≢kv-v | ()
+extract-reentry keq ks kv (s ∷ᴹ ss) v vs (there i       ) | no  ks-s≢kv-v with extract-reentry keq ks kv ss v vs i
+extract-reentry keq ks kv (s ∷ᴹ ss) v vs (there i       ) | no  ks-s≢kv-v | rec with extract keq ks kv v ss
+extract-reentry keq ks kv (s ∷ᴹ ss) v vs (there i       ) | no  ks-s≢kv-v | ()  | []ᴹ
+extract-reentry keq ks kv (s ∷ᴹ ss) v vs (there i       ) | no  ks-s≢kv-v | rec | s' ∷ᴹ ss' = rec
+
+extract-reindex : 
+  {K : Set} (keq : Decidable (_≡_ {A = K})) (ks : S → K) (kv : V → K) (ss : ListS) (v : V) (s* : S) →
+  Any (s* ≡_) (toList₀ ss) → Any (s* ≡_) (toList₀ (extract keq ks kv v ss))
+extract-reindex keq ks kv []ᴹ       v s*  ()
+extract-reindex keq ks kv (s ∷ᴹ ss) v s*  i           with keq (ks s) (kv v)
+extract-reindex keq ks kv (s ∷ᴹ ss) v s*  i           | yes ks-s≡kv-v = i
+extract-reindex keq ks kv (s ∷ᴹ ss) v .s  (here refl) | no  ks-s≢kv-v with extract keq ks kv v ss
+extract-reindex keq ks kv (s ∷ᴹ ss) v .s  (here refl) | no  ks-s≢kv-v | []ᴹ       = here refl
+extract-reindex keq ks kv (s ∷ᴹ ss) v .s  (here refl) | no  ks-s≢kv-v | s' ∷ᴹ ss' = there (here refl)
+extract-reindex keq ks kv (s ∷ᴹ ss) v s*  (there i  ) | no  ks-s≢kv-v with extract-reindex keq ks kv ss v s* i
+extract-reindex keq ks kv (s ∷ᴹ ss) v s*  (there i  ) | no  ks-s≢kv-v | rec with extract keq ks kv v ss
+extract-reindex keq ks kv (s ∷ᴹ ss) v s*  (there i  ) | no  ks-s≢kv-v | ()  | []ᴹ
+extract-reindex keq ks kv (s ∷ᴹ ss) v .s' (there i  ) | no  ks-s≢kv-v | (here refl) | s' ∷ᴹ ss' = here refl
+extract-reindex keq ks kv (s ∷ᴹ ss) v s*  (there i  ) | no  ks-s≢kv-v | (there j  ) | s' ∷ᴹ ss' = there (there j)
+
+extract-head :
+  {K : Set} (keq : Decidable (_≡_ {A = K})) (ks : S → K) (kv : V → K) (ss : ListS) (v : V) →
+  Any ((_≡ kv v) ∘ ks) (toList₀ ss) → Σ (S × ListS) λ { (s' , ss') → extract keq ks kv v ss ≡ s' ∷ᴹ ss' × ks s' ≡ kv v }
+extract-head keq ks kv []ᴹ       v () 
+extract-head keq ks kv (s ∷ᴹ ss) v i                with keq (ks s) (kv v)
+extract-head keq ks kv (s ∷ᴹ ss) v i                | yes ks-s≡kv-v = (s , ss) , refl , ks-s≡kv-v
+extract-head keq ks kv (s ∷ᴹ ss) v (here ks-s≡kv-v) | no  ks-s≢kv-v with ks-s≢kv-v ks-s≡kv-v
+extract-head keq ks kv (s ∷ᴹ ss) v (here ks-s≡kv-v) | no  ks-s≢kv-v | ()
+extract-head keq ks kv (s ∷ᴹ ss) v (there i)        | no  ks-s≢kv-v with extract-head keq ks kv ss v i
+extract-head keq ks kv (s ∷ᴹ ss) v (there i)        | no  ks-s≢kv-v | rec             with extract keq ks kv v ss
+extract-head keq ks kv (s ∷ᴹ ss) v (there i)        | no  ks-s≢kv-v | (_ , () , _)    | []ᴹ
+extract-head keq ks kv (s ∷ᴹ ss) v (there i)        | no  ks-s≢kv-v | (_ , refl , eq) | s' ∷ᴹ ss' = _ , refl , eq
+
+extract-Count : 
+  {K : Set} (keq : Decidable (_≡_ {A = K})) (ks : S → K) (kv : V → K) (ss : ListS) (v : V) →
+  Any ((_≡ kv v) ∘ ks) (toList₀ ss) → (s* : S) (i : Any (s* ≡_) (toList₀ ss)) {m : ℕ} →
+  Count (λ s → ks s* ≡ ks s) (m , take (toℕ (index i)) (toList₀ ss)) →
+  Count (λ s → ks s* ≡ ks s) (m , take (toℕ (index (extract-reindex keq ks kv ss v s* i)))
+                                       (toList₀ (extract keq ks kv v ss)))
+extract-Count keq ks kv []ᴹ       v e                s* ()          c
+extract-Count keq ks kv (s ∷ᴹ ss) v e                s* i           c with keq (ks s) (kv v)
+extract-Count keq ks kv (s ∷ᴹ ss) v e                s* i           c | yes ks-s≡kv-v = c
+extract-Count keq ks kv (s ∷ᴹ ss) v (here ks-s≡kv-v) s* i           c | no  ks-s≢kv-v with ks-s≢kv-v ks-s≡kv-v
+extract-Count keq ks kv (s ∷ᴹ ss) v (here ks-s≡kv-v) s* i           c | no  ks-s≢kv-v | ()
+extract-Count keq ks kv (s ∷ᴹ ss) v (there e)        s* i           c | no  ks-s≢kv-v
+  with extract-head keq ks kv ss v e
+extract-Count keq ks kv (s ∷ᴹ ss) v (there e)        .s (here refl) c | no  ks-s≢kv-v
+  | h with extract keq ks kv v ss
+extract-Count keq ks kv (s ∷ᴹ ss) v (there e)        .s (here refl) c | no  ks-s≢kv-v
+  | h | []ᴹ       = c
+extract-Count keq ks kv (s ∷ᴹ ss) v (there e)        .s (here refl) c | no  ks-s≢kv-v
+  | ._ , refl , ks-s'≡kv-v | s' ∷ᴹ ss' = (λ ks-s≡ks-s' → ks-s≢kv-v (trans ks-s≡ks-s' ks-s'≡kv-v)) ∷ⁿ c
+extract-Count keq ks kv (s ∷ᴹ ss) v (there e)        s* (there i  ) (ks-s*≡ks-s ∷ʸ c) | no  ks-s≢kv-v
+  | h with extract-Count keq ks kv ss v e s* i c
+extract-Count keq ks kv (s ∷ᴹ ss) v (there e)        s* (there i  ) (ks-s*≡ks-s ∷ʸ c) | no  ks-s≢kv-v
+  | h | rec with extract-reindex keq ks kv ss v s* i
+extract-Count keq ks kv (s ∷ᴹ ss) v (there e)        s* (there i  ) (ks-s*≡ks-s ∷ʸ c) | no  ks-s≢kv-v
+  | h | rec | j with extract keq ks kv v ss
+extract-Count keq ks kv (s ∷ᴹ ss) v (there e)        s* (there i  ) (ks-s*≡ks-s ∷ʸ c) | no  ks-s≢kv-v
+  | h | rec | () | []ᴹ
+extract-Count keq ks kv (s ∷ᴹ ss) v (there e)        s* (there i  ) (ks-s*≡ks-s ∷ʸ c) | no  ks-s≢kv-v
+  | ._ , refl , ks-s'≡kv-v | rec | here refl | s' ∷ᴹ ss' with ks-s≢kv-v (trans (sym ks-s*≡ks-s) ks-s'≡kv-v)
+extract-Count keq ks kv (s ∷ᴹ ss) v (there e)        s* (there i  ) (ks-s*≡ks-s ∷ʸ c) | no  ks-s≢kv-v
+  | ._ , refl , ks-s'≡kv-v | rec | here refl | s' ∷ᴹ ss' | ()
+extract-Count keq ks kv (s ∷ᴹ ss) v (there e)        s* (there i  ) (ks-s*≡ks-s ∷ʸ c) | no  ks-s≢kv-v
+  | ._ , refl , ks-s'≡kv-v | ks-s*≡ks-s' ∷ʸ c' | there j | s' ∷ᴹ ss' = ks-s*≡ks-s' ∷ʸ (ks-s*≡ks-s ∷ʸ c')
+extract-Count keq ks kv (s ∷ᴹ ss) v (there e)        s* (there i  ) (ks-s*≡ks-s ∷ʸ c) | no  ks-s≢kv-v
+  | ._ , refl , ks-s'≡kv-v | ks-s*≢ks-s' ∷ⁿ c' | there j | s' ∷ᴹ ss' = ks-s*≢ks-s' ∷ⁿ (ks-s*≡ks-s ∷ʸ c')
+extract-Count keq ks kv (s ∷ᴹ ss) v (there e)        s* (there i  ) (ks-s*≢ks-s ∷ⁿ c) | no  ks-s≢kv-v
+  | h with extract-Count keq ks kv ss v e s* i c
+extract-Count keq ks kv (s ∷ᴹ ss) v (there e)        s* (there i  ) (ks-s*≢ks-s ∷ⁿ c) | no  ks-s≢kv-v
+  | h | rec with extract-reindex keq ks kv ss v s* i
+extract-Count keq ks kv (s ∷ᴹ ss) v (there e)        s* (there i  ) (ks-s*≢ks-s ∷ⁿ c) | no  ks-s≢kv-v
+  | h | rec | j with extract keq ks kv v ss
+extract-Count keq ks kv (s ∷ᴹ ss) v (there e)        s* (there i  ) (ks-s*≢ks-s ∷ⁿ c) | no  ks-s≢kv-v
+  | h | rec | () | []ᴹ
+extract-Count keq ks kv (s ∷ᴹ ss) v (there e)        s* (there i  ) (ks-s*≢ks-s ∷ⁿ c) | no  ks-s≢kv-v
+  | ._ , refl , ks-s'≡kv-v | rec | here refl | s' ∷ᴹ ss' = rec
+extract-Count keq ks kv (s ∷ᴹ ss) v (there e)        s* (there i  ) (ks-s*≢ks-s ∷ⁿ c) | no  ks-s≢kv-v
+  | ._ , refl , ks-s'≡kv-v | ks-s*≡ks-s' ∷ʸ c' | there j | s' ∷ᴹ ss' = ks-s*≡ks-s' ∷ʸ (ks-s*≢ks-s ∷ⁿ c')
+extract-Count keq ks kv (s ∷ᴹ ss) v (there e)        s* (there i  ) (ks-s*≢ks-s ∷ⁿ c) | no  ks-s≢kv-v
+  | ._ , refl , ks-s'≡kv-v | ks-s*≢ks-s' ∷ⁿ c' | there j | s' ∷ᴹ ss' = ks-s*≢ks-s' ∷ⁿ (ks-s*≢ks-s ∷ⁿ c')
 
 keyAlign-correctness :
   {K : Set} (keq : Decidable (_≡_ {A = K})) (ks : S → K) (kv : V → K) (b : BiGUL F Sᵁ Vᵁ) (c : V → S)
@@ -194,14 +299,30 @@ keyAlign-correctness keq ks kv b c R' b-t c-eq n rec rec-t =
          ; {_ ∷ᴹ _ , _ ∷ᴹ _} (_ , () , _) }) ,
       (λ { {_ , []ᴹ    , []ᴹ   } ((_ , () , _) , _)
          ; {_ , []ᴹ    , _ ∷ᴹ _} ((_ , () , _) , _)
-         ; {[]ᴹ    , _ ∷ᴹ _ , []ᴹ   } _ → {!!}
-         ; {_ ∷ᴹ _ , _ ∷ᴹ _ , []ᴹ   } → {!!}
+         ; {[]ᴹ    , _ ∷ᴹ _ , []ᴹ} _ → [] , [] , λ { sᴹ i m cm (suc n) () (s≤s m≤n) }
+         ; {_ ∷ᴹ _ , _ ∷ᴹ _ , []ᴹ} (_ , _ , () , _)
          ; {_ , _ ∷ᴹ _ , _ ∷ᴹ _} ((_ , () , _) , _) })) ∷ᴬ
-     ({!!} ,
-      {!!}) ∷ᴬ
+     ((λ { {_ , []ᴹ} (_ , () , _)
+         ; {[]ᴹ , _ ∷ᴹ _} (vlen , () , _)
+         ; {s ∷ᴹ ss , v ∷ᴹ vs} (vlen , anyeqn , _ , ks-s≢kv-v , _) →
+             vlen , inj₂ (inj₁ (extract-reentry keq ks kv (s ∷ᴹ ss) v vs (trueToWitness anyeqn))) }) ,
+      (λ { {_ , _ , []ᴹ} ((_ , () , _) , _)
+         ; {_ , []ᴹ , _ ∷ᴹ _} ((_ , () , _) , _)
+         ; {ss' , s ∷ᴹ ss , v ∷ᴹ vs} ((vlen , anyeqn , _) , ssᴹ , ew , ret) →
+             ssᴹ , ew ,
+             λ s* i m cm n cn m<n → ret s* (extract-reindex keq ks kv (s ∷ᴹ ss) v s* i) m
+                                        (extract-Count keq ks kv (s ∷ᴹ ss) v (trueToWitness anyeqn) s* i cm) n cn m<n })) ∷ᴬ
      ((λ { {_ , []ᴹ   } (_ , () , _)
          ; {_ , v ∷ᴹ _} (vlen , rest) → vlen , inj₂ (inj₁ (trueFromWitness (c-eq v))) }) ,
-      {!!}) ∷ᴬ [])
+      (λ { {_ , _ , []ᴹ} ((_ , () , _) , _)
+         ; {[]ᴹ , _ , _ ∷ᴹ _} (_ , _ , () , _)
+         ; {s' ∷ᴹ ss' , ss , v ∷ᴹ vs} ((_ , _ , ¬any , _) , ssᴹ , ew , ret) →
+             ssᴹ , ew ,
+             λ s i m cm n cn m<n →
+               ret s (there i) m
+                   ((λ ks-s≡ks-c-v → falseToWitness ¬any
+                                       (Any.map (λ s≡x → trans (cong ks (sym s≡x)) (trans ks-s≡ks-c-v (c-eq v))) i)) ∷ⁿ cm)
+                   n cn m<n })) ∷ᴬ [])
     (λ { {[]ᴹ    , []ᴹ   } _ → inj₁ refl
        ; {_ ∷ᴹ _ , []ᴹ   } _ → inj₂ (inj₂ (inj₁ refl))
        ; {_      , _ ∷ᴹ _} _ → inj₂ (inj₂ (inj₂ (inj₂ (inj₁ refl)))) })
@@ -221,26 +342,3 @@ keyAlign-finite-expansion keq ks kv b c R' b-t c-eq l n n≤l =
                                                proj₁)
                        l n n≤l)
          proj₁
-
-{-
-
-λ { {[]ᴹ    , []ᴹ   } → ?
-  ; {[]ᴹ    , _ ∷ᴹ _} → ?
-  ; {_ ∷ᴹ _ , []ᴹ   } → ?
-  ; {_ ∷ᴹ _ , _ ∷ᴹ _} → ? }
-
-λ { {_ , []ᴹ    , []ᴹ   } → ?
-  ; {_ , []ᴹ    , _ ∷ᴹ _} → ?
-  ; {_ , _ ∷ᴹ _ , []ᴹ   } → ?
-  ; {_ , _ ∷ᴹ _ , _ ∷ᴹ _} → ? }
-
-λ { {[]ᴹ    , []ᴹ    , []ᴹ   } → ?
-  ; {[]ᴹ    , []ᴹ    , _ ∷ᴹ _} → ?
-  ; {[]ᴹ    , _ ∷ᴹ _ , []ᴹ   } → ?
-  ; {[]ᴹ    , _ ∷ᴹ _ , _ ∷ᴹ _} → ?
-  ; {_ ∷ᴹ _ , []ᴹ    , []ᴹ   } → ?
-  ; {_ ∷ᴹ _ , []ᴹ    , _ ∷ᴹ _} → ?
-  ; {_ ∷ᴹ _ , _ ∷ᴹ _ , []ᴹ   } → ?
-  ; {_ ∷ᴹ _ , _ ∷ᴹ _ , _ ∷ᴹ _} → ? }
-
--}
