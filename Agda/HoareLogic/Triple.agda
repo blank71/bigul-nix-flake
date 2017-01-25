@@ -14,6 +14,7 @@ open import Level using (lift)
 open import Function
 open import Data.Empty
 open import Data.Product as Product
+open import Data.Sum
 open import Data.Bool
 open import Data.Nat as Nat
 open import Data.Nat.Properties
@@ -27,7 +28,7 @@ mutual
 
   data Triple {n : ℕ} {F : Functor n} : {S V : U n} →
               ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F)) → BiGUL F S V → ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F)) → Set₁ where
-    fail    : {S V : U n} {R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} → Triple ∅ (fail {S = S} {V}) R'
+    fail    : {S V : U n} → Triple ∅ (fail {S = S} {V}) ∅
     skip    : {S V : U n} {f : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F)} →
               Triple (uncurry _≡_ ∘ Product.map f id) (skip {S = S} {V} f) (uncurry _≡_ ∘ Product.map id proj₁)
     replace : {S : U n} → Triple Π (replace {S = S}) (uncurry _≡_ ∘ Product.map id proj₂)
@@ -89,11 +90,24 @@ mutual
 
 infixr 5 _∷ᴺ_ _∷ᴬ_
 
+case-main-cond-lemma : {n : ℕ} {F : Functor n} {S V : U n}
+                       (bs : List (CaseBranch F S V)) → List.map proj₁ bs ≡ List.map proj₁ (interp-CaseBranch bs)
+case-main-cond-lemma [] = refl
+case-main-cond-lemma ((p , normal _ _) ∷ bs) = cong (p ∷_) (case-main-cond-lemma bs)
+case-main-cond-lemma ((p , adaptive _) ∷ bs) = cong (p ∷_) (case-main-cond-lemma bs)
+
+case-out-of-range-lemma : {n : ℕ} {F : Functor n} {S V : U n} (bs : List (CaseBranch F S V)) →
+                          foldr (_∩_ ∘ elimCaseBranchType (λ _ q → False ∘ q) (λ _ → Π)∘ proj₂) Π bs ⊆
+                          OutOfRange (interp-CaseBranch bs)
+case-out-of-range-lemma []                      = id
+case-out-of-range-lemma ((p , normal _ _) ∷ bs) = Product.map id (case-out-of-range-lemma bs)
+case-out-of-range-lemma ((p , adaptive _) ∷ bs) = Product.map (const tt) (case-out-of-range-lemma bs)
+
 soundness : {n : ℕ} {F : Functor n} {S V : U n}
             {R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} {b : BiGUL F S V} {R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} →
             Triple R b R' → Sound R (Lens.put (interp b)) R'
-soundness fail = fail-soundness _
-soundness {V = V} (skip {f = f}) = skip-soundness (U-dec V) f
+soundness fail = fail-soundness
+soundness (skip {V = V} {f}) = skip-soundness (U-dec V) f
 soundness replace = replace-soundness
 soundness (prod {l = l} tl {r = r} tr) = prod-soundness _ _ (interp l) (soundness tl) _ _ (interp r) (soundness tr)
 soundness (rearrS {tpat = tpat} {c = c} {b} R R' t) = rearrS-soundness _ tpat _ c (interp b) R R' (soundness t)
@@ -106,11 +120,6 @@ soundness {n} {F} {S} {V} (case {bs = bs} {R} {R'} ts dom) =
     (subst (λ ps → R ⊆ CaseDomain ps) (case-main-cond-lemma bs) dom)
     (case-disjointness-lemma ts)
   where
-    case-main-cond-lemma : (bs : List (CaseBranch F S V)) → List.map proj₁ bs ≡ List.map proj₁ (interp-CaseBranch bs)
-    case-main-cond-lemma [] = refl
-    case-main-cond-lemma ((p , normal _ _) ∷ bs) = cong (p ∷_) (case-main-cond-lemma bs)
-    case-main-cond-lemma ((p , adaptive _) ∷ bs) = cong (p ∷_) (case-main-cond-lemma bs)
-    
     case-soundness-lemma : {bs bs' : List (CaseBranch F S V)} {ReentryCond : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} →
                            CaseBranchTriple R R' ReentryCond bs bs' →
                            BranchSound R R' (interp-CaseBranch bs) (interp-CaseBranch bs') ReentryCond
@@ -125,13 +134,6 @@ soundness {n} {F} {S} {V} (case {bs = bs} {R} {R'} ts dom) =
     case-branch-type-lemma [] = refl
     case-branch-type-lemma ((p , normal _ _) ∷ bs) = cong ((p , true ) ∷_) (case-branch-type-lemma bs)
     case-branch-type-lemma ((p , adaptive _) ∷ bs) = cong ((p , false) ∷_) (case-branch-type-lemma bs)
-
-    case-out-of-range-lemma : (bs : List (CaseBranch F S V)) →
-                              foldr (_∩_ ∘ elimCaseBranchType (λ _ q → False ∘ q) (λ _ → Π)∘ proj₂) Π bs ⊆
-                              OutOfRange (interp-CaseBranch bs)
-    case-out-of-range-lemma [] = id
-    case-out-of-range-lemma ((p , normal _ _) ∷ bs) = Product.map id (case-out-of-range-lemma bs)
-    case-out-of-range-lemma ((p , adaptive _) ∷ bs) = Product.map (const tt) (case-out-of-range-lemma bs)
 
     case-disjointness-lemma : {bs bs' : List (CaseBranch F S V)} {ReentryCond : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} →
                               CaseBranchTriple R R' ReentryCond bs bs' →
@@ -152,7 +154,7 @@ expandTriple :
   ((n : ℕ) (rec : BiGUL F S V) → ({m : ℕ} → Triple (R ∩ ((_≡ m) ∘ measure) ∩ (λ _ → m < n)) rec R') →
                                  Triple (R ∩ ((_≡ n) ∘ measure)) (f rec) R') →
   (l n : ℕ) → n ≤ l → Triple (R ∩ ((_≡ n) ∘ measure)) (expand (suc l) f) R'
-expandTriple f measure R R' g zero   .zero z≤n     = g zero fail (conseq (λ { (_ , _ , ()) }) fail proj₁)
+expandTriple f measure R R' g zero   .zero z≤n     = g zero fail (conseq (λ { (_ , _ , ()) }) fail (λ { (() , _) }))
 expandTriple f measure R R' g (suc l) n    n≤suc-l = g n (expand (suc l) f) aux
   where
     aux : {m : ℕ} → Triple (R ∩ ((_≡ m) ∘ measure) ∩ (λ _ → m < n)) (expand (suc l) f) R'
@@ -164,3 +166,70 @@ expandTriple f measure R R' g (suc l) n    n≤suc-l = g n (expand (suc l) f) au
     aux {m} | no ¬m<n = conseq (λ { (_ , _ , m<n) → ⊥-elim (¬m<n m<n) })
                                (expandTriple f measure R R' g l l (DecTotalOrder.refl Nat.decTotalOrder))
                                proj₁
+
+mutual
+
+  data TripleR {n : ℕ} {F : Functor n} : {S V : U n} →
+               ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F)) → BiGUL F S V → ℙ (⟦ S ⟧ (μ F)) → Set₁ where
+    fail    : {S V : U n} → TripleR ∅ (fail {S = S} {V}) ∅
+    skip    : {S V : U n} {f : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F)} →
+              TripleR (uncurry _≡_ ∘ Product.map f id) (skip {S = S} {V} f) Π
+    replace : {S : U n} → TripleR (uncurry _≡_) (replace {S = S}) Π
+    case    : {S V : U n} {bs : List (CaseBranch F S V)} {R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} →
+              (ts : CaseBranchTripleR R bs []) → TripleR R (case bs) (CaseRange ts)
+    conseq  : {S V : U n} {b : BiGUL F S V} {R T : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} {P Q : ℙ (⟦ S ⟧ (μ F))} →
+              R ∩ (Q ∘ proj₁) ⊆ T → TripleR R b P → Q ⊆ P → TripleR T b Q
+
+  data CaseBranchTripleR {n : ℕ} {F : Functor n} {S V : U n} (R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))) :
+                         List (CaseBranch F S V) → List (CaseBranch F S V) → Set₁ where
+    []   : {bs' : List (CaseBranch F S V)} → CaseBranchTripleR R [] bs'
+    _∷ᴺ_ : {p : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → Bool} {b : BiGUL F S V} {q : ⟦ S ⟧ (μ F) → Bool}
+           {bs bs' : List (CaseBranch F S V)} →
+           (Σ[ P ∈ ℙ (⟦ S ⟧ (μ F)) ] (P ⊆ (True ∘ q)) ×
+               TripleR (R ∩ (True ∘ uncurry p) ∩ OutOfDomain (List.map proj₁ bs')) b P) ×
+           ((True ∘ q) ⊆ foldr (_∩_ ∘ elimCaseBranchType (λ _ q → False ∘ q) (λ _ → Π)∘ proj₂) Π bs') →
+           CaseBranchTripleR R bs ((p , normal b q) ∷ bs') → CaseBranchTripleR R ((p , normal b q) ∷ bs) bs'
+    •∷ᴬ_ : {p : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → Bool} {f : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → ⟦ S ⟧ (μ F)}
+           {bs bs' : List (CaseBranch F S V)} →
+           CaseBranchTripleR R bs ((p , adaptive f) ∷ bs') → CaseBranchTripleR R ((p , adaptive f) ∷ bs) bs'
+
+  CaseRange : {n : ℕ} {F : Functor n} {S V : U n} {R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))}
+              {bs bs' : List (CaseBranch F S V)} → CaseBranchTripleR R bs bs' → ℙ (⟦ S ⟧ (μ F))
+  CaseRange []                    = ∅
+  CaseRange (((P , _) , _) ∷ᴺ ts) = P ∪ CaseRange ts
+  CaseRange (             •∷ᴬ ts) = CaseRange ts
+
+infixr 5 •∷ᴬ_
+
+soundnessR : {n : ℕ} {F : Functor n} {S V : U n}
+             {R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} {b : BiGUL F S V} {P : ℙ (⟦ S ⟧ (μ F))} →
+             TripleR R b P → SoundG P (Lens.get (interp b)) R
+soundnessR fail = fail-soundnessG
+soundnessR (skip {V = V} {f}) = skip-soundnessG (U-dec V) f
+soundnessR replace = replace-soundnessG
+soundnessR {n} {F} {S} {V} {R} (case ts) =
+  case-soundnessG _ _ (case-soundnessR-lemma ts) (CaseRange ts) (case-range-lemma ts) (case-disjointness-lemma ts)
+  where
+    case-soundnessR-lemma :
+      {bs bs' : List (CaseBranch F S V)} → CaseBranchTripleR R bs bs' →
+      BranchSoundG R (interp-CaseBranch bs) (interp-CaseBranch bs')
+    case-soundnessR-lemma [] = tt
+    case-soundnessR-lemma {bs' = bs'} (((P , P⊆ , t) , disj) ∷ᴺ ts)
+      rewrite case-main-cond-lemma bs' = (P , P⊆ , soundnessR t) , case-soundnessR-lemma ts
+    case-soundnessR-lemma (•∷ᴬ ts) = case-soundnessR-lemma ts
+
+    case-range-lemma :
+      {bs bs' : List (CaseBranch F S V)} (ts : CaseBranchTripleR R bs bs') →
+      CaseRange ts ⊆ Range R (interp-CaseBranch bs) (interp-CaseBranch bs') (case-soundnessR-lemma ts)
+    case-range-lemma [] ()
+    case-range-lemma {bs' = bs'} (_ ∷ᴺ ts) (inj₁ p) rewrite case-main-cond-lemma bs' = inj₁ p
+    case-range-lemma {bs' = bs'} (_ ∷ᴺ ts) (inj₂ r) rewrite case-main-cond-lemma bs' = inj₂ (case-range-lemma ts r)
+    case-range-lemma (•∷ᴬ ts) r = case-range-lemma ts r
+
+    case-disjointness-lemma : {bs bs' : List (CaseBranch F S V)} →
+                              CaseBranchTripleR R bs bs' →
+                              RangeDisjoint (interp-CaseBranch bs) (interp-CaseBranch bs')
+    case-disjointness-lemma [] = tt
+    case-disjointness-lemma {bs' = bs'} ((t , x) ∷ᴺ ts) = case-out-of-range-lemma bs' ∘ x , case-disjointness-lemma ts
+    case-disjointness-lemma (•∷ᴬ ts) = case-disjointness-lemma ts   
+soundnessR (conseq R∩Q⊆T t Q⊆P) = consequenceG _ _ _ (soundnessR t) _ Q⊆P _ R∩Q⊆T

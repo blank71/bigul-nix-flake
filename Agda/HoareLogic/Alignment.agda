@@ -127,16 +127,6 @@ Post ks kv R' (ss' , ss , vs) =
 pred-lemma : {m n : ℕ} → suc m ≡ n → pred n < n
 pred-lemma refl = DecTotalOrder.refl Nat.decTotalOrder
 
--- firstMatch : {K : Set} (keq : Decidable (_≡_ {A = K})) (ks : S → K) (vk : K) (ss : List S) →
---              Any (λ s → ks s ≡ vk) ss →
---              Σ[ i ∈ Any (λ s → ks s ≡ vk) ss ] Count (λ s → ks s ≡ vk) (zero , take (toℕ (index i)) ss)
--- firstMatch keq ks vk []       ()
--- firstMatch keq ks vk (s ∷ ss) i              with keq (ks s) vk
--- firstMatch keq ks vk (s ∷ ss) i              | yes ks-s≡vk = here ks-s≡vk , []
--- firstMatch keq ks vk (s ∷ ss) (here ks-s≡vk) | no  ks-s≢vk with ks-s≢vk ks-s≡vk
--- firstMatch keq ks vk (s ∷ ss) (here ks-s≡vk) | no  ks-s≢vk | ()
--- firstMatch keq ks vk (s ∷ ss) (there i     ) | no  ks-s≢vk = Product.map there (ks-s≢vk ∷ⁿ_) (firstMatch keq ks vk ss i)
-
 extract-reentry :
   {K : Set} (keq : Decidable (_≡_ {A = K})) (ks : S → K) (kv : V → K) (ss : ListS) (v : V) (vs : ListV) →
   Any (λ s → ks s ≡ kv v) (toList₀ ss) → headMatch keq ks kv (extract keq ks kv v ss) (v ∷ᴹ vs) ≡ true
@@ -230,7 +220,7 @@ extract-Count keq ks kv (s ∷ᴹ ss) v (there e)        s* (there i  ) (ks-s*�
 
 keyAlign-correctness :
   {K : Set} (keq : Decidable (_≡_ {A = K})) (ks : S → K) (kv : V → K) (b : BiGUL F Sᵁ Vᵁ) (c : V → S)
-  (R' : ℙ (S × S × V)) → Triple Π b (R' ∩ (λ { (s' , _ , v) → ks s' ≡ kv v })) → ((v : V) → ks (c v) ≡ kv v) →
+  (R' : ℙ (S × S × V)) → Triple (λ { (s , v) → ks s ≡ kv v }) b (R' ∩ (λ { (s' , _ , v) → ks s' ≡ kv v })) → ((v : V) → ks (c v) ≡ kv v) →
   (n : ℕ) (rec : BiGUL F (var zero) (var (suc zero))) →
   ({m : ℕ} → Triple (((_≡ m) ∘ length ∘ toList₁ ∘ proj₂) ∩ (λ _ → m < n)) rec (Post ks kv R')) →
   Triple ((_≡ n) ∘ length ∘ toList₁ ∘ proj₂) (keyAlignᴮ keq ks kv b c rec) (Post ks kv R')
@@ -266,8 +256,9 @@ keyAlign-correctness keq ks kv b c R' b-t c-eq n rec rec-t =
               (rearrV (λ { ((s , ss) , (v , vs)) → length (toList₁ (v ∷ᴹ vs)) ≡ n × ks s ≡ kv v })
                       (Post ks kv R' ∘ Product.map (uncurry _∷ᴹ_) (Product.map (uncurry _∷ᴹ_) (uncurry _∷ᴹ_)))
                  (conseq
-                    (λ { (_ , (vlen , ks-s≡kv-v) , _ , vseq) → 
-                         tt , cong pred (subst (λ vs → suc (length (toList₁ vs)) ≡ n) vseq vlen) , pred-lemma vlen })
+                    (λ { (_ , (vlen , ks-s≡kv-v) , eq , vseq) → 
+                         trans ks-s≡kv-v (cong kv eq) ,
+                         cong pred (subst (λ vs → suc (length (toList₁ vs)) ≡ n) vseq vlen) , pred-lemma vlen })
                     (prod b-t rec-t)
                     (λ { {(s' , ss') , (s , ss) , (v , vs)}
                          (((R'-s'-s-v , ks-s'≡kv-v) , (ssᴹ , ew , ret)) , (v' , vs') , (_ , ks-s≡kv-v') , v'≡v , vs'≡vs) →
@@ -329,7 +320,7 @@ keyAlign-correctness keq ks kv b c R' b-t c-eq n rec rec-t =
 
 keyAlign-finite-expansion :
   {K : Set} (keq : Decidable (_≡_ {A = K})) (ks : S → K) (kv : V → K) (b : BiGUL F Sᵁ Vᵁ) (c : V → S)
-  (R' : ℙ (S × S × V)) → Triple Π b (R' ∩ (λ { (s' , _ , v) → ks s' ≡ kv v })) → ((v : V) → ks (c v) ≡ kv v) →
+  (R' : ℙ (S × S × V)) → Triple (λ { (s , v) → ks s ≡ kv v }) b (R' ∩ (λ { (s' , _ , v) → ks s' ≡ kv v })) → ((v : V) → ks (c v) ≡ kv v) →
   (l n : ℕ) → n ≤ l → Triple ((_≡ n) ∘ length ∘ toList₁ ∘ proj₂)
                              (expand (suc l) (keyAlignᴮ keq ks kv b c))
                              (Post ks kv R')

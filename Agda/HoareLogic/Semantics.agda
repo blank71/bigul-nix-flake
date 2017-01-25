@@ -80,8 +80,8 @@ hippocratic-triple : {S V : Set} (R : ℙ (S × V)) (l : S ⇆ V) →
 hippocratic-triple R l sound s v Rsv with sound (s , v) Rsv
 hippocratic-triple R l sound s v Rsv | .s , put↦ , refl = Lens.PutGet l put↦
 
-fail-soundness : {S V : Set} (R' : ℙ (S × S × V)) → Sound ∅ (Lens.put (iso-lens empty-iso)) R'
-fail-soundness _ _ ()
+fail-soundness : {S V : Set} → Sound {S} {V} ∅ (Lens.put (iso-lens empty-iso)) ∅
+fail-soundness _ ()
 
 skip-soundness : {S V : Set} (_≟_ : Decidable (_≡_ {A = V})) (f : S → V) →
                  Sound (uncurry _≡_ ∘ Product.map f id) (Lens.put (skip-lens _≟_ f)) (uncurry _≡_ ∘ Product.map id proj₁)
@@ -112,3 +112,21 @@ dep-soundness f dec l R R' l-sound (s , (v , .(f v))) (refl , R-s-v-fv) | yes _ 
   Product.map id (Product.map (return refl >>=_) id) (l-sound (s , v) R-s-v-fv)
 dep-soundness f dec l R R' l-sound (s , (v , .(f v))) (refl , R-s-v-fv) | no neq with neq refl
 dep-soundness f dec l R R' l-sound (s , (v , .(f v))) (refl , R-s-v-fv) | no neq | ()
+
+SoundG : {S V : Set} → ℙ S → (S → Par V) → ℙ (S × V) → Set₁
+SoundG {S} {V} P g R = (s : S) → P s → Σ[ v ∈ V ] g s ↦ v × R (s , v)
+
+consequenceG : {S V : Set} (P : ℙ S) (g : S → Par V) (R : ℙ (S × V)) → SoundG P g R →
+               (Q : ℙ S) → Q ⊆ P → (T : ℙ (S × V)) → R ∩ (Q ∘ proj₁) ⊆ T → SoundG Q g T
+consequenceG P g R soundR Q Q⊆P T R∩Q⊆T s qs = let (v , g-s↦v , Rsv) = soundR s (Q⊆P qs)
+                                               in   v , g-s↦v , R∩Q⊆T (Rsv , qs)
+
+fail-soundnessG : {S V : Set} → SoundG {S} {V} ∅ (Lens.get (iso-lens empty-iso)) ∅
+fail-soundnessG _ ()
+
+skip-soundnessG : {S V : Set} (_≟_ : Decidable (_≡_ {A = V})) (f : S → V) →
+                  SoundG Π (Lens.get (skip-lens _≟_ f)) (uncurry _≡_ ∘ Product.map f id)
+skip-soundnessG _≟_ f s _ = f s , return refl , refl
+
+replace-soundnessG : {A : Set} → SoundG Π (Lens.get (iso-lens (id-iso {A}))) (uncurry _≡_)
+replace-soundnessG x _ = x , return refl , refl
