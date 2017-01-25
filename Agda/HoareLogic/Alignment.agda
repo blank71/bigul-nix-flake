@@ -127,6 +127,10 @@ Post ks kv R' (ss' , ss , vs) =
 pred-lemma : {m n : ℕ} → suc m ≡ n → pred n < n
 pred-lemma refl = DecTotalOrder.refl Nat.decTotalOrder
 
+pred-inverse-lemma : {n : ℕ} → pred n < n → suc (pred n) ≡ n
+pred-inverse-lemma {zero } ()
+pred-inverse-lemma {suc n} _ = refl
+
 extract-reentry :
   {K : Set} (keq : Decidable (_≡_ {A = K})) (ks : S → K) (kv : V → K) (ss : ListS) (v : V) (vs : ListV) →
   Any (λ s → ks s ≡ kv v) (toList₀ ss) → headMatch keq ks kv (extract keq ks kv v ss) (v ∷ᴹ vs) ≡ true
@@ -220,7 +224,8 @@ extract-Count keq ks kv (s ∷ᴹ ss) v (there e)        s* (there i  ) (ks-s*�
 
 keyAlign-correctness :
   {K : Set} (keq : Decidable (_≡_ {A = K})) (ks : S → K) (kv : V → K) (b : BiGUL F Sᵁ Vᵁ) (c : V → S)
-  (R' : ℙ (S × S × V)) → Triple (λ { (s , v) → ks s ≡ kv v }) b (R' ∩ (λ { (s' , _ , v) → ks s' ≡ kv v })) → ((v : V) → ks (c v) ≡ kv v) →
+  (R' : ℙ (S × S × V)) → Triple (λ { (s , v) → ks s ≡ kv v }) b (R' ∩ (λ { (s' , _ , v) → ks s' ≡ kv v })) →
+  ((v : V) → ks (c v) ≡ kv v) →
   (n : ℕ) (rec : BiGUL F (var zero) (var (suc zero))) →
   ({m : ℕ} → Triple (((_≡ m) ∘ length ∘ toList₁ ∘ proj₂) ∩ (λ _ → m < n)) rec (Post ks kv R')) →
   Triple ((_≡ n) ∘ length ∘ toList₁ ∘ proj₂) (keyAlignᴮ keq ks kv b c rec) (Post ks kv R')
@@ -320,7 +325,8 @@ keyAlign-correctness keq ks kv b c R' b-t c-eq n rec rec-t =
 
 keyAlign-finite-expansion :
   {K : Set} (keq : Decidable (_≡_ {A = K})) (ks : S → K) (kv : V → K) (b : BiGUL F Sᵁ Vᵁ) (c : V → S)
-  (R' : ℙ (S × S × V)) → Triple (λ { (s , v) → ks s ≡ kv v }) b (R' ∩ (λ { (s' , _ , v) → ks s' ≡ kv v })) → ((v : V) → ks (c v) ≡ kv v) →
+  (R' : ℙ (S × S × V)) → Triple (λ { (s , v) → ks s ≡ kv v }) b (R' ∩ (λ { (s' , _ , v) → ks s' ≡ kv v })) →
+  ((v : V) → ks (c v) ≡ kv v) →
   (l n : ℕ) → n ≤ l → Triple ((_≡ n) ∘ length ∘ toList₁ ∘ proj₂)
                              (expand (suc l) (keyAlignᴮ keq ks kv b c))
                              (Post ks kv R')
@@ -333,3 +339,83 @@ keyAlign-finite-expansion keq ks kv b c R' b-t c-eq l n n≤l =
                                                proj₁)
                        l n n≤l)
          proj₁
+
+keyAlign-range :
+  {K : Set} (keq : Decidable (_≡_ {A = K})) (ks : S → K) (kv : V → K) (b : BiGUL F Sᵁ Vᵁ) (c : V → S) →
+  TripleR (λ { (s , v) → ks s ≡ kv v }) b Π →
+  ((v : V) → ks (c v) ≡ kv v) →
+  (n : ℕ) (rec : BiGUL F (var zero) (var (suc zero))) →
+  ({m : ℕ} → TripleR (((_≡ m) ∘ length ∘ toList₁ ∘ proj₂)) rec
+                     (((_≡ m) ∘ length ∘ toList₀) ∩ (λ _ → m < n))) →
+  TripleR ((_≡ n) ∘ length ∘ toList₁ ∘ proj₂) (keyAlignᴮ keq ks kv b c rec) ((_≡ n) ∘ length ∘ toList₀)
+keyAlign-range keq ks kv b c b-t c-eq n rec rec-t =
+  conseq
+    proj₁
+    (case
+       ((conseq
+           (λ { {[]ᴹ    , []ᴹ   } (_ , 0≡n) → 0≡n , refl , tt
+              ; {[]ᴹ    , _ ∷ᴹ _} ((_ , _ , ()) , _)
+              ; {_ ∷ᴹ _ , []ᴹ   } (_ , ())
+              ; {_ ∷ᴹ _ , _ ∷ᴹ _} (_ , ()) })
+           (rearrV
+              (λ { ([]ᴹ , tt) → 0 ≡ n ; (_ ∷ᴹ _ , tt) → ⊥ })
+              (conseq {Q = λ { []ᴹ → 0 ≡ n; (_ ∷ᴹ _) → ⊥ }}
+                 (λ { {[]ᴹ    , tt} (_ , 0≡n) → tt , 0≡n , refl
+                    ; {_ ∷ᴹ _ , tt} (_ , ()) })
+                 skip
+                 (λ _ → tt)))
+           id ,
+         (λ { {[]ᴹ   } _ → refl
+            ; {_ ∷ᴹ _} () }) ,
+         (λ _ → tt)) ∷ᴺ
+        (conseq {Q = λ { []ᴹ → ⊥; (_ ∷ᴹ ss) → suc (length (toList₀ ss)) ≡ n }}
+           (λ { {[]ᴹ     , []ᴹ    } (_ , ())
+              ; {[]ᴹ     , _ ∷ᴹ _ } (_ , ())
+              ; {_ ∷ᴹ _  , []ᴹ    } ((_ , _ , ()) , _)
+              ; {s ∷ᴹ ss , v ∷ᴹ vs} ((_ , (refl , refl) , ks-s≡kv-v , suc-len-vs≡n) , suc-len-ss≡n) →
+                suc-len-vs≡n , trueFromWitness ks-s≡kv-v , refl , tt })
+           (rearrS
+              (λ { ((s , _) , []ᴹ    ) → ⊥
+                 ; ((s , _) , v ∷ᴹ vs) → ks s ≡ kv v × suc (length (toList₁ vs)) ≡ n})
+              (λ { (_ , ss) → length (toList₀ ss) ≡ pred n × pred n < n })
+              (conseq
+                 (λ { {(s , ss) , []ᴹ} ((_ , _ , ()) , _)
+                    ; {(s , ss) , v ∷ᴹ vs} ((_ , (ks-s≡kv-v , suc-len-vs≡n) , refl , refl) ,
+                                            (_ , (suc-len-ss≡pred-n , pred-n<n) , refl , refl)) →
+                      (s , ss) , (refl , refl) , ks-s≡kv-v , suc-len-vs≡n })
+                 (rearrV
+                    (λ { ((s , _) , (v , vs)) → ks s ≡ kv v × suc (length (toList₁ vs)) ≡ n })
+                    (conseq 
+                       (λ { {(s , ss) , (v , vs)} ((ks-s≡kv-v , len-vs≡pred-n) , len-ss≡pred-n , pred-n<n) →
+                            (v , vs) , (ks-s≡kv-v , trans (cong suc len-vs≡pred-n) (pred-inverse-lemma pred-n<n)) ,
+                            refl , refl })
+                       (prod b-t (rec-t {pred n}))
+                       (_,_ tt)))
+                 (λ { {s' , ss'} ((s , ss) , (len-ss≡pred-n , pred-n<n) , s≡s' , ss≡ss') →
+                      trans (cong (length ∘ toList₀) (sym ss≡ss')) len-ss≡pred-n , pred-n<n })))
+           (λ { {[]ᴹ} ()
+              ; {s ∷ᴹ ss} suc-len-ss≡n → (s , ss) , (cong pred suc-len-ss≡n , pred-lemma suc-len-ss≡n) , refl , refl }) ,
+         (λ { {[]ᴹ   } ()
+            ; {_ ∷ᴹ _} _ → refl }) ,
+         (λ { {[]ᴹ   } ()
+            ; {_ ∷ᴹ _} _ → refl , tt })) ∷ᴺ •∷ᴬ •∷ᴬ •∷ᴬ []))
+    (λ { {[]ᴹ   } → inj₁
+       ; {_ ∷ᴹ _} → inj₂ ∘ inj₁ })
+
+keyAlign-finite-expansionR :
+  {K : Set} (keq : Decidable (_≡_ {A = K})) (ks : S → K) (kv : V → K) (b : BiGUL F Sᵁ Vᵁ) (c : V → S) →
+  TripleR (λ { (s , v) → ks s ≡ kv v }) b Π → ((v : V) → ks (c v) ≡ kv v) →
+  (l n : ℕ) → n ≤ l → TripleR ((_≡ n) ∘ length ∘ toList₁ ∘ proj₂)
+                              (expand (suc l) (keyAlignᴮ keq ks kv b c))
+                              ((_≡ n) ∘ length ∘ toList₀)
+keyAlign-finite-expansionR keq ks kv b c b-t c-eq l n n≤l =
+  conseq
+    (proj₂ ∘ proj₁)
+    (expandTripleR (keyAlignᴮ keq ks kv b c) (length ∘ toList₁ ∘ proj₂) Π (λ n → (_≡ n) ∘ length ∘ toList₀)
+       (λ n rec rec-t →
+          conseq
+            ((_,_ tt) ∘ proj₁)
+            (keyAlign-range keq ks kv b c b-t c-eq n rec (conseq (proj₂ ∘ proj₁) rec-t id))
+            id)
+       l n n≤l)
+    id

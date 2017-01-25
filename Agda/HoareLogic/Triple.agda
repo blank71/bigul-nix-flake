@@ -207,9 +207,8 @@ mutual
                          List (CaseBranch F S V) → List (CaseBranch F S V) → Set₁ where
     []   : {bs' : List (CaseBranch F S V)} → CaseBranchTripleR R [] bs'
     _∷ᴺ_ : {p : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → Bool} {b : BiGUL F S V} {q : ⟦ S ⟧ (μ F) → Bool}
-           {bs bs' : List (CaseBranch F S V)} →
-           (Σ[ P ∈ ℙ (⟦ S ⟧ (μ F)) ] (P ⊆ (True ∘ q)) ×
-               TripleR (R ∩ (True ∘ uncurry p) ∩ OutOfDomain (List.map proj₁ bs')) b P) ×
+           {bs bs' : List (CaseBranch F S V)} {P : ℙ (⟦ S ⟧ (μ F))} →
+           TripleR (R ∩ (True ∘ uncurry p) ∩ OutOfDomain (List.map proj₁ bs')) b P × (P ⊆ (True ∘ q)) ×
            ((True ∘ q) ⊆ foldr (_∩_ ∘ elimCaseBranchType (λ _ q → False ∘ q) (λ _ → Π)∘ proj₂) Π bs') →
            CaseBranchTripleR R bs ((p , normal b q) ∷ bs') → CaseBranchTripleR R ((p , normal b q) ∷ bs) bs'
     •∷ᴬ_ : {p : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → Bool} {f : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → ⟦ S ⟧ (μ F)}
@@ -218,9 +217,9 @@ mutual
 
   CaseRange : {n : ℕ} {F : Functor n} {S V : U n} {R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))}
               {bs bs' : List (CaseBranch F S V)} → CaseBranchTripleR R bs bs' → ℙ (⟦ S ⟧ (μ F))
-  CaseRange []                    = ∅
-  CaseRange (((P , _) , _) ∷ᴺ ts) = P ∪ CaseRange ts
-  CaseRange (             •∷ᴬ ts) = CaseRange ts
+  CaseRange []                  = ∅
+  CaseRange (_∷ᴺ_ {P = P} _ ts) = P ∪ CaseRange ts
+  CaseRange (•∷ᴬ            ts) = CaseRange ts
 
 infixr 5 •∷ᴬ_
 
@@ -241,7 +240,7 @@ soundnessR {n} {F} {S} {V} {R} (case ts) =
       {bs bs' : List (CaseBranch F S V)} → CaseBranchTripleR R bs bs' →
       BranchSoundG R (interp-CaseBranch bs) (interp-CaseBranch bs')
     case-soundnessR-lemma [] = tt
-    case-soundnessR-lemma {bs' = bs'} (((P , P⊆ , t) , _) ∷ᴺ ts)
+    case-soundnessR-lemma {bs' = bs'} (_∷ᴺ_ {P = P} (t , P⊆ , _) ts)
       rewrite case-main-cond-lemma bs' = (P , P⊆ , soundnessR t) , case-soundnessR-lemma ts
     case-soundnessR-lemma (•∷ᴬ ts) = case-soundnessR-lemma ts
 
@@ -257,7 +256,7 @@ soundnessR {n} {F} {S} {V} {R} (case ts) =
                               CaseBranchTripleR R bs bs' →
                               RangeDisjoint (interp-CaseBranch bs) (interp-CaseBranch bs')
     case-disjointness-lemma [] = tt
-    case-disjointness-lemma {bs' = bs'} ((t , x) ∷ᴺ ts) = case-out-of-range-lemma bs' ∘ x , case-disjointness-lemma ts
+    case-disjointness-lemma {bs' = bs'} ((_ , _ , x) ∷ᴺ ts) = case-out-of-range-lemma bs' ∘ x , case-disjointness-lemma ts
     case-disjointness-lemma (•∷ᴬ ts) = case-disjointness-lemma ts   
 soundnessR (conseq R∩Q⊆T t Q⊆P) = consequenceG _ _ _ (soundnessR t) _ Q⊆P _ R∩Q⊆T
 
@@ -265,15 +264,15 @@ expandTripleR :
   {n : ℕ} {F : Functor n} {S V : U n} (f : BiGUL F S V → BiGUL F S V)
   (measure : ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F) → ℕ) →
   (R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))) (P : ℕ → ℙ (⟦ S ⟧ (μ F))) →
-  ((n : ℕ) (rec : BiGUL F S V) → ({m : ℕ} → TripleR (R ∩ ((_≡ m) ∘ measure) ∩ (λ _ → m < n)) rec (P m ∩ (λ _ → m < n))) →
+  ((n : ℕ) (rec : BiGUL F S V) → ({m : ℕ} → TripleR (R ∩ ((_≡ m) ∘ measure)) rec (P m ∩ (λ _ → m < n))) →
                                  TripleR (R ∩ ((_≡ n) ∘ measure)) (f rec) (P n)) →
   (l n : ℕ) → n ≤ l → TripleR (R ∩ ((_≡ n) ∘ measure)) (expand (suc l) f) (P n) 
 expandTripleR f measure R P g zero   .zero z≤n     = g zero fail (conseq (λ { (() , _) }) fail (λ { (_ , ()) }))
 expandTripleR f measure R P g (suc l) n    n≤suc-l = g n (expand (suc l) f) aux
   where
-    aux : {m : ℕ} → TripleR (R ∩ ((_≡ m) ∘ measure) ∩ (λ _ → m < n)) (expand (suc l) f) (P m ∩ (λ _ → m < n))
+    aux : {m : ℕ} → TripleR (R ∩ ((_≡ m) ∘ measure)) (expand (suc l) f) (P m ∩ (λ _ → m < n))
     aux {m} with suc m ≤? n
-    aux {m} | yes m<n = conseq (λ { ((r , meq) , p , m<n) → r , meq , m<n })
+    aux {m} | yes m<n = conseq proj₁
                                (expandTripleR f measure R P g l m
                                   (≤-pred (DecTotalOrder.trans Nat.decTotalOrder m<n n≤suc-l)))
                                proj₁

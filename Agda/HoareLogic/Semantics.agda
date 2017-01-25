@@ -116,6 +116,12 @@ dep-soundness f dec l R R' l-sound (s , (v , .(f v))) (refl , R-s-v-fv) | no neq
 SoundG : {S V : Set} → ℙ S → (S → Par V) → ℙ (S × V) → Set₁
 SoundG {S} {V} P g R = (s : S) → P s → Σ[ v ∈ V ] g s ↦ v × R (s , v)
 
+sumSoundG : {S V : Set} (g : S → Par V)
+            (P : ℙ S) (R : ℙ (S × V)) → SoundG P g R →
+            (Q : ℙ S) (T : ℙ (S × V)) → SoundG Q g T → SoundG (P ∪ Q) g (R ∪ T)
+sumSoundG g P R PgR Q T QgT s (inj₁ Ps) = Product.map id (Product.map id inj₁) (PgR s Ps)
+sumSoundG g P R PgR Q T QgT s (inj₂ Qs) = Product.map id (Product.map id inj₂) (QgT s Qs)
+
 consequenceG : {S V : Set} (P : ℙ S) (g : S → Par V) (R : ℙ (S × V)) → SoundG P g R →
                (Q : ℙ S) → Q ⊆ P → (T : ℙ (S × V)) → R ∩ (Q ∘ proj₁) ⊆ T → SoundG Q g T
 consequenceG P g R soundR Q Q⊆P T R∩Q⊆T s qs = let (v , g-s↦v , Rsv) = soundR s (Q⊆P qs)
