@@ -260,3 +260,23 @@ soundnessR {n} {F} {S} {V} {R} (case ts) =
     case-disjointness-lemma {bs' = bs'} ((t , x) ∷ᴺ ts) = case-out-of-range-lemma bs' ∘ x , case-disjointness-lemma ts
     case-disjointness-lemma (•∷ᴬ ts) = case-disjointness-lemma ts   
 soundnessR (conseq R∩Q⊆T t Q⊆P) = consequenceG _ _ _ (soundnessR t) _ Q⊆P _ R∩Q⊆T
+
+expandTripleR :
+  {n : ℕ} {F : Functor n} {S V : U n} (f : BiGUL F S V → BiGUL F S V)
+  (measure : ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F) → ℕ) →
+  (R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))) (P : ℕ → ℙ (⟦ S ⟧ (μ F))) →
+  ((n : ℕ) (rec : BiGUL F S V) → ({m : ℕ} → TripleR (R ∩ ((_≡ m) ∘ measure) ∩ (λ _ → m < n)) rec (P m ∩ (λ _ → m < n))) →
+                                 TripleR (R ∩ ((_≡ n) ∘ measure)) (f rec) (P n)) →
+  (l n : ℕ) → n ≤ l → TripleR (R ∩ ((_≡ n) ∘ measure)) (expand (suc l) f) (P n) 
+expandTripleR f measure R P g zero   .zero z≤n     = g zero fail (conseq (λ { (() , _) }) fail (λ { (_ , ()) }))
+expandTripleR f measure R P g (suc l) n    n≤suc-l = g n (expand (suc l) f) aux
+  where
+    aux : {m : ℕ} → TripleR (R ∩ ((_≡ m) ∘ measure) ∩ (λ _ → m < n)) (expand (suc l) f) (P m ∩ (λ _ → m < n))
+    aux {m} with suc m ≤? n
+    aux {m} | yes m<n = conseq (λ { ((r , meq) , p , m<n) → r , meq , m<n })
+                               (expandTripleR f measure R P g l m
+                                  (≤-pred (DecTotalOrder.trans Nat.decTotalOrder m<n n≤suc-l)))
+                               proj₁
+    aux {m} | no ¬m<n = conseq (λ { (_ , _ , m<n) → ⊥-elim (¬m<n m<n) })
+                               (expandTripleR f measure R P g l l (DecTotalOrder.refl Nat.decTotalOrder))
+                               (λ { (_ , m<n) → ⊥-elim (¬m<n m<n) })
