@@ -147,6 +147,19 @@ rearrV-soundness vpat vpat' expr c l R R' l-sound (s , v) (r , R-s-r , Match-v-r
                                  (construct-injective vpat' (fromEval vpat vpat' expr v' Eval-r'-v'))))
                   Match-v-r)
 
+rearrV-soundnessG :
+  {S : Set} {G H : U n} (vpat : Pattern F G) (vpat' : Pattern F H) (expr : Expr vpat vpat')
+  (c : CompleteExpr vpat vpat' expr) (l : S ⇆ ⟦ H ⟧ (μ F)) (P : ℙ S) (R : ℙ (S × PatResult vpat)) →
+  SoundG P (Lens.get l) (R • Eval vpat vpat' expr) →
+  SoundG P (Lens.get (l ◂ sym-iso (rearrangement-iso vpat vpat' expr c))) (R • (Match vpat ∘ swap))
+rearrV-soundnessG vpat vpat' expr c l P R l-sound s Ps =
+  let (v' , get-l-s↦v' , env , R-s-env , Eval-env-v') = l-sound s Ps
+  in  construct vpat env ,
+      (get-l-s↦v' >>=
+       Iso.to-from-inverse (rearrangement-iso vpat vpat' expr c)
+         (construct-deconstruct-inverse vpat _ >>= return (fromEval vpat vpat' expr v' Eval-env-v'))) ,
+      env , R-s-env , toMatch vpat (construct vpat env) (construct-deconstruct-inverse vpat _)
+
 rearrS-soundness :
   {V : Set} {G H : U n} (spat : Pattern F G) (tpat : Pattern F H) (expr : Expr spat tpat)
   (c : CompleteExpr spat tpat expr) (l : ⟦ H ⟧ (μ F) ⇆ V) →
@@ -167,3 +180,17 @@ rearrS-soundness spat tpat expr c l R R' l-sound (s , v) (r , Match-s-r , R-r-v)
       subst (λ r → Match spat (s , r))
             (sym (eval-injective spat tpat expr c (construct-injective tpat (fromEval spat tpat expr t Eval-rr-t))))
             Match-s-r
+
+rearrS-soundnessG :
+  {V : Set} {G H : U n} (spat : Pattern F G) (tpat : Pattern F H) (expr : Expr spat tpat)
+  (c : CompleteExpr spat tpat expr) (l : ⟦ H ⟧ (μ F) ⇆ V) →
+  (P : ℙ (PatResult spat)) (R : ℙ (PatResult spat × V)) →
+  SoundG (λ s → ∃ λ env → P env × Eval spat tpat expr (env , s)) (Lens.get l) ((Eval spat tpat expr ∘ swap) • R) →
+  SoundG (λ s → ∃ λ env → P env × Match spat (s , env)) (Lens.get (rearrangement-iso spat tpat expr c ▸ l)) (Match spat • R)
+rearrS-soundnessG spat tpat expr c l P R l-sound s (env , P-env , Match-s-env) =
+  let t = construct tpat (eval spat tpat expr env)
+      (v , get↦v , env' , Eval-env'-t , R-env'-v) =
+        l-sound t (env , P-env , toEval spat tpat expr)
+  in  v , ((fromMatch spat s Match-s-env >>= return refl) >>= get↦v) , env , Match-s-env ,
+      subst (λ e → R (e , v))
+            (eval-injective spat tpat expr c (construct-injective tpat (fromEval spat tpat expr t Eval-env'-t))) R-env'-v

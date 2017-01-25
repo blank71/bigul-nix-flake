@@ -54,7 +54,8 @@ mutual
               Triple (R • (Match vpat ∘ swap)) (rearrV vpat wpat expr c b)
                      (λ { (s' , s , v) → ∃ λ r → R' (s' , s , r) × Match vpat (v , r) })
     dep     : {S V V' : U n} {f : ⟦ V ⟧ (μ F) → ⟦ V' ⟧ (μ F)} {b : BiGUL F S V}
-              (R : ℙ (⟦ S ⟧ (μ F) × (⟦ V ⟧ (μ F) × ⟦ V' ⟧ (μ F)))) {R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × (⟦ V ⟧ (μ F) × ⟦ V' ⟧ (μ F)))} →
+              (R : ℙ (⟦ S ⟧ (μ F) × (⟦ V ⟧ (μ F) × ⟦ V' ⟧ (μ F))))
+              {R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × (⟦ V ⟧ (μ F) × ⟦ V' ⟧ (μ F)))} →
               Triple (R ∘ Product.map id < id , f >) b (R' ∘ Product.map id (Product.map id < id , f >)) →
               Triple ((uncurry _≡_ ∘ Product.map f id ∘ proj₂) ∩ R) (dep {S = S} {V} {V'} f b) R'
     case    : {S V : U n} {bs : List (CaseBranch F S V)}
@@ -175,6 +176,28 @@ mutual
     skip    : {S V : U n} {f : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F)} →
               TripleR (uncurry _≡_ ∘ Product.map f id) (skip {S = S} {V} f) Π
     replace : {S : U n} → TripleR (uncurry _≡_) (replace {S = S}) Π
+    prod    : {Sl Vl Sr Vr : U n}
+              {Rl : ℙ (⟦ Sl ⟧ (μ F) × ⟦ Vl ⟧ (μ F))} {Pl : ℙ (⟦ Sl ⟧ (μ F))}
+              {l : BiGUL F Sl Vl} → TripleR Rl l Pl →
+              {Rr : ℙ (⟦ Sr ⟧ (μ F) × ⟦ Vr ⟧ (μ F))} {Pr : ℙ (⟦ Sr ⟧ (μ F))}
+              {r : BiGUL F Sr Vr} → TripleR Rr r Pr →
+              TripleR (λ { ((sl , sr) , (vl , vr)) → Rl (sl , vl) × Rr (sr , vr) })
+                      (prod l r)
+                      (λ { (sl , sr) → Pl sl × Pr sr })
+    rearrS  : {S T V : U n}
+              {spat : Pattern F S} {tpat : Pattern F T} {expr : Expr spat tpat} {c : CompleteExpr spat tpat expr}
+              {b : BiGUL F T V} (R : ℙ (PatResult spat × ⟦ V ⟧ (μ F))) (P : ℙ (PatResult spat)) →
+              TripleR ((Eval spat tpat expr ∘ swap) • R) b (λ t → ∃ λ r → P r × Eval spat tpat expr (r , t)) →
+              TripleR (Match spat • R) (rearrS spat tpat expr c b) (λ s → ∃ λ r → P r × Match spat (s , r))
+    rearrV  : {S V W : U n}
+              {vpat : Pattern F V} {wpat : Pattern F W} {expr : Expr vpat wpat} {c : CompleteExpr vpat wpat expr}
+              {b : BiGUL F S W} (R : ℙ (⟦ S ⟧ (μ F) × PatResult vpat)) {P : ℙ (⟦ S ⟧ (μ F))} →
+              TripleR (R • Eval vpat wpat expr) b P →
+              TripleR (R • (Match vpat ∘ swap)) (rearrV vpat wpat expr c b) P
+    dep     : {S V V' : U n} {f : ⟦ V ⟧ (μ F) → ⟦ V' ⟧ (μ F)} {b : BiGUL F S V}
+              (R : ℙ (⟦ S ⟧ (μ F) × (⟦ V ⟧ (μ F) × ⟦ V' ⟧ (μ F)))) {P : ℙ (⟦ S ⟧ (μ F))} →
+              TripleR (R ∘ Product.map id < id , f >) b P →
+              TripleR ((uncurry _≡_ ∘ Product.map f id ∘ proj₂) ∩ R) (dep {S = S} {V} {V'} f b) P
     case    : {S V : U n} {bs : List (CaseBranch F S V)} {R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} →
               (ts : CaseBranchTripleR R bs []) → TripleR R (case bs) (CaseRange ts)
     conseq  : {S V : U n} {b : BiGUL F S V} {R T : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} {P Q : ℙ (⟦ S ⟧ (μ F))} →
@@ -207,6 +230,10 @@ soundnessR : {n : ℕ} {F : Functor n} {S V : U n}
 soundnessR fail = fail-soundnessG
 soundnessR (skip {V = V} {f}) = skip-soundnessG (U-dec V) f
 soundnessR replace = replace-soundnessG
+soundnessR (prod {l = l} tl {r = r} tr) = prod-soundnessG _ _ (interp l) (soundnessR tl) _ _ (interp r) (soundnessR tr)
+soundnessR (rearrS {tpat = tpat} {c = c} {b} R P t) = rearrS-soundnessG _ tpat _ c (interp b) P R (soundnessR t) 
+soundnessR (rearrV {wpat = wpat} {c = c} {b} R   t) = rearrV-soundnessG _ wpat _ c (interp b) _ R (soundnessR t)
+soundnessR (dep {V' = V'} {f} {b} R {P} t) = dep-soundnessG f (U-dec V') (interp b) P R (soundnessR t)
 soundnessR {n} {F} {S} {V} {R} (case ts) =
   case-soundnessG _ _ (case-soundnessR-lemma ts) (CaseRange ts) (case-range-lemma ts) (case-disjointness-lemma ts)
   where
@@ -214,7 +241,7 @@ soundnessR {n} {F} {S} {V} {R} (case ts) =
       {bs bs' : List (CaseBranch F S V)} → CaseBranchTripleR R bs bs' →
       BranchSoundG R (interp-CaseBranch bs) (interp-CaseBranch bs')
     case-soundnessR-lemma [] = tt
-    case-soundnessR-lemma {bs' = bs'} (((P , P⊆ , t) , disj) ∷ᴺ ts)
+    case-soundnessR-lemma {bs' = bs'} (((P , P⊆ , t) , _) ∷ᴺ ts)
       rewrite case-main-cond-lemma bs' = (P , P⊆ , soundnessR t) , case-soundnessR-lemma ts
     case-soundnessR-lemma (•∷ᴬ ts) = case-soundnessR-lemma ts
 

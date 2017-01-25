@@ -130,3 +130,21 @@ skip-soundnessG _≟_ f s _ = f s , return refl , refl
 
 replace-soundnessG : {A : Set} → SoundG Π (Lens.get (iso-lens (id-iso {A}))) (uncurry _≡_)
 replace-soundnessG x _ = x , return refl , refl
+
+prod-soundnessG : {A B C D : Set}
+                  (P : ℙ A) (R : ℙ (A × C)) (l : A ⇆ C) → SoundG P (Lens.get l) R →
+                  (Q : ℙ B) (S : ℙ (B × D)) (r : B ⇆ D) → SoundG Q (Lens.get r) S →
+                  SoundG (λ { (a , b) → P a × Q b }) (Lens.get (l ↕ r))
+                         (λ { ((a , b) , (c , d)) → R (a , c) × S (b , d) })
+prod-soundnessG P R l l-sound Q S r r-sound (a , b) (Pa , Qb) =
+  let (c , get-l-a↦c , Rac) = l-sound a Pa
+      (d , get-r-b↦d , Sbd) = r-sound b Qb
+  in  (c , d) , (get-l-a↦c >>= get-r-b↦d >>= return refl) , (Rac , Sbd)
+
+dep-soundnessG : {S V V' : Set} (f : V → V') (dec : Decidable {A = V'} _≡_) (l : S ⇆ V)
+                 (P : ℙ S) (R : ℙ (S × (V × V'))) →
+                 SoundG P (Lens.get l) (R ∘ Product.map id < id , f >) →
+                 SoundG P (Lens.get (l ◂ sym-iso (dependency-iso f dec))) ((uncurry _≡_ ∘ Product.map f id ∘ proj₂) ∩ R)
+dep-soundnessG f dec l P R l-sound s Ps =
+  let (v , get-l-s↦v , R-s-v-fv) = l-sound s Ps
+  in  (v , f v) , (get-l-s↦v >>= return refl) , (refl , R-s-v-fv)
