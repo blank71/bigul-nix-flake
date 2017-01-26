@@ -1,0 +1,71 @@
+%%% -*-BibTeX-*-
+%%% Do NOT edit. File created by BibTeX with style
+%%% ACM-Reference-Format-Journals [18-Jan-2012].
+
+\begin{thebibliography}{00}
+
+%%% ====================================================================
+%%% NOTE TO THE USER: you can override these defaults by providing
+%%% customized versions of any of these macros before the \bibliography
+%%% command.  Each of them MUST provide its own final punctuation,
+%%% except for \shownote{}, \showDOI{}, and \showURL{}.  The latter two
+%%% do not use final punctuation, in order to avoid confusing it with
+%%% the Web address.
+%%%
+%%% To suppress output of a particular field, define its macro to expand
+%%% to an empty string, or better, \unskip, like this:
+%%%
+%%% \newcommand{\showDOI}[1]{\unskip}   % LaTeX syntax
+%%%
+%%% \def \showDOI #1{\unskip}           % plain TeX syntax
+%%%
+%%% ====================================================================
+
+\ifx \showCODEN    \undefined \def \showCODEN     #1{\unskip}     \fi
+\ifx \showDOI      \undefined \def \showDOI       #1{{\tt DOI:}\penalty0{#1}\ }
+  \fi
+\ifx \showISBNx    \undefined \def \showISBNx     #1{\unskip}     \fi
+\ifx \showISBNxiii \undefined \def \showISBNxiii  #1{\unskip}     \fi
+\ifx \showISSN     \undefined \def \showISSN      #1{\unskip}     \fi
+\ifx \showLCCN     \undefined \def \showLCCN      #1{\unskip}     \fi
+\ifx \shownote     \undefined \def \shownote      #1{#1}          \fi
+\ifx \showarticletitle \undefined \def \showarticletitle #1{#1}   \fi
+\ifx \showURL      \undefined \def \showURL       #1{#1}          \fi
+% The following commands are used for tagged output and should be
+% invisible to TeX
+\providecommand\bibfield[2]{#2}
+\providecommand\bibinfo[2]{#2}
+\providecommand\natexlab[1]{#1}
+\providecommand\showeprint[2][]{arXiv:#2}
+
+\bibitem[\protect\citeauthoryear{Foster, Greenwald, Moore, Pierce, and
+  Schmitt}{Foster et~al\mbox{.}}{2007}]%
+        {Foster-lenses}
+\bibfield{author}{\bibinfo{person}{J.~Nathan Foster},
+  \bibinfo{person}{Michael~B. Greenwald}, \bibinfo{person}{Jonathan~T. Moore},
+  \bibinfo{person}{Benjamin~C. Pierce}, {and} \bibinfo{person}{Alan Schmitt}.}
+  \bibinfo{year}{2007}\natexlab{}.
+\newblock \showarticletitle{Combinators for bidirectional tree transformations:
+  A linguistic approach to the view-update problem}.
+\newblock \bibinfo{journal}{{\em ACM Transactions on Programming Languages and
+  Systems\/}} \bibinfo{volume}{29}, \bibinfo{number}{3} (\bibinfo{year}{2007}),
+  \bibinfo{pages}{17}.
+\newblock
+\showDOI{%
+\url{http://dx.doi.org/10.1145/1232420.1232424}}
+
+
+\bibitem[\protect\citeauthoryear{Ko, Zan, and Hu}{Ko et~al\mbox{.}}{2016}]%
+        {Ko-BiGUL}
+\bibfield{author}{\bibinfo{person}{Hsiang-Shang Ko}, \bibinfo{person}{Tao Zan},
+  {and} \bibinfo{person}{Zhenjiang Hu}.} \bibinfo{year}{2016}\natexlab{}.
+\newblock \showarticletitle{{BiGUL}: A Formally Verified Core Language for
+  Putback-Based Bidirectional Programming}. In \bibinfo{booktitle}{{\em Partial
+  Evaluation and Program Manipulation}} {\em (\bibinfo{series}{PEPM'16})}.
+  \bibinfo{publisher}{ACM}, \bibinfo{pages}{61--72}.
+\newblock
+\showDOI{%
+\url{http://dx.doi.org/10.1145/2847538.2847544}}
+
+
+\end{thebibliography}

@@ -1,0 +1,383 @@
+%% For double-blind review submission
+\documentclass[acmlarge,review,anonymous,fleqn]{acmart}\settopmatter{printfolios=true}
+%% For single-blind review submission
+%\documentclass[acmlarge,review]{acmart}\settopmatter{printfolios=true}
+%% For final camera-ready submission
+%\documentclass[acmlarge]{acmart}\settopmatter{}
+
+%% Note: Authors migrating a paper from PACMPL format to traditional
+%% SIGPLAN proceedings format should change 'acmlarge' to
+%% 'sigplan,10pt'.
+
+%include polycode.fmt
+
+\newcommand{\keyword}[1]{\mathbf{#1}}
+\newcommand{\identifier}[1]{\mathit{#1}}
+\makeatletter
+\newcommand{\shorteq}{%
+  \settowidth{\@@tempdima}{-}%
+  \resizebox{\@@tempdima}{\height}{=}%
+}
+\makeatother
+
+%format = = "{=}"
+%format -> = "{\to}"
+%format => = "{\Rightarrow}"
+%format | = "{|}"
+%format == = "{=}"
+%format /= = "{\neq}"
+%format && = "{\wedge}"
+%format || = "{\vee}"
+%format : = "{:}"
+%format `elem` = "{\in}"
+%format ~ = " "
+
+%format (all(x)) = "\forall" x "."
+%format empty = "\emptyset"
+
+%format fail = "\keyword{fail}"
+%format skip = "\keyword{skip}"
+%format replace = "\keyword{replace}"
+%format rearrS = "\keyword{rearrS}"
+%format rearrV = "\keyword{rearrV}"
+%format case = "\keyword{case}"
+%format normal = "\keyword{normal}"
+%format exit = "\keyword{exit}"
+%format exit' = "\identifier{exit}"
+%format adaptive = "\keyword{adaptive}"
+
+\newcommand{\assert}[1]{{\color{blue}\{}\,#1\,{\color{blue}\}}}
+\newcommand{\varassert}[2]{{\color{blue}\{\,#1\kern-\smallskipamount:}\ \ #2\,{\color{blue}\}}}
+\newcommand{\assertrange}[1]{{\color{red}\{\!\{}\,#1\,{\color{red}\}\!\}}}
+\newcommand{\varassertrange}[2]{{\color{red}\{\!\{\,#1\kern-\smallskipamount:}\ \ #2\,{\color{red}\}\!\}}}
+
+%format (ENV(x)) = "\overrightarrow{" x "}"
+%format (COM(x)) = "\langle\," x "\,\rangle"
+%format (ASSERT(x)) = "\assert{" x "}"
+%format (ASSERT'(y)(x)) = "\varassert{" y "}{" x "}"
+%format (ASSERTRANGE(x)) = "\assertrange{" x "}"
+%format (ASSERTRANGE'(y)(x)) = "\varassertrange{" y "}{" x "}"
+
+\newcommand{\awa}[2]{\mathrlap{#2}\phantom{#1}} % as wide as
+
+%% Some recommended packages.
+\usepackage{booktabs}   %% For formal tables:
+                        %% http://ctan.org/pkg/booktabs
+\usepackage{subcaption} %% For complex figures with subfigures/subcaptions
+                        %% http://ctan.org/pkg/subcaption
+
+\usepackage{mathtools}
+
+\makeatletter\if@@ACM@@journal\makeatother
+%% Journal information (used by PACMPL format)
+%% Supplied to authors by publisher for camera-ready submission
+\acmJournal{PACMPL}
+%\acmVolume{1}
+%\acmNumber{1}
+%\acmArticle{1}
+\acmYear{2017}
+\acmMonth{2}
+%\acmDOI{10.1145/nnnnnnn.nnnnnnn}
+%\startPage{1}
+%\else\makeatother
+%% Conference information (used by SIGPLAN proceedings format)
+%% Supplied to authors by publisher for camera-ready submission
+%\acmConference[PL'17]{ACM SIGPLAN Conference on Programming Languages}{January 01--03, 2017}{New York, NY, USA}
+%\acmYear{2017}
+%\acmISBN{978-x-xxxx-xxxx-x/YY/MM}
+%\acmDOI{10.1145/nnnnnnn.nnnnnnn}
+%\startPage{1}
+\fi
+
+
+%% Copyright information
+%% Supplied to authors (based on authors' rights management selection;
+%% see authors.acm.org) by publisher for camera-ready submission
+\setcopyright{none}             %% For review submission
+%\setcopyright{acmcopyright}
+%\setcopyright{acmlicensed}
+%\setcopyright{rightsretained}
+%\copyrightyear{2017}           %% If different from \acmYear
+
+
+%% Bibliography style
+\bibliographystyle{ACM-Reference-Format}
+%% Citation style
+%% Note: author/year citations are required for papers published as an
+%% issue of PACMPL.
+\citestyle{acmauthoryear}   %% For author/year citations
+
+
+
+\begin{document}
+
+\setlength{\mathindent}{\parindent}
+
+%% Title information
+\title{An Axiomatic Basis for Bidirectional Programming}
+                                        %% [Short Title] is optional;
+                                        %% when present, will be used in
+                                        %% header instead of Full Title.
+%\titlenote{with title note}            %% \titlenote is optional;
+                                        %% can be repeated if necessary;
+                                        %% contents suppressed with 'anonymous'
+%\subtitle{Subtitle}                    %% \subtitle is optional
+%\subtitlenote{with subtitle note}      %% \subtitlenote is optional;
+                                        %% can be repeated if necessary;
+                                        %% contents suppressed with 'anonymous'
+
+
+%% Author information
+%% Contents and number of authors suppressed with 'anonymous'.
+%% Each author should be introduced by \author, followed by
+%% \authornote (optional), \orcid (optional), \affiliation, and
+%% \email.
+%% An author may have multiple affiliations and/or emails; repeat the
+%% appropriate command.
+%% Many elements are not rendered, but should be provided for metadata
+%% extraction tools.
+
+%% Author with single affiliation.
+\author{Hsiang-Shang Ko}
+%\authornote{with author1 note}         %% \authornote is optional;
+                                        %% can be repeated if necessary
+%\orcid{nnnn-nnnn-nnnn-nnnn}            %% \orcid is optional
+\affiliation{
+  \position{Project Researcher}
+  \department{Information Systems Architecture Science Research Division}
+                                        %% \department is recommended
+  \institution{National Institute of Informatics}
+                                        %% \institution is required
+  \streetaddress{2-1-2 Hitotsubashi}
+  \city{Chiyoda-ku}
+  \state{Tokyo}
+  \postcode{101-8430}
+  \country{Japan}
+}
+\email{hsiang-shang@@nii.ac.jp}         %% \email is recommended
+
+%% Author with two affiliations and emails.
+\author{Zhenjiang Hu}
+%\authornote{with author2 note}         %% \authornote is optional;
+                                        %% can be repeated if necessary
+%\orcid{nnnn-nnnn-nnnn-nnnn}            %% \orcid is optional
+\affiliation{
+  \position{Professor}
+  \department{Information Systems Architecture Science Research Division}
+                                        %% \department is recommended
+  \institution{National Institute of Informatics}
+                                        %% \institution is required
+  \streetaddress{2-1-2 Hitotsubashi}
+  \city{Chiyoda-ku}
+  \state{Tokyo}
+  \postcode{101-8430}
+  \country{Japan}
+}
+\email{hu@@nii.ac.jp}         %% \email is recommended
+
+
+%% Paper note
+%% The \thanks command may be used to create a "paper note" ---
+%% similar to a title note or an author note, but not explicitly
+%% associated with a particular element.  It will appear immediately
+%% above the permission/copyright statement.
+%\thanks{with paper note}               %% \thanks is optional
+                                        %% can be repeated if necesary
+                                        %% contents suppressed with 'anonymous'
+
+
+%% Abstract
+%% Note: \begin{abstract}...\end{abstract} environment must come
+%% before \maketitle command
+\begin{abstract}
+Text of abstract \ldots.
+\end{abstract}
+
+
+%% 2012 ACM Computing Classification System (CSS) concepts
+%% Generate at 'http://dl.acm.org/ccs/ccs.cfm'.
+%\begin{CCSXML}
+%<ccs2012>
+%<concept>
+%<concept_id>10011007.10011006.10011008</concept_id>
+%<concept_desc>Software and its engineering~General programming languages</concept_desc>
+%<concept_significance>500</concept_significance>
+%</concept>
+%<concept>
+%<concept_id>10003456.10003457.10003521.10003525</concept_id>
+%<concept_desc>Social and professional topics~History of programming languages</concept_desc>
+%<concept_significance>300</concept_significance>
+%</concept>
+%</ccs2012>
+%\end{CCSXML}
+
+%\ccsdesc[500]{Software and its engineering~General programming languages}
+%\ccsdesc[300]{Social and professional topics~History of programming languages}
+%% End of generated code
+
+
+%% Keywords
+%% comma separated list
+%\keywords{keyword1, keyword2, keyword3}  %% \keywords is optional
+
+
+%% \maketitle
+%% Note: \maketitle command must come after title commands, author
+%% commands, abstract environment, Computing Classification System
+%% environment and commands, and keywords command.
+\maketitle
+
+
+\section{Introduction}
+
+\citet{Ko-BiGUL}
+
+\citet{Foster-lenses}
+
+\begin{code}
+putWidth  :: BiGUL (Int, Int) Int
+putWidth  =  [bigul|
+  rearrV v -> (v, ())
+       replace
+    *  skip const ()
+  |]
+\end{code}
+
+\begin{code}
+putSquare  :: BiGUL (Int, Int) Int
+putSquare  =  [bigul|
+  case
+    normal (w, _) v | w = v exit _
+      skip fst
+    adaptive _ _
+      \ _ v -> (v, v)
+  |]
+\end{code}
+
+\[ \begin{array}{l} \hline
+|(ASSERT empty) ~ fail ~ (ASSERT empty)|
+\end{array} \]
+
+\[ \begin{array}{l} \hline
+|(ASSERT(_ _)) ~ replace ~ (ASSERT(s' _ v || s' = v))|
+\end{array} \]
+
+\[ \begin{array}{l} \hline
+|(ASSERT(s v || f s = v)) ~ skip f ~ (ASSERT(s' s _ || s' = s))|
+\end{array} \]
+
+\[ \begin{array}{l}
+|{-"\assert{\awa{T}{R}}\;"-} ~ {-"\awa{r}{l}\;\;"-} ~ {-"\assert{\awa{T^\prime}{R^\prime}}"-}| \\
+|{-"\assert{T}\;"-} ~ {-"r\;\;"-} ~ {-"\assert{T^\prime}"-}| \\ \hline
+|(ASSERT(R * T)) ~ l * r ~ (ASSERT(R' * T'))|
+\end{array} \]
+
+\[ \begin{array}{l}
+|(ASSERT(s wpat || R s (ENV(wpat)))) ~ b ~ (ASSERT(s' s wpat || R' s' s (ENV(wpat))))| \\ \hline
+|(ASSERT(s vpat || R s (ENV(vpat)))) ~ rearrV vpat -> wpat; ~ b ~ (ASSERT(s' s vpat || R' s' s (ENV(vpat))))|
+\end{array} \]
+
+\[ \begin{array}{l}
+|(ASSERT(tpat v || R (ENV(tpat)) v)) ~ b ~ (ASSERT(tpat' tpat v || R' (ENV(tpat')) (ENV(tpat)) v))| \\ \hline
+|(ASSERT(spat v || R (ENV(spat)) v)) ~ rearrS spat -> tpat; ~ b ~ (ASSERT(spat' spat v || R' (ENV(spat')) (ENV(spat)) v))|
+\end{array} \]
+
+\[ \begin{array}{l}
+|(ASSERT R) ~ b ~ (ASSERT R')| \\
+|T => R| \\
+|all(s', s, v) R' s' s v && T s v => T' s' s v| \\ \hline
+|(ASSERT T) ~ b ~ (ASSERT T')|
+\end{array} \]
+
+\[ \begin{array}{l}
+|(ASSERT R) ~ b ~ (ASSERTRANGE P)| \\
+|all(s, v) R s v && Q s => T s v| \\
+|Q => P| \\ \hline
+|(ASSERT T) ~ b ~ (ASSERTRANGE Q)|
+\end{array} \]
+
+\begin{code}
+(ASSERT(_ _))
+rearrV v -> (v, ())
+  (ASSERT(_ (_ , ())))
+     (ASSERT(_ _))
+     replace
+     (ASSERT(w' _ v | w' = v)) (ASSERTRANGE(_))
+  *  (ASSERT(_ ()))
+     (ASSERT(h () | const () h = ()))
+     skip const ()
+     (ASSERT(h' h () | h' = h)) (ASSERTRANGE(_))
+  (ASSERT((w', h') (_ , h) (v, ()) | w' = v && h' = h)) (ASSERTRANGE(_))
+(ASSERT((w', h') (_ , h) v | w' = v && h' = h)) (ASSERTRANGE(_))
+\end{code}
+
+
+\begin{code}
+(ASSERT(_ _))
+case
+  normal (w, _) v | w = v exit _
+    (ASSERT((w, _) v | w = v))
+    (ASSERT((w, h) v | fst (w, h) = v))
+    skip fst
+    (ASSERT((w', h') (w, h) _ | (w', h') = (w, h))) (ASSERTRANGE(_))
+    (ASSERT((w', h') (w, h) v | w' = v && (w = v => h' = h) && (w /= v => w' = h')))
+  adaptive _ _
+    (ASSERT(not (COM((w, _) v | w = v))))
+    (ASSERT((w, _) v | w /= v))
+    \ (w, h) v -> (v, v)
+    (ASSERT'(reentry)(COM((w, _) v | w = v) (v, v) v))
+    (ASSERT'(retentiveness)(all(w', h') Post (w', h') (v, v) v => Post (w', h') (w, h) v))
+  (ASSERT'(coverage)(COM((w, _) v | w = v) || (COM(_ _)) ))
+  (ASSERT'(disjointness)(true))
+(ASSERT(Post @ (COM((w', h') (w, h) v | w' = v && (w = v => h' = h) && (w /= v => w' = h'))))) (ASSERTRANGE(_))
+\end{code}
+
+\begin{code}
+keyAlign :: Eq k => (s -> k) -> (v -> k) -> BiGUL s v -> (v -> s) -> BiGUL [s] [v]
+keyAlign ks kv b c = [bigul|
+  case
+    normal [] [] exit []
+      rearrV [] -> ()
+         skip const ()
+    normal (s : _) (v : _) | ks s = kv v exit (_ : _)
+      rearrS (s : ss) -> (s, ss)
+        rearrV (v : vs) -> (v, vs)
+             b
+          *  keyAlign ks kv b c
+    adaptive (_ : _) []
+      \ _ _ -> []
+    adaptive ss (v : vs) | kv v `elem` map ks ss
+      \ ss (v : _) -> uncurry (:) (extract (kv v) ss)
+    adaptive _ (_ : _)
+      \ ss (v : _) -> c v : ss
+  |]
+\end{code}
+
+%% Acknowledgments
+%\begin{acks}                            %% acks environment is optional
+%                                        %% contents suppressed with 'anonymous'
+%  %% Commands \grantsponsor{<sponsorID>}{<name>}{<url>} and
+%  %% \grantnum[<url>]{<sponsorID>}{<number>} should be used to
+%  %% acknowledge financial support and will be used by metadata
+%  %% extraction tools.
+%  This material is based upon work supported by the
+%  \grantsponsor{GS100000001}{National Science
+%    Foundation}{http://dx.doi.org/10.13039/100000001} under Grant
+%  No.~\grantnum{GS100000001}{nnnnnnn} and Grant
+%  No.~\grantnum{GS100000001}{mmmmmmm}.  Any opinions, findings, and
+%  conclusions or recommendations expressed in this material are those
+%  of the author and do not necessarily reflect the views of the
+%  National Science Foundation.
+%\end{acks}
+
+%% Bibliography
+\bibliography{../../../Documents/bib}
+
+
+%% Appendix
+%\appendix
+%\section{Appendix}
+%
+%Text of appendix \ldots
+
+\end{document}

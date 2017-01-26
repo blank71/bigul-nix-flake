@@ -1,0 +1,162 @@
+\begin{thebibliography}{20}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Bancilhon and Spyratos(1981)]{Bancilhon:81}
+F.~Bancilhon and N.~Spyratos.
+\newblock Update semantics of relational views.
+\newblock \emph{ACM Transactions on Database Systems}, 6\penalty0 (4):\penalty0
+  557--575, 1981.
+
+\bibitem[Barbosa et~al.(2010)Barbosa, Cretin, Foster, Greenberg, and
+  Pierce]{Barbosa2010}
+D.~M.~J. Barbosa, J.~Cretin, N.~Foster, M.~Greenberg, and B.~C. Pierce.
+\newblock Matching lenses: Alignment and view update.
+\newblock In \emph{15th ACM SIGPLAN international conference on Functional
+  programming}, 2010.
+
+\bibitem[Bohannon et~al.(2008)Bohannon, Foster, Pierce, Pilkiewicz, and
+  Schmitt]{Bohannon:08}
+A.~Bohannon, J.~N. Foster, B.~C. Pierce, A.~Pilkiewicz, and A.~Schmitt.
+\newblock Boomerang: resourceful lenses for string data.
+\newblock In \emph{POPL 2008}, pages 407--419. ACM, 2008.
+
+\bibitem[Cheney et~al.(2015)Cheney, Gibbons, McKinna, and Stevens]{CheneyGMS15}
+J.~Cheney, J.~Gibbons, J.~McKinna, and P.~Stevens.
+\newblock Towards a principle of least surprise for bidirectional
+  transformations.
+\newblock In A.~Cunha and E.~Kindler, editors, \emph{Proceedings of the 4th
+  International Workshop on Bidirectional Transformations co-located with
+  Software Technologies: Applications and Foundations, {STAF} 2015, L'Aquila,
+  Italy, July 24, 2015.}, volume 1396 of \emph{{CEUR} Workshop Proceedings},
+  pages 66--80. CEUR-WS.org, 2015.
+\newblock URL \url{http://ceur-ws.org/Vol-1396/p66-cheney.pdf}.
+
+\bibitem[Czarnecki et~al.(2009)Czarnecki, Foster, Hu, L\"ammel, Sch\"urr, and
+  Terwilliger]{GRACE:09}
+K.~Czarnecki, J.~N. Foster, Z.~Hu, R.~L\"ammel, A.~Sch\"urr, and
+  J.~Terwilliger.
+\newblock Bidirectional transformations: A cross-discipline perspective.
+\newblock In \emph{ICMT 2009}, volume 5563 of \emph{LNCS}, pages 260--283.
+  Springer-Verlag, 2009.
+
+\bibitem[Dayal and Bernstein(1982)]{Dayal:82}
+U.~Dayal and P.~Bernstein.
+\newblock On the correct translation of update operations on relational views.
+\newblock \emph{ACM Transactions on Database Systems}, 7:\penalty0 381--416,
+  1982.
+
+\bibitem[Diskin et~al.(2011)Diskin, Xiong, Czarnecki, Ehrig, Hermann, and
+  Orejas]{Diskin:2011}
+Z.~Diskin, Y.~Xiong, K.~Czarnecki, H.~Ehrig, F.~Hermann, and F.~Orejas.
+\newblock From state- to delta-based bidirectional model transformations: The
+  symmetric case.
+\newblock In \emph{Proceedings of the 14th International Conference on Model
+  Driven Engineering Languages and Systems}, MODELS'11, pages 304--318, Berlin,
+  Heidelberg, 2011. Springer-Verlag.
+\newblock ISBN 978-3-642-24484-1.
+\newblock URL \url{http://dl.acm.org/citation.cfm?id=2050655.2050685}.
+
+\bibitem[Fischer et~al.(2015)Fischer, Hu, and Pacheco]{FischerHP15}
+S.~Fischer, Z.~Hu, and H.~Pacheco.
+\newblock A clear picture of lens laws - functional pearl.
+\newblock In R.~Hinze and J.~Voigtl{¥"{a}}nder, editors, \emph{Mathematics of
+  Program Construction - 12th International Conference, {MPC} 2015,
+  K{¥"{o}}nigswinter, Germany, June 29 - July 1, 2015. Proceedings}, volume
+  9129 of \emph{Lecture Notes in Computer Science}, pages 215--223. Springer,
+  2015.
+\newblock ISBN 978-3-319-19796-8.
+
+\bibitem[Foster et~al.(2007)Foster, Greenwald, Moore, Pierce, and
+  Schmitt]{Foster2007}
+J.~N. Foster, M.~B. Greenwald, J.~T. Moore, B.~C. Pierce, and A.~Schmitt.
+\newblock Combinators for bidirectional tree transformations: A linguistic
+  approach to the view-update problem.
+\newblock \emph{ACM Transactions on Programming Languages and Systems
+  (TOPLAS)}, 29\penalty0 (3), May 2007.
+\newblock ISSN 0164-0925.
+\newblock \doi{10.1145/1232420.1232424}.
+
+\bibitem[Gottlob et~al.(1988)Gottlob, Paolini, and Zicari]{GoPZ88}
+G.~Gottlob, P.~Paolini, and R.~Zicari.
+\newblock Properties and update semantics of consistent views.
+\newblock \emph{ACM Transactions on Database Systems}, 13\penalty0
+  (4):\penalty0 486--524, 1988.
+
+\bibitem[Hidaka et~al.(2010)Hidaka, Hu, Inaba, Kato, Matsuda, and
+  Nakano]{Hidaka:10}
+S.~Hidaka, Z.~Hu, K.~Inaba, H.~Kato, K.~Matsuda, and K.~Nakano.
+\newblock Bidirectionalizing graph transformations.
+\newblock In \emph{ICFP 2010}, pages 205--216. ACM, 2010.
+
+\bibitem[Hofmann et~al.(2012)Hofmann, Pierce, and Wagner]{Hofmann2012}
+M.~Hofmann, B.~Pierce, and D.~Wagner.
+\newblock Edit lenses.
+\newblock In \emph{POPL '12 Proceedings of the 39th annual ACM SIGPLAN-SIGACT
+  symposium on Principles of programming languages}, 2012.
+
+\bibitem[Hu et~al.(2011)Hu, Sch{\"u}rr, Stevens, and Terwilliger]{HSST11}
+Z.~Hu, A.~Sch{\"u}rr, P.~Stevens, and J.~F. Terwilliger.
+\newblock {Dagstuhl Seminar on Bidirectional Transformations (BX)}.
+\newblock \emph{SIGMOD Record}, 40\penalty0 (1):\penalty0 35--39, 2011.
+
+\bibitem[Hu et~al.(2014)Hu, Pacheco, and Fischer]{HuPF14}
+Z.~Hu, H.~Pacheco, and S.~Fischer.
+\newblock Validity checking of putback transformations in bidirectional
+  programming.
+\newblock In C.~B. Jones, P.~Pihlajasaari, and J.~Sun, editors, \emph{{FM}
+  2014: Formal Methods - 19th International Symposium, Singapore, May 12-16,
+  2014. Proceedings}, volume 8442 of \emph{Lecture Notes in Computer Science},
+  pages 1--15. Springer, 2014.
+\newblock ISBN 978-3-319-06409-3.
+
+\bibitem[Jay(1995)]{jay1995}
+C.~Jay.
+\newblock A semantics for shape.
+\newblock \emph{Science of Computer Programming}, 25\penalty0 (2-3):\penalty0
+  251--283, 1995.
+\newblock \doi{10.1016/0167-6423(95)00015-1}.
+\newblock Selected Papers of ESOP'94, the 5th European Symposium on
+  Programming.
+
+\bibitem[Ko et~al.(2016)Ko, Zan, and Hu]{Ko2016}
+H.-S. Ko, T.~Zan, and Z.~Hu.
+\newblock Bigul: A formally verified core language for putback-based
+  bidirectional programming.
+\newblock In \emph{Proceedings of the 2016 ACM SIGPLAN Workshop on Partial
+  Evaluation and Program Manipulation}, PEPM 2016, pages 61--72, New York, NY,
+  USA, 2016. ACM.
+\newblock ISBN 978-1-4503-4097-7.
+
+\bibitem[Matsuda et~al.(2007)Matsuda, Hu, Nakano, Hamana, and
+  Takeichi]{MHNHT07}
+K.~Matsuda, Z.~Hu, K.~Nakano, M.~Hamana, and M.~Takeichi.
+\newblock Bidirectionalization transformation based on automatic derivation of
+  view complement functions.
+\newblock In \emph{ICFP 2007}, pages 47--58. ACM, 2007.
+
+\bibitem[Pacheco et~al.(2012)Pacheco, Cunha, and Hu]{Pacheco2012}
+H.~Pacheco, A.~Cunha, and Z.~Hu.
+\newblock Delta lenses over inductive types.
+\newblock In \emph{First International Workshop on Bidirectional
+  Transformations}, 2012.
+
+\bibitem[Pacheco et~al.(2014{\natexlab{a}})Pacheco, Hu, and Fischer]{PaHF14}
+H.~Pacheco, Z.~Hu, and S.~Fischer.
+\newblock Monadic combinators for "putback" style bidirectional programming.
+\newblock In \emph{PEPM '14}, pages 39--50. ACM, 2014{\natexlab{a}}.
+
+\bibitem[Pacheco et~al.(2014{\natexlab{b}})Pacheco, Zan, and Hu]{PachecoZH14}
+H.~Pacheco, T.~Zan, and Z.~Hu.
+\newblock Biflux: {A} bidirectional functional update language for {XML}.
+\newblock In O.~Chitil, A.~King, and O.~Danvy, editors, \emph{Proceedings of
+  the 16th International Symposium on Principles and Practice of Declarative
+  Programming, Kent, Canterbury, United Kingdom, September 8-10, 2014}, pages
+  147--158. {ACM}, 2014{\natexlab{b}}.
+\newblock ISBN 978-1-4503-2947-7.
+\newblock URL \url{http://dl.acm.org/citation.cfm?id=2643135}.
+
+\end{thebibliography}
