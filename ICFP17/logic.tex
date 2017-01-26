@@ -1,5 +1,5 @@
 %% For double-blind review submission
-\documentclass[acmlarge,review,anonymous,fleqn]{acmart}\settopmatter{printfolios=true}
+\documentclass[acmlarge,fleqn,review]{acmart}\settopmatter{printfolios=true}
 %% For single-blind review submission
 %\documentclass[acmlarge,review]{acmart}\settopmatter{printfolios=true}
 %% For final camera-ready submission
@@ -33,7 +33,9 @@
 %format ~ = " "
 
 %format (all(x)) = "\forall" x "."
+%format (some(x)) = "\exists" x "."
 %format empty = "\emptyset"
+%format <~ = "{\hookleftarrow}"
 
 %format fail = "\keyword{fail}"
 %format skip = "\keyword{skip}"
@@ -46,10 +48,13 @@
 %format exit' = "\identifier{exit}"
 %format adaptive = "\keyword{adaptive}"
 
-\newcommand{\assert}[1]{{\color{blue}\{}\,#1\,{\color{blue}\}}}
-\newcommand{\varassert}[2]{{\color{blue}\{\,#1\kern-\smallskipamount:}\ \ #2\,{\color{blue}\}}}
-\newcommand{\assertrange}[1]{{\color{red}\{\!\{}\,#1\,{\color{red}\}\!\}}}
-\newcommand{\varassertrange}[2]{{\color{red}\{\!\{\,#1\kern-\smallskipamount:}\ \ #2\,{\color{red}\}\!\}}}
+\definecolor{putback}{RGB}{60,116,219}
+\definecolor{range}{RGB}{219,77,105}
+
+\newcommand{\assert}[1]{{\color{putback}\{}\,#1\,{\color{putback}\}}}
+\newcommand{\varassert}[2]{{\color{putback}\{\,#1\kern-\smallskipamount:}\ \ #2\,{\color{putback}\}}}
+\newcommand{\assertrange}[1]{{\color{range}\{\!\{}\,#1\,{\color{range}\}\!\}}}
+\newcommand{\varassertrange}[2]{{\color{range}\{\!\{\,#1\kern-\smallskipamount:}\ \ #2\,{\color{range}\}\!\}}}
 
 %format (ENV(x)) = "\overrightarrow{" x "}"
 %format (COM(x)) = "\langle\," x "\,\rangle"
@@ -235,24 +240,39 @@ Text of abstract \ldots.
 \citet{Foster-lenses}
 
 \begin{code}
-putWidth  :: BiGUL (Int, Int) Int
-putWidth  =  [bigul|
+putWidth  : (Int, Int) <~ Int
+putWidth  =
   rearrV v -> (v, ())
        replace
     *  skip const ()
-  |]
 \end{code}
 
 \begin{code}
-putSquare  :: BiGUL (Int, Int) Int
-putSquare  =  [bigul|
+putSquare  : (Int, Int) <~ Int
+putSquare  =
   case
     normal (w, _) v | w = v exit _
       skip fst
     adaptive _ _
       \ _ v -> (v, v)
-  |]
 \end{code}
+
+\section{Theory of putback triples}
+
+\begin{theorem}[soundness of putback triples] \label{thm:putback-soundness}
+\[ |(ASSERT R) ~ b ~ (ASSERT R')| \quad|=>|\quad |(all(s, v)) R s v ~ => ~ (some(s')) put b s v = Just s' && R' s' s v| \]
+\end{theorem}
+
+\begin{theorem}[partial forward consistency]
+\[ |(ASSERT R) ~ b ~ (ASSERT(s' _ v || R' s v))| \quad|=>|\quad |(all(s, v)) get b s = Just v && R s v ~ => ~ R' s v| \]
+\end{theorem}
+\begin{proof}
+Suppose |get b s = Just v| and |R s v|.
+By GetPut, we have |put b s v = Just s|, and by \autoref{thm:putback-soundness}, we have |put b s v = Just s' && R' s' v|.
+Thus |s = s'|, and we obtain |R' s v|.
+\end{proof}
+
+\section{Putback proof rules}
 
 \[ \begin{array}{l} \hline
 |(ASSERT empty) ~ fail ~ (ASSERT empty)|
@@ -289,12 +309,67 @@ putSquare  =  [bigul|
 |(ASSERT T) ~ b ~ (ASSERT T')|
 \end{array} \]
 
+\section{Theory of range triples}
+
+\begin{theorem}[soundness of range triples]
+\[ |(ASSERT R) ~ b ~ (ASSERTRANGE P)| \quad|=>|\quad |(all(s)) P s => (some(v)) get b s = Just v && R s v| \]
+\end{theorem}
+The conclusion implies (by GetPut)
+\[ |(all(s)) P s => (some(v)) put b s v = Just s && R s v| \]
+which further implies
+\[ |(all(s')) P s' => (some(s, v)) put b s v = Just s' && R s v| \]
+
+\begin{theorem}[total forward consistency]
+\[ |(ASSERT R) ~ b ~ (ASSERT(s' _ v || R' s' v)) (ASSERTRANGE P)| \quad|=>|\quad |(all(s)) P s => (some(v)) get b s = Just v && R' s v| \]
+\end{theorem}
+
+\section{Range proof rules}
+
 \[ \begin{array}{l}
 |(ASSERT R) ~ b ~ (ASSERTRANGE P)| \\
 |all(s, v) R s v && Q s => T s v| \\
 |Q => P| \\ \hline
 |(ASSERT T) ~ b ~ (ASSERTRANGE Q)|
 \end{array} \]
+
+\[ \begin{array}{l}
+\hline
+|(ASSERT empty) ~ fail ~ (ASSERTRANGE empty)|
+\end{array} \]
+
+\[ \begin{array}{l}
+\hline
+|(ASSERT(s v || f s = v)) ~ skip f ~ (ASSERTRANGE _)|
+\end{array} \]
+
+\[ \begin{array}{l}
+\hline
+|(ASSERT(s v || s = v)) ~ replace ~ (ASSERTRANGE _)|
+\end{array} \]
+
+\[ \begin{array}{l}
+|{-"\assert{\awa{T}{R}}\;"-} ~ {-"\awa{r}{l}\;\;"-} ~ {-"\assertrange{\awa{Q}{P}}"-}| \\
+|{-"\assert{T}\;"-} ~ {-"r\;\;"-} ~ {-"\assertrange{Q}"-}| \\ \hline
+|(ASSERT(R * T)) ~ l * r ~ (ASSERTRANGE(P * Q))|
+\end{array} \]
+
+\[ \begin{array}{l}
+|(ASSERT(s wpat || R s (ENV(wpat)))) ~ b ~ (ASSERTRANGE P)| \\ \hline
+|(ASSERT(s vpat || R s (ENV(vpat)))) ~ rearrV vpat -> wpat; ~ b ~ (ASSERTRANGE P)|
+\end{array} \]
+
+\[ \begin{array}{l}
+|(ASSERT(tpat v || R (ENV(tpat)) v)) ~ b ~ (ASSERTRANGE(tpat || P (ENV(tpat))))| \\ \hline
+|(ASSERT(spat v || R (ENV(spat)) v)) ~ rearrS spat -> tpat; ~ b ~ (ASSERTRANGE(spat || P (ENV(spat))))|
+\end{array} \]
+
+\begin{lemma}
+\[ |(ASSERT R) ~ b ~ (ASSERT(s' _ _ || Q s'))| \quad|&&|\quad |(ASSERT R) ~ b ~ (ASSERTRANGE P)| \quad|=>|\quad |P => Q| \]
+\end{lemma}
+
+\section{Theory of recursive proofs}
+
+\section{The final problem: Verifying key-based alignment}
 
 \begin{code}
 (ASSERT(_ _))
@@ -310,7 +385,6 @@ rearrV v -> (v, ())
   (ASSERT((w', h') (_ , h) (v, ()) | w' = v && h' = h)) (ASSERTRANGE(_))
 (ASSERT((w', h') (_ , h) v | w' = v && h' = h)) (ASSERTRANGE(_))
 \end{code}
-
 
 \begin{code}
 (ASSERT(_ _))
@@ -330,6 +404,62 @@ case
   (ASSERT'(coverage)(COM((w, _) v | w = v) || (COM(_ _)) ))
   (ASSERT'(disjointness)(true))
 (ASSERT(Post @ (COM((w', h') (w, h) v | w' = v && (w = v => h' = h) && (w /= v => w' = h'))))) (ASSERTRANGE(_))
+\end{code}
+
+\begin{code}
+replaceHead =
+  (ASSERT((_ : _) _))
+  rearrS (s:ss) -> (s, ss)
+    (ASSERT((_ , _) _))
+    rearrV v -> (v, ())
+      (ASSERT((_ , _) (_ , ())))
+         (ASSERT(_ _))
+         replace
+         (ASSERT(s' _ v | s' = v)) (ASSERTRANGE(_))
+      *  (ASSERT(_ ()))
+         (ASSERT(ss () | const () ss = ()))
+         skip const ()
+         (ASSERT(ss' ss _  | ss' = ss)) (ASSERTRANGE(_))
+         (ASSERT(ss' ss () | ss' = ss))
+      (ASSERT((s', ss') (s, ss) (v, ()) | s' = v && ss' = ss)) (ASSERTRANGE((_ , _)))
+    (ASSERT((s', ss') (s, ss) v | s' = v && ss' = ss)) (ASSERTRANGE((_ , _)))
+  (ASSERT((s':ss') (s:ss) v | s' = v && ss' = ss)) (ASSERTRANGE((_ : _)))
+  (ASSERT((s':ss') ss v | s' = v && ss' = tail ss))
+\end{code}
+
+\begin{code}
+(ASSERT(_ _))
+case
+  normal (_ : _) _ exit _
+    (ASSERT((_ : _) _))
+    replaceHead
+    (ASSERT((s':ss') ss v | s' = v && ss' = tail ss)) (ASSERTRANGE((_ : _)))
+  adaptive _ _
+    (ASSERT(not (COM((_ : _) _))))
+    (ASSERT([] _))
+    \ _ v -> [v]
+    (ASSERT'(reentry)(COM((_ : _) _) [v] v))
+    (ASSERT'(retentiveness)(all(ss') Post ss' [v] v => Post ss' [] v))
+  (ASSERT'(coverage)(COM((_ : _) _) || (COM(_ _))))
+  (ASSERT'(disjointness)(true))
+(ASSERT(Post @ (COM((s':ss') ss v | s' = v && ss' = tail ss)))) (ASSERTRANGE((_ : _)))
+\end{code}
+
+\begin{code}
+(ASSERT(_ _))
+rearrV v -> (v, v)
+  (ASSERT(_ (v, v)))
+  (ASSERT'(weaken)(_ _))
+     (ASSERT(_ _))
+     replace
+     (ASSERT(x' _ v | x' = v)) (ASSERTRANGE(_))
+  *  (ASSERT(_ _))
+     replace
+     (ASSERT(y' _ w | y' = w)) (ASSERTRANGE(_))
+  (ASSERT((x', y') _ (v, w) | x' = v && y' = w)) (ASSERTRANGE((v , v)))
+  (ASSERT((x', y') _ (v, v) | x' = v && y' = v))
+(ASSERT((x', y') _ v | x' = v && y' = v))
+(ASSERTRANGE((v , v)))
 \end{code}
 
 \begin{code}
