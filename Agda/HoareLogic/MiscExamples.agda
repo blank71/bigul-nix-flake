@@ -57,6 +57,13 @@ replace²-equal-view-correctness =
     (prod replace replace)
     (λ { {(x' , y') , (x , y) , (z , w)} ((x'≡z , y'≡w) , z≡w) → trans x'≡z (trans z≡w (sym y'≡w)) , cong₂ _,_ x'≡z y'≡w })
 
+replace²-equal-view-range : TripleR (uncurry _≡_ ∘ proj₂) replace² (uncurry _≡_)
+replace²-equal-view-range =
+  conseq
+    (λ { {(s , t) , (v , w)} ((s≡v , t≡w) , s≡t) → trans (sym s≡v) (trans s≡t t≡w) })
+    (prod replace replace)
+    (λ _ → tt , tt)
+
 updateWidth : BiGUL emptyF (kℕ ⊗ kℕ) kℕ
 updateWidth = rearrV var (prod {H = one} var (k tt)) (refl , tt) (return refl) (prod replace (skip (const tt)))
 
@@ -70,6 +77,17 @@ updateWidth-correctness =
           (prod replace skip)
           (λ { {(.v , .h) , (w , h) , (v , _)} ((refl , refl) , _) → _ , (refl , refl) , refl , refl })))
     (λ { {(w' , .h) , (w , h) , v} ((._ , (eq , refl) , refl) , _) → eq , refl })
+
+updateWidth-range : TripleR Π updateWidth Π
+updateWidth-range =
+  conseq
+    (λ _ → tt)
+    (rearrV Π
+       (conseq
+          (λ _ → _ , tt , refl , refl)
+          (prod replace skip)
+          (λ { tt → tt , tt })))
+    id
 
 updateSquare : BiGUL emptyF (kℕ ⊗ kℕ) kℕ
 updateSquare =
@@ -93,3 +111,16 @@ updateSquare-correctness =
       (λ { {(w' , h') , (w , h) , v} ((_ , _ , ne , _) , (w'≡v , v≡v→h'≡v , _)) →
            w'≡v , (λ w≡v → ⊥-elim (falseToWitness ne w≡v)) , (λ _ → trans w'≡v (sym (v≡v→h'≡v refl))) })) ∷ᴬ [])
     (λ _ → inj₂ (inj₁ refl))
+
+updateSquare-range : TripleR Π updateSquare Π
+updateSquare-range =
+  conseq
+    proj₁
+    (case
+       ((conseq
+           (λ { {(w , h) , v} (w≡v , _) → tt , trueFromWitness w≡v , tt })
+           skip
+           (λ _ → tt) ,
+         (λ _ → refl) ,
+         (λ _ → tt)) ∷ᴺ •∷ᴬ []))
+    inj₁

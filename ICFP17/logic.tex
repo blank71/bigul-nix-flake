@@ -52,7 +52,7 @@
 %format adaptive = "\keyword{adaptive}"
 
 \definecolor{putback}{RGB}{60,116,219}
-\definecolor{range}{RGB}{219,77,105}
+\definecolor{range}{RGB}{0,160,0}
 
 \newcommand{\assert}[1]{{\color{putback}\{}\,#1\,{\color{putback}\}}}
 \newcommand{\varassert}[2]{{\color{putback}\{\,#1\kern-\smallskipamount:}\ \ #2\,{\color{putback}\}}}
@@ -75,6 +75,15 @@
                         %% http://ctan.org/pkg/subcaption
 
 \usepackage{mathtools}
+
+\usepackage[color=yellow,textsize=footnotesize]{todonotes}
+\setlength{\marginparwidth}{2cm}
+\reversemarginpar
+
+\renewcommand{\sectionautorefname}{Section}
+\renewcommand{\subsectionautorefname}{Section}
+\renewcommand{\subsubsectionautorefname}{Section}
+\renewcommand{\figureautorefname}{Figure}
 
 \makeatletter\if@@ACM@@journal\makeatother
 %% Journal information (used by PACMPL format)
@@ -237,6 +246,7 @@ Text of abstract \ldots.
 
 
 \section{Introduction}
+\label{sec:introduction}
 
 \citet{Ko-BiGUL}
 
@@ -261,6 +271,7 @@ putSquare  =
 \end{code}
 
 \section{Theory of putback triples}
+\label{sec:putback-triples}
 
 \begin{theorem}[soundness of putback triples] \label{thm:putback-soundness}
 \[ |(ASSERT R) ~ b ~ (ASSERT R')| \quad|=>|\quad |(all(s, v)) R s v => (some(s')) put b s v = Just s' && R' s' s v| \]
@@ -276,6 +287,7 @@ Thus |s = s'|, and we obtain |R' s v|.
 \end{proof}
 
 \section{Putback proof rules}
+\label{sec:putback-proof-rules}
 
 \[ \begin{array}{l} \hline
 |(ASSERT empty) ~ fail ~ (ASSERT empty)|
@@ -313,84 +325,6 @@ can indeed be regarded as a simpler variant of separating conjunction~\citep{Rey
 |all(s', s, v) R' s' s v && T s v => T' s' s v| \\ \hline
 |(ASSERT T) ~ b ~ (ASSERT T')|
 \end{array} \]
-
-\section{Theory of range triples}
-
-\begin{theorem}[soundness of range triples]
-\[ |(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \quad|=>|\quad |(all(s)) P s => (some(v)) get b s = Just v && R s v| \]
-\end{theorem}
-The conclusion implies (by GetPut)
-\[ |(all(s)) P s => (some(v)) put b s v = Just s && R s v| \]
-which further implies
-\[ |(all(s')) P s' => (some(s, v)) put b s v = Just s' && R s v| \]
-
-\begin{theorem}[total forward consistency]
-\[ |(ASSERT R) ~ b ~ (ASSERT(s' _ v || R' s' v))| \quad\wedge\quad |(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \quad|=>|\quad |(all(s)) P s => (some(v)) get b s = Just v && R' s v| \]
-\end{theorem}
-
-\section{Range proof rules}
-
-\[ \begin{array}{l}
-|(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \\
-|all(s, v) R s v && Q s => T s v| \\
-|Q => P| \\ \hline
-|(ASSERTRANGE T) ~ b ~ (ASSERTRANGE Q)|
-\end{array} \]
-
-\[ \begin{array}{l}
-\hline
-|(ASSERTRANGE empty) ~ fail ~ (ASSERTRANGE empty)|
-\end{array} \]
-
-\[ \begin{array}{l}
-\hline
-|(ASSERTRANGE(s v || f s = v)) ~ skip f ~ (ASSERTRANGE _)|
-\end{array} \]
-
-\[ \begin{array}{l}
-\hline
-|(ASSERTRANGE(s v || s = v)) ~ replace ~ (ASSERTRANGE _)|
-\end{array} \]
-
-\[ \begin{array}{l}
-|{-"\assertrange{\awa{T}{R}}\;"-} ~ {-"\awa{r}{l}\;\;"-} ~ {-"\assertrange{\awa{Q}{P}}"-}| \\
-|{-"\assertrange{T}\;"-} ~ {-"r\;\;"-} ~ {-"\assertrange{Q}"-}| \\ \hline
-|(ASSERTRANGE(R * T)) ~ l * r ~ (ASSERTRANGE(P * Q))|
-\end{array} \]
-
-\[ \begin{array}{l}
-|(ASSERTRANGE(s wpat || R s (ENV(wpat)))) ~ b ~ (ASSERTRANGE P)| \\ \hline
-|(ASSERTRANGE(s vpat || R s (ENV(vpat)))) ~ rearrV vpat -> wpat; ~ b ~ (ASSERTRANGE P)|
-\end{array} \]
-
-\[ \begin{array}{l}
-|(ASSERTRANGE(tpat v || R (ENV(tpat)) v)) ~ b ~ (ASSERTRANGE(tpat || P (ENV(tpat))))| \\ \hline
-|(ASSERTRANGE(spat v || R (ENV(spat)) v)) ~ rearrS spat -> tpat; ~ b ~ (ASSERTRANGE(spat || P (ENV(spat))))|
-\end{array} \]
-
-\begin{lemma}
-\[ |(ASSERT R) ~ b ~ (ASSERT(s' _ _ || Q s'))| \quad|&&|\quad |(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \quad|=>|\quad |P => Q| \]
-\end{lemma}
-
-\section{Theory of recursive proofs}
-
-$b \preceq c$ exactly when |(all(s, v, s')) put b s v = Just s' => put c s v = Just s'|
-
-|get b s = Just v ~ => ~ put b s v = Just s ~ => ~ put c s v = Just s ~ => ~ get c s = Just v|
-
-$( b_i \mid i \in \mathbb N )$ is an increasing chain exactly when $i \leq j \Rightarrow b_i \preceq b_j$
-
-|put ((LUB(i)) b_i) s v = Just s'| exactly when |put b_i s v = Just s'| for some~|i|
-
-A function~$f$ is \emph{monotonic} exactly when $b \preceq c$ implies $|f b| \preceq |f c|$
-
-A function~$f$ is \emph{continuous} exactly when |(LUB(i)) (f b_i) = f((LUB(i)) b_i)|
-
-|put ((LUB(i)) (f b_i)) s v = Just s'| if and only if |put (f((LUB(i)) b_i)) s v = Just s'|
-
-|put (f b_i) s v = Just s'| for some~|i| if and only if |put (f((LUB(i)) b_i)) s v = Just s'|
-
-\section{Verifying key-based alignment}
 
 \begin{code}
 (ASSERT(_ _))
@@ -466,6 +400,66 @@ case
 (ASSERT(Post @ (COM((s'::ss') ss v | s' = v && ss' = tail ss)))) (ASSERTRANGE((_ :: _)))
 \end{code}
 
+\section{Theory of range triples}
+\label{sec:range-triples}
+
+\begin{theorem}[soundness of range triples]
+\[ |(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \quad|=>|\quad |(all(s)) P s => (some(v)) get b s = Just v && R s v| \]
+\end{theorem}
+The conclusion implies (by GetPut)
+\[ |(all(s)) P s => (some(v)) put b s v = Just s && R s v| \]
+which further implies
+\[ |(all(s')) P s' => (some(s, v)) put b s v = Just s' && R s v| \]
+
+\begin{theorem}[total forward consistency] \label{thm:total-forward-consistency}
+\[ |(ASSERT R) ~ b ~ (ASSERT(s' _ v || R' s' v))| \quad\wedge\quad |(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \quad|=>|\quad |(all(s)) P s => (some(v)) get b s = Just v && R' s v| \]
+\end{theorem}
+
+\section{Range proof rules}
+\label{sec:range-proof-rules}
+
+\[ \begin{array}{l}
+|(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \\
+|all(s, v) R s v && Q s => T s v| \\
+|Q => P| \\ \hline
+|(ASSERTRANGE T) ~ b ~ (ASSERTRANGE Q)|
+\end{array} \]
+
+\[ \begin{array}{l}
+\hline
+|(ASSERTRANGE empty) ~ fail ~ (ASSERTRANGE empty)|
+\end{array} \]
+
+\[ \begin{array}{l}
+\hline
+|(ASSERTRANGE(s v || f s = v)) ~ skip f ~ (ASSERTRANGE _)|
+\end{array} \]
+
+\[ \begin{array}{l}
+\hline
+|(ASSERTRANGE(s v || s = v)) ~ replace ~ (ASSERTRANGE _)|
+\end{array} \]
+
+\[ \begin{array}{l}
+|{-"\assertrange{\awa{T}{R}}\;"-} ~ {-"\awa{r}{l}\;\;"-} ~ {-"\assertrange{\awa{Q}{P}}"-}| \\
+|{-"\assertrange{T}\;"-} ~ {-"r\;\;"-} ~ {-"\assertrange{Q}"-}| \\ \hline
+|(ASSERTRANGE(R * T)) ~ l * r ~ (ASSERTRANGE(P * Q))|
+\end{array} \]
+
+\[ \begin{array}{l}
+|(ASSERTRANGE(s wpat || R s (ENV(wpat)))) ~ b ~ (ASSERTRANGE P)| \\ \hline
+|(ASSERTRANGE(s vpat || R s (ENV(vpat)))) ~ rearrV vpat -> wpat; ~ b ~ (ASSERTRANGE P)|
+\end{array} \]
+
+\[ \begin{array}{l}
+|(ASSERTRANGE(tpat v || R (ENV(tpat)) v)) ~ b ~ (ASSERTRANGE(tpat || P (ENV(tpat))))| \\ \hline
+|(ASSERTRANGE(spat v || R (ENV(spat)) v)) ~ rearrS spat -> tpat; ~ b ~ (ASSERTRANGE(spat || P (ENV(spat))))|
+\end{array} \]
+
+\begin{lemma}
+\[ |(ASSERT R) ~ b ~ (ASSERT(s' _ _ || Q s')) (ASSERTRANGE P)| \quad|=>|\quad |P => Q| \]
+\end{lemma}
+
 \begin{code}
 putSquare' =
   (ASSERT(_ _))
@@ -497,6 +491,64 @@ putSquare' =
 (ASSERTRANGE((s, t) | s = t))
 \end{code}
 
+\section{Recursion}
+\label{sec:recursion}
+
+$b \preceq c$ exactly when |(all(s, v, s')) put b s v = Just s' => put c s v = Just s'|
+
+|get b s = Just v ~ => ~ put b s v = Just s ~ => ~ put c s v = Just s ~ => ~ get c s = Just v|
+
+$( b_i \mid i \in \mathbb N )$ is an increasing chain exactly when $i \leq j \Rightarrow b_i \preceq b_j$
+
+|put ((LUB(i)) b_i) s v = Just s'| exactly when |put b_i s v = Just s'| for some~|i|
+
+A function~$f$ is \emph{monotonic} exactly when $b \preceq c$ implies $|f b| \preceq |f c|$
+
+A function~$f$ is \emph{continuous} exactly when |(LUB(i)) (f b_i) = f((LUB(i)) b_i)|
+
+|put ((LUB(i)) (f b_i)) s v = Just s'| if and only if |put (f((LUB(i)) b_i)) s v = Just s'|
+
+|put (f b_i) s v = Just s'| for some~|i| if and only if |put (f((LUB(i)) b_i)) s v = Just s'|
+
+\begin{code}
+replaceAll : Eq A => ~ [A] <~ A
+replaceAll =
+  case
+    adaptive [] x
+      \ _ x -> [x]
+    normal (_ :: []) _ exit (_ :: [])
+      rearrS (s :: []) -> s
+        replace
+    normal (_ :: _) _ exit (_ :: _ :: _)
+      rearrS (s :: ss) -> (s, ss)
+        rearrV v -> (v, v)
+             replace
+          *  replaceAll
+\end{code}
+
+\begin{code}
+(ASSERT(_ _))
+replaceAll
+(ASSERT(ss' ss v | ((all(s')) s' `elem` ss' => s' = v) && (ss /= [] => length ss' = length ss)))
+(ASSERTRANGE(ss | (all(x, y)) x `elem` ss && y `elem` ss => x = y))
+\end{code}
+
+Note that consistency is specified purely relationally in this case.
+This reinforces the statement that it is the consistency relation that we have in mind before programming |put|, rather than the |get| function: for asymmetric lenses, a consistency relation must be functional (in the sense that every source is related to at most one view) but may well not be executable (as in the case of |replaceAll|), whereas a |get| function is executable, and its computational content is non-trivially derived from the |put| program.
+\todo{Discuss asymmetric lenses from \citet{Stevens-QVT}'s perspective somewhere before, or move the entire remark to \autoref{sec:discussion}.}
+\begin{proposition}
+\[ |(ASSERT R) ~ b ~ (ASSERT(s' s _ || s' = s))| \quad|=>|\quad |(all(s, v)) R s v => get b s = Just v| \]
+\end{proposition}
+
+\section{Verifying key-based alignment}
+\label{sec:key-based-alignment}
+
+Several variants of alignment have been implemented in BiGUL~\citep{Zan-Brul, Mendes-delta-alignment}.
+Here we choose to verify a variant that is non-trivial and yet not overly complicated: key-based alignment.
+
+For now, \citet{Barbosa-matching-lenses}'s matching lenses may be more powerful, but they are special-purpose and require the invention of a new framework in which to build everything from scratch.
+Instead, we strive to implement complex lenses from just a fixed set of primitives, treating bidirectional programming as having the same status of general-purpose programming.
+
 \begin{code}
 keyAlign : Eq K => (S -> K) -> (V -> K) -> (S <~ V) -> (V -> S) -> ([S] <~ [V])
 keyAlign ks kv b c =
@@ -527,7 +579,9 @@ extract ks kv v (s :: ss)  | ks s == kv v  =  s :: ss
 \end{code}
 
 \section{Discussion}
+\label{sec:discussion}
 
+A proper characterisation of the behaviour of composition will be essential for avoiding problems about composition as discussed by, e.g., \citet{Diskin-delta-asymmetric}.
 \[ \begin{array}{l}
 |(ASSERT (a b' || (some(b, c)) R a c && R' a b && U' b' b c)) ~ l ~ (ASSERT(COM(a' _ b || R' a' b) && T') (ASSERTRANGE P)| \\
 |(ASSERT (b c || (some(a)) R' a b && R a c)) ~ r ~ (ASSERT U')|
@@ -535,22 +589,33 @@ extract ks kv v (s :: ss)  | ks s == kv v  =  s :: ss
 |(ASSERT(R && (COM(a _ || P a)))) ~ l . r ~ (ASSERT(a' a c || (some(b, b')) T' a' a b' && U' b' b c ))|
 \end{array} \]
 
-%% Acknowledgments
-%\begin{acks}                            %% acks environment is optional
-%                                        %% contents suppressed with 'anonymous'
-%  %% Commands \grantsponsor{<sponsorID>}{<name>}{<url>} and
-%  %% \grantnum[<url>]{<sponsorID>}{<number>} should be used to
-%  %% acknowledge financial support and will be used by metadata
-%  %% extraction tools.
-%  This material is based upon work supported by the
-%  \grantsponsor{GS100000001}{National Science
-%    Foundation}{http://dx.doi.org/10.13039/100000001} under Grant
-%  No.~\grantnum{GS100000001}{nnnnnnn} and Grant
-%  No.~\grantnum{GS100000001}{mmmmmmm}.  Any opinions, findings, and
-%  conclusions or recommendations expressed in this material are those
-%  of the author and do not necessarily reflect the views of the
-%  National Science Foundation.
-%\end{acks}
+We need general and formal reasoning principles for bidirectional programming to make it become a proper discipline of programming.
+Within the realm of asymmetric lenses, the get-based approach is fundamentally just about \emph{programming consistency specifications}; only with the putback-based approach can we start talking about \emph{programming to meet functional specifications}.
+
+Programming languages should be shipped with reasoning principles; even domain-specific languages deserve domain-specific reasoning principles!
+
+Doesn't \autoref{thm:total-forward-consistency} say that we need to reason in both directions anyway?
+Even if the sceptic reader insists that constructing the range triples requires thinking in the forward direction, they will still have to admit that, according to \autoref{thm:total-forward-consistency}, what needs to be verified in the forward direction is normally much easier than proving that |get| is contained in the consistency relation. This is because the major work has been done in the backward direction.
+
+It has been argued that ``putback'' is the essence of bidirectional programming~\citep{Fischer-essence-of-BX}.
+We would like to amend this statement: Putback-based \emph{reasoning} is the essence of bidirectional programming.
+This paper has shown, with the Hoare-style logic, what that reasoning can look like.
+
+% Acknowledgements
+\begin{acks}                            %% acks environment is optional
+                                        %% contents suppressed with 'anonymous'
+  %% Commands \grantsponsor{<sponsorID>}{<name>}{<url>} and
+  %% \grantnum[<url>]{<sponsorID>}{<number>} should be used to
+  %% acknowledge financial support and will be used by metadata
+  %% extraction tools.
+  Jeremy Gibbons and Akimasa Morihata
+  
+  This material is based upon work supported by the
+  \grantsponsor{GS100000001}{National Science
+    Foundation}{http://dx.doi.org/10.13039/100000001} under Grant
+  No.~\grantnum{GS100000001}{nnnnnnn} and Grant
+  No.~\grantnum{GS100000001}{mmmmmmm}.
+\end{acks}
 
 %% Bibliography
 \bibliography{../../../Documents/bib}
