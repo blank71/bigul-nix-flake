@@ -67,12 +67,13 @@ consequence : {S V : Set} (R : ℙ (S × V)) (f : S → V → Par S) (R' : ℙ (
 consequence R f R' sound Q Q⊆R Q' R'∩Q∘proj₂⊆Q' (s , v) Q-s-v =
   let (s' , f-s-v↦s' , R'-s'-s-v) = sound (s , v) (Q⊆R Q-s-v) in s' , f-s-v↦s' , R'∩Q∘proj₂⊆Q' (R'-s'-s-v , Q-s-v)
 
-get-correctness : {S V : Set} (R : ℙ (S × V)) (l : S ⇆ V) (R' : ℙ (S × V)) →
-                  Sound R (Lens.put l) (R' ∘ Product.map id proj₂) →
-                  {s : S} {v : V} → Lens.get l s ↦ v → (R ⇒ R') (s , v)
-get-correctness R l R' sound get↦ Rsv with sound _ Rsv
-get-correctness R l R' sound get↦ Rsv | (s' , put↦ , R's'v) with CompSeq-deterministic put↦ (Lens.GetPut l get↦)
-get-correctness R l R' sound get↦ Rsv | (s' , put↦ , R's'v) | refl = R's'v
+partial-forward-consistency :
+  {S V : Set} (R : ℙ (S × V)) (l : S ⇆ V) (R' : ℙ (S × V)) →
+  Sound R (Lens.put l) (R' ∘ Product.map id proj₂) →
+  {s : S} {v : V} → Lens.get l s ↦ v → (R ⇒ R') (s , v)
+partial-forward-consistency R l R' sound get↦ Rsv with sound _ Rsv
+partial-forward-consistency R l R' sound get↦ Rsv | (s' , put↦ , R's'v) with CompSeq-deterministic put↦ (Lens.GetPut l get↦)
+partial-forward-consistency R l R' sound get↦ Rsv | (s' , put↦ , R's'v) | refl = R's'v
 
 hippocratic-triple : {S V : Set} (R : ℙ (S × V)) (l : S ⇆ V) →
                      Sound R (Lens.put l) (uncurry _≡_ ∘ Product.map id proj₁) →
@@ -127,6 +128,16 @@ consequenceG : {S V : Set} (P : ℙ S) (g : S → Par V) (R : ℙ (S × V)) → 
 consequenceG P g R soundR Q Q⊆P T R∩Q⊆T s qs = let (v , g-s↦v , Rsv) = soundR s (Q⊆P qs)
                                                in   v , g-s↦v , R∩Q⊆T (Rsv , qs)
 
+total-forward-consistency :
+  {S V : Set} (R : ℙ (S × V)) (l : S ⇆ V) (R' : ℙ (S × V)) (P : ℙ S) →
+  Sound R (Lens.put l) (R' ∘ Product.map id proj₂) → SoundG P (Lens.get l) R →
+  (s : S) → P s → Σ[ v ∈ V ] Lens.get l s ↦ v × R' (s , v)
+total-forward-consistency R l R' P sound soundG s Ps with soundG s Ps
+total-forward-consistency R l R' P sound soundG s Ps | v , get↦ , Rsv with sound (s , v) Rsv
+total-forward-consistency R l R' P sound soundG s Ps | v , get↦ , Rsv | s' , put↦ , R's'v
+  with CompSeq-deterministic put↦ (Lens.GetPut l get↦)
+total-forward-consistency R l R' P sound soundG s Ps | v , get↦ , Rsv | .s , put↦ , R'sv | refl = v , get↦ , R'sv
+
 fail-soundnessG : {S V : Set} → SoundG {S} {V} ∅ (Lens.get (iso-lens empty-iso)) ∅
 fail-soundnessG _ ()
 
@@ -154,3 +165,23 @@ dep-soundnessG : {S V V' : Set} (f : V → V') (dec : Decidable {A = V'} _≡_) 
 dep-soundnessG f dec l P R l-sound s Ps =
   let (v , get-l-s↦v , R-s-v-fv) = l-sound s Ps
   in  (v , f v) , (get-l-s↦v >>= return refl) , (refl , R-s-v-fv)
+
+composition-soundness :
+  {A B C : Set} (l : A ⇆ B) (r : B ⇆ C)
+  (R : ℙ (A × C)) (P : ℙ A) (R' : ℙ (A × B)) (T' : ℙ (A × A × B)) (U' : ℙ (B × B × C)) →
+  let Pre-l : ℙ (A × B)
+      Pre-l = λ { (a , b') → Σ[ b ∈ B ] Σ[ c ∈ C ] R (a , c) × R' (a , b) × U' (b' , b , c) }
+  in  Sound Pre-l (Lens.put l) (λ { (a' , a , b) → R' (a' , b) × T' (a' , a , b)}) → SoundG P (Lens.get l) Pre-l →
+      Sound (λ { (b , c) → Σ[ a ∈ A ] R' (a , b) × R (a , c) }) (Lens.put r) U' →
+      Sound (R ∩ (P ∘ proj₁)) (Lens.put (l ↔ r))
+            (λ { (a' , a , c) → Σ[ b ∈ B ] Σ[ b' ∈ B ] T' (a' , a , b') × U' (b' , b , c) })
+composition-soundness l r R P R' T' U' l-sound l-soundG r-sound (a , c) (Rac , Pa)
+  with total-forward-consistency _ l R' P
+         (consequence _ (Lens.put l) _ l-sound _ id (λ { (a' , _ , b) → R' (a' , b) }) (proj₁ ∘ proj₁)) l-soundG a Pa
+composition-soundness l r R P R' T' U' l-sound l-soundG r-sound (a , c) (Rac , Pa)
+  | b , get-l-a↦b , R'ab with r-sound (b , c) (a , R'ab , Rac)
+composition-soundness l r R P R' T' U' l-sound l-soundG r-sound (a , c) (Rac , Pa)
+  | b , get-l-a↦b , R'ab | b' , put-r-b-c↦b' , U'b'bc with l-sound (a , b') (b , c , Rac , R'ab , U'b'bc)
+composition-soundness l r R P R' T' U' l-sound l-soundG r-sound (a , c) (Rac , Pa)
+  | b , get-l-a↦b , R'ab | b' , put-r-b-c↦b' , U'b'bc | a' , put-l-a-b'↦a' , R'a'b' , T'a'ab' =
+  a' , (get-l-a↦b >>= put-r-b-c↦b' >>= put-l-a-b'↦a') , b , b' , T'a'ab' , U'b'bc

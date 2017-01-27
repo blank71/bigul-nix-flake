@@ -20,22 +20,25 @@
 }
 \makeatother
 
+%format of = "\keyword{of}"
 %format = = "{=}"
 %format -> = "{\to}"
 %format => = "{\Rightarrow}"
 %format | = "{|}"
-%format == = "{=}"
+%format == = "{\shorteq\kern.5pt\shorteq}"
 %format /= = "{\neq}"
 %format && = "{\wedge}"
 %format || = "{\vee}"
 %format : = "{:}"
 %format `elem` = "{\in}"
+%format . = "{\circ}"
 %format ~ = " "
 
 %format (all(x)) = "\forall" x "."
 %format (some(x)) = "\exists" x "."
 %format empty = "\emptyset"
 %format <~ = "{\hookleftarrow}"
+%format (LUB(x)) = "\bigsqcup_{" x " \in \mathbb N}\kern-\smallskipamount"
 
 %format fail = "\keyword{fail}"
 %format skip = "\keyword{skip}"
@@ -251,7 +254,7 @@ putWidth  =
 putSquare  : (Int, Int) <~ Int
 putSquare  =
   case
-    normal (w, _) v | w = v exit _
+    normal (w, _) v | w == v exit _
       skip fst
     adaptive _ _
       \ _ v -> (v, v)
@@ -260,11 +263,11 @@ putSquare  =
 \section{Theory of putback triples}
 
 \begin{theorem}[soundness of putback triples] \label{thm:putback-soundness}
-\[ |(ASSERT R) ~ b ~ (ASSERT R')| \quad|=>|\quad |(all(s, v)) R s v ~ => ~ (some(s')) put b s v = Just s' && R' s' s v| \]
+\[ |(ASSERT R) ~ b ~ (ASSERT R')| \quad|=>|\quad |(all(s, v)) R s v => (some(s')) put b s v = Just s' && R' s' s v| \]
 \end{theorem}
 
 \begin{theorem}[partial forward consistency]
-\[ |(ASSERT R) ~ b ~ (ASSERT(s' _ v || R' s v))| \quad|=>|\quad |(all(s, v)) get b s = Just v && R s v ~ => ~ R' s v| \]
+\[ |(ASSERT R) ~ b ~ (ASSERT(s' _ v || R' s' v))| \quad|=>|\quad |(all(s, v)) get b s = Just v && R s v ~ => R' s v| \]
 \end{theorem}
 \begin{proof}
 Suppose |get b s = Just v| and |R s v|.
@@ -292,6 +295,8 @@ Thus |s = s'|, and we obtain |R' s v|.
 |(ASSERT(R * T)) ~ l * r ~ (ASSERT(R' * T'))|
 \end{array} \]
 
+can indeed be regarded as a simpler variant of separating conjunction~\citep{Reynolds-separation-logic}
+
 \[ \begin{array}{l}
 |(ASSERT(s wpat || R s (ENV(wpat)))) ~ b ~ (ASSERT(s' s wpat || R' s' s (ENV(wpat))))| \\ \hline
 |(ASSERT(s vpat || R s (ENV(vpat)))) ~ rearrV vpat -> wpat; ~ b ~ (ASSERT(s' s vpat || R' s' s (ENV(vpat))))|
@@ -312,7 +317,7 @@ Thus |s = s'|, and we obtain |R' s v|.
 \section{Theory of range triples}
 
 \begin{theorem}[soundness of range triples]
-\[ |(ASSERT R) ~ b ~ (ASSERTRANGE P)| \quad|=>|\quad |(all(s)) P s => (some(v)) get b s = Just v && R s v| \]
+\[ |(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \quad|=>|\quad |(all(s)) P s => (some(v)) get b s = Just v && R s v| \]
 \end{theorem}
 The conclusion implies (by GetPut)
 \[ |(all(s)) P s => (some(v)) put b s v = Just s && R s v| \]
@@ -320,56 +325,72 @@ which further implies
 \[ |(all(s')) P s' => (some(s, v)) put b s v = Just s' && R s v| \]
 
 \begin{theorem}[total forward consistency]
-\[ |(ASSERT R) ~ b ~ (ASSERT(s' _ v || R' s' v)) (ASSERTRANGE P)| \quad|=>|\quad |(all(s)) P s => (some(v)) get b s = Just v && R' s v| \]
+\[ |(ASSERT R) ~ b ~ (ASSERT(s' _ v || R' s' v))| \quad\wedge\quad |(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \quad|=>|\quad |(all(s)) P s => (some(v)) get b s = Just v && R' s v| \]
 \end{theorem}
 
 \section{Range proof rules}
 
 \[ \begin{array}{l}
-|(ASSERT R) ~ b ~ (ASSERTRANGE P)| \\
+|(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \\
 |all(s, v) R s v && Q s => T s v| \\
 |Q => P| \\ \hline
-|(ASSERT T) ~ b ~ (ASSERTRANGE Q)|
+|(ASSERTRANGE T) ~ b ~ (ASSERTRANGE Q)|
 \end{array} \]
 
 \[ \begin{array}{l}
 \hline
-|(ASSERT empty) ~ fail ~ (ASSERTRANGE empty)|
+|(ASSERTRANGE empty) ~ fail ~ (ASSERTRANGE empty)|
 \end{array} \]
 
 \[ \begin{array}{l}
 \hline
-|(ASSERT(s v || f s = v)) ~ skip f ~ (ASSERTRANGE _)|
+|(ASSERTRANGE(s v || f s = v)) ~ skip f ~ (ASSERTRANGE _)|
 \end{array} \]
 
 \[ \begin{array}{l}
 \hline
-|(ASSERT(s v || s = v)) ~ replace ~ (ASSERTRANGE _)|
+|(ASSERTRANGE(s v || s = v)) ~ replace ~ (ASSERTRANGE _)|
 \end{array} \]
 
 \[ \begin{array}{l}
-|{-"\assert{\awa{T}{R}}\;"-} ~ {-"\awa{r}{l}\;\;"-} ~ {-"\assertrange{\awa{Q}{P}}"-}| \\
-|{-"\assert{T}\;"-} ~ {-"r\;\;"-} ~ {-"\assertrange{Q}"-}| \\ \hline
-|(ASSERT(R * T)) ~ l * r ~ (ASSERTRANGE(P * Q))|
+|{-"\assertrange{\awa{T}{R}}\;"-} ~ {-"\awa{r}{l}\;\;"-} ~ {-"\assertrange{\awa{Q}{P}}"-}| \\
+|{-"\assertrange{T}\;"-} ~ {-"r\;\;"-} ~ {-"\assertrange{Q}"-}| \\ \hline
+|(ASSERTRANGE(R * T)) ~ l * r ~ (ASSERTRANGE(P * Q))|
 \end{array} \]
 
 \[ \begin{array}{l}
-|(ASSERT(s wpat || R s (ENV(wpat)))) ~ b ~ (ASSERTRANGE P)| \\ \hline
-|(ASSERT(s vpat || R s (ENV(vpat)))) ~ rearrV vpat -> wpat; ~ b ~ (ASSERTRANGE P)|
+|(ASSERTRANGE(s wpat || R s (ENV(wpat)))) ~ b ~ (ASSERTRANGE P)| \\ \hline
+|(ASSERTRANGE(s vpat || R s (ENV(vpat)))) ~ rearrV vpat -> wpat; ~ b ~ (ASSERTRANGE P)|
 \end{array} \]
 
 \[ \begin{array}{l}
-|(ASSERT(tpat v || R (ENV(tpat)) v)) ~ b ~ (ASSERTRANGE(tpat || P (ENV(tpat))))| \\ \hline
-|(ASSERT(spat v || R (ENV(spat)) v)) ~ rearrS spat -> tpat; ~ b ~ (ASSERTRANGE(spat || P (ENV(spat))))|
+|(ASSERTRANGE(tpat v || R (ENV(tpat)) v)) ~ b ~ (ASSERTRANGE(tpat || P (ENV(tpat))))| \\ \hline
+|(ASSERTRANGE(spat v || R (ENV(spat)) v)) ~ rearrS spat -> tpat; ~ b ~ (ASSERTRANGE(spat || P (ENV(spat))))|
 \end{array} \]
 
 \begin{lemma}
-\[ |(ASSERT R) ~ b ~ (ASSERT(s' _ _ || Q s'))| \quad|&&|\quad |(ASSERT R) ~ b ~ (ASSERTRANGE P)| \quad|=>|\quad |P => Q| \]
+\[ |(ASSERT R) ~ b ~ (ASSERT(s' _ _ || Q s'))| \quad|&&|\quad |(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \quad|=>|\quad |P => Q| \]
 \end{lemma}
 
 \section{Theory of recursive proofs}
 
-\section{The final problem: Verifying key-based alignment}
+$b \preceq c$ exactly when |(all(s, v, s')) put b s v = Just s' => put c s v = Just s'|
+
+|get b s = Just v ~ => ~ put b s v = Just s ~ => ~ put c s v = Just s ~ => ~ get c s = Just v|
+
+$( b_i \mid i \in \mathbb N )$ is an increasing chain exactly when $i \leq j \Rightarrow b_i \preceq b_j$
+
+|put ((LUB(i)) b_i) s v = Just s'| exactly when |put b_i s v = Just s'| for some~|i|
+
+A function~$f$ is \emph{monotonic} exactly when $b \preceq c$ implies $|f b| \preceq |f c|$
+
+A function~$f$ is \emph{continuous} exactly when |(LUB(i)) (f b_i) = f((LUB(i)) b_i)|
+
+|put ((LUB(i)) (f b_i)) s v = Just s'| if and only if |put (f((LUB(i)) b_i)) s v = Just s'|
+
+|put (f b_i) s v = Just s'| for some~|i| if and only if |put (f((LUB(i)) b_i)) s v = Just s'|
+
+\section{Verifying key-based alignment}
 
 \begin{code}
 (ASSERT(_ _))
@@ -389,7 +410,7 @@ rearrV v -> (v, ())
 \begin{code}
 (ASSERT(_ _))
 case
-  normal (w, _) v | w = v exit _
+  normal (w, _) v | w == v exit _
     (ASSERT((w, _) v | w = v))
     (ASSERT((w, h) v | fst (w, h) = v))
     skip fst
@@ -402,14 +423,14 @@ case
     (ASSERT'(reentry)(COM((w, _) v | w = v) (v, v) v))
     (ASSERT'(retentiveness)(all(w', h') Post (w', h') (v, v) v => Post (w', h') (w, h) v))
   (ASSERT'(coverage)(COM((w, _) v | w = v) || (COM(_ _)) ))
-  (ASSERT'(disjointness)(true))
+  (ASSERT'(disjointness)(True))
 (ASSERT(Post @ (COM((w', h') (w, h) v | w' = v && (w = v => h' = h) && (w /= v => w' = h'))))) (ASSERTRANGE(_))
 \end{code}
 
 \begin{code}
 replaceHead =
-  (ASSERT((_ : _) _))
-  rearrS (s:ss) -> (s, ss)
+  (ASSERT((_ :: _) _))
+  rearrS (s::ss) -> (s, ss)
     (ASSERT((_ , _) _))
     rearrV v -> (v, ())
       (ASSERT((_ , _) (_ , ())))
@@ -423,65 +444,96 @@ replaceHead =
          (ASSERT(ss' ss () | ss' = ss))
       (ASSERT((s', ss') (s, ss) (v, ()) | s' = v && ss' = ss)) (ASSERTRANGE((_ , _)))
     (ASSERT((s', ss') (s, ss) v | s' = v && ss' = ss)) (ASSERTRANGE((_ , _)))
-  (ASSERT((s':ss') (s:ss) v | s' = v && ss' = ss)) (ASSERTRANGE((_ : _)))
-  (ASSERT((s':ss') ss v | s' = v && ss' = tail ss))
+  (ASSERT((s'::ss') (s::ss) v | s' = v && ss' = ss)) (ASSERTRANGE((_ :: _)))
+  (ASSERT((s'::ss') ss v | s' = v && ss' = tail ss))
 \end{code}
 
 \begin{code}
 (ASSERT(_ _))
 case
-  normal (_ : _) _ exit _
-    (ASSERT((_ : _) _))
+  normal (_ :: _) _ exit _
+    (ASSERT((_ :: _) _))
     replaceHead
-    (ASSERT((s':ss') ss v | s' = v && ss' = tail ss)) (ASSERTRANGE((_ : _)))
+    (ASSERT((s'::ss') ss v | s' = v && ss' = tail ss)) (ASSERTRANGE((_ :: _)))
   adaptive _ _
-    (ASSERT(not (COM((_ : _) _))))
+    (ASSERT(not (COM((_ :: _) _))))
     (ASSERT([] _))
     \ _ v -> [v]
-    (ASSERT'(reentry)(COM((_ : _) _) [v] v))
+    (ASSERT'(reentry)(COM((_ :: _) _) [v] v))
     (ASSERT'(retentiveness)(all(ss') Post ss' [v] v => Post ss' [] v))
-  (ASSERT'(coverage)(COM((_ : _) _) || (COM(_ _))))
-  (ASSERT'(disjointness)(true))
-(ASSERT(Post @ (COM((s':ss') ss v | s' = v && ss' = tail ss)))) (ASSERTRANGE((_ : _)))
+  (ASSERT'(coverage)(COM((_ :: _) _) || (COM(_ _))))
+  (ASSERT'(disjointness)(True))
+(ASSERT(Post @ (COM((s'::ss') ss v | s' = v && ss' = tail ss)))) (ASSERTRANGE((_ :: _)))
 \end{code}
 
 \begin{code}
-(ASSERT(_ _))
-rearrV v -> (v, v)
-  (ASSERT(_ (v, v)))
-  (ASSERT'(weaken)(_ _))
-     (ASSERT(_ _))
-     replace
-     (ASSERT(x' _ v | x' = v)) (ASSERTRANGE(_))
-  *  (ASSERT(_ _))
-     replace
-     (ASSERT(y' _ w | y' = w)) (ASSERTRANGE(_))
-  (ASSERT((x', y') _ (v, w) | x' = v && y' = w)) (ASSERTRANGE((v , v)))
-  (ASSERT((x', y') _ (v, v) | x' = v && y' = v))
-(ASSERT((x', y') _ v | x' = v && y' = v))
-(ASSERTRANGE((v , v)))
+putSquare' =
+  (ASSERT(_ _))
+  rearrV v -> (v, v)
+    (ASSERT(_ (v, v)))
+    (ASSERT'(weaken)(_ _))
+       (ASSERT(_ _))
+       replace
+       (ASSERT(x' _ v | x' = v))
+    *  (ASSERT(_ _))
+       replace
+       (ASSERT(y' _ w | y' = w))
+    (ASSERT((x', y') _ (v, w) | x' = v && y' = w))
+    (ASSERT((x', y') _ (v, v) | x' = v && y' = v))
+  (ASSERT((x', y') _ v | x' = v && y' = v))
 \end{code}
 
 \begin{code}
-keyAlign :: Eq k => (s -> k) -> (v -> k) -> BiGUL s v -> (v -> s) -> BiGUL [s] [v]
-keyAlign ks kv b c = [bigul|
+(ASSERTRANGE(_ (v, w) | v = w))
+
+(ASSERTRANGE((s, t) (v, w) | s = v && t = w))
+   (ASSERTRANGE(s v | s = v))
+   replace
+   (ASSERTRANGE _)
+*  (ASSERTRANGE(t w | t = w))
+   replace
+   (ASSERTRANGE _)
+(ASSERTRANGE _)
+(ASSERTRANGE((s, t) | s = t))
+\end{code}
+
+\begin{code}
+keyAlign : Eq K => (S -> K) -> (V -> K) -> (S <~ V) -> (V -> S) -> ([S] <~ [V])
+keyAlign ks kv b c =
   case
     normal [] [] exit []
       rearrV [] -> ()
          skip const ()
-    normal (s : _) (v : _) | ks s = kv v exit (_ : _)
-      rearrS (s : ss) -> (s, ss)
-        rearrV (v : vs) -> (v, vs)
+    normal (s :: _) (v :: _) | ks s == kv v exit (_ :: _)
+      rearrS (s :: ss) -> (s, ss)
+        rearrV (v :: vs) -> (v, vs)
              b
           *  keyAlign ks kv b c
-    adaptive (_ : _) []
+    adaptive (_ :: _) []
       \ _ _ -> []
-    adaptive ss (v : vs) | kv v `elem` map ks ss
-      \ ss (v : _) -> uncurry (:) (extract (kv v) ss)
-    adaptive _ (_ : _)
-      \ ss (v : _) -> c v : ss
-  |]
+    adaptive ss (v :: vs) | kv v `elem` map ks ss
+      \ ss (v :: _) -> extract ks kv v ss
+    adaptive _ (_ :: _)
+      \ ss (v :: _) -> c v :: ss
 \end{code}
+
+\begin{code}
+extract : Eq K => (S -> K) -> (V -> K) -> V -> [S] -> [S]
+extract ks kv v []         = []
+extract ks kv v (s :: ss)  | ks s == kv v  =  s :: ss
+                           | otherwise     =  case extract ks kv v ss of
+                                                []         -> s :: []
+                                                s' :: ss'  -> s' :: s :: ss'
+\end{code}
+
+\section{Discussion}
+
+\[ \begin{array}{l}
+|(ASSERT (a b' || (some(b, c)) R a c && R' a b && U' b' b c)) ~ l ~ (ASSERT(COM(a' _ b || R' a' b) && T') (ASSERTRANGE P)| \\
+|(ASSERT (b c || (some(a)) R' a b && R a c)) ~ r ~ (ASSERT U')|
+\\ \hline
+|(ASSERT(R && (COM(a _ || P a)))) ~ l . r ~ (ASSERT(a' a c || (some(b, b')) T' a' a b' && U' b' b c ))|
+\end{array} \]
 
 %% Acknowledgments
 %\begin{acks}                            %% acks environment is optional

@@ -68,4 +68,17 @@
 \url{http://dx.doi.org/10.1145/2847538.2847544}}
 
 
+\bibitem[\protect\citeauthoryear{Reynolds}{Reynolds}{2002}]%
+        {Reynolds-separation-logic}
+\bibfield{author}{\bibinfo{person}{John~C. Reynolds}.}
+  \bibinfo{year}{2002}\natexlab{}.
+\newblock \showarticletitle{Separation Logic: A Logic for Shared Mutable Data
+  Structures}. In \bibinfo{booktitle}{{\em Logic in Computer Science}} {\em
+  (\bibinfo{series}{LICS'02})}. \bibinfo{publisher}{IEEE},
+  \bibinfo{pages}{55--74}.
+\newblock
+\showDOI{%
+\url{http://dx.doi.org/10.1109/LICS.2002.1029817}}
+
+
 \end{thebibliography}
