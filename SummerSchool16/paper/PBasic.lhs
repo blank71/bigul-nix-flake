@@ -151,28 +151,39 @@ rearranging either the source or view through a ``simple'' $\lambda$-expression~
 The ``simple'' $\lambda$-expression~$e$ should be wrapped inside Template Haskell quasi-quotes |(Q(...))| (written as \texttt{[||} \ldots \texttt{||]} in plain text Haskell).
 By ``simple'' we mean that there should be no wildcards~`|_|' in the argument pattern, and that the body can only contain the argument variables and constructors, and must mention all the argument variables.
 Returning to the problem of putting a pair into a triple, we may define the following
-putback transformation by rearranging the view:
+putback transformation
 \begin{code}
 putPairOverNPair  ::  (Show s0, Show s1, Show s2)
                   =>  BiGUL ((s0,s1),s2) (s1,s2)
 putPairOverNPair  =   $(rearrV (Q( \(v1,v2) -> (((),v1),v2) ))) $
                         (skip1 `Prod` Replace) `Prod` Replace
 \end{code}
+by first rearranging the view |(v1,v2)| to a triple |(((),v1),v2)|
+with same structure as the source, and then using
+|(skip1 `Prod` Replace) `Prod` Replace| to
+put the arranged view |(((),v1),v2)| to the source |((s0,s1),s2)|.
 
 The mechanism of source/view rearrangement enables us to
 process algebraic data structures such as
-lists and trees. The following example uses the view to
+lists and trees, by mapping an algebraic structure to
+the (nested) pair structure. The following example uses the view to
 replace the first element of a nonempty source list:
 \begin{code}
 pHead  ::  Show s => BiGUL [s] s
 pHead  =   $(rearrS (Q( \(s:ss) -> (s, ss) )))$
              $(rearrV (Q( \v -> (v, ()) )))$
-               skip1 `Prod` Replace
+               Replace `Prod` skip1
 \end{code}
+It rearranges the source (an nonempty list) to a pair
+with its head element |s| and its tail |ss|, and the view
+|v| to a pair |(v,())|, so that we can use |v| to replace |s|
+and |()| to keep |ss|. 
+
 \begin{verbatim}
 *PBasic> put pHead [1,2,3,4] 100
 Just [100,2,3,4]
 \end{verbatim}
+
 What if we wish to define a general putback transformation 
 that uses the view to replace the |i|th element of the source list?
 We can define it recursively as follows:
@@ -183,10 +194,17 @@ pNth i  =   if i == 0  then  pHead
                                $(rearrV (Q( \v -> ((), v) ))) $
                                  skip1 `Prod` pNth (i-1) 
 \end{code}
+If |i| is |0|, we simply use |pHead| to update the head
+element of the source with the view. Otherwise, we do the same arrangements
+on the view and the source as we did for |pHead|,
+but then keep the head element unchanged and replace 
+the |(i-1)|th element of the tail of the source by the view.
+
 \begin{verbatim}
 *PBasic> put (pNth 3) [1..10] 100
 Just [1,2,3,100,5,6,7,8,9,10]
 \end{verbatim}
+
 As we know, any putback function in BiGUL is equipped with
 a |get| function.
 For |pNth|, we can test its |get| behavior
@@ -223,37 +241,42 @@ testUpdate'  =   $(update  (P( ((_   , y), z) ))
 \label{sec:PBasic.Case}
 
 The |Case| combinator is for case analysis, and the general structure is as follows:
-< Case  [  $(normal   (Q( mainCond1  :: s -> v -> Bool )) (Q(exitCond1 :: s -> Bool )))
-<          ==> (bx1 :: BiGUL s v)
-<       ,  $(adaptive (Q( mainCond1' :: s -> v -> Bool ))) 
-<          ==> (f1 :: s -> v -> s)
+< Case  [  $(normal   (Q( mainCond  :: s -> v -> Bool )) (Q(exitCond :: s -> Bool )))
+<          ==> (bx :: BiGUL s v)
 <       ,  ...
-<       ,  $(normal   (Q( mainCondn  :: s -> v -> Bool )) (Q(exitCondn :: s -> Bool ))) 
-<          ==> (bxn :: BiGUL s v)
+<       ,  $(adaptive (Q( mainCond :: s -> v -> Bool ))) 
+<          ==> (f :: s -> v -> s)
 <       ,  ...
-<       ,  $(adaptive (Q( mainCondn' :: s -> v -> Bool ))) 
-<          ==> (fn :: s -> v -> s)
 <       ]
 <    :: BiGUL s v
 It contains a sequence of cases, each of which is either |normal| or
-|adaptive|. For a normal case, if the main condition is satisfied, a
-corresponding putback transformation is applied. For an adaptive
-case, if the main condition is satisfied, a function is used to produce
-an adapted source from the current source and view before the whole |Case| is rerun,
-with the expectation that one of the normal cases will be applicable this time.
-Note that if adaptation does not direct execution to a normal case, an error will be reported at runtime.
-
-Note that |$(normal ...)| takes two predicates, which we call
+|adaptive|. We try the conditions of these cases in order and decide which branch we go into.
+\begin{itemize}
+\item For a normal case,
+|$(normal ...)| takes two predicates, which we call
 the \emph{main condition} and the \emph{exit condition}. The
 predicate for the main condition is very general, and we can use any
-function f of type |(s -> v -> Bool)| to examine the source and view. If
-the condition is matched, then the BiGUL program after the predicate
-is executed. If the condition is not satisfied, the next branch is
-tried. The predicate for the exit condition checks the source only. The
-exit conditions in different branches should be disjoint (in principle).
+function of type |(s -> v -> Bool)| to examine the source and view.
+The predicate for the exit condition checks the source only.
+If the main and the exit conditions are satisfied,
+then the BiGUL program after the arrow "|==>|" is executed. 
+Note that the
+exit conditions in different branches are expected to be disjoint for efficient
+execution of the forward transformation.
 
-As a simple example, consider using the view to update all
-the elements in the source list. To do so, we use |Case| to describe a case analysis.
+\item For an adaptive
+case, if the main condition is satisfied, a function of type |(s -> v -> Bool)|
+is used to produce
+an adapted source from the current source and view before the whole |Case| is rerun,
+with the expectation that one of the normal cases will be applicable this time.
+Note that if adaptation does not directly execute to a normal case,
+an error will be reported at runtime. 
+
+
+\end{itemize}
+
+As a simple example, consider using the view to replace each 
+element in the source list. To do so, we use |Case| to describe a case analysis.
 \begin{code}
 replaceAll  ::  (Eq s, Show s) => BiGUL [s] s
 replaceAll  =
@@ -267,20 +290,85 @@ replaceAll  =
            ==> \s v -> [undefined]
         ]
 \end{code}
+It consists of two normal cases and one adaptive case.
+The first normal case says that if the source is of length |1| (containing a single element),
+we rearrange the source list by extracting the single element out, and replace this element
+with the view.
+The second normal case says that if the source has more than |1| elements, we 
+rearrange the source list to a pair of its head element and its tail, rearrange
+the view by duplicating it to a pair, and use one copy of the view to replace the head element, and the other copy to recursively replace each element in the tail of the source.
+The last adaptive case says that if the source is empty, we adapt the source
+to a singleton list with the "don't-care" element (defined by |undefined|), and rerun the whole
+|Case| executing the first normal case. 
+
 \begin{verbatim}
 *PBasic> put replaceAll [] 100
 Right [100]
 *PBasic> put replaceAll [1..10] 100
 Right [100,100,100,100,100,100,100,100,100,100]
 \end{verbatim}
-Note that instead of using a general function to describe
+Note that in the first running example, the source |[]| is first adapted to |[undefined]|,
+and the "don't care" element |undefined| is replaced by |100| at the rerun of
+the whole |Case|.
+
+As another interesting example, we define |emb|, which can safely embed any pair of well-behaved
+|get| and |put| into BiGUL. It is defined as follows:
+
+< emb :: Eq v => (s -> v) -> (s -> v -> s) -> BiGUL s v
+< emb g p = Case
+<   [  $(normal (Q( \s v -> g s == v )) (Q( \s -> True )))
+<      ==> Skip g
+<   ,  $(adaptive (Q( \ _ _ -> otherwise )))
+<      ==> p
+<   ]
+
+where, given a pair of well-behaved |get| |g| and |put| |p|,
+if the view is the same as that produced by applying |g| to the source, we do no change
+on the source with |Skip g| (hinting that the view can be produced using $g$), otherwise we adapte the source using |p| to
+reflect the change on the view to the source. Note that if |p| and |g| forms a well-behaved bidirectional transformation, in the rerun of the whole |Case| after the adaptation, the first normal case will always be applicable. To see a use of |emb|, we may define the following putback function
+to update a pair with its sum.
+\begin{code}
+pSum2 :: BiGUL (Int, Int) Int
+pSum2 = emb g p
+  where  g (x,y) = x+y
+         p (x,y) v = (v-y,y)
+\end{code}
+%\begin{verbatim}
+%*PBasic> put pSum2 (1,2) 100
+%Right (98,2)
+%*PBasic> get pSum2 (1,2)
+%Right 3
+%\end{verbatim}
+
+
+
+While we allow a general function to describe
 the main condition or the exit condition, 
-we allow to use patterns. The syntax for the normal and the adaptive
-cases are:
-< $(normalSV (P( sourcePattern )) (P( viewPattern )) (Q( exitCond )))
+it is usually more concise to use patterns to describe these conditions.
+For instance, we may replace the condition |(Q( \s v -> length s == 1 ))| by
+> (P( \[x] v -> True))
+Here, the meaning of a boolean-valued pattern-matching
+lambda-expression is redefined as a total function which computes to
+|False| when an input does not match the pattern; this meaning is
+different from that of a general pattern-matching lambda-expression,
+which fails to compute when the pattern is not matched.
+For example,
+in general the lambda-expression |\[x] v -> True| will fail
+to compute if the first input is not a singleton list; when used in branch
+construction, however, the lambda-expression will compute to False
+upon encountering an empty list.
+
+Finally, for convieninces, we prepare 
+a special form for the |normal| case where the main condition is specified as the conjunction of two unary predicates on the source and view respectively:
+< $(normalSV   (Q( sourceCond :: s -> Bool ))
+<              (Q( viewCond :: v -> Bool ))
+<              (Q( exitCond :: s -> Bool )))
 <   ==> (bx :: BiGUL s v)
-< $(adaptiveSV (P( sourcePattern )) (P( viewPattern )))
+and a special form for the |adaptive| case where the main condition is specified as the conjunction of two unary predicates on the source and view respectively:
+< $(adaptiveSV  (Q( sourceCond :: s -> Bool ))
+<               (Q( viewCond :: v -> Bool )))
 <   ==> (f :: s -> v -> s)
+
 
 \ignore{
 \begin{code}
@@ -294,81 +382,64 @@ repHead = Case [
 \end{code}
 }
 
+
 \subsection{View dependency}
 
 Sometimes, a view may contain derived values that are computed from
-other part of the view, and are not allowed
-to be changed. For instance, for the view |(x, x+1)|, the second
-component is computed from the first by increasing it by |1|.
+other part of the view, and the view should be consistently changed.
+For instance, for the view |(x, even(x))|, the second
+component is an indicator showing the first component is an even number or not.
 To capture this, BiGUL provides
 
 < Dep :: Eq v' => (v->v') -> BiGUL a v -> BiGUL a (v, v')
 
 to describe this intention. We may, for example, define
 \begin{code}
-replaceAll2 :: BiGUL [Int] (Int,Int)
-replaceAll2 = Dep (+1) replaceAll
+replaceAll2 :: BiGUL [Int] (Int,Bool)
+replaceAll2 = Dep even replaceAll
 \end{code}
 to replace all elements of the source by the
-first component of the view, while the second component
-of the view is a derived one that should be one larger than the first one.
+first component of the view, while checking whether
+the second component is consistent with the first component.
 \begin{verbatim}
-*PBasic> put replaceAll2 [1..10] (100,101)
+*PBasic> put replaceAll2 [1..10] (100,True)
 Just [100,100,100,100,100,100,100,100,100,100]
-*PBasic> put replaceAll2 [1..10] (100,200)
+*PBasic> put replaceAll2 [1..10] (100,False)
 Nothing
-*PBasic> putTrace replaceAll2 [1..10] (100,200)
+*PBasic> putTrace replaceAll2 [1..10] (100,False)
 second view component not determined by the first
 \end{verbatim}
-As seen in the last running of |put|, it reports an error because in the view |(100,200)|,
-|200| is not one larger than |100|.
+As seen in the last running of |put|, it reports an error because the view |(100,False)|
+is inconsistent. This is because |100| is an even number, so the second component should be |True|.
 
 \subsection{Composition}
 
-Bidirectional transformations can be composed.
+Like in the get-based bidirectional progarmming,
+putback-based bidirectional transformations
+can be composed similarly:
 
 < Compose :: BiGUL a u -> BiGUL u b -> BiGUL a b
 
-As a simple example, we define the following |pHead2| to use
-the view to update the first element of the first element of the source.
+where we can put the view |b| to the source |a| through the intermediate data |u|, by
+composing the putback function from |b| to |u| and that from |u| to |a|.
+
+As a simple example, consider that we wish to use the view to update
+the heard element of the head element of a list.
+We can define such putback function as the following |pHead2|
+by composing |pHead| with |pHead|.
 \begin{code}
 pHead2 :: Show a => BiGUL [[a]] a
 pHead2 = pHead `Compose` pHead
 \end{code}
+The following is a running example.
 \begin{verbatim}
 *PBasic> put pHead2 [[1,2],[3,4,5],[]] 100
 Just [[100,2],[3,4,5],[]]
 \end{verbatim}
 
-\subsection{Utilities}
+%\subsection{Utilities}
 
-{\tt Generics.BiGUL.Lib} has some useful predefined functions for building putback transformations.
-An interesting one is |emb|, which can safely embed a pair of well-behaved
-|get| and |put| into BiGUL.
-|emb| itself is defined as follows:
-
-< emb :: Eq v => (s -> v) -> (s -> v -> s) -> BiGUL s v
-< emb g p = Case
-<   [  $(normal (Q( \s v -> g s == v )) (P( _ )))
-<      ==> Skip g
-<   ,  $(adaptive (Q( \ _ _ -> otherwise )))
-<      ==> p
-<   ]
-
-As an application of |emb|, we may define the following putback function
-to use a sum to update a pair.
-\begin{code}
-distSum :: BiGUL (Int, Int) Int
-distSum = emb g p
-  where  g (x,y) = x+y
-         p (x,y) v = (v-y,y)
-\end{code}
-\begin{verbatim}
-*PBasic> put distSum (1,2) 100
-Right (98,2)
-*PBasic> get distSum (1,2)
-Right 3
-\end{verbatim}
+%{\tt Generics.BiGUL.Lib} has some useful predefined functions for building putback transformations.
 
 \ignore{
 \begin{code}
