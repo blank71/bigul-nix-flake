@@ -374,9 +374,9 @@ delete this record by return |Nothing|.
 
 \end{itemize}
 
-Now if we would like to hide the source record by setting its Quantity to |0|
+Now if we wish to hide the source record by setting its Quantity to |0|
 rather than deleting it if it has no marching view record,
-we can simply change the last line of |u0| and get |u1| as follows.
+we could simply change the last line of |u0| and get |u1| as follows.
 
 \begin{code}
 u1 :: RType -> (Record -> Record) -> BiGUL [Record] [Record]
@@ -394,6 +394,7 @@ u1 =  relAlign
 To test, let us see some concrete running examples of using |u0|.
 Recall |s| defined in Section \ref{sec:table}. We can confirm that |get| does
 the query given at the start of this subsection.
+{\small
 \begin{verbatim}
 *Brul> get u0 s
 Just
@@ -401,6 +402,7 @@ Just
 [RString "Lovesong",RInt 5,RString "Disintegration",RInt 4],
 [RString "Trust",RInt 4,RString "Wish",RInt 5]]
 \end{verbatim}
+}
 Now suppose that we change the above result (view) to the following
 by raising the rating of |Lullaby| from |3| to |4|, raising the quality of |lovesong| from |4| to |7|, and deleting |Trust|:
 \begin{code}
@@ -409,6 +411,7 @@ v =  [ [RString "Lullaby" , RInt 4, RString "Show"  , RInt 3]
      ]
 \end{code}
 We can reflect these changes to the source by performing |put|.
+{\small
 \begin{verbatim}
 *Brul> put u0 s v
 Just
@@ -417,6 +420,7 @@ Just
 [RString "Lovesong",RInt 1989,RInt 5,RString "Galore",RInt 1],
 [RString "Lovesong",RInt 1989,RInt 5,RString "Disintegration",RInt 7]]
 \end{verbatim}
+}
 In the updated source, the changes of rating and quality are correctly reflected,
 and the music track |Trust| is removed.
 

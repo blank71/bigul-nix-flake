@@ -992,9 +992,9 @@ delete this record by return \ensuremath{\Conid{Nothing}}.
 
 \end{itemize}
 
-Now if we would like to hide the source record by setting its Quantity to \ensuremath{\mathrm{0}}
+Now if we wish to hide the source record by setting its Quantity to \ensuremath{\mathrm{0}}
 rather than deleting it if it has no marching view record,
-we can simply change the last line of \ensuremath{\Varid{u0}} and get \ensuremath{\Varid{u1}} as follows.
+we could simply change the last line of \ensuremath{\Varid{u0}} and get \ensuremath{\Varid{u1}} as follows.
 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -1035,6 +1035,7 @@ we can simply change the last line of \ensuremath{\Varid{u0}} and get \ensuremat
 To test, let us see some concrete running examples of using \ensuremath{\Varid{u0}}.
 Recall \ensuremath{\Varid{s}} defined in Section \ref{sec:table}. We can confirm that \ensuremath{\Varid{get}} does
 the query given at the start of this subsection.
+{\small
 \begin{tabbing}\tt
 ~\char42{}Brul\char62{}~get~u0~s\\
 \tt ~Just\\
@@ -1042,6 +1043,7 @@ the query given at the start of this subsection.
 \tt ~\char91{}RString~\char34{}Lovesong\char34{}\char44{}RInt~5\char44{}RString~\char34{}Disintegration\char34{}\char44{}RInt~4\char93{}\char44{}\\
 \tt ~\char91{}RString~\char34{}Trust\char34{}\char44{}RInt~4\char44{}RString~\char34{}Wish\char34{}\char44{}RInt~5\char93{}\char93{}
 \end{tabbing}
+}
 Now suppose that we change the above result (view) to the following
 by raising the rating of \ensuremath{\Conid{Lullaby}} from \ensuremath{\mathrm{3}} to \ensuremath{\mathrm{4}}, raising the quality of \ensuremath{\Varid{lovesong}} from \ensuremath{\mathrm{4}} to \ensuremath{\mathrm{7}}, and deleting \ensuremath{\Conid{Trust}}:
 \begin{hscode}\SaveRestoreHook
@@ -1059,6 +1061,7 @@ by raising the rating of \ensuremath{\Conid{Lullaby}} from \ensuremath{\mathrm{3
 \ColumnHook
 \end{hscode}\resethooks
 We can reflect these changes to the source by performing \ensuremath{\Varid{put}}.
+{\small
 \begin{tabbing}\tt
 ~\char42{}Brul\char62{}~put~u0~s~v\\
 \tt ~Just\\
@@ -1067,6 +1070,7 @@ We can reflect these changes to the source by performing \ensuremath{\Varid{put}
 \tt ~\char91{}RString~\char34{}Lovesong\char34{}\char44{}RInt~1989\char44{}RInt~5\char44{}RString~\char34{}Galore\char34{}\char44{}RInt~1\char93{}\char44{}\\
 \tt ~\char91{}RString~\char34{}Lovesong\char34{}\char44{}RInt~1989\char44{}RInt~5\char44{}RString~\char34{}Disintegration\char34{}\char44{}RInt~7\char93{}\char93{}
 \end{tabbing}
+}
 In the updated source, the changes of rating and quality are correctly reflected,
 and the music track \ensuremath{\Conid{Trust}} is removed.
 
