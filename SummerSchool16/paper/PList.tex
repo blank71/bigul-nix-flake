@@ -653,11 +653,6 @@ Below are some testing examples.
 \tt ~Just~\char91{}10\char44{}9\char44{}8\char44{}7\char44{}6\char44{}5\char44{}4\char44{}3\char44{}2\char44{}1\char93{}
 \end{tabbing}
 
-It is worth noting that our definition of \ensuremath{\Varid{lensFoldr}} is just one
-candidate putback function for \ensuremath{\Varid{foldr}}, and there are many others.
-This reflects the fact
-that one \ensuremath{\Varid{foldr}} can have many \ensuremath{\Varid{put}}s, each describing different
-updating strategy.
 }
 
 As the second example, consider the function \ensuremath{\Varid{sum}\;(\Varid{xs},\Varid{e})}, which is to sum up
@@ -705,6 +700,13 @@ the seed by the following definition.\begin{hscode}\SaveRestoreHook
 \>[41]{}\mathbf{in}\;(\Varid{x}\mathbin{+}\Varid{av},\Varid{y}\mathbin{+}\Varid{av}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
+
+It is worth noting that our definition of \ensuremath{\Varid{lensFoldr}} is just one
+putback function for \ensuremath{\Varid{foldr}}, and there are many others.
+This reflects the fact
+that one \ensuremath{\Varid{foldr}} can have many \ensuremath{\Varid{put}}s, each describing one 
+updating strategy.
+
 \ignore{
 \subsection{Efficiency Issue: \ensuremath{\Varid{lensFoldr}}}
 

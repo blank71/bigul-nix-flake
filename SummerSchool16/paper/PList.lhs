@@ -164,11 +164,6 @@ Just [115,114,113,112,111,110,109,108,107,106,105,104,103,102,101,100]
 Just [10,9,8,7,6,5,4,3,2,1]
 \end{verbatim}
 
-It is worth noting that our definition of |lensFoldr| is just one
-candidate putback function for |foldr|, and there are many others.
-This reflects the fact
-that one |foldr| can have many |put|s, each describing different
-updating strategy.
 }
 
 As the second example, consider the function |sum (xs,e)|, which is to sum up
@@ -189,6 +184,13 @@ the seed by the following definition.
 >    where pSum2Av = emb  (\(x,y) -> x+y)
 >                         (\(x,y) v ->  let av = (v-x-y)/2
 >                                       in (x + av, y+av)
+
+
+It is worth noting that our definition of |lensFoldr| is just one
+putback function for |foldr|, and there are many others.
+This reflects the fact
+that one |foldr| can have many |put|s, each describing one 
+updating strategy.
 
 \ignore{
 \subsection{Efficiency Issue: |lensFoldr|}
