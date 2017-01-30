@@ -36,17 +36,27 @@ by calling |get|.
 We shall focus on bidirectionalizing |foldr|, a simple but useful higher-order function on lists:
 < foldr f e []      = e
 < foldr f e (x:xs)  = f x (foldr f e xs)
-where many interesting functions can be defined in terms of |foldr|:
+where many interesting functions can be defined in terms of |foldr|: 
 < sum        = foldr (+) 0
 < map f      = foldr (\a r -> f a : r) []
-< filter p   = foldr (\a r -> if p a then a : r else r) []
-< reverse p  = foldr (\a r -> r ++ [a]) []
-< sort       = foldr insert []
+where |sum| sums up all the elements in a list, and |map f| applies |f| to
+every element in a list.
+%< filter p   = foldr (\a r -> if p a then a : r else r) []
+%< reverse p  = foldr (\a r -> r ++ [a]) []
+%< sort       = foldr insert []
 
-We start by developing a putback version for |foldr|.
+We start by developing a simple putback function for |foldr| in BiGUL:
 \begin{code}
-lensFoldr  ::  (Show a, Show b)
-           =>  BiGUL (a, b) b -> (b->Bool) -> BiGUL ([a], b) b
+lensFoldr  ::  (Show a, Show v)
+           =>  BiGUL (a, v) v -> (v->Bool) -> BiGUL ([a], v) v
+\end{code}
+where we hope to define a putback function of type |BiGUL ([a], v) v|
+that is to use the view to update the source, 
+a list together with a value, by recursively applying
+a simpler putback function of type BiGUL (a, v) v 
+(until a condition is satisfied or all the list elements have been visited).
+We can define it as follows.
+\begin{code}
 lensFoldr bx pv =
   Case  [   $(adaptive (Q( \(x,y) v -> pv v && length x /= 0 ))) 
             ==> \(x,y) v -> ([],y)
@@ -58,33 +68,41 @@ lensFoldr bx pv =
                    (Replace `Prod` lensFoldr bx pv) `Compose` bx
         ]
 \end{code}
-The above |lensFoldr bx pv| updates source |(xs,y)| with view |v|.
-If |v| satisfies |pv|, it will try to stop by adapting |xs| to |[]|.
-Or it will recursively apply |bx| rightwards over
-the elements of |xs|: if |xs| is empty, it will just embed |v| to |y|;
-otherwise it will rearrange the source for the recursive call.
-\ignore{
-lensFilter :: (a->Bool) -> BiGUL [a] [a]
-lensInsert :: Ord a => BiGUL (a,[a]{-sorted-}) [a]{-sorted-}
-lensSort :: Ord a => BiGUL [a] [a]
-}
+Simply speaking, |lensFoldr| accepts a putback function |bx| and a
+view condition |pv|, and performs the case analysis to put the view |v|
+to the source |(xs,e)|. If the view |v| satisfies |pv|
+but the list |xs| in the source is not empty, then it adapts the list to be empty.
+If the list |xs| in the source
+is empty, we do nothing but using the view to replace the second component of the source.
+Otherwise, we rearrange the source from the form of |(x:xs,e)| to that of |(x,(xs,e))|, and
+apply |lensFoldr| recursively with a composition with |bx|. One may understand the composition
+through the following picture (where | r = Replace `Prod` lensFoldr bx pv|).
+\[
+(x,(xs,e)) \overset{r}{\leftrightarrow} (x,e')
+\overset{bx}{\leftrightarrow} v
+\]
 
 With |lensFoldr|, we can redefine many list functions from the putback point
-of view. As the first example, |map| can be defined in terms of |lensFoldr|.
+of view. As the first example, consider |mapAppend|:
+< mapAppend f (xs,ys) = map f xs ++ ys
+we can define its putback function as follows.
 
 \begin{code}
-lensMap :: (Show a, Show b) => BiGUL a b -> BiGUL ([a],[b]) [b]
-lensMap bx =  lensFoldr bx' null
-   where  bx' =  $(rearrV (Q( \(v:vs) -> (v,vs) ))) $
-                    bx `Prod` Replace
+lensMapAppend :: (Show a, Show b) => BiGUL a b -> BiGUL ([a],[b]) [b]
+lensMapAppend pf =  lensFoldr bx null
+   where  bx =  $(rearrV (Q( \(v:vs) -> (v,vs) ))) $
+                    pf `Prod` Replace
 \end{code}
+Here |bx| has the type of |BiGUL (a,[b]) [b]| and
+is defined on |pf| that has the type of |BiGUL a b|.
+
 \begin{verbatim}
-*PList> put (lensMap dec1) ([0..10],[]) [100..110]
+*PList> put (lensMapAppend dec1) ([0..10],[]) [100..110]
 Just ([99,100,101,102,103,104,105,106,107,108,109],[])
-*PList> get (lensMap dec1) ([1..10],[])
+*PList> get (lensMapAppend dec1) ([1..10],[])
 Just [2,3,4,5,6,7,8,9,10,11]
 \end{verbatim}
-Here, for testing, we embed into our framework
+Note that, for testing, we embed into our framework
 the bijective functions for increasing and decreasing an integer by |1|.
 \begin{code}
 dec1 :: BiGUL Int Int
@@ -92,7 +110,8 @@ dec1 = emb g p
   where  g s = s+1
          p s v = v-1
 \end{code}
- 
+
+\ignore{
 The second example is to bidirectionalize |reverse|, which is to reverse the
 elements of a list.
 \begin{code}
@@ -150,6 +169,26 @@ candidate putback function for |foldr|, and there are many others.
 This reflects the fact
 that one |foldr| can have many |put|s, each describing different
 updating strategy.
+}
+
+As the second example, consider the function |sum (xs,e)|, which is to sum up
+all elements of the list |xs| starting from the seed |e|. If the summation is changed,
+there are many ways to reflect this change to the input |(xs,e)|. The following
+describes one way in BiGUL:
+> lensSum :: BiGUL (Int, Int) Int -> BiGUL ([Int], Int) Int
+> lensSum = lensFoldr pSum2 otherwise
+which will reflect the change difference on the view to the head element of |xs|
+if |xs| is not empty, or to the seed |e| otherwise. We may choose other ways, say to 
+reflect the change difference on the view only to the seed by defining
+> lensSum' :: BiGUL (Int, Int) Int -> BiGUL ([Int], Int) Int
+> lensSum' = lensFoldr ($(rearrS (Q( \(x,y) -> (y,x) ))) pSum2) otherwise
+or to reflect the change difference among all the list elements and
+the seed by the following definition.
+> lensSum'' :: BiGUL (Float, Float) Float -> BiGUL ([Float], Float) Float
+> lensSum'' = lensFoldr pSum2Av otherwise
+>    where pSum2Av = emb  (\(x,y) -> x+y)
+>                         (\(x,y) v ->  let av = (v-x-y)/2
+>                                       in (x + av, y+av)
 
 \ignore{
 \subsection{Efficiency Issue: |lensFoldr|}
