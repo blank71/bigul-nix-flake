@@ -16,6 +16,11 @@ Bohannon, A., Pierce, B.C., Vaughan, J.A.: Relational lenses: A language for
   updatable views. In: Principles of Database Systems. pp. 338--347. PODS '06,
   ACM (2006), \url{http://doi.acm.org/10.1145/1142351.1142399}
 
+\bibitem{Diskin-delta-asymmetric}
+Diskin, Z., Xiong, Y., Czarnecki, K.: From state- to delta-based bidirectional
+  model transformations: the asymmetric case. Journal of Object Technology  10,
+   6:1--25 (2011)
+
 \bibitem{FiHP15b}
 Fischer, S., Hu, Z., Pacheco, H.: A clear picture of lens laws - functional
   pearl. In: Hinze, R., Voigtl{\"{a}}nder, J. (eds.) Mathematics of Program

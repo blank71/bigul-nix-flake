@@ -9,7 +9,7 @@ MAIN=paper
 
 BIB_FILE=references.bib
 
-FILES=$(MAIN).tex PutBX.lhs Install.tex PBasic.lhs PList.lhs PSet.lhs Principle.lhs Alignment.lhs BiYacc.lhs Brul.lhs
+FILES=$(MAIN).tex PutBX.lhs Install.tex PBasic.lhs PList.lhs PSet.lhs Principle.lhs Alignment.lhs BiYacc.lhs Brul.lhs Conclusion.tex
 
 TEX_FILE=$(MAIN).tex
 DVI_FILE=$(MAIN).dvi
@@ -62,7 +62,7 @@ $(PDF_FILE) : $(FILES)
 	pdflatex $(TEX_FILE)
 	pdflatex $(TEX_FILE)
 
-$(MAIN).tex: lhs2TeX-polycode.sty lhs2TeX-macros.lhs PutBX.tex PBasic.tex PList.tex PSet.tex Principle.tex Alignment.tex BiYacc.tex Brul.tex
+$(MAIN).tex: lhs2TeX-polycode.sty lhs2TeX-macros.lhs PutBX.tex PBasic.tex PList.tex PSet.tex Principle.tex Alignment.tex BiYacc.tex Brul.tex Conclusion.tex
 
 lhs2TeX-polycode.sty: lhs2TeX-polycode.lhs
 	lhs2TeX --output=$@ $<
