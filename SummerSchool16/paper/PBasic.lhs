@@ -358,7 +358,7 @@ to compute if the first input is not a singleton list; when used in branch
 construction, however, the lambda-expression will compute to False
 upon encountering an empty list.
 
-Finally, for convieninces, we prepare 
+Finally, for conveniences, we prepare 
 a special form for the |normal| case where the main condition is specified as the conjunction of two unary predicates on the source and view respectively:
 < $(normalSV   (Q( sourceCond :: s -> Bool ))
 <              (Q( viewCond :: v -> Bool ))
