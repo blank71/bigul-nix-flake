@@ -28,7 +28,7 @@ When the source and view are both lists, and the |get| direction (i.e., the cons
 Throughout the section, we use a concrete example to introduce three variations of list alignment.
 Suppose that we represent a payroll database as a list.
 (This is a slightly inadequate setting for explaining list alignment, because entries in a database are usually unordered. But let us assume that order matters.)
-Each entry is a triple consisting of an identification number (``id'' henceforth), a name, and a salary number:
+Each entry is a triple --- more precisely, a pair whose second component is again a pair --- consisting of an identification number (``id'' henceforth), a name, and a salary number:
 \begin{code}
 type Source = (Id, (Name, Salary))
 
@@ -43,7 +43,7 @@ employees  =   [  (0  , ("Zhenjiang"  , 1000  ))
                ,  (1  , ("Josh"       , 400   ))
                ,  (2  , ("Jeremy"     , 2000  ))]
 \end{code}
-Suppose that the human resource department is in charge of hiring or sacking employees but has no say on salary numbers, so the entries of the database are presented to them only as pairs of ids and names:
+Suppose that the human resource department is in charge of hiring or sacking employees but does not handle salary numbers, so the entries of the database are presented to them only as pairs of ids and names:
 \begin{code}
 type View = (Id, Name)
 \end{code}
@@ -68,8 +68,9 @@ If the source list has more elements than the view list, the extra elements at t
 cr :: View -> Source
 cr (i, n) = (i, (n, 0))
 \end{code}
-The salary is set to zero, which can be taken care of by the accounting department later, for example.
-In general, we can abstract the source and view types and |bx| and |cr| as parameters, so the alignment program we write can be widely applicable.
+The salary is set to zero, which could be taken care of by, say, the accounting department later.
+We will use |bx| and |cr| as the element synchronizer and creator respectively for our payroll database throughout this section, but our alignment programs will be very general and certainly not restricted to the payroll database.
+We will develop our alignment programs generically, setting the source and view types as polymorphic type parameters (|s|~and~|v| below) and also the element synchronizer and element creator as parameters (|b|~and~|c| below), so the alignment programs can be widely applicable.
 Here is how we implement position-based alignment, which is fairly standard:
 \begin{code}
 posAlign :: (Show s, Show v) => BiGUL s v -> (v -> s) -> BiGUL [s] [v]
@@ -124,10 +125,10 @@ Key-based alignment might seem much more complex than position-based alignment, 
 
 First of all, we need to somehow obtain the keys.
 In our example, on both the source and view we can use |fst| to extract the key value.
-In general, we can further parametrize the alignment program with key extraction functions:
+In general, we can further parametrize the alignment program with key extraction functions |ks :: s -> k| and |kv :: v -> k| for some type~|k| of key values:
 \begin{spec}
-keyAlign  ::  forall a b k . (Show a, Show b, Eq k)
-          =>  (a -> k) -> (b -> k) -> BiGUL a b -> (b -> a) -> BiGUL [a] [b]
+keyAlign  ::  (Show s, Show v, Eq k)
+          =>  (s -> k) -> (v -> k) -> BiGUL s v -> (v -> s) -> BiGUL [s] [v]
 \end{spec}
 The first normal branch of |posAlign| still works perfectly.
 As for the second normal branch, we should revise the main condition to also require that the head elements of the two lists have the same key value:
@@ -141,7 +142,7 @@ In fact, whether the source list is empty or not is not relevant here --- what m
 If it is, then we bring the (first) source element with the same key value to the head position, and the second normal branch can take over; otherwise, we create a new source element.
 This gives us key-based alignment:
 \begin{code}
-keyAlign  ::  forall s v k. (Show s, Show v, Eq k)
+keyAlign  ::  forall s v k {-".\;"-} (Show s, Show v, Eq k)
           =>  (s -> k) -> (v -> k) -> BiGUL s v -> (v -> s) -> BiGUL [s] [v]
 keyAlign ks kv b c = Case
   [ $(normalSV (P( [] )) (P( [] )) (P( [] )))
@@ -202,7 +203,7 @@ A (horizontal) \emph{delta} between a source list and a view list is a list of p
 \begin{code}
 type Delta = [(Int, Int)]
 \end{code}
-For example, the delta we have in mind between the source list |employees| and the view list |updatedEmployees2| is |[(0,0), (1,1), (2,2)]|, which, in particular, associates the source and view entries for Josh since |(2,2)| is included, instead of |[(0,0), (1,1)]|, which indicates that Josh's source entry is not associated with any view entry and should be deleted, and that Josh's view entry is not associated with any source entry and is thus new.
+For example, the delta we have in mind between the source list |employees| and the view list |updatedEmployees2| is |[(0,0), (1,1), (2,2)]|, which, in particular, associates the source and view entries for Josh since |(1,1)| is included, instead of |[(0,0), (2,2)]|, which indicates that Josh's source entry is not associated with any view entry and should be deleted, and that Josh's view entry is not associated with any source entry and is thus new.
 Deltas can easily represent reordering as well.
 For example, we would supply the delta between |employees| and |updatedEmployees1| as |[(0,1), (1,2), (2,0)]|, associating the 0th element in the source --- namely the one for Zhenjiang --- with the 1st element in the view, and so on.
 

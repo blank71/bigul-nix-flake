@@ -10,6 +10,7 @@ We will see that, when writing a BiGUL program, we are always simultaneously des
 And the ``mind-reading'' ability is far from magic:
 It is the consequence of the fact that well-behavedness directly implies that |get| is uniquely determined by |put|, which is the main motivation for designing a putback-based language.
 In this section, we will first review the theory, this time explicitly taking \emph{partiality} into account, and then we will dive into BiGUL's internals to get a taste of putback-based design.
+This is a fairly long section, which is not a prerequisite for subsequent sections though; readers who are more interested in practical BiGUL applications can safely skip this section and proceed to \autoref{sec:alignment}.
 
 \subsection{Lenses, well-behavedness, and the fundamental theorem}
 
@@ -22,14 +23,15 @@ get  :: s       -> Maybe v
 \end{spec}
 satisfying two well-behavedness laws:
 \begin{align}
-|put s v| = |Just s'| \quad&\Rightarrow\quad \phantom{|put s v|}\llap{|get s'|} = |Just v| \tag{\textsc{PutGet}} \label{eq:PutGet} \\
-|get s| = \rlap{|Just v|}\phantom{|Just s'|} \quad&\Rightarrow\quad |put s v| = |Just s| \tag{\textsc{GetPut}} \label{eq:GetPut}
+|put s v| = |Just s'| \quad&\Rightarrow\quad \phantom{|put s v|}\llap{|get s'|} = |Just v| \tag*{\textsc{PutGet}} \label{eq:PutGet} \\
+|get s| = \rlap{|Just v|}\phantom{|Just s'|} \quad&\Rightarrow\quad |put s v| = |Just s| \tag*{\textsc{GetPut}} \label{eq:GetPut}
 \end{align}
 \end{definition}
 In the original formulation~\cite{Lenses}, a lens refers to just a pair of functions having the right types, and one needs to explicitly say ``well-behaved lens'' to mean a well-behaved pair; we will, however, discuss well-behaved lenses only, so we build well-behavedness into our definition of lenses by default.
 Also note that this definition models partial transformations explicitly as |Maybe|-valued functions: |put| and |get| are \emph{total} functions that can nevertheless produce |Nothing| to indicate failure.
+From now on, this definition replaces the one in \autoref{sec:PutBX}, where only total lenses are discussed.
 
-From this definition of well-behavedness, we can immediately prove what might be called the ``fundamental theorem'' of putback-based bidirectional programming:
+From this revised definition of well-behavedness, we can immediately prove a reformulation of \autoref{lemma:injective}:
 \begin{theorem}[uniqueness of {\itshape get}] \label{thm:uniqueness}
 Given two lenses whose |put| components are equal, their |get| components are also equal.
 \end{theorem}
@@ -47,7 +49,7 @@ Then for any $s$~and~$v$,
 \end{align*}
 (This also entails that $|get l s| = |Nothing|$ if and only if $|get r s| = |Nothing|$.) \qed
 \end{proof}
-The theorem guarantees that the BiGUL programmer is in full control of the bidirectional behavior --- programming the |put| behavior is sufficient to determine the |get| behavior.
+This might be called the ``fundamental theorem'' of putback-based bidirectional programming, as the theorem guarantees that the BiGUL programmer is in full control of the bidirectional behavior --- programming the |put| behavior is sufficient to determine the |get| behavior.
 Also, to the language designer, the theorem gives a kind of reassurance that, once the |put| behavior of a construct is determined, there is no need to worry about which |get| behavior should be adopted --- there is at most one possibility.
 This is in contrast to |get|-based design, in which there are usually more than one viable |put| semantics that can be assigned to a |get|-based construct, and the designer needs to justify the choice or provide several versions.
 
@@ -209,6 +211,9 @@ put (Case (pl, l) (pr, r)) s v =
                               maybe (return s') (const Nothing) (get l  s')
   else Nothing
 \end{spec}
+The |maybe| function is from Haskell's prelude and has type |b -> (a -> b) -> Maybe a -> b|; depending on whether the third |Maybe|-typed argument is |Nothing| or a |Just|-value, the result is either the first argument or the second argument applied to the value wrapped inside |Just|.
+In the first branch of the code above, if |put l s v| successfully produces an updated source~|s'|, we will ensure that |get r s'| does not succeed: If |get r s'| is |Nothing| as we want, we will |return s'|; otherwise we emit |Nothing|.
+
 If |get| favors the first branch, meaning that it declares success as soon as the first branch succeeds (without requiring that the second branch fails),
 \begin{spec}
 get (Case (pl, l) (pr, r)) s = maybe (get r s) return (get l s)
@@ -327,6 +332,10 @@ putWithAdaptation (pl, l, ql) (pr, r, qr) (pa, f) s v cont =
   else if  pa  s v  then  cont (f s v)
   else  Nothing
 \end{spec}
+Major work is now moved into a separate function |putWithAdaptation|, which takes an extra |cont| argument of type |s -> Maybe s|.
+This extra argument is a continuation that takes over after the body of an adaptive branch is executed, and is invoked with the adapted source.
+The requirement of not doing adaptation twice is met by setting |putWithAdaptation| itself as a continuation, and this inner |putWithAdaptation| takes the continuation that always fails.
+
 
 What about |get|?
 It turns out that |get| can simply ignore the adaptive branch!
@@ -345,7 +354,10 @@ Finally, for each adaptive branch, the adapted source and the view should match 
 Source and view rearrangements are also among the more complex constructs of BiGUL.
 Their complexity lies in the strongly and generically typed treatment of pattern matching, though, rather than their bidirectional behavior.
 The two kinds of rearrangement are similar, and we will discuss view rearrangement only.
+We will start from formalizing pattern matching as a bidirectional operation --- in fact an isomorphism. Based on pattern matching, evaluation and inverse evaluation of rearranging $\lambda$-expressions can be defined, again forming an isomorphism.
+The semantics of a view rearrangement is then the composition of this latter isomorphism with the lens obtained by interpreting the inner BiGUL program.
 
+\subsubsection{Strongly typed pattern matching, bidirectionally.}
 Pattern matching is inherently a bidirectional operation:
 In one direction, we break something into a collection of its components at the variable positions of a pattern.
 This collection can be considered as indexed by the variable positions, and acting like an \emph{environment} for expression evaluation.
@@ -437,7 +449,8 @@ Precisely speaking, we have
 \[ |deconstruct p x| = |Just e| \quad\Leftrightarrow\quad |construct p e| = |x| \]
 for all |p :: Pat a env|, |x :: a|, and |e :: env|, establishing a (half-) partial isomorphism between |env| and~|a|.
 
-Now consider view rearrangement, which evaluates a ``simple'' pattern-\break{}matching $\lambda$-expression on the view and continues execution with the transformed view.
+\subsubsection{$\lambda$-expressions for rearrangement and their evaluation.}
+Now consider view rearrangement, which evaluates a ``simple'' pattern-matching $\lambda$-expression on the view and continues execution with the transformed view.
 The body of the $\lambda$-expression refers to the variables appearing in the pattern.
 How do we represent such references?
 We have seen that an environment type is a product, i.e., a binary tree; to refer to a component in an environment, we can use a \emph{path} that goes from the root to a sub-tree.
@@ -499,6 +512,7 @@ put (RearrV p e b) s v = do  env <- deconstruct p v
                              put b s (eval e env)
 \end{spec}
 
+\subsubsection{Inverse evaluation of rearranging $\lambda$-expressions.}
 For the |get| direction, after executing the inner BiGUL program to obtain an intermediate view, we should reverse the roles of the pattern and body in the rearranging $\lambda$-expression |\p -> e| , using~|e| as a (possibly non-linear) pattern to match the intermediate view, and computing the final view by evaluating~|p|.
 For example, the |put| direction of view rearrangement with the $\lambda$-expression~(\ref{eq:cons-to-pair}) turns a view list into a pair, on which the inner program operates; in the |get| direction, the inner program will extract from the source an intermediate view pair, which should be converted back to a list by the inverse $\lambda$-expression |\(x, xs) -> (x:xs)|.
 In more detail, given an intermediate view pair |(x, xs)|, we match it with the pair expression~(\ref{eq:pair-expression}), and see that $x$~is associated with the direction |DLeft DVar| and |xs| with |DRight DVar|.

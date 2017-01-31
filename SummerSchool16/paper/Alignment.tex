@@ -368,7 +368,7 @@ When the source and view are both lists, and the \ensuremath{\Varid{get}} direct
 Throughout the section, we use a concrete example to introduce three variations of list alignment.
 Suppose that we represent a payroll database as a list.
 (This is a slightly inadequate setting for explaining list alignment, because entries in a database are usually unordered. But let us assume that order matters.)
-Each entry is a triple consisting of an identification number (``id'' henceforth), a name, and a salary number:
+Each entry is a triple --- more precisely, a pair whose second component is again a pair --- consisting of an identification number (``id'' henceforth), a name, and a salary number:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{14}{@{}>{\hspre}c<{\hspost}@{}}%
@@ -426,7 +426,7 @@ For example, here is a sample payroll database:
 \>[47]{}))\mskip1.5mu]{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-Suppose that the human resource department is in charge of hiring or sacking employees but has no say on salary numbers, so the entries of the database are presented to them only as pairs of ids and names:
+Suppose that the human resource department is in charge of hiring or sacking employees but does not handle salary numbers, so the entries of the database are presented to them only as pairs of ids and names:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -470,8 +470,9 @@ If the source list has more elements than the view list, the extra elements at t
 \>[B]{}\Varid{cr}\;(\Varid{i},\Varid{n})\mathrel{=}(\Varid{i},(\Varid{n},\mathrm{0})){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-The salary is set to zero, which can be taken care of by the accounting department later, for example.
-In general, we can abstract the source and view types and \ensuremath{\Varid{bx}} and \ensuremath{\Varid{cr}} as parameters, so the alignment program we write can be widely applicable.
+The salary is set to zero, which could be taken care of by, say, the accounting department later.
+We will use \ensuremath{\Varid{bx}} and \ensuremath{\Varid{cr}} as the element synchronizer and creator respectively for our payroll database throughout this section, but our alignment programs will be very general and certainly not restricted to the payroll database.
+We will develop our alignment programs generically, setting the source and view types as polymorphic type parameters (\ensuremath{\Varid{s}}~and~\ensuremath{\Varid{v}} below) and also the element synchronizer and element creator as parameters (\ensuremath{\Varid{b}}~and~\ensuremath{\Varid{c}} below), so the alignment programs can be widely applicable.
 Here is how we implement position-based alignment, which is fairly standard:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -572,7 +573,7 @@ Key-based alignment might seem much more complex than position-based alignment, 
 
 First of all, we need to somehow obtain the keys.
 In our example, on both the source and view we can use \ensuremath{\Varid{fst}} to extract the key value.
-In general, we can further parametrize the alignment program with key extraction functions:
+In general, we can further parametrize the alignment program with key extraction functions \ensuremath{\Varid{ks}\mathbin{::}\Varid{s}\to \Varid{k}} and \ensuremath{\Varid{kv}\mathbin{::}\Varid{v}\to \Varid{k}} for some type~\ensuremath{\Varid{k}} of key values:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{11}{@{}>{\hspre}c<{\hspost}@{}}%
@@ -581,10 +582,10 @@ In general, we can further parametrize the alignment program with key extraction
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[B]{}\Varid{keyAlign}{}\<[11]%
 \>[11]{}\mathbin{::}{}\<[11E]%
-\>[15]{}\Varid{forall}\;\Varid{a}\;\Varid{b}\;\Varid{k}\mathbin{\circ}(\Conid{Show}\;\Varid{a},\Conid{Show}\;\Varid{b},\Conid{Eq}\;\Varid{k}){}\<[E]%
+\>[15]{}(\Conid{Show}\;\Varid{s},\Conid{Show}\;\Varid{v},\Conid{Eq}\;\Varid{k}){}\<[E]%
 \\
 \>[11]{}\Rightarrow {}\<[11E]%
-\>[15]{}(\Varid{a}\to \Varid{k})\to (\Varid{b}\to \Varid{k})\to \Conid{BiGUL}\;\Varid{a}\;\Varid{b}\to (\Varid{b}\to \Varid{a})\to \Conid{BiGUL}\;[\mskip1.5mu \Varid{a}\mskip1.5mu]\;[\mskip1.5mu \Varid{b}\mskip1.5mu]{}\<[E]%
+\>[15]{}(\Varid{s}\to \Varid{k})\to (\Varid{v}\to \Varid{k})\to \Conid{BiGUL}\;\Varid{s}\;\Varid{v}\to (\Varid{v}\to \Varid{s})\to \Conid{BiGUL}\;[\mskip1.5mu \Varid{s}\mskip1.5mu]\;[\mskip1.5mu \Varid{v}\mskip1.5mu]{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 The first normal branch of \ensuremath{\Varid{posAlign}} still works perfectly.
@@ -617,7 +618,7 @@ This gives us key-based alignment:
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[B]{}\Varid{keyAlign}{}\<[11]%
 \>[11]{}\mathbin{::}{}\<[11E]%
-\>[15]{}\Varid{forall}\;\Varid{s}\;\Varid{v}\;\Varid{k}\mathbin{\circ}(\Conid{Show}\;\Varid{s},\Conid{Show}\;\Varid{v},\Conid{Eq}\;\Varid{k}){}\<[E]%
+\>[15]{}\Varid{forall}\;\Varid{s}\;\Varid{v}\;\Varid{k}\;.\;(\Conid{Show}\;\Varid{s},\Conid{Show}\;\Varid{v},\Conid{Eq}\;\Varid{k}){}\<[E]%
 \\
 \>[11]{}\Rightarrow {}\<[11E]%
 \>[15]{}(\Varid{s}\to \Varid{k})\to (\Varid{v}\to \Varid{k})\to \Conid{BiGUL}\;\Varid{s}\;\Varid{v}\to (\Varid{v}\to \Varid{s})\to \Conid{BiGUL}\;[\mskip1.5mu \Varid{s}\mskip1.5mu]\;[\mskip1.5mu \Varid{v}\mskip1.5mu]{}\<[E]%
@@ -735,7 +736,7 @@ A (horizontal) \emph{delta} between a source list and a view list is a list of p
 \>[B]{}\mathbf{type}\;\Conid{Delta}\mathrel{=}[\mskip1.5mu (\mathit{Int},\mathit{Int})\mskip1.5mu]{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-For example, the delta we have in mind between the source list \ensuremath{\Varid{employees}} and the view list \ensuremath{\Varid{updatedEmployees2}} is \ensuremath{[\mskip1.5mu (\mathrm{0},\mathrm{0}),(\mathrm{1},\mathrm{1}),(\mathrm{2},\mathrm{2})\mskip1.5mu]}, which, in particular, associates the source and view entries for Josh since \ensuremath{(\mathrm{2},\mathrm{2})} is included, instead of \ensuremath{[\mskip1.5mu (\mathrm{0},\mathrm{0}),(\mathrm{1},\mathrm{1})\mskip1.5mu]}, which indicates that Josh's source entry is not associated with any view entry and should be deleted, and that Josh's view entry is not associated with any source entry and is thus new.
+For example, the delta we have in mind between the source list \ensuremath{\Varid{employees}} and the view list \ensuremath{\Varid{updatedEmployees2}} is \ensuremath{[\mskip1.5mu (\mathrm{0},\mathrm{0}),(\mathrm{1},\mathrm{1}),(\mathrm{2},\mathrm{2})\mskip1.5mu]}, which, in particular, associates the source and view entries for Josh since \ensuremath{(\mathrm{1},\mathrm{1})} is included, instead of \ensuremath{[\mskip1.5mu (\mathrm{0},\mathrm{0}),(\mathrm{2},\mathrm{2})\mskip1.5mu]}, which indicates that Josh's source entry is not associated with any view entry and should be deleted, and that Josh's view entry is not associated with any source entry and is thus new.
 Deltas can easily represent reordering as well.
 For example, we would supply the delta between \ensuremath{\Varid{employees}} and \ensuremath{\Varid{updatedEmployees1}} as \ensuremath{[\mskip1.5mu (\mathrm{0},\mathrm{1}),(\mathrm{1},\mathrm{2}),(\mathrm{2},\mathrm{0})\mskip1.5mu]}, associating the 0th element in the source --- namely the one for Zhenjiang --- with the 1st element in the view, and so on.
 

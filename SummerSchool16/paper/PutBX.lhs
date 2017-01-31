@@ -3,6 +3,7 @@
 %include lhs2TeX-macros.lhs
 
 \section{Putback-based bidirectional programming}
+\label{sec:PutBX}
 
 In this tutorial, the kind of bidirectional transformations (BXs) we discuss is \emph{aymmetric lenses}~\cite{Lenses},
 which basically consist of a pair of transformations:
