@@ -27,6 +27,7 @@
 %format | = "{|}"
 %format == = "{\shorteq\kern.5pt\shorteq}"
 %format /= = "{\neq}"
+%format <= = "{\leq}"
 %format && = "{\wedge}"
 %format || = "{\vee}"
 %format : = "{:}"
@@ -38,7 +39,8 @@
 %format (some(x)) = "\exists" x "."
 %format empty = "\emptyset"
 %format <~ = "{\hookleftarrow}"
-%format (LUB(x)) = "\bigsqcup_{" x " \in \mathbb N}\kern-\smallskipamount"
+%format (LUB(x)) = "\textstyle\bigsqcup_{" x "}\kern-\smallskipamount"
+%format (POWER x) = "\mathbb{P}\," x
 
 %format fail = "\keyword{fail}"
 %format skip = "\keyword{skip}"
@@ -52,7 +54,7 @@
 %format adaptive = "\keyword{adaptive}"
 
 \definecolor{putback}{RGB}{60,116,219}
-\definecolor{range}{RGB}{0,160,0}
+\definecolor{range}{RGB}{0,140,0}
 
 \newcommand{\assert}[1]{{\color{putback}\{}\,#1\,{\color{putback}\}}}
 \newcommand{\varassert}[2]{{\color{putback}\{\,#1\kern-\smallskipamount:}\ \ #2\,{\color{putback}\}}}
@@ -78,7 +80,6 @@
 
 \usepackage[color=yellow,textsize=footnotesize]{todonotes}
 \setlength{\marginparwidth}{2cm}
-\reversemarginpar
 
 \renewcommand{\sectionautorefname}{Section}
 \renewcommand{\subsectionautorefname}{Section}
@@ -270,6 +271,8 @@ putSquare  =
       \ _ v -> (v, v)
 \end{code}
 
+In an instance~\citep{Anjorin-BenchmarX-reloaded}, the BiGUL program skipping all the dynamic checks runs about 20 times faster.
+
 \section{Theory of putback triples}
 \label{sec:putback-triples}
 
@@ -307,7 +310,7 @@ Thus |s = s'|, and we obtain |R' s v|.
 |(ASSERT(R * T)) ~ l * r ~ (ASSERT(R' * T'))|
 \end{array} \]
 
-can indeed be regarded as a simpler variant of separating conjunction~\citep{Reynolds-separation-logic}
+can indeed be regarded as a simple variant of separating conjunction~\citep{Reynolds-separation-logic}
 
 \[ \begin{array}{l}
 |(ASSERT(s wpat || R s (ENV(wpat)))) ~ b ~ (ASSERT(s' s wpat || R' s' s (ENV(wpat))))| \\ \hline
@@ -361,6 +364,8 @@ case
 (ASSERT(Post @ (COM((w', h') (w, h) v | w' = v && (w = v => h' = h) && (w /= v => w' = h'))))) (ASSERTRANGE(_))
 \end{code}
 
+\todo[inline]{Exit condition: compare with assertions in reversible conditionals~\citep{Yokoyama-Janus}}
+
 \begin{code}
 replaceHead =
   (ASSERT((_ :: _) _))
@@ -403,17 +408,29 @@ case
 \section{Theory of range triples}
 \label{sec:range-triples}
 
-\begin{theorem}[soundness of range triples]
+\begin{theorem}[soundness of range triples] \label{thm:range-soundness}
 \[ |(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \quad|=>|\quad |(all(s)) P s => (some(v)) get b s = Just v && R s v| \]
 \end{theorem}
-The conclusion implies (by GetPut)
-\[ |(all(s)) P s => (some(v)) put b s v = Just s && R s v| \]
-which further implies
-\[ |(all(s')) P s' => (some(s, v)) put b s v = Just s' && R s v| \]
+
+Thanks to well-behavedness, we can rewrite the right-hand side of \autoref{thm:range-soundness} into a statement primarily about |put|:
+
+\begin{lemma}
+The right-hand side of \autoref{thm:range-soundness} is equivalent to
+\[ (|(all(s')) P s' => (some(s, v)) put b s v = Just s' && R s v|) \quad|&&|\quad (|(all(s, v)) P s && get b s = Just v ~ => ~ R s v|) \]
+\end{lemma}
+
+The left conjunct is the primary way in which we think about these new triples: if |(ASSERTRANGE R) b (ASSERTRANGE P)| can be derived, then the \emph{range} of results of applying |put b| to those inputs satisfying~|R| will be at least~|P|.
+Hence the name \emph{range triples}.
+The right conjunct says that there is a ``side effect'' when we think about these triples in the putback direction: the subset of inputs considered will be forced to include those related by |get| with its domain restricted to~|P|.
+So, for example, we will not be able to deduce |(ASSERTRANGE(m n || m = n+1)) replace (ASSERTRANGE(_))| even though the left conjunct is true for this pair of |R|~and~|P|.
+This ``side effect'' normally does not get in the way, though, since the preconditions we specify are normally larger than the consistency relations, which contain the |get| functions.
 
 \begin{theorem}[total forward consistency] \label{thm:total-forward-consistency}
-\[ |(ASSERT R) ~ b ~ (ASSERT(s' _ v || R' s' v))| \quad\wedge\quad |(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \quad|=>|\quad |(all(s)) P s => (some(v)) get b s = Just v && R' s v| \]
+\[ |(ASSERT R) ~ b ~ (ASSERT(s' _ v || R' s' v))| \quad|&&|\quad |(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \quad|=>|\quad |(all(s)) P s => (some(v)) get b s = Just v && R' s v| \]
 \end{theorem}
+
+We will write
+\[ |(ASSERT R) ~ b ~ (ASSERT R') (ASSERTRANGE P)| \quad\text{as an abbreviation of}\quad |(ASSERT R) ~ b ~ (ASSERT R') ~ ~ && ~ ~ (ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \]
 
 \section{Range proof rules}
 \label{sec:range-proof-rules}
@@ -494,36 +511,95 @@ putSquare' =
 \section{Recursion}
 \label{sec:recursion}
 
-$b \preceq c$ exactly when |(all(s, v, s')) put b s v = Just s' => put c s v = Just s'|
+\begin{code}
+expand : Nat -> ((S <~ V) -> (S <~ V)) -> (S <~ V)
+expand zero     f = fail
+expand (suc n)  f = f (expand n f)
+\end{code}
 
-|get b s = Just v ~ => ~ put b s v = Just s ~ => ~ put c s v = Just s ~ => ~ get c s = Just v|
+\begin{theorem}[finite expansion of putback triples]
+Let |f : (S <~ V) -> (S <~ V)| and |measure : S -> V -> Nat|.
+If, for all |n : Nat| and |rec : S <~ V|,
+\[ |((all m) (ASSERT(R && (COM(s v || measure s v = m && m < n)))) ~ rec ~ (ASSERT R'))| \quad|=>|\quad |(ASSERT(R && (COM(s v || measure s v = n)))) ~ f rec ~ (ASSERT R')| \]
+then, for all |l : Nat| and |n : Nat| such that |n <= l|,
+\[ |(ASSERT(R && (COM(s v || measure s v = n)))) ~ expand (suc l) f ~ (ASSERT R')| \]
+\end{theorem}
 
-$( b_i \mid i \in \mathbb N )$ is an increasing chain exactly when $i \leq j \Rightarrow b_i \preceq b_j$
+\begin{corollary} For all |l : Nat|,
+\[ |(ASSERT(R && (COM(s v || measure s v <= l)))) ~ expand (suc l) f ~ (ASSERT R')| \]
+\end{corollary}
 
-|put ((LUB(i)) b_i) s v = Just s'| exactly when |put b_i s v = Just s'| for some~|i|
+\begin{theorem}[finite expansion of range triples]
+Let |f : (S <~ V) -> (S <~ V)|, |measure : S -> V -> Nat|, and |P : Nat -> (POWER S)|.
+If, for all |n : Nat| and |rec : S <~ V|,
+\[ |((all m) (ASSERTRANGE(R && (COM(s v || measure s v = m)))) ~ rec ~ (ASSERTRANGE(P m && (COM(_ || m < n)))))| \quad|=>|\quad |(ASSERTRANGE(R && (COM(s v || measure s v = n)))) ~ f rec ~ (ASSERTRANGE(P n))| \]
+then, for all |l : Nat| and |n : Nat| such that |n <= l|,
+\[ |(ASSERTRANGE(R && (COM(s v || measure s v = n)))) ~ expand (suc l) f ~ (ASSERTRANGE(P n))| \]
+\end{theorem}
+\begin{corollary}
+For all |l : Nat|,
+\[ |(ASSERTRANGE(R && (COM(s v || measure s v <= l)))) ~ expand (suc l) f ~ (ASSERTRANGE(LUB(n <= l) P n))| \]
+\end{corollary}
 
-A function~$f$ is \emph{monotonic} exactly when $b \preceq c$ implies $|f b| \preceq |f c|$
-
-A function~$f$ is \emph{continuous} exactly when |(LUB(i)) (f b_i) = f((LUB(i)) b_i)|
-
-|put ((LUB(i)) (f b_i)) s v = Just s'| if and only if |put (f((LUB(i)) b_i)) s v = Just s'|
-
-|put (f b_i) s v = Just s'| for some~|i| if and only if |put (f((LUB(i)) b_i)) s v = Just s'|
+%$b \preceq c$ exactly when |(all(s, v, s')) put b s v = Just s' => put c s v = Just s'|
+%
+%|get b s = Just v ~ => ~ put b s v = Just s ~ => ~ put c s v = Just s ~ => ~ get c s = Just v|
+%
+%$( b_i \mid i \in \mathbb N )$ is an increasing chain exactly when $i \leq j \Rightarrow b_i \preceq b_j$
+%
+%|put ((LUB(i)) b_i) s v = Just s'| exactly when |put b_i s v = Just s'| for some~|i|
+%
+%A function~$f$ is \emph{monotonic} exactly when $b \preceq c$ implies $|f b| \preceq |f c|$
+%
+%A function~$f$ is \emph{continuous} exactly when |(LUB(i)) (f b_i) = f((LUB(i)) b_i)|
+%
+%|put ((LUB(i)) (f b_i)) s v = Just s'| if and only if |put (f((LUB(i)) b_i)) s v = Just s'|
+%
+%|put (f b_i) s v = Just s'| for some~|i| if and only if |put (f((LUB(i)) b_i)) s v = Just s'|
 
 \begin{code}
 replaceAll : Eq A => ~ [A] <~ A
 replaceAll =
+  (ASSERT(ss v | length ss = n))
+  (ASSERT(ss v | length ss = n || (n = 0 && length ss = 1)))
   case
     adaptive [] x
+      (ASSERT([] v | 0 = n || (n = 0 && 0 = 1)))
       \ _ x -> [x]
+      (ASSERT'(reentry)(COM(ss v | length ss = n || (n = 0 && length ss = 1)) [x] x && (COM((_ :: []) _)) [x] x))
+      (ASSERT'(retentiveness)(all(ss') Post ss' [x] x => Post ss' [] x))
     normal (_ :: []) _ exit (_ :: [])
+      (ASSERT((_ :: []) v | 1 = n || (n = 0 && 1 = 1)))
+      (ASSERT((_ :: []) v))
       rearrS (s :: []) -> s
+        (ASSERT(_ _))
         replace
-    normal (_ :: _) _ exit (_ :: _ :: _)
+        (ASSERT(s' _ v | s' = v))
+      (ASSERT((s' :: []) (_ :: []) v | s' = v))
+    normal _ _ exit (_ :: _ :: _)
+      (ASSERT((_ :: _ :: ss) v | 2 + length ss = n || (n = 0 && 2 + length ss = 1)))
+      (ASSERT((_ :: _ :: ss) v | 2 + length ss = n))
       rearrS (s :: ss) -> (s, ss)
+        (ASSERT((_ , _ :: ss) v | 2 + length ss = n))
         rearrV v -> (v, v)
+          (ASSERT((_ , _ :: ss) (v, w) | v = w && 2 + length ss = n))
+          (ASSERT((_ , _ :: ss) (v, w) | 2 + length ss = n))
+             (ASSERT(_ _))
              replace
-          *  replaceAll
+             (ASSERT(x _ v | x = v))
+          *  (ASSERT((_ :: ss) w | 2 + length ss = n))
+             (ASSERT((_ :: ss) w | 1 + length ss = pred n && pred n < n))
+             replaceAll
+             (ASSERT(ss' ss v | ((all(s')) s' `elem` ss' => s' = v) && (ss /= [] => length ss' = length ss)))
+             (ASSERT((y :: ss') (_ :: ss) w | ((all(s')) s' `elem` (y :: ss') => s' = w) && length ss' = length ss))
+             (ASSERT((y :: ss') (_ :: ss) w | y = w && ((all(s')) s' `elem` ss' => s' = w) && length ss' = length ss))
+          (ASSERT((x, y :: ss') (_ , _ :: ss) (v, w) | v = w && x = v && y = w && ((all(s')) s' `elem` ss' => s' = w) && length ss' = length ss))
+          (ASSERT((x, y :: ss') (_ , _ :: ss) (v, w) | v = w && x = v && y = v && ((all(s')) s' `elem` ss' => s' = v) && length ss' = length ss))
+        (ASSERT((x, y :: ss') (_ , _ :: ss) v | x = v && y = v && ((all(s')) s' `elem` ss' => s' = v) && length ss' = length ss))
+      (ASSERT((x :: y :: ss') (_ :: _ :: ss) v | x = v && y = v && ((all(s')) s' `elem` ss' => s' = v) && length ss' = length ss))
+    (ASSERT'(coverage)(True))
+    (ASSERT'(disjointness)(True))
+  (ASSERT(ss' ss v | ((all(s')) s' `elem` ss' => s' = v) && (ss /= [] => length ss' = length ss)))
 \end{code}
 
 \begin{code}
@@ -535,7 +611,7 @@ replaceAll
 
 Note that consistency is specified purely relationally in this case.
 This reinforces the statement that it is the consistency relation that we have in mind before programming |put|, rather than the |get| function: for asymmetric lenses, a consistency relation must be functional (in the sense that every source is related to at most one view) but may well not be executable (as in the case of |replaceAll|), whereas a |get| function is executable, and its computational content is non-trivially derived from the |put| program.
-\todo{Discuss asymmetric lenses from \citet{Stevens-QVT}'s perspective somewhere before, or move the entire remark to \autoref{sec:discussion}.}
+\todo{Discuss asymmetric lenses from \citet[Section~4.1]{Stevens-QVT}'s perspective somewhere before, or move the entire remark to \autoref{sec:discussion}.}
 \begin{proposition}
 \[ |(ASSERT R) ~ b ~ (ASSERT(s' s _ || s' = s))| \quad|=>|\quad |(all(s, v)) R s v => get b s = Just v| \]
 \end{proposition}
@@ -546,8 +622,8 @@ This reinforces the statement that it is the consistency relation that we have i
 Several variants of alignment have been implemented in BiGUL~\citep{Zan-Brul, Mendes-delta-alignment}.
 Here we choose to verify a variant that is non-trivial and yet not overly complicated: key-based alignment.
 
-For now, \citet{Barbosa-matching-lenses}'s matching lenses may be more powerful, but they are special-purpose and require the invention of a new framework in which to build everything from scratch.
-Instead, we strive to implement complex lenses from just a fixed set of primitives, treating bidirectional programming as having the same status of general-purpose programming.
+For now, \citet{Barbosa-matching-lenses}'s matching lenses may be more sophisticated, but they are special-purpose and require the invention of a new framework in which everything is built from scratch.
+Instead, we strive to implement all lenses from just a fixed set of primitives, aiming to promote bidirectional programming to the same status as general-purpose programming.
 
 \begin{code}
 keyAlign : Eq K => (S -> K) -> (V -> K) -> (S <~ V) -> (V -> S) -> ([S] <~ [V])
@@ -581,25 +657,37 @@ extract ks kv v (s :: ss)  | ks s == kv v  =  s :: ss
 \section{Discussion}
 \label{sec:discussion}
 
-A proper characterisation of the behaviour of composition will be essential for avoiding problems about composition as discussed by, e.g., \citet{Diskin-delta-asymmetric}.
+A proper characterisation of the behaviour of composition will be essential for avoiding problems about composition as discussed by, e.g., \citet[Section~2.2]{Diskin-delta-asymmetric}.
 \[ \begin{array}{l}
 |(ASSERT (a b' || (some(b, c)) R a c && R' a b && U' b' b c)) ~ l ~ (ASSERT(COM(a' _ b || R' a' b) && T') (ASSERTRANGE P)| \\
 |(ASSERT (b c || (some(a)) R' a b && R a c)) ~ r ~ (ASSERT U')|
 \\ \hline
 |(ASSERT(R && (COM(a _ || P a)))) ~ l . r ~ (ASSERT(a' a c || (some(b, b')) T' a' a b' && U' b' b c ))|
 \end{array} \]
+This requires the putback and range triples be defined mutually inductively.
+A mutually inductive treatment can also shift the disjointness requirement to the ranges of normal branches instead of their exit conditions, allowing the exit conditions to be specified trivially, which can have a serious impact on runtime efficiency in the forward direction, but can be helpful when prototypic or experimental programs need to be developed without too much time for careful reasoning.
+
+It has been realised~\citep[Section~4.1]{Stevens-QVT}\todo{some other citations}\ that, for practical bidirectional applications, a declarative approach --- in the sense that the programmer writes down only a consistency relation and relies on the system to derive a well-behaved but otherwise arbitrary implementation --- is hardly enough.
+The BX community currently concentrates on the exploration of more forms of well-behavedness properties, but we should not be satisfied with only well-behavedness guarantees; instead, we should also start aiming to precisely characterise the behaviour of bidirectional programs, treating bidirectional programming seriously as we treat general-purpose programming.
 
 We need general and formal reasoning principles for bidirectional programming to make it become a proper discipline of programming.
-Within the realm of asymmetric lenses, the get-based approach is fundamentally just about \emph{programming consistency specifications}; only with the putback-based approach can we start talking about \emph{programming to meet functional specifications}.
 
 Programming languages should be shipped with reasoning principles; even domain-specific languages deserve domain-specific reasoning principles!
 
-Doesn't \autoref{thm:total-forward-consistency} say that we need to reason in both directions anyway?
+\textit{Why isn't the title of this paper ``An Axiomatic Basis for \emph{Putback-Based} Bidirectional Programming''?}
+Within the realm of asymmetric lenses, the get-based approach is fundamentally just about \emph{programming consistency specifications}; only with the putback-based approach can we start talking about \emph{programming to meet functional specifications}, and only in this case does an axiomatic semantics make sense.
+
+\textit{Doesn't \autoref{thm:total-forward-consistency} say that we need to reason in both directions anyway?}
 Even if the sceptic reader insists that constructing the range triples requires thinking in the forward direction, they will still have to admit that, according to \autoref{thm:total-forward-consistency}, what needs to be verified in the forward direction is normally much easier than proving that |get| is contained in the consistency relation. This is because the major work has been done in the backward direction.
+
+Completeness has not been proved, but we have shown that the logic works for various examples.
+
+BiGUL is stateful, but only in the ``Reader'' way, in particular using the Reader monad's `|local|' operation to modify the current source and view.
+Our Hoare-style logic can be said to be merely tracking how the current source and view are manipulated by implicit `|local|' operations.
 
 It has been argued that ``putback'' is the essence of bidirectional programming~\citep{Fischer-essence-of-BX}.
 We would like to amend this statement: Putback-based \emph{reasoning} is the essence of bidirectional programming.
-This paper has shown, with the Hoare-style logic, what that reasoning can look like.
+This paper has shown, with the Hoare-style logic, what such reasoning can look like.
 
 % Acknowledgements
 \begin{acks}                            %% acks environment is optional

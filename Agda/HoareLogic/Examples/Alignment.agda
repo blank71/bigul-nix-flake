@@ -1,7 +1,7 @@
 open import DynamicallyChecked.Universe
 open import Data.Nat as Nat
 
-module HoareLogic.Alignment (Sᵁ Vᵁ : {n : ℕ} → U n) where
+module HoareLogic.Examples.Alignment (Sᵁ Vᵁ : {n : ℕ} → U n) where
 
 open import DynamicallyChecked.Utilities
 open import DynamicallyChecked.Partiality
@@ -49,23 +49,9 @@ pattern _∷ᴹ_ x xs = con (inj₂ (x , xs))
 
 infixr 5 _∷ᴹ_
 
-isNil₀ : (ss : ListS) → Dec (ss ≡ []ᴹ)
-isNil₀ ss = U-dec (var zero) ss []ᴹ
-
-isCons₀ : (ss : ListS) → Dec (Σ[ ht ∈ (S × ListS) ] ss ≡ con (inj₂ ht))
-isCons₀ (con (inj₁ _ )) = no (λ { (_ , ()) })
-isCons₀ (con (inj₂ ht)) = yes (ht , refl)
-
 toList₀ : ListS → List S
 toList₀ []ᴹ       = []
 toList₀ (s ∷ᴹ ss) = s ∷ toList₀ ss
-
-isNil₁ : (vs : ListV) → Dec (vs ≡ []ᴹ)
-isNil₁ vs = U-dec (var (suc zero)) vs []ᴹ
-
-isCons₁ : (vs : ListV) → Dec (Σ[ ht ∈ (V × ListV) ] vs ≡ con (inj₂ ht))
-isCons₁ (con (inj₁ _ )) = no (λ { (_ , ()) })
-isCons₁ (con (inj₂ ht)) = yes (ht , refl)
 
 toList₁ : ListV → List V
 toList₁ []ᴹ       = []
@@ -123,13 +109,6 @@ Post ks kv R' (ss' , ss , vs) =
      (m : ℕ) → Count ((ks s ≡_) ∘ ks) (m , take (toℕ (index i)) (toList₀ ss)) →
      (n : ℕ) → Count ((ks s ≡_) ∘ kv) (n , toList₁ vs) →
      m < n → Any (s ≡_) ssᴹ)
-
-pred-lemma : {m n : ℕ} → suc m ≡ n → pred n < n
-pred-lemma refl = DecTotalOrder.refl Nat.decTotalOrder
-
-pred-inverse-lemma : {n : ℕ} → pred n < n → suc (pred n) ≡ n
-pred-inverse-lemma {zero } ()
-pred-inverse-lemma {suc n} _ = refl
 
 extract-reentry :
   {K : Set} (keq : Decidable (_≡_ {A = K})) (ks : S → K) (kv : V → K) (ss : ListS) (v : V) (vs : ListV) →

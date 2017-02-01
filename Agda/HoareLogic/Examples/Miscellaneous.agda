@@ -1,4 +1,4 @@
-module HoareLogic.MiscExamples where
+module HoareLogic.Examples.Miscellaneous where
 
 open import DynamicallyChecked.Utilities
 open import DynamicallyChecked.Partiality

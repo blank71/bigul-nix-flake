@@ -1,10 +1,12 @@
 module HoareLogic.Utilities where
 
-open import Level
+open import Level using (Level)
 open import Data.Sum
 open import Data.Bool
+open import Data.Nat as Nat
 open import Relation.Nullary
 open import Relation.Nullary.Decidable
+open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
 
 
@@ -25,3 +27,10 @@ falseFromWitness {d = no _ } ¬p = refl
 falseToWitness : {l : Level} {P : Set l} {d : Dec P} → ⌊ d ⌋ ≡ false → ¬ P
 falseToWitness {d = yes p} ()
 falseToWitness {d = no ¬p} eq = ¬p
+
+pred-lemma : {m n : ℕ} → suc m ≡ n → pred n < n
+pred-lemma refl = DecTotalOrder.refl Nat.decTotalOrder
+
+pred-inverse-lemma : {n : ℕ} → pred n < n → suc (pred n) ≡ n
+pred-inverse-lemma {zero } ()
+pred-inverse-lemma {suc n} _ = refl

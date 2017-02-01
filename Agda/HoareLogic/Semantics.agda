@@ -128,6 +128,27 @@ consequenceG : {S V : Set} (P : ℙ S) (g : S → Par V) (R : ℙ (S × V)) → 
 consequenceG P g R soundR Q Q⊆P T R∩Q⊆T s qs = let (v , g-s↦v , Rsv) = soundR s (Q⊆P qs)
                                                in   v , g-s↦v , R∩Q⊆T (Rsv , qs)
 
+range-interpretation-r :
+  {S V : Set} (P : ℙ S) (l : S ⇆ V) (R : ℙ (S × V)) →
+  SoundG P (Lens.get l) R →
+  ((s' : S) → P s' → Σ[ s ∈ S ] Σ[ v ∈ V ] Lens.put l s v ↦ s' × R (s , v)) ×
+  ((s : S) (v : V) → P s → Lens.get l s ↦ v → R (s , v))
+range-interpretation-r P l R soundG =
+  (λ s' Ps' → let (v , get-l-s'↦v , Rs'v) = soundG s' Ps'
+              in  s' , v , Lens.GetPut l get-l-s'↦v , Rs'v) ,
+  (λ s v Ps get-l-s↦v → let (v' , get-l-s↦v' , Rsv') = soundG s Ps
+                        in  subst (R ∘ (_,_ s)) (CompSeq-deterministic get-l-s↦v' get-l-s↦v) Rsv')
+
+range-interpretation-l :
+  {S V : Set} (P : ℙ S) (l : S ⇆ V) (R : ℙ (S × V)) →
+  ((s' : S) → P s' → Σ[ s ∈ S ] Σ[ v ∈ V ] Lens.put l s v ↦ s' × R (s , v)) →
+  ((s : S) (v : V) → P s → Lens.get l s ↦ v → R (s , v)) →
+  SoundG P (Lens.get l) R
+range-interpretation-l P l R range side s Ps with range s Ps
+range-interpretation-l P l R range side s Ps | s' , v , put-l-s'-v↦s , Rs'v =
+  let get-l-s↦v = Lens.PutGet l put-l-s'-v↦s
+  in  v , get-l-s↦v , side s v Ps get-l-s↦v
+
 total-forward-consistency :
   {S V : Set} (R : ℙ (S × V)) (l : S ⇆ V) (R' : ℙ (S × V)) (P : ℙ S) →
   Sound R (Lens.put l) (R' ∘ Product.map id proj₂) → SoundG P (Lens.get l) R →
