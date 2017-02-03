@@ -37,10 +37,12 @@
 
 %format (all(x)) = "\forall" x "."
 %format (some(x)) = "\exists" x "."
-%format empty = "\emptyset"
+%format EMPTY = "\emptyset"
 %format <~ = "{\hookleftarrow}"
 %format (LUB(x)) = "\textstyle\bigsqcup_{" x "}\kern-\smallskipamount"
 %format (POWER x) = "\mathbb{P}\," x
+%format SUBSETEQ = "{\subseteq}"
+%format (GRAPH x) = "{\mathcal G}" x
 
 %format fail = "\keyword{fail}"
 %format skip = "\keyword{skip}"
@@ -293,7 +295,7 @@ Thus |s = s'|, and we obtain |R' s v|.
 \label{sec:putback-proof-rules}
 
 \[ \begin{array}{l} \hline
-|(ASSERT empty) ~ fail ~ (ASSERT empty)|
+|(ASSERT EMPTY) ~ fail ~ (ASSERT EMPTY)|
 \end{array} \]
 
 \[ \begin{array}{l} \hline
@@ -444,7 +446,7 @@ We will write
 
 \[ \begin{array}{l}
 \hline
-|(ASSERTRANGE empty) ~ fail ~ (ASSERTRANGE empty)|
+|(ASSERTRANGE EMPTY) ~ fail ~ (ASSERTRANGE EMPTY)|
 \end{array} \]
 
 \[ \begin{array}{l}
@@ -558,6 +560,13 @@ For all |l : Nat|,
 %|put (f b_i) s v = Just s'| for some~|i| if and only if |put (f((LUB(i)) b_i)) s v = Just s'|
 
 \begin{code}
+(ASSERT(_ _))
+replaceAll
+(ASSERT(ss' ss v | ((all(s')) s' `elem` ss' => s' = v) && (ss /= [] => length ss' = length ss)))
+(ASSERTRANGE((s :: ss) | (all(s')) s' `elem` ss => s = s'))
+\end{code}
+
+\begin{code}
 replaceAll : Eq A => ~ [A] <~ A
 replaceAll =
   (ASSERT(ss v | length ss = n))
@@ -603,17 +612,47 @@ replaceAll =
 \end{code}
 
 \begin{code}
-(ASSERT(_ _))
-replaceAll
-(ASSERT(ss' ss v | ((all(s')) s' `elem` ss' => s' = v) && (ss /= [] => length ss' = length ss)))
-(ASSERTRANGE(ss | (all(x, y)) x `elem` ss && y `elem` ss => x = y))
+(ASSERTRANGE(ss v | length ss = 0)) ~ replaceAll ~ (ASSERTRANGE(EMPTY))
+\end{code}
+
+\begin{code}
+(ASSERTRANGE((s :: ss) v | 1 + length ss = n && s = v))
+case
+  adaptive [] x
+    \ _ x -> [x]
+  normal (_ :: []) _ exit (_ :: [])
+    (ASSERTRANGE((s :: []) v | 1 = n && s = v))
+    rearrS (s :: []) -> s
+      (ASSERTRANGE(s v | 1 = n && s = v))
+      replace
+      (ASSERTRANGE(_ | 1 = n))
+    (ASSERTRANGE(s :: [] | 1 = n))
+  normal _ _ exit (_ :: _ :: _)
+    (ASSERTRANGE((x :: y :: ss) v | 2 + length ss = n && x = v))
+    rearrS (s :: ss) -> (s, ss)
+      (ASSERTRANGE((x, y :: ss) v | 2 + length ss = n && x = v))
+      rearrV v -> (v, v)
+        (ASSERTRANGE((x, y :: ss) (v, w) | 2 + length ss = n && x = v && v = w))
+        (ASSERTRANGE((x, y :: ss) (v, w) | 2 + length ss = n && x = v && y = w))
+           (ASSERTRANGE(x v | x = v))
+           replace
+           (ASSERTRANGE(_))
+        *  (ASSERTRANGE((y :: ss) w | 2 + length ss = n && y = w))
+           (ASSERTRANGE((y :: ss) w | 1 + length ss = pred n && y = w))
+           replaceAll
+           (ASSERTRANGE((s :: ss) | 1 + length ss = pred n && ((all(s')) s' `elem` ss => s = s') && pred n < n))
+        (ASSERTRANGE((_ , s :: ss) | 1 + length ss = pred n && ((all(s')) s' `elem` ss => s = s') && pred n < n))
+        (ASSERTRANGE((x, y :: ss) | 2 + length ss = n && x = y && (all(s')) s' `elem` ss => x = s'))
+      (ASSERTRANGE((x, y :: ss) | 2 + length ss = n && x = y && (all(s')) s' `elem` ss => x = s'))
+    (ASSERTRANGE((x :: y :: ss) | 2 + length ss = n && x = y && (all(s')) s' `elem` ss => x = s'))
+(ASSERTRANGE((s :: ss) | 1 + length ss = n && (all(s')) s' `elem` ss => s = s'))
 \end{code}
 
 Note that consistency is specified purely relationally in this case.
 This reinforces the statement that it is the consistency relation that we have in mind before programming |put|, rather than the |get| function: for asymmetric lenses, a consistency relation must be functional (in the sense that every source is related to at most one view) but may well not be executable (as in the case of |replaceAll|), whereas a |get| function is executable, and its computational content is non-trivially derived from the |put| program.
 \todo{Discuss asymmetric lenses from \citet[Section~4.1]{Stevens-QVT}'s perspective somewhere before, or move the entire remark to \autoref{sec:discussion}.}
 \begin{proposition}
-\[ |(ASSERT R) ~ b ~ (ASSERT(s' s _ || s' = s))| \quad|=>|\quad |(all(s, v)) R s v => get b s = Just v| \]
+\[ |(ASSERT R) ~ b ~ (ASSERT(s' s _ || s' = s))| \quad|=>|\quad |R SUBSETEQ (GRAPH(get b))| \]
 \end{proposition}
 
 \section{Verifying key-based alignment}

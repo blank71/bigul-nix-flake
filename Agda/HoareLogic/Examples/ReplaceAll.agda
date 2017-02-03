@@ -151,3 +151,88 @@ replaceAll-correctness n rec rec-t =
             ; {_ ∷ᴹ _ ∷ᴹ _} _ → refl , tt , tt })) ∷ᴺ [])
        (λ _ → inj₂ (inj₂ (inj₁ refl))))
     proj₁
+
+replaceAll-finite-expansion : (l n : ℕ) → n ≤ l → Triple ((_≡ n) ∘ length ∘ toList ∘ proj₁) (expand (suc l) replaceAllᴮ) Post
+replaceAll-finite-expansion l n n≤l =
+  conseq
+    (_,_ tt)
+    (expandTriple replaceAllᴮ (length ∘ toList ∘ proj₁) Π Post
+       (λ n rec rec-t → conseq proj₂ (replaceAll-correctness n rec (conseq (_,_ tt) rec-t proj₁)) proj₁)
+       l n n≤l)
+    proj₁
+
+PreR : ℙ (ListA × A)
+PreR ([]ᴹ     , v) = ⊤
+PreR (s ∷ᴹ ss , v) = s ≡ v
+
+PostR : ℕ → ℙ ListA
+PostR n []ᴹ       = ⊥
+PostR n (s ∷ᴹ ss) = 1 + length (toList ss) ≡ n × ((s' : A) → Any (_≡ s') (toList ss) → s ≡ s')
+
+replaceAll-range : (n : ℕ) (rec : BiGUL F (var zero) Aᵁ) →
+                   ({m : ℕ} → TripleR (PreR ∩ ((_≡ m) ∘ length ∘ toList ∘ proj₁)) rec (PostR m ∩ (λ _ → m < n))) →
+                   TripleR (PreR ∩ ((_≡ n) ∘ length ∘ toList ∘ proj₁)) (replaceAllᴮ rec) (PostR n)
+replaceAll-range n rec rec-t =
+  conseq
+    proj₁
+    (case
+       (•∷ᴬ
+        (conseq {Q = λ { (s ∷ᴹ []ᴹ) → 1 ≡ n; _ → ⊥ }}
+           (λ { {[]ᴹ         , _} (_ , ())
+              ; {s ∷ᴹ []ᴹ    , v} → λ { ((_ , (refl , _) , p) , _) → p , refl , refl , tt }
+              ; {_ ∷ᴹ _ ∷ᴹ _ , _} (_ , ()) })
+           (rearrS (λ { ((s , _) , v) → PreR (s ∷ᴹ []ᴹ , v) × (1 ≡ n) })
+                   (λ { (s , _) → PostR n (s ∷ᴹ []ᴹ) })
+              (conseq
+                 (λ { {s , v} (s≡v , _ , (1≡n , _) , _) → _ , refl , s≡v , 1≡n })
+                 replace
+                 (λ _ → tt)))
+           (λ { {[]ᴹ        } ()
+              ; {_ ∷ᴹ []ᴹ   } 1≡n → _ , (1≡n , (λ _ ())) , refl , refl
+              ; {_ ∷ᴹ _ ∷ᴹ _} () }) ,
+         (λ { {[]ᴹ        } ()
+            ; {_ ∷ᴹ []ᴹ   } _ → refl
+            ; {_ ∷ᴹ _ ∷ᴹ _} () }) ,
+         (λ _ → tt , tt)) ∷ᴺ
+        (conseq {Q = λ { (x ∷ᴹ y ∷ᴹ ss) →
+                           2 + length (toList ss) ≡ n × x ≡ y × ((s' : A) → Any (_≡ s') (toList ss) → x ≡ s')
+                       ; _ → ⊥ }}
+           (λ { {[]ᴹ          , _} (_ , ())
+              ; {_ ∷ᴹ []ᴹ     , _} (_ , ())
+              ; {x ∷ᴹ y ∷ᴹ ss , v} → λ { ((_ , (refl , refl) , neq , x≡v) , _) → (x≡v , neq) , refl , refl , refl , tt  } })
+           (rearrS (λ { ((x , _ ∷ᴹ ss) , v) → 2 + length (toList ss) ≡ n × x ≡ v; _ → ⊥ })
+                   (λ { (x , y ∷ᴹ ss) →
+                          2 + length (toList ss) ≡ n × x ≡ y × ((s' : A) → Any (_≡ s') (toList ss) → x ≡ s')
+                      ; _ → ⊥ })
+              (conseq
+                 (λ { {(_ , []ᴹ)     , _} ((_ , () , _) , _)
+                    ; {(x , y ∷ᴹ ss) , v} →
+                        λ { ((.v , (neq , x≡v) , refl) , _ , _ , refl , refl) → _ , (refl , refl) , neq , x≡v } })
+                 (rearrV (λ { ((x , _ ∷ᴹ ss) , v) → 2 + length (toList ss) ≡ n × x ≡ v ; _ → ⊥ })
+                    (conseq
+                       (λ { {(_ , []ᴹ    ) , _      } → λ { (_ , _ , () , _ , refl) }
+                          ; {(x , y ∷ᴹ ss) , (v , w)} →
+                              λ { ((x≡v , y≡w , _) , (.x , .(y ∷ᴹ ss)) , (neq , x≡y , alleq) , refl , refl) →
+                                    x , (neq , refl) , x≡v , trans x≡y y≡w } })
+                       (prod replace (rec-t {pred n}))
+                       (λ { {_ , []ᴹ    } ((_ , .[]ᴹ) , () , _ , refl)
+                          ; {x , y ∷ᴹ ss} (_ , (neq , x≡y , alleq) , refl , refl) →
+                              tt , (cong pred neq , (λ s' i → trans (sym x≡y) (alleq s' i))) , pred-lemma neq })))
+                 id))
+           (λ { {[]ᴹ         } ()
+              ; {_ ∷ᴹ []ᴹ    } ()
+              ; {x ∷ᴹ y ∷ᴹ ss} p → (x , y ∷ᴹ ss) , p , refl , refl }) ,
+         (λ { {[]ᴹ         } ()
+            ; {_ ∷ᴹ []ᴹ    } ()
+            ; {x ∷ᴹ y ∷ᴹ ss} _ → refl }) ,
+         (λ { {[]ᴹ        } ()
+            ; {_ ∷ᴹ []ᴹ   } ()
+            ; {_ ∷ᴹ _ ∷ᴹ _} _ → refl , tt , tt })) ∷ᴺ []))
+    (λ { {[]ᴹ         } ()
+       ; {_ ∷ᴹ []ᴹ    } (1≡n , _) → inj₁ 1≡n
+       ; {x ∷ᴹ y ∷ᴹ ss} (neq , alleq) → inj₂ (inj₁ (neq , alleq y (here refl) , (λ s' i → alleq s' (there i)))) })
+
+replaceAll-finite-expansionR :
+  (l n : ℕ) → n ≤ l → TripleR (PreR ∩ ((_≡ n) ∘ length ∘ toList ∘ proj₁)) (expand (suc l) replaceAllᴮ) (PostR n)
+replaceAll-finite-expansionR l n n≤l =
+  expandTripleR replaceAllᴮ (length ∘ toList ∘ proj₁) PreR PostR replaceAll-range l n n≤l
