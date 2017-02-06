@@ -36,10 +36,44 @@ emb-correctness : {n : ℕ} {F : Functor n} {S V : U n}
                   ({s : ⟦ S ⟧ (μ F)} {v : ⟦ V ⟧ (μ F)} → g (p s v) ≡ v) →
                   Triple Π (emb {F = F} {S} {V} g p) (λ { (s' , _ , v) → g s' ≡ v })
 emb-correctness g p PutGet =
-  case ((conseq (λ { (_ , cond , _) → trueToWitness cond }) skip
-                (λ { {.s , s , v} (refl , _ , equa , _) → trueToWitness equa , (equa , tt) , refl }) , (λ _ → tt)) ∷ᴺ
-        ((λ _ → tt , inj₁ (trueFromWitness PutGet)) , (λ { (_ , eq) → eq })) ∷ᴬ [])
+  case (conseq
+          (λ { (_ , eqn , _) → trueToWitness eqn })
+          skip
+          (λ { {.s , s , v} (refl , _ , eqn , _) → trueToWitness eqn , (eqn , tt) , refl , tt }) ∷ᴺ
+        (λ { s v _ → (tt , (inj₁ (trueFromWitness PutGet))) , (λ _ → id) }) ∷ᴬ [])
        (λ _ → inj₂ (inj₁ refl))
+
+emb-correctness' : {n : ℕ} {F : Functor n} {S V : U n}
+                   (g : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F)) (p : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → ⟦ S ⟧ (μ F)) →
+                   ({s : ⟦ S ⟧ (μ F)} {v : ⟦ V ⟧ (μ F)} → g (p s v) ≡ v) →
+                   ({s : ⟦ S ⟧ (μ F)} → p s (g s) ≡ s) →
+                   Triple Π (emb {F = F} {S} {V} g p) (λ { (s' , s , v) → s' ≡ p s v })
+emb-correctness' g p PutGet GetPut =
+  case
+    (conseq
+       (λ { (_ , eqn , _) → trueToWitness eqn })
+       skip
+       (λ { {.s , s , v} (refl , _ , eqn , _) →
+            trans (sym GetPut) (cong (p s) (trueToWitness eqn)) , (eqn , tt) , refl , tt }) ∷ᴺ
+     (λ { s v (_ , _ , neqn , _) →
+          (tt , inj₁ (trueFromWitness PutGet)) ,
+          (λ s' eq → trans eq (trans (cong (p (p s v)) (sym PutGet)) GetPut)) }) ∷ᴬ [])
+    (λ _ → inj₂ (inj₁ refl))
+
+emb-range : {n : ℕ} {F : Functor n} {S V : U n}
+            (g : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F)) (p : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → ⟦ S ⟧ (μ F)) →
+            TripleR Π (emb {F = F} {S} {V} g p) Π
+emb-range g p =
+  conseq
+    (λ _ → tt)
+    (case
+       (((conseq
+            (λ { (eq , _) → tt , trueFromWitness eq , tt })
+            skip
+            id) ,
+         (λ _ → refl , tt)) ∷ᴺ •∷ᴬ []))
+    inj₁
+
 
 emptyF : Functor 0
 emptyF ()
@@ -98,18 +132,19 @@ updateSquare =
      (((λ _ _ → true) ,
       adaptive (λ { _ v → (v , v) }))) ∷ [])
 
-updateSquare-correctness : Triple Π updateSquare (λ { ((w' , h') , (w , h) , v) → w' ≡ v × (w ≡ v → h' ≡ h) × (w ≢ v → w' ≡ h') })
+updateSquare-correctness :
+  Triple Π updateSquare (λ { ((w' , h') , (w , h) , v) → w' ≡ v × (w ≡ v → h' ≡ h) × (w ≢ v → w' ≡ h') })
 updateSquare-correctness =
   case
-    (((conseq
-         (λ { {(w , h) , v} (_ , e , _) → trueToWitness e })
-         skip
-         (λ { {.(w , h) , (w , h) , v} (refl , _ , e , _) →
-              (trueToWitness e , (λ _ → refl) , (λ w≢v → ⊥-elim (w≢v (trueToWitness e)))) , (e , tt) , refl })) ,
-      (λ _ → tt)) ∷ᴺ
-     ((λ { {(w , h) , v} (tt , _ , ne , _) → tt , inj₁ (trueFromWitness refl) }) ,
-      (λ { {(w' , h') , (w , h) , v} ((_ , _ , ne , _) , (w'≡v , v≡v→h'≡v , _)) →
-           w'≡v , (λ w≡v → ⊥-elim (falseToWitness ne w≡v)) , (λ _ → trans w'≡v (sym (v≡v→h'≡v refl))) })) ∷ᴬ [])
+    ((conseq
+        (λ { {(w , h) , v} (_ , e , _) → trueToWitness e })
+        skip
+        (λ { {.(w , h) , (w , h) , v} (refl , _ , e , _) →
+             (trueToWitness e , (λ _ → refl) , (λ w≢v → ⊥-elim (w≢v (trueToWitness e)))) , (e , tt) , refl , tt })) ∷ᴺ
+     (λ { (w , h) v (tt , _ , ne , _) →
+          (tt , inj₁ (trueFromWitness refl)) ,
+          λ { (w' , h') (w'≡v , v≡v→h'≡v , _) →
+              w'≡v , (λ w≡v → ⊥-elim (falseToWitness ne w≡v)) , (λ _ → trans w'≡v (sym (v≡v→h'≡v refl))) } }) ∷ᴬ [])
     (λ _ → inj₂ (inj₁ refl))
 
 updateSquare-range : TripleR Π updateSquare Π
@@ -121,6 +156,5 @@ updateSquare-range =
            (λ { {(w , h) , v} (w≡v , _) → tt , trueFromWitness w≡v , tt })
            skip
            (λ _ → tt) ,
-         (λ _ → refl) ,
-         (λ _ → tt)) ∷ᴺ •∷ᴬ []))
+         (λ _ → refl , tt)) ∷ᴺ •∷ᴬ []))
     inj₁

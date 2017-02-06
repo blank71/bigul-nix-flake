@@ -33,16 +33,27 @@
 %format : = "{:}"
 %format `elem` = "{\in}"
 %format . = "{\circ}"
+%format Nat = "\mathbb{N}"
+%format Int = "\mathbb{Z}"
+%format Rational = "\mathbb{Q}"
 %format ~ = " "
+%format ... = "\ldots"
 
 %format (all(x)) = "\forall" x "."
 %format (some(x)) = "\exists" x "."
 %format EMPTY = "\emptyset"
 %format <~ = "{\hookleftarrow}"
-%format (LUB(x)) = "\textstyle\bigsqcup_{" x "}\kern-\smallskipamount"
-%format (POWER x) = "\mathbb{P}\," x
+%format LUB = "{\textstyle\bigsqcup}\kern-\smallskipamount"
+%format BIGCUP = "{\textstyle\bigcup}\kern-\smallskipamount"
+%format (POWER x) = "\mathcal P\," x
 %format SUBSETEQ = "{\subseteq}"
+%format CAP = "{\cap}"
+%format CUP = "{\cup}"
 %format (GRAPH x) = "{\mathcal G}" x
+%format TIMES = "{\times}"
+%format (VEC(x)) = "\vec{" x "}"
+%format (NORM(x)) = "\hat{" x "}"
+%format INNER = "\rotatebox[origin=c]{180}{\ensuremath{\Lsh}}"
 
 %format fail = "\keyword{fail}"
 %format skip = "\keyword{skip}"
@@ -63,14 +74,20 @@
 \newcommand{\assertrange}[1]{{\color{range}\{\!\{}\,#1\,{\color{range}\}\!\}}}
 \newcommand{\varassertrange}[2]{{\color{range}\{\!\{\,#1\kern-\smallskipamount:}\ \ #2\,{\color{range}\}\!\}}}
 
-%format (ENV(x)) = "\overrightarrow{" x "}"
+%format (ENV(x)) = "\overline{" x "}"
 %format (COM(x)) = "\langle\," x "\,\rangle"
 %format (ASSERT(x)) = "\assert{" x "}"
 %format (ASSERT'(y)(x)) = "\varassert{" y "}{" x "}"
 %format (ASSERTRANGE(x)) = "\assertrange{" x "}"
 %format (ASSERTRANGE'(y)(x)) = "\varassertrange{" y "}{" x "}"
 
+\newcommand{\BiGUL}{\textsc{BiGUL}}
+\newcommand{\Agda}{\textsc{Agda}}
+
 \newcommand{\awa}[2]{\mathrlap{#2}\phantom{#1}} % as wide as
+\newcommand{\IF}{\text{If}\quad}
+\newcommand{\THEN}{\quad\text{then}\quad}
+\newcommand{\PERIOD}{\quad\text{.}}
 
 %% Some recommended packages.
 \usepackage{booktabs}   %% For formal tables:
@@ -87,6 +104,9 @@
 \renewcommand{\subsectionautorefname}{Section}
 \renewcommand{\subsubsectionautorefname}{Section}
 \renewcommand{\figureautorefname}{Figure}
+
+\theoremstyle{acmdefinition}
+\newtheorem{notation}[theorem]{Notation}
 
 \makeatletter\if@@ACM@@journal\makeatother
 %% Journal information (used by PACMPL format)
@@ -255,17 +275,21 @@ Text of abstract \ldots.
 
 \citet{Foster-lenses}
 
+\subsection{The ambiguity problem illustrated: rectangle width}
+
+Let us consider a simple problem where the source is a pair of numbers representing the width and height of a rectangle, and the view is the width --- that is, the source and view are consistent when the view is equal to the width of the rectangle.
+
 \begin{code}
-putWidth  : (Int, Int) <~ Int
-putWidth  =
+keepHeight  : (Rational , Rational) <~ Rational
+keepHeight  =
   rearrV v -> (v, ())
        replace
     *  skip const ()
 \end{code}
 
 \begin{code}
-putSquare  : (Int, Int) <~ Int
-putSquare  =
+makeSquare  : (Rational , Rational) <~ Rational
+makeSquare  =
   case
     normal (w, _) v | w == v exit _
       skip fst
@@ -273,25 +297,98 @@ putSquare  =
       \ _ v -> (v, v)
 \end{code}
 
-In an instance~\citep{Anjorin-BenchmarX-reloaded}, the BiGUL program skipping all the dynamic checks runs about 20 times faster.
+\begin{code}
+keepRatio  : (Rational , Rational) <~ Rational
+keepRatio  =
+  case
+    adaptive (0, _) _
+      \ (_ , h) v -> (v, h)
+    normal (w, _) v | w == v exit _
+      skip fst
+    adaptive _ _
+      \ (w, h) v -> (v, h TIMES (v/w))
+\end{code}
 
-\section{Theory of putback triples}
+\subsection{Our results}
+
+In an instance~\citep{Anjorin-BenchmarX-reloaded}, the \BiGUL\ program skipping all the dynamic checks runs about 20 times faster.
+
+\section{Theory of asymmetric lenses and putback triples}
 \label{sec:putback-triples}
 
-\begin{theorem}[soundness of putback triples] \label{thm:putback-soundness}
-\[ |(ASSERT R) ~ b ~ (ASSERT R')| \quad|=>|\quad |(all(s, v)) R s v => (some(s')) put b s v = Just s' && R' s' s v| \]
+\begin{definition}
+\BiGUL\ programs operating on source type~|S| and view type~|V| are assigned the type |S <~ V|, and have two semantics:
+\begin{code}
+put  : (S <~ V) -> S -> V  -> Maybe S
+get  : (S <~ V) -> S       -> Maybe V
+\end{code}
+The |put| --- or \emph{putback} --- semantics is also called the \emph{backward} semantics, and the |get| semantics is also called the \emph{forward} semantics.
+\end{definition}
+
+\begin{theorem}[well-behavedness]
+Any \BiGUL\ program |b : S <~ V| satisfies the following two \emph{well-behavedness} properties, \emph{\ref{prop:PutGet}} and \emph{\ref{prop:GetPut}}:
+\begin{align}
+& |all(s, v, s')| \quad |put b s v = Just s'| \quad|=>|\quad \awa{|put|}{|get|}\;|b|\;\awa{|s v|}{|s'|}\;|= Just v| \tag{PutGet}\label{prop:PutGet} \\
+& \awa{|all(s', s, v)|}{|all(s, v)|} \quad \awa{|put|}{|get|}\;\awa{|b s v|}{|b s|}\;|= Just|\;\awa{|s'|}{|v|} \quad|=>|\quad |put b s v = Just s| \tag{GetPut} \label{prop:GetPut}
+\end{align}
+\end{theorem}
+This theorem was proved by \citet{Ko-BiGUL} for the original \BiGUL; we have patched the proof of this theorem to work for the version of \BiGUL\ used in this paper.
+
+\begin{theorem}[dominance of putback semantics]
+Let |l, r : S <~ V|.
+\[ \IF |put l = put r| \THEN |get l = get r| \PERIOD \]
 \end{theorem}
 
-\begin{theorem}[partial forward consistency]
-\[ |(ASSERT R) ~ b ~ (ASSERT(s' _ v || R' s' v))| \quad|=>|\quad |(all(s, v)) get b s = Just v && R s v ~ => R' s v| \]
+\begin{notation}
+Relations on types |A_1|, |A_2|, $\ldots,$ |A_n| are considered inhabitants of the type |POWER(A_1 TIMES A_2 TIMES {-"\cdots\;"-} TIMES A_n)|.
+When a relation~|R| of this type relates elements |x_1 : A_1|, |x_2 : A_2|, $\ldots,$ |x_n : A_n|, we write |R x_1 x_2 ... x_n|\,. %(in a curried form, to save parentheses and commas).
+\end{notation}
+
+\begin{definition}
+A \emph{putback triple} is a \BiGUL\ program |b : S <~ V| surrounded by two \emph{assertions}:
+\[ |(ASSERT R) ~ b ~ (ASSERT R')| \]
+where
+\begin{itemize}
+\item |R : (POWER(S TIMES V))| is the \emph{precondition} (on the original source and view), and
+\item |R' : (POWER(S TIMES S TIMES V))| is the \emph{postcondition} (on the updated source, original source, and view).
+\end{itemize}
+Valid putback triples are inductively defined by the rules in \autoref{sec:putback-proof-rules}.
+\end{definition}
+
+\begin{theorem}[soundness of putback triples] \label{thm:putback-soundness}
+Let |b : S <~ V|, |R : (POWER(S TIMES V))|, and |R' : (POWER(S TIMES S TIMES V))|.
+\[ \IF |(ASSERT R) ~ b ~ (ASSERT R')| \THEN |(all(s, v)) ~ R s v ~ => ~ (some(s')) ~ put b s v = Just s' ~ && ~ R' s' s v| \PERIOD \]
+\end{theorem}
+
+\begin{definition}
+A \emph{comprehension relation} of type |(POWER(A_1 TIMES A_2 TIMES {-"\cdots\,"-} TIMES A_n))| has the form
+\[ |COM(pat_1 pat_2 ... pat_n || prop)| \]
+where each |pat_i| is a pattern for elements of type~|A_i| and |prop| is a proposition that can refer to the variables in the patterns.
+The relation holds for |x_1 : A_1|, $\ldots,$ |x_n : A_n| exactly when each |x_i| matches |pat_i| and |prop| holds after substituting the matched components for the corresponding pattern variables.
+\end{definition}
+
+\begin{notation}
+We usually omit the proposition part of a comprehension relation when it is trivially true, keeping only the pattern part.
+(For example, |COM((_ :: _))| holds exactly for non-empty lists, and |COM(_ _)| is the always true binary relation.)
+An assertion whose body is a comprehension relation, like |(ASSERT(COM(pat || prop)))|, is usually written with the angle brackets omitted, like |(ASSERT(pat || prop))|.
+\end{notation}
+
+\begin{definition}
+The \emph{graph} of a function |f : A -> Maybe B| is a relation |GRAPH f : (POWER(A TIMES B))| which relates |a : A| and |b : B| exactly when |f a = Just b|.
+\end{definition}
+
+\begin{theorem}[partial forward consistency] \label{thm:partial-forward-consistency}
+Let |b : S <~ V|, |R : (POWER(S TIMES V))|, and |R' : (POWER(S TIMES V))|.
+\[ \IF |(ASSERT R) ~ b ~ (ASSERT(s' _ v || R' s' v))| \THEN |GRAPH(get b) CAP R ~ SUBSETEQ ~ R'| \PERIOD \]
 \end{theorem}
 \begin{proof}
 Suppose |get b s = Just v| and |R s v|.
-By GetPut, we have |put b s v = Just s|, and by \autoref{thm:putback-soundness}, we have |put b s v = Just s' && R' s' v|.
-Thus |s = s'|, and we obtain |R' s v|.
+The latter triggers \autoref{thm:putback-soundness}, so we know that |put b s v = Just s'| for some~|s'| and that |R' s' v| holds.
+On the other hand, by \ref{prop:GetPut}, we can turn |get b s = Just v| into |put b s v = Just s|.
+Since |put b| is deterministic, we can deduce |s' = s|, and thus having |R' s' v| is the same as having |R' s v|.
 \end{proof}
 
-\section{Putback proof rules}
+\section{\BiGUL\ and the putback proof rules}
 \label{sec:putback-proof-rules}
 
 \[ \begin{array}{l} \hline
@@ -316,18 +413,33 @@ can indeed be regarded as a simple variant of separating conjunction~\citep{Reyn
 
 \[ \begin{array}{l}
 |(ASSERT(s wpat || R s (ENV(wpat)))) ~ b ~ (ASSERT(s' s wpat || R' s' s (ENV(wpat))))| \\ \hline
-|(ASSERT(s vpat || R s (ENV(vpat)))) ~ rearrV vpat -> wpat; ~ b ~ (ASSERT(s' s vpat || R' s' s (ENV(vpat))))|
+|(ASSERT(s vpat || R s (ENV(vpat)))) ~ rearrV vpat -> wpat INNER b ~ (ASSERT(s' s vpat || R' s' s (ENV(vpat))))|
 \end{array} \]
 
 \[ \begin{array}{l}
 |(ASSERT(tpat v || R (ENV(tpat)) v)) ~ b ~ (ASSERT(tpat' tpat v || R' (ENV(tpat')) (ENV(tpat)) v))| \\ \hline
-|(ASSERT(spat v || R (ENV(spat)) v)) ~ rearrS spat -> tpat; ~ b ~ (ASSERT(spat' spat v || R' (ENV(spat')) (ENV(spat)) v))|
+|(ASSERT(spat v || R (ENV(spat)) v)) ~ rearrS spat -> tpat INNER b ~ (ASSERT(spat' spat v || R' (ENV(spat')) (ENV(spat)) v))|
 \end{array} \]
+
+\begin{align*}
+& \begin{array}{l}
+|all((normal M exit E INNER b) `elem` branches)| \\
+\quad |(ASSERT(R CAP (NORM M))) ~ b ~ (ASSERT(s' s v || R s' s v && (NORM M) s' v && (NORM E) s'))| \\
+|all((adaptive M INNER f) `elem` branches)| \\
+\quad |all(s, v) ~ R s v && (NORM M) s v ~ =>| \\
+\qquad \awa{\text{\emph{postcondition}\kern.5pt:\ \ }}{\text{\color{putback}\emph{reentry}\kern.5pt:\ \ }} |R (f s v) v ~ && ~ (NORM N) (f s v) v| \quad|&&|
+\\
+\qquad \text{\color{putback}\emph{postcondition}\kern.5pt:\ \ } |(all(s')) ~ R' s' (f s v) v ~ => ~ R' s' s v| \\ \hline
+|(ASSERT(R CAP N)) ~ case branches ~ (ASSERT R')|
+\end{array} \\
+& \quad |where|\;|N = BIGCUP ~ [ M || (normal M exit E INNER b) `elem` branches ]| \\[-1ex]
+& \quad \awa{|where|}{}\; |(NORM N) = BIGCUP ~ [ (NORM M) || (normal M exit E INNER b) `elem` branches ]|
+\end{align*}
 
 \[ \begin{array}{l}
 |(ASSERT R) ~ b ~ (ASSERT R')| \\
-|T => R| \\
-|all(s', s, v) R' s' s v && T s v => T' s' s v| \\ \hline
+|T ~ SUBSETEQ ~ R| \\
+|R' CAP (COM(_ s v || T s v)) ~ SUBSETEQ ~ T'| \\ \hline
 |(ASSERT T) ~ b ~ (ASSERT T')|
 \end{array} \]
 
@@ -360,10 +472,25 @@ case
     (ASSERT((w, _) v | w /= v))
     \ (w, h) v -> (v, v)
     (ASSERT'(reentry)(COM((w, _) v | w = v) (v, v) v))
-    (ASSERT'(retentiveness)(all(w', h') Post (w', h') (v, v) v => Post (w', h') (w, h) v))
-  (ASSERT'(coverage)(COM((w, _) v | w = v) || (COM(_ _)) ))
+    (ASSERT'(postcondition)(all(w', h') Post (w', h') (v, v) v => Post (w', h') (w, h) v))
+  (ASSERT'(coverage)(COM((w, _) v | w = v) CUP (COM(_ _)) ))
   (ASSERT'(disjointness)(True))
 (ASSERT(Post @ (COM((w', h') (w, h) v | w' = v && (w = v => h' = h) && (w /= v => w' = h'))))) (ASSERTRANGE(_))
+\end{code}
+
+\begin{code}
+putAndKeepRatio  : (Rational , Rational) <~ Rational
+putAndKeepRatio  =
+  (ASSERT(_ v | v /= 0))
+  case
+    adaptive (0, _) _
+      \ (_ , h) v -> (v, h)
+    normal (w, _) v | w == v exit _
+      skip fst
+    adaptive _ _
+      \ (w, h) v -> (v, h TIMES (v/w))
+  (ASSERT((w', h') (w, h) v | w' = v && (w = 0 => h' = h) && (w /= 0 => h'/w' = h/w)))
+  (ASSERTRANGE((w, _) | w /= 0))
 \end{code}
 
 \todo[inline]{Exit condition: compare with assertions in reversible conditionals~\citep{Yokoyama-Janus}}
@@ -401,8 +528,8 @@ case
     (ASSERT([] _))
     \ _ v -> [v]
     (ASSERT'(reentry)(COM((_ :: _) _) [v] v))
-    (ASSERT'(retentiveness)(all(ss') Post ss' [v] v => Post ss' [] v))
-  (ASSERT'(coverage)(COM((_ :: _) _) || (COM(_ _))))
+    (ASSERT'(postcondition)(all(ss') Post ss' [v] v => Post ss' [] v))
+  (ASSERT'(coverage)(COM((_ :: _) _) CUP (COM(_ _))))
   (ASSERT'(disjointness)(True))
 (ASSERT(Post @ (COM((s'::ss') ss v | s' = v && ss' = tail ss)))) (ASSERTRANGE((_ :: _)))
 \end{code}
@@ -411,21 +538,22 @@ case
 \label{sec:range-triples}
 
 \begin{theorem}[soundness of range triples] \label{thm:range-soundness}
-\[ |(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \quad|=>|\quad |(all(s)) P s => (some(v)) get b s = Just v && R s v| \]
+Let |b : S <~ V|, |R : (POWER(S TIMES V))|, and |P' : (POWER S)|.
+\[ \IF |(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P')| \THEN |(all(s)) ~ P' s ~ => ~ (some(v)) ~ get b s = Just v ~ && ~ R s v| \PERIOD \]
 \end{theorem}
 
 Thanks to well-behavedness, we can rewrite the right-hand side of \autoref{thm:range-soundness} into a statement primarily about |put|:
 
 \begin{lemma}
-The right-hand side of \autoref{thm:range-soundness} is equivalent to
-\[ (|(all(s')) P s' => (some(s, v)) put b s v = Just s' && R s v|) \quad|&&|\quad (|(all(s, v)) P s && get b s = Just v ~ => ~ R s v|) \]
+The conclusion of \autoref{thm:range-soundness} is equivalent to
+\[ (|(all(s')) ~ P' s' ~ => ~ (some(s, v)) ~ put b s v = Just s' ~ && ~ R s v|) \quad|&&|\quad |(GRAPH(get b)) CAP (COM(s _ || P' s)) ~ SUBSETEQ ~ R| \]
 \end{lemma}
 
-The left conjunct is the primary way in which we think about these new triples: if |(ASSERTRANGE R) b (ASSERTRANGE P)| can be derived, then the \emph{range} of results of applying |put b| to those inputs satisfying~|R| will be at least~|P|.
+The left conjunct is the primary way in which we think about these new triples: if |(ASSERTRANGE R) b (ASSERTRANGE P')| can be derived, then the \emph{range} of updated sources produced by applying |put b| to those inputs satisfying~|R| will be at least~|P'|.
 Hence the name \emph{range triples}.
-The right conjunct says that there is a ``side effect'' when we think about these triples in the putback direction: the subset of inputs considered will be forced to include those related by |get| with its domain restricted to~|P|.
-So, for example, we will not be able to deduce |(ASSERTRANGE(m n || m = n+1)) replace (ASSERTRANGE(_))| even though the left conjunct is true for this pair of |R|~and~|P|.
-This ``side effect'' normally does not get in the way, though, since the preconditions we specify are normally larger than the consistency relations, which contain the |get| functions.
+The right conjunct says that there is a ``side effect'' when we think about these triples in the putback direction: the subset of inputs considered will be forced to include those related by |get| with its domain restricted to~|P'|.
+So, for example, we will not be able to deduce |(ASSERTRANGE(m n || m = n+1)) replace (ASSERTRANGE(_))| even though the left conjunct is true for this pair of |R|~and~|P'|.
+This ``side effect'' normally does not get in the way, though, since the preconditions we specify are normally larger than the consistency relations, which in turn contain the |get| functions.
 
 \begin{theorem}[total forward consistency] \label{thm:total-forward-consistency}
 \[ |(ASSERT R) ~ b ~ (ASSERT(s' _ v || R' s' v))| \quad|&&|\quad |(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \quad|=>|\quad |(all(s)) P s => (some(v)) get b s = Just v && R' s v| \]
@@ -434,13 +562,13 @@ This ``side effect'' normally does not get in the way, though, since the precond
 We will write
 \[ |(ASSERT R) ~ b ~ (ASSERT R') (ASSERTRANGE P)| \quad\text{as an abbreviation of}\quad |(ASSERT R) ~ b ~ (ASSERT R') ~ ~ && ~ ~ (ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \]
 
-\section{Range proof rules}
+\section{The range proof rules}
 \label{sec:range-proof-rules}
 
 \[ \begin{array}{l}
 |(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \\
-|all(s, v) R s v && Q s => T s v| \\
-|Q => P| \\ \hline
+|R CAP (COM(s _ || Q s)) ~ SUBSETEQ ~ T| \\
+|Q ~ SUBSETEQ ~ P| \\ \hline
 |(ASSERTRANGE T) ~ b ~ (ASSERTRANGE Q)|
 \end{array} \]
 
@@ -460,23 +588,33 @@ We will write
 \end{array} \]
 
 \[ \begin{array}{l}
-|{-"\assertrange{\awa{T}{R}}\;"-} ~ {-"\awa{r}{l}\;\;"-} ~ {-"\assertrange{\awa{Q}{P}}"-}| \\
-|{-"\assertrange{T}\;"-} ~ {-"r\;\;"-} ~ {-"\assertrange{Q}"-}| \\ \hline
-|(ASSERTRANGE(R * T)) ~ l * r ~ (ASSERTRANGE(P * Q))|
+|{-"\assertrange{\awa{T}{R}}\;"-} ~ {-"\awa{r}{l}\;\;"-} ~ {-"\assertrange{\awa{Q'}{P'}}"-}| \\
+|{-"\assertrange{T}\;"-} ~ {-"r\;\;"-} ~ {-"\assertrange{Q'}"-}| \\ \hline
+|(ASSERTRANGE(R * T)) ~ l * r ~ (ASSERTRANGE(P' * Q'))|
 \end{array} \]
 
 \[ \begin{array}{l}
-|(ASSERTRANGE(s wpat || R s (ENV(wpat)))) ~ b ~ (ASSERTRANGE P)| \\ \hline
-|(ASSERTRANGE(s vpat || R s (ENV(vpat)))) ~ rearrV vpat -> wpat; ~ b ~ (ASSERTRANGE P)|
+|(ASSERTRANGE(s wpat || R s (ENV(wpat)))) ~ b ~ (ASSERTRANGE P')| \\ \hline
+|(ASSERTRANGE(s vpat || R s (ENV(vpat)))) ~ rearrV vpat -> wpat INNER b ~ (ASSERTRANGE P')|
 \end{array} \]
 
 \[ \begin{array}{l}
 |(ASSERTRANGE(tpat v || R (ENV(tpat)) v)) ~ b ~ (ASSERTRANGE(tpat || P (ENV(tpat))))| \\ \hline
-|(ASSERTRANGE(spat v || R (ENV(spat)) v)) ~ rearrS spat -> tpat; ~ b ~ (ASSERTRANGE(spat || P (ENV(spat))))|
+|(ASSERTRANGE(spat v || R (ENV(spat)) v)) ~ rearrS spat -> tpat INNER b ~ (ASSERTRANGE(spat || P (ENV(spat))))|
 \end{array} \]
 
+\begin{align*}
+& \begin{array}{l}
+|all(n = (normal M exit E INNER b) `elem` branches)| \\
+\quad |(ASSERTRANGE(R CAP (NORM M))) ~ b ~ (ASSERTRANGE P'_n)| \\
+\quad |P'_n SUBSETEQ (NORM E)| \\ \hline
+|(ASSERTRANGE R) ~ case branches ~ (ASSERTRANGE(P'))|
+\end{array} \\
+& \quad |where P' = BIGCUP ~ [ P'_n || n = (normal M exit E INNER b) `elem` branches ]|
+\end{align*}
+
 \begin{lemma}
-\[ |(ASSERT R) ~ b ~ (ASSERT(s' _ _ || Q s')) (ASSERTRANGE P)| \quad|=>|\quad |P => Q| \]
+\[ |(ASSERT R) ~ b ~ (ASSERT(s' _ _ || Q s')) (ASSERTRANGE P)| \quad|=>|\quad |P SUBSETEQ Q| \]
 \end{lemma}
 
 \begin{code}
@@ -519,24 +657,40 @@ expand zero     f = fail
 expand (suc n)  f = f (expand n f)
 \end{code}
 
-\begin{theorem}[finite expansion of putback triples]
+\begin{lemma}[finite expansion of putback triples]
 Let |f : (S <~ V) -> (S <~ V)| and |measure : S -> V -> Nat|.
 If, for all |n : Nat| and |rec : S <~ V|,
-\[ |((all m) (ASSERT(R && (COM(s v || measure s v = m && m < n)))) ~ rec ~ (ASSERT R'))| \quad|=>|\quad |(ASSERT(R && (COM(s v || measure s v = n)))) ~ f rec ~ (ASSERT R')| \]
+\[ |((all m) (ASSERT(R CAP (COM(s v || measure s v = m && m < n)))) ~ rec ~ (ASSERT R'))| \quad|=>|\quad |(ASSERT(R CAP (COM(s v || measure s v = n)))) ~ f rec ~ (ASSERT R')| \]
 then, for all |l : Nat| and |n : Nat| such that |n <= l|,
-\[ |(ASSERT(R && (COM(s v || measure s v = n)))) ~ expand (suc l) f ~ (ASSERT R')| \]
-\end{theorem}
+\[ |(ASSERT(R CAP (COM(s v || measure s v = n)))) ~ expand (suc l) f ~ (ASSERT R')| \]
+\end{lemma}
+
+\begin{lemma}
+\[ |(ASSERT R) ~ b ~ (ASSERT R')| \quad|&&|\quad |(ASSERT T) ~ b ~ (ASSERT T')| \quad|=>|\quad |(ASSERT(R CUP T)) ~ b ~ (ASSERT(R' CUP T'))| \]
+\end{lemma}
 
 \begin{corollary} For all |l : Nat|,
-\[ |(ASSERT(R && (COM(s v || measure s v <= l)))) ~ expand (suc l) f ~ (ASSERT R')| \]
+\[ |(ASSERT(R CAP (COM(s v || measure s v <= l)))) ~ expand (suc l) f ~ (ASSERT R')| \]
 \end{corollary}
+
+\begin{lemma}
+Let |(VEC R) : Nat -> (POWER(S TIMES V))|, |(VEC b) : Nat -> (S <~ V)|, and |(VEC R') : Nat -> (POWER(S TIMES S TIMES V))| be nondecreasing chains.
+\[ |((all(i)) (ASSERT(VEC R i)) ~ (VEC b i) ~ (ASSERT(VEC R' i)))| \quad|=>|\quad |(ASSERT(BIGCUP(VEC R))) ~ LUB(VEC b) ~ (ASSERT(BIGCUP(VEC R')))| \]
+\end{lemma}
+
+\begin{corollary}
+\[ |(ASSERT R) ~ LUB(\ l -> expand (suc l) f) ~ (ASSERT R')| \]
+\end{corollary}
+\begin{proof}
+|(\ l -> R CUP (COM(s v || measure s v <= l)))| is a nondecreasing chain with~|R| as its least upper bound.
+\end{proof}
 
 \begin{theorem}[finite expansion of range triples]
 Let |f : (S <~ V) -> (S <~ V)|, |measure : S -> V -> Nat|, and |P : Nat -> (POWER S)|.
 If, for all |n : Nat| and |rec : S <~ V|,
-\[ |((all m) (ASSERTRANGE(R && (COM(s v || measure s v = m)))) ~ rec ~ (ASSERTRANGE(P m && (COM(_ || m < n)))))| \quad|=>|\quad |(ASSERTRANGE(R && (COM(s v || measure s v = n)))) ~ f rec ~ (ASSERTRANGE(P n))| \]
+\[ |((all m) (ASSERTRANGE(R CAP (COM(s v || measure s v = m)))) ~ rec ~ (ASSERTRANGE(P m CAP (COM(_ || m < n)))))| \quad|=>|\quad |(ASSERTRANGE(R CAP (COM(s v || measure s v = n)))) ~ f rec ~ (ASSERTRANGE(P n))| \]
 then, for all |l : Nat| and |n : Nat| such that |n <= l|,
-\[ |(ASSERTRANGE(R && (COM(s v || measure s v = n)))) ~ expand (suc l) f ~ (ASSERTRANGE(P n))| \]
+\[ |(ASSERTRANGE(R CAP (COM(s v || measure s v = n)))) ~ expand (suc l) f ~ (ASSERTRANGE(P n))| \]
 \end{theorem}
 \begin{corollary}
 For all |l : Nat|,
@@ -576,7 +730,7 @@ replaceAll =
       (ASSERT([] v | 0 = n || (n = 0 && 0 = 1)))
       \ _ x -> [x]
       (ASSERT'(reentry)(COM(ss v | length ss = n || (n = 0 && length ss = 1)) [x] x && (COM((_ :: []) _)) [x] x))
-      (ASSERT'(retentiveness)(all(ss') Post ss' [x] x => Post ss' [] x))
+      (ASSERT'(postcondition)(all(ss') Post ss' [x] x => Post ss' [] x))
     normal (_ :: []) _ exit (_ :: [])
       (ASSERT((_ :: []) v | 1 = n || (n = 0 && 1 = 1)))
       (ASSERT((_ :: []) v))
@@ -612,16 +766,19 @@ replaceAll =
 \end{code}
 
 \begin{code}
-(ASSERTRANGE(ss v | length ss = 0)) ~ replaceAll ~ (ASSERTRANGE(EMPTY))
+(ASSERTRANGE(ss v | length ss = n))
+(ASSERTRANGE(COM([] v | 0 = n) CUP (COM((s::ss) v | 1 + length ss = n && s = v))))
+replaceAll
+(ASSERTRANGE((s :: ss) | 1 + length ss = n && (all(s')) s' `elem` ss => s = s'))
 \end{code}
 
 \begin{code}
-(ASSERTRANGE((s :: ss) v | 1 + length ss = n && s = v))
+(ASSERTRANGE(COM([] v | 0 = n) CUP (COM((s::ss) v | 1 + length ss = n && s = v))))
 case
   adaptive [] x
     \ _ x -> [x]
   normal (_ :: []) _ exit (_ :: [])
-    (ASSERTRANGE((s :: []) v | 1 = n && s = v))
+    (ASSERTRANGE((s::[]) v | 1 = n && s = v))
     rearrS (s :: []) -> s
       (ASSERTRANGE(s v | 1 = n && s = v))
       replace
@@ -658,7 +815,7 @@ This reinforces the statement that it is the consistency relation that we have i
 \section{Verifying key-based alignment}
 \label{sec:key-based-alignment}
 
-Several variants of alignment have been implemented in BiGUL~\citep{Zan-Brul, Mendes-delta-alignment}.
+Several variants of alignment have been implemented in \BiGUL~\citep{Zan-Brul, Mendes-delta-alignment}.
 Here we choose to verify a variant that is non-trivial and yet not overly complicated: key-based alignment.
 
 For now, \citet{Barbosa-matching-lenses}'s matching lenses may be more sophisticated, but they are special-purpose and require the invention of a new framework in which everything is built from scratch.
@@ -698,10 +855,10 @@ extract ks kv v (s :: ss)  | ks s == kv v  =  s :: ss
 
 A proper characterisation of the behaviour of composition will be essential for avoiding problems about composition as discussed by, e.g., \citet[Section~2.2]{Diskin-delta-asymmetric}.
 \[ \begin{array}{l}
-|(ASSERT (a b' || (some(b, c)) R a c && R' a b && U' b' b c)) ~ l ~ (ASSERT(COM(a' _ b || R' a' b) && T') (ASSERTRANGE P)| \\
+|(ASSERT (a b' || (some(b, c)) R a c && R' a b && U' b' b c)) ~ l ~ (ASSERT(COM(a' _ b || R' a' b) CAP T') (ASSERTRANGE P)| \\
 |(ASSERT (b c || (some(a)) R' a b && R a c)) ~ r ~ (ASSERT U')|
 \\ \hline
-|(ASSERT(R && (COM(a _ || P a)))) ~ l . r ~ (ASSERT(a' a c || (some(b, b')) T' a' a b' && U' b' b c ))|
+|(ASSERT(R CAP (COM(a _ || P a)))) ~ l . r ~ (ASSERT(a' a c || (some(b, b')) T' a' a b' && U' b' b c ))|
 \end{array} \]
 This requires the putback and range triples be defined mutually inductively.
 A mutually inductive treatment can also shift the disjointness requirement to the ranges of normal branches instead of their exit conditions, allowing the exit conditions to be specified trivially, which can have a serious impact on runtime efficiency in the forward direction, but can be helpful when prototypic or experimental programs need to be developed without too much time for careful reasoning.
@@ -721,7 +878,7 @@ Even if the sceptic reader insists that constructing the range triples requires 
 
 Completeness has not been proved, but we have shown that the logic works for various examples.
 
-BiGUL is stateful, but only in the ``Reader'' way, in particular using the Reader monad's `|local|' operation to modify the current source and view.
+\BiGUL\ is stateful, but only in the ``Reader'' way, in particular using the Reader monad's `|local|' operation to modify the current source and view.
 Our Hoare-style logic can be said to be merely tracking how the current source and view are manipulated by implicit `|local|' operations.
 
 It has been argued that ``putback'' is the essence of bidirectional programming~\citep{Fischer-essence-of-BX}.

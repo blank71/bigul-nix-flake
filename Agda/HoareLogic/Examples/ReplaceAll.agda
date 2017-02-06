@@ -79,12 +79,11 @@ replaceAll-correctness n rec rec-t =
   conseq {R = λ { (ss , v) → length (toList ss) ≡ n ⊎ (n ≡ 0 × length (toList ss) ≡ 1) }}
     inj₁
     (case
-       (((λ { {[]ᴹ    , _} (inj₁ 0≡n , _) → (inj₂ (sym 0≡n , refl)) , refl , inj₁ refl
-            ; {[]ᴹ    , _} (inj₂ (_ , ()) , _)
-            ; {_ ∷ᴹ _ , _} (_ , () , _) }) ,
-         (λ { {ss' , []ᴹ    , _} ((inj₁ 0≡n , _) , post , _) → post , tt
-            ; {_ , []ᴹ    , _} ((inj₂ (_ , ()) , _) , _)
-            ; {_ , _ ∷ᴹ _ , _} ((_ , () , _) , _) })) ∷ᴬ
+       ((λ { []ᴹ      _ (inj₁ 0≡n , _) →
+             (inj₂ (sym 0≡n , refl) , refl , inj₁ refl) ,
+             (λ { ss' (post , _) → post , tt })
+           ; []ᴹ      _ (inj₂ (_ , ()) , _)
+           ; (_ ∷ᴹ _) _ (_ , () , _) }) ∷ᴬ
         (conseq
            (λ { {[]ᴹ         , _} (_ , () , _)
               ; {_ ∷ᴹ []ᴹ    , _} _ → _ , (refl , refl) , tt
@@ -97,10 +96,9 @@ replaceAll-correctness n rec rec-t =
            (λ { {_ , []ᴹ , _} (_ , _ , () , _)
               ; {[]ᴹ , s ∷ᴹ []ᴹ , v} ((_ , _ , () , _) , _)
               ; {s' ∷ᴹ []ᴹ , s ∷ᴹ []ᴹ , v} ((((s'* , _) , (s* , _)) , s'*≡v , (s'≡s'* , _) , s≡s* , _) , _) →
-                  ((λ { .s' (here refl) → trans s'≡s'* s'*≡v; x (there ()) }) , refl) , (refl , refl , tt) , refl
+                  ((λ { .s' (here refl) → trans s'≡s'* s'*≡v; x (there ()) }) , refl) , (refl , refl , tt) , refl , tt
               ; {_ ∷ᴹ _ ∷ᴹ _ , s ∷ᴹ []ᴹ , v} ((_ , _ , (_ , ()) , _) , _)
-              ; {_ , _ ∷ᴹ _ ∷ᴹ _ , _} (_ , _ , () , _) }) ,
-         (λ _ → tt , tt)) ∷ᴺ
+              ; {_ , _ ∷ᴹ _ ∷ᴹ _ , _} (_ , _ , () , _) })) ∷ᴺ
         (conseq
            (λ { {[]ᴹ , _} (_ , _ , _ , () , _)
               ; {_ ∷ᴹ []ᴹ , _} (_ , _ , () , _)
@@ -145,10 +143,7 @@ replaceAll-correctness n rec rec-t =
                 ((λ { .x' (here refl) → x'≡v
                     ; .y' (there (here refl)) → y'≡v
                     ; s' (there (there i)) → post s' i }) ,
-                 cong suc (cong suc length-ss'≡length-ss)) , (refl , refl , refl , tt) , refl }) ,
-         (λ { {[]ᴹ        } ()
-            ; {_ ∷ᴹ []ᴹ   } ()
-            ; {_ ∷ᴹ _ ∷ᴹ _} _ → refl , tt , tt })) ∷ᴺ [])
+                 cong suc (cong suc length-ss'≡length-ss)) , (refl , refl , refl , tt) , refl , refl , tt })) ∷ᴺ [])
        (λ _ → inj₂ (inj₂ (inj₁ refl))))
     proj₁
 
@@ -191,9 +186,8 @@ replaceAll-range n rec rec-t =
               ; {_ ∷ᴹ []ᴹ   } 1≡n → _ , (1≡n , (λ _ ())) , refl , refl
               ; {_ ∷ᴹ _ ∷ᴹ _} () }) ,
          (λ { {[]ᴹ        } ()
-            ; {_ ∷ᴹ []ᴹ   } _ → refl
-            ; {_ ∷ᴹ _ ∷ᴹ _} () }) ,
-         (λ _ → tt , tt)) ∷ᴺ
+            ; {_ ∷ᴹ []ᴹ   } _ → refl , tt
+            ; {_ ∷ᴹ _ ∷ᴹ _} () })) ∷ᴺ
         (conseq {Q = λ { (x ∷ᴹ y ∷ᴹ ss) →
                            2 + length (toList ss) ≡ n × x ≡ y × ((s' : A) → Any (_≡ s') (toList ss) → x ≡ s')
                        ; _ → ⊥ }}
@@ -222,17 +216,14 @@ replaceAll-range n rec rec-t =
            (λ { {[]ᴹ         } ()
               ; {_ ∷ᴹ []ᴹ    } ()
               ; {x ∷ᴹ y ∷ᴹ ss} p → (x , y ∷ᴹ ss) , p , refl , refl }) ,
-         (λ { {[]ᴹ         } ()
-            ; {_ ∷ᴹ []ᴹ    } ()
-            ; {x ∷ᴹ y ∷ᴹ ss} _ → refl }) ,
          (λ { {[]ᴹ        } ()
             ; {_ ∷ᴹ []ᴹ   } ()
-            ; {_ ∷ᴹ _ ∷ᴹ _} _ → refl , tt , tt })) ∷ᴺ []))
+            ; {_ ∷ᴹ _ ∷ᴹ _} _ → refl , refl , tt })) ∷ᴺ []))
     (λ { {[]ᴹ         } ()
        ; {_ ∷ᴹ []ᴹ    } (1≡n , _) → inj₁ 1≡n
        ; {x ∷ᴹ y ∷ᴹ ss} (neq , alleq) → inj₂ (inj₁ (neq , alleq y (here refl) , (λ s' i → alleq s' (there i)))) })
 
 replaceAll-finite-expansionR :
-  (l n : ℕ) → n ≤ l → TripleR (PreR ∩ ((_≡ n) ∘ length ∘ toList ∘ proj₁)) (expand (suc l) replaceAllᴮ) (PostR n)
+  (l n : ℕ) → n ≤ l → TripleR ((_≡ n) ∘ length ∘ toList ∘ proj₁) (expand (suc l) replaceAllᴮ) (PostR n)
 replaceAll-finite-expansionR l n n≤l =
-  expandTripleR replaceAllᴮ (length ∘ toList ∘ proj₁) PreR PostR replaceAll-range l n n≤l
+  conseq (proj₂ ∘ proj₁) (expandTripleR replaceAllᴮ (length ∘ toList ∘ proj₁) PreR PostR replaceAll-range l n n≤l) id

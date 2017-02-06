@@ -210,94 +210,89 @@ keyAlign-correctness :
   Triple ((_≡ n) ∘ length ∘ toList₁ ∘ proj₂) (keyAlignᴮ keq ks kv b c rec) (Post ks kv R')
 keyAlign-correctness keq ks kv b c R' b-t c-eq n rec rec-t =
   case
-    ((conseq (λ { {[]ᴹ    , []ᴹ   } _ → tt , tt , refl
-                ; {[]ᴹ    , _ ∷ᴹ _} (_ , () , _)
-                ; {_ ∷ᴹ _ , []ᴹ   } (_ , () , _)
-                ; {_ ∷ᴹ _ , _ ∷ᴹ _} (_ , () , _) })
-             (rearrV (λ { ([]ᴹ , _) → ⊤; (_ ∷ᴹ _ , _) → ⊥ }) (λ { ([]ᴹ , _) → ⊤; (_ ∷ᴹ _ , _) → ⊥ })
-                (conseq (λ _ → refl)
-                        skip
-                        (λ { { .[]ᴹ   , []ᴹ    , _} (refl , _) → tt , tt , refl
-                           ; {  []ᴹ   , _ ∷ᴹ _ , _} _ → tt , tt , refl
-                           ; { _ ∷ᴹ _ , _ ∷ᴹ _ , _} (_ , _ , () , _) })))
-             (λ { {[]ᴹ    , []ᴹ    , []ᴹ   } _ → ([] , [] , λ _ ()) , (refl , tt) , refl
-                ; {_ ∷ᴹ _ , []ᴹ    , []ᴹ   } ((_ , () , _) , _)
-                ; {_      , []ᴹ    , _ ∷ᴹ _} (_ , _ , () , _)
-                ; {_      , _ ∷ᴹ _ , []ᴹ   } (_ , _ , () , _)
-                ; {_      , _ ∷ᴹ _ , _ ∷ᴹ _} (_ , _ , () , _) }) ,
-      λ _ → tt) ∷ᴺ
-     (conseq
-        (λ { {[]ᴹ    , []ᴹ   } (_ , () , _)
-           ; {[]ᴹ    , _ ∷ᴹ _} (_ , () , _)
-           ; {_ ∷ᴹ _ , []ᴹ   } (_ , () , _)
-           ; {_ ∷ᴹ _ , _ ∷ᴹ _} (vlen , eqn , _) → _ , (refl , refl) , vlen , trueToWitness eqn })
-        (rearrS (λ { ((s , ss) , []ᴹ    ) → ⊥
-                   ; ((s , ss) , v ∷ᴹ vs) → length (toList₁ (v ∷ᴹ vs)) ≡ n × ks s ≡ kv v })
-                (Post ks kv R' ∘ Product.map (uncurry _∷ᴹ_) (Product.map (uncurry _∷ᴹ_) id))
-           (conseq
-              (λ { {_ , []ᴹ   } (_ , _ , ())
-                 ; {_ , _ ∷ᴹ _} (_ , (refl , refl) , vlen , ks-s≡kv-v) → _ , (vlen , ks-s≡kv-v) , refl , refl })
-              (rearrV (λ { ((s , ss) , (v , vs)) → length (toList₁ (v ∷ᴹ vs)) ≡ n × ks s ≡ kv v })
-                      (Post ks kv R' ∘ Product.map (uncurry _∷ᴹ_) (Product.map (uncurry _∷ᴹ_) (uncurry _∷ᴹ_)))
-                 (conseq
-                    (λ { (_ , (vlen , ks-s≡kv-v) , eq , vseq) → 
-                         trans ks-s≡kv-v (cong kv eq) ,
-                         cong pred (subst (λ vs → suc (length (toList₁ vs)) ≡ n) vseq vlen) , pred-lemma vlen })
-                    (prod b-t rec-t)
-                    (λ { {(s' , ss') , (s , ss) , (v , vs)}
-                         (((R'-s'-s-v , ks-s'≡kv-v) , (ssᴹ , ew , ret)) , (v' , vs') , (_ , ks-s≡kv-v') , v'≡v , vs'≡vs) →
-                           _ , (s ∷ ssᴹ , (R'-s'-s-v , ks-s'≡kv-v) ∷ ew ,
-                                λ { sᴹ (here eq) m cm n cn m<n → here eq
-                                  ; sᴹ (there i) (suc m) (ks-sᴹ≡ks-s ∷ʸ cm) (suc n) (ks-sᴹ≡kv-v ∷ʸ cn) (s≤s m<n) →
-                                      there (ret sᴹ i m cm n cn m<n)
-                                  ; sᴹ (there i) m (ks-sᴹ≡ks-s ∷ʸ cm) n (ks-sᴹ≢kv-v ∷ⁿ cn) m<n →
-                                      ⊥-elim (ks-sᴹ≢kv-v (trans ks-sᴹ≡ks-s (trans ks-s≡kv-v' (cong kv v'≡v))))
-                                  ; sᴹ (there i) m (ks-sᴹ≢ks-s ∷ⁿ cm) n (ks-sᴹ≡kv-v ∷ʸ cn) m<n →
-                                      ⊥-elim (ks-sᴹ≢ks-s (trans ks-sᴹ≡kv-v (sym (trans ks-s≡kv-v' (cong kv v'≡v)))))
-                                  ; sᴹ (there i) m (ks-sᴹ≢ks-s ∷ⁿ cm) n (ks-sᴹ≢kv-v ∷ⁿ cn) m<n →
-                                      there (ret sᴹ i m cm n cn m<n) }) ,
-                           refl , refl })))
-              (λ { {_ , _ , []ᴹ   } (_ , _ , _ , ())
-                 ; {_ , _ , _ ∷ᴹ _} ((_ , post , refl , refl) , _ , (refl , refl) , _) →
-                     _ , post , (refl , refl) , refl , refl})))
-        (λ { {[]ᴹ , _} ((_ , _ , () , _) , _)
-           ; {_ ∷ᴹ _ , []ᴹ , _} ((_ , _ , _ , ()) , _)
-           ; {_ ∷ᴹ _ , _ ∷ᴹ _ , []ᴹ   } ((_ , _ , (refl , refl) , (refl , refl)) , _ , () , _)
-           ; {_ ∷ᴹ _ , _ ∷ᴹ _ , _ ∷ᴹ _} ((_ , ([] , () , _) , _) , _)
-           ; {_ ∷ᴹ _ , _ ∷ᴹ _ , _ ∷ᴹ _} ((_ , (sᴹ ∷ ssᴹ , (r' , ks-s'≡kv-v) ∷ ew , r) , (refl , refl) , (refl , refl)) , _) →
-               (sᴹ ∷ ssᴹ , (r' , ks-s'≡kv-v) ∷ ew , r) , (trueFromWitness ks-s'≡kv-v , refl , tt) , refl }) ,
-      (λ { {[]ᴹ    } ()
-         ; {s ∷ᴹ ss} _ → refl , tt })) ∷ᴺ
-     ((λ { {[]ᴹ    , []ᴹ   } (_ , () , _)
-         ; {[]ᴹ    , _ ∷ᴹ _} (_ , () , _)
-         ; {_ ∷ᴹ _ , []ᴹ   } (vlen , _) → vlen , inj₁ refl
-         ; {_ ∷ᴹ _ , _ ∷ᴹ _} (_ , () , _) }) ,
-      (λ { {_ , []ᴹ    , []ᴹ   } ((_ , () , _) , _)
-         ; {_ , []ᴹ    , _ ∷ᴹ _} ((_ , () , _) , _)
-         ; {[]ᴹ    , _ ∷ᴹ _ , []ᴹ} _ → [] , [] , λ { sᴹ i m cm (suc n) () (s≤s m≤n) }
-         ; {_ ∷ᴹ _ , _ ∷ᴹ _ , []ᴹ} (_ , _ , () , _)
-         ; {_ , _ ∷ᴹ _ , _ ∷ᴹ _} ((_ , () , _) , _) })) ∷ᴬ
-     ((λ { {_ , []ᴹ} (_ , () , _)
-         ; {[]ᴹ , _ ∷ᴹ _} (vlen , () , _)
-         ; {s ∷ᴹ ss , v ∷ᴹ vs} (vlen , anyeqn , _ , ks-s≢kv-v , _) →
-             vlen , inj₂ (inj₁ (extract-reentry keq ks kv (s ∷ᴹ ss) v vs (trueToWitness anyeqn))) }) ,
-      (λ { {_ , _ , []ᴹ} ((_ , () , _) , _)
-         ; {_ , []ᴹ , _ ∷ᴹ _} ((_ , () , _) , _)
-         ; {ss' , s ∷ᴹ ss , v ∷ᴹ vs} ((vlen , anyeqn , _) , ssᴹ , ew , ret) →
-             ssᴹ , ew ,
-             λ s* i m cm n cn m<n → ret s* (extract-reindex keq ks kv (s ∷ᴹ ss) v s* i) m
-                                        (extract-Count keq ks kv (s ∷ᴹ ss) v (trueToWitness anyeqn) s* i cm) n cn m<n })) ∷ᴬ
-     ((λ { {_ , []ᴹ   } (_ , () , _)
-         ; {_ , v ∷ᴹ _} (vlen , rest) → vlen , inj₂ (inj₁ (trueFromWitness (c-eq v))) }) ,
-      (λ { {_ , _ , []ᴹ} ((_ , () , _) , _)
-         ; {[]ᴹ , _ , _ ∷ᴹ _} (_ , _ , () , _)
-         ; {s' ∷ᴹ ss' , ss , v ∷ᴹ vs} ((_ , _ , ¬any , _) , ssᴹ , ew , ret) →
-             ssᴹ , ew ,
-             λ s i m cm n cn m<n →
-               ret s (there i) m
-                   ((λ ks-s≡ks-c-v → falseToWitness ¬any
-                                       (Any.map (λ s≡x → trans (cong ks (sym s≡x)) (trans ks-s≡ks-c-v (c-eq v))) i)) ∷ⁿ cm)
-                   n cn m<n })) ∷ᴬ [])
+    (conseq (λ { {[]ᴹ    , []ᴹ   } _ → tt , tt , refl
+               ; {[]ᴹ    , _ ∷ᴹ _} (_ , () , _)
+               ; {_ ∷ᴹ _ , []ᴹ   } (_ , () , _)
+               ; {_ ∷ᴹ _ , _ ∷ᴹ _} (_ , () , _) })
+            (rearrV (λ { ([]ᴹ , _) → ⊤; (_ ∷ᴹ _ , _) → ⊥ }) (λ { ([]ᴹ , _) → ⊤; (_ ∷ᴹ _ , _) → ⊥ })
+               (conseq (λ _ → refl)
+                       skip
+                       (λ { { .[]ᴹ   , []ᴹ    , _} (refl , _) → tt , tt , refl
+                          ; {  []ᴹ   , _ ∷ᴹ _ , _} _ → tt , tt , refl
+                          ; { _ ∷ᴹ _ , _ ∷ᴹ _ , _} (_ , _ , () , _) })))
+            (λ { {[]ᴹ    , []ᴹ    , []ᴹ   } _ → ([] , [] , λ _ ()) , (refl , tt) , refl , tt
+               ; {_ ∷ᴹ _ , []ᴹ    , []ᴹ   } ((_ , () , _) , _)
+               ; {_      , []ᴹ    , _ ∷ᴹ _} (_ , _ , () , _)
+               ; {_      , _ ∷ᴹ _ , []ᴹ   } (_ , _ , () , _)
+               ; {_      , _ ∷ᴹ _ , _ ∷ᴹ _} (_ , _ , () , _) }) ∷ᴺ
+     conseq
+       (λ { {[]ᴹ    , []ᴹ   } (_ , () , _)
+          ; {[]ᴹ    , _ ∷ᴹ _} (_ , () , _)
+          ; {_ ∷ᴹ _ , []ᴹ   } (_ , () , _)
+          ; {_ ∷ᴹ _ , _ ∷ᴹ _} (vlen , eqn , _) → _ , (refl , refl) , vlen , trueToWitness eqn })
+       (rearrS (λ { ((s , ss) , []ᴹ    ) → ⊥
+                  ; ((s , ss) , v ∷ᴹ vs) → length (toList₁ (v ∷ᴹ vs)) ≡ n × ks s ≡ kv v })
+               (Post ks kv R' ∘ Product.map (uncurry _∷ᴹ_) (Product.map (uncurry _∷ᴹ_) id))
+          (conseq
+             (λ { {_ , []ᴹ   } (_ , _ , ())
+                ; {_ , _ ∷ᴹ _} (_ , (refl , refl) , vlen , ks-s≡kv-v) → _ , (vlen , ks-s≡kv-v) , refl , refl })
+             (rearrV (λ { ((s , ss) , (v , vs)) → length (toList₁ (v ∷ᴹ vs)) ≡ n × ks s ≡ kv v })
+                     (Post ks kv R' ∘ Product.map (uncurry _∷ᴹ_) (Product.map (uncurry _∷ᴹ_) (uncurry _∷ᴹ_)))
+                (conseq
+                   (λ { (_ , (vlen , ks-s≡kv-v) , eq , vseq) → 
+                        trans ks-s≡kv-v (cong kv eq) ,
+                        cong pred (subst (λ vs → suc (length (toList₁ vs)) ≡ n) vseq vlen) , pred-lemma vlen })
+                   (prod b-t rec-t)
+                   (λ { {(s' , ss') , (s , ss) , (v , vs)}
+                        (((R'-s'-s-v , ks-s'≡kv-v) , (ssᴹ , ew , ret)) , (v' , vs') , (_ , ks-s≡kv-v') , v'≡v , vs'≡vs) →
+                          _ , (s ∷ ssᴹ , (R'-s'-s-v , ks-s'≡kv-v) ∷ ew ,
+                               λ { sᴹ (here eq) m cm n cn m<n → here eq
+                                 ; sᴹ (there i) (suc m) (ks-sᴹ≡ks-s ∷ʸ cm) (suc n) (ks-sᴹ≡kv-v ∷ʸ cn) (s≤s m<n) →
+                                     there (ret sᴹ i m cm n cn m<n)
+                                 ; sᴹ (there i) m (ks-sᴹ≡ks-s ∷ʸ cm) n (ks-sᴹ≢kv-v ∷ⁿ cn) m<n →
+                                     ⊥-elim (ks-sᴹ≢kv-v (trans ks-sᴹ≡ks-s (trans ks-s≡kv-v' (cong kv v'≡v))))
+                                 ; sᴹ (there i) m (ks-sᴹ≢ks-s ∷ⁿ cm) n (ks-sᴹ≡kv-v ∷ʸ cn) m<n →
+                                     ⊥-elim (ks-sᴹ≢ks-s (trans ks-sᴹ≡kv-v (sym (trans ks-s≡kv-v' (cong kv v'≡v)))))
+                                 ; sᴹ (there i) m (ks-sᴹ≢ks-s ∷ⁿ cm) n (ks-sᴹ≢kv-v ∷ⁿ cn) m<n →
+                                     there (ret sᴹ i m cm n cn m<n) }) ,
+                          refl , refl })))
+             (λ { {_ , _ , []ᴹ   } (_ , _ , _ , ())
+                ; {_ , _ , _ ∷ᴹ _} ((_ , post , refl , refl) , _ , (refl , refl) , _) →
+                    _ , post , (refl , refl) , refl , refl})))
+       (λ { {[]ᴹ , _} ((_ , _ , () , _) , _)
+          ; {_ ∷ᴹ _ , []ᴹ , _} ((_ , _ , _ , ()) , _)
+          ; {_ ∷ᴹ _ , _ ∷ᴹ _ , []ᴹ   } ((_ , _ , (refl , refl) , (refl , refl)) , _ , () , _)
+          ; {_ ∷ᴹ _ , _ ∷ᴹ _ , _ ∷ᴹ _} ((_ , ([] , () , _) , _) , _)
+          ; {_ ∷ᴹ _ , _ ∷ᴹ _ , _ ∷ᴹ _} ((_ , (sᴹ ∷ ssᴹ , (r' , ks-s'≡kv-v) ∷ ew , r) , (refl , refl) , (refl , refl)) , _) →
+              (sᴹ ∷ ssᴹ , (r' , ks-s'≡kv-v) ∷ ew , r) , (trueFromWitness ks-s'≡kv-v , refl , tt) , refl , refl , tt }) ∷ᴺ
+     (λ { []ᴹ      []ᴹ      (_ , () , _)
+        ; []ᴹ      (_ ∷ᴹ _) (_ , () , _)
+        ; (_ ∷ᴹ _) []ᴹ      (vlen , _) →
+            (vlen , inj₁ refl) ,
+            (λ { []ᴹ      _ → [] , [] , λ { sᴹ i m cm (suc n) () (s≤s m≤n) }
+               ; (_ ∷ᴹ _) (_ , () , _) })
+        ; (_ ∷ᴹ _) (_ ∷ᴹ _) (_ , () , _) }) ∷ᴬ
+     (λ { _         []ᴹ       (_ , () , _)
+        ; []ᴹ       (_ ∷ᴹ _)  (vlen , () , _)
+        ; (s ∷ᴹ ss) (v ∷ᴹ vs) (vlen , anyeqn , _ , ks-s≢kv-v , _) →
+            (vlen , inj₂ (inj₁ (extract-reentry keq ks kv (s ∷ᴹ ss) v vs (trueToWitness anyeqn)))) ,
+            λ { ss' (ssᴹ , ew , ret) →
+                  ssᴹ , ew ,
+                  λ s* i m cm n cn m<n →
+                      ret s* (extract-reindex keq ks kv (s ∷ᴹ ss) v s* i) m
+                             (extract-Count keq ks kv (s ∷ᴹ ss) v (trueToWitness anyeqn) s* i cm) n cn m<n } }) ∷ᴬ
+     (λ { ss []ᴹ       (_ , () , _)
+        ; ss (v ∷ᴹ vs) (vlen , _ , ¬any , _) →
+            (vlen , inj₂ (inj₁ (trueFromWitness (c-eq v)))) ,
+            λ { []ᴹ         (_ , () , _)
+              ; (s' ∷ᴹ ss') (ssᴹ , ew , ret) →
+                  ssᴹ , ew ,
+                  λ s i m cm n cn m<n →
+                    ret s (there i) m
+                        ((λ ks-s≡ks-c-v →
+                              falseToWitness ¬any
+                                (Any.map (λ s≡x → trans (cong ks (sym s≡x)) (trans ks-s≡ks-c-v (c-eq v))) i)) ∷ⁿ cm)
+                        n cn m<n } }) ∷ᴬ [])
     (λ { {[]ᴹ    , []ᴹ   } _ → inj₁ refl
        ; {_ ∷ᴹ _ , []ᴹ   } _ → inj₂ (inj₂ (inj₁ refl))
        ; {_      , _ ∷ᴹ _} _ → inj₂ (inj₂ (inj₂ (inj₂ (inj₁ refl)))) })
@@ -344,9 +339,8 @@ keyAlign-range keq ks kv b c b-t c-eq n rec rec-t =
                  skip
                  (λ _ → tt)))
            id ,
-         (λ { {[]ᴹ   } _ → refl
-            ; {_ ∷ᴹ _} () }) ,
-         (λ _ → tt)) ∷ᴺ
+         (λ { {[]ᴹ   } _ → refl , tt
+            ; {_ ∷ᴹ _} () })) ∷ᴺ
         (conseq {Q = λ { []ᴹ → ⊥; (_ ∷ᴹ ss) → suc (length (toList₀ ss)) ≡ n }}
            (λ { {[]ᴹ     , []ᴹ    } (_ , ())
               ; {[]ᴹ     , _ ∷ᴹ _ } (_ , ())
@@ -375,9 +369,7 @@ keyAlign-range keq ks kv b c b-t c-eq n rec rec-t =
            (λ { {[]ᴹ} ()
               ; {s ∷ᴹ ss} suc-len-ss≡n → (s , ss) , (cong pred suc-len-ss≡n , pred-lemma suc-len-ss≡n) , refl , refl }) ,
          (λ { {[]ᴹ   } ()
-            ; {_ ∷ᴹ _} _ → refl }) ,
-         (λ { {[]ᴹ   } ()
-            ; {_ ∷ᴹ _} _ → refl , tt })) ∷ᴺ •∷ᴬ •∷ᴬ •∷ᴬ []))
+            ; {_ ∷ᴹ _} _ → refl , refl , tt })) ∷ᴺ •∷ᴬ •∷ᴬ •∷ᴬ []))
     (λ { {[]ᴹ   } → inj₁
        ; {_ ∷ᴹ _} → inj₂ ∘ inj₁ })
 

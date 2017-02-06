@@ -24,6 +24,11 @@ open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
 
 
+OutOfRangeB : {n : ℕ} {F : Functor n} {S V : U n} → List (CaseBranch F S V) → ℙ (⟦ S ⟧ (μ F))
+OutOfRangeB []                      = Π
+OutOfRangeB ((_ , normal _ q) ∷ bs) = (False ∘ q) ∩ OutOfRangeB bs
+OutOfRangeB ((_ , adaptive _) ∷ bs) = OutOfRangeB bs
+
 mutual
 
   data Triple {n : ℕ} {F : Functor n} : {S V : U n} →
@@ -41,9 +46,11 @@ mutual
                      (λ { ((sl' , sr') , (sl , sr) , (vl , vr)) → Rl' (sl' , sl , vl) × Rr' (sr' , sr , vr) })
     rearrS  : {S T V : U n}
               {spat : Pattern F S} {tpat : Pattern F T} {expr : Expr spat tpat} {c : CompleteExpr spat tpat expr}
-              {b : BiGUL F T V} (R : ℙ (PatResult spat × ⟦ V ⟧ (μ F))) (R' : ℙ (PatResult spat × PatResult spat × ⟦ V ⟧ (μ F))) →
+              {b : BiGUL F T V} (R : ℙ (PatResult spat × ⟦ V ⟧ (μ F)))
+                                (R' : ℙ (PatResult spat × PatResult spat × ⟦ V ⟧ (μ F))) →
               Triple ((Eval spat tpat expr ∘ swap) • R) b
-                     (λ { (t' , t , v) → ∃ λ { (r' , r) → R' (r' , r , v) × Eval spat tpat expr (r' , t') × Eval spat tpat expr (r , t) } }) →
+                     (λ { (t' , t , v) → ∃ λ { (r' , r) → R' (r' , r , v) × Eval spat tpat expr (r' , t') ×
+                                                                            Eval spat tpat expr (r , t) } }) →
               Triple (Match spat • R) (rearrS spat tpat expr c b)
                      (λ { (s' , s , v) → ∃ λ { (r' , r) → R' (r' , r , v) × Match spat (s' , r') × Match spat (s , r) } })
     rearrV  : {S V W : U n}
@@ -61,7 +68,7 @@ mutual
     case    : {S V : U n} {bs : List (CaseBranch F S V)}
               {R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} {R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} →
               CaseBranchTriple R R'
-                ((NormalCaseDomain (List.map (Product.map id (elimCaseBranchType (λ _ _ → true) (λ _ → false))) bs))) bs [] →
+                (NormalCaseDomain (List.map (Product.map id (elimCaseBranchType (λ _ _ → true) (λ _ → false))) bs)) bs [] →
               R ⊆ CaseDomain (List.map proj₁ bs) →
               Triple R (case bs) R'
     conseq  : {S V : U n} {b : BiGUL F S V}
@@ -77,17 +84,15 @@ mutual
             {bs bs' : List (CaseBranch F S V)} →
             Triple (R ∩ (True ∘ uncurry p) ∩ OutOfDomain (List.map proj₁ bs')) b
                    (R' ∩ (((True ∘ uncurry p) ∩ OutOfDomain (List.map proj₁ bs')) ∘ Product.map id proj₂) ∩
-                         (True ∘ q ∘ proj₁)) ×
-            ((True ∘ q) ⊆ foldr (_∩_ ∘ elimCaseBranchType (λ _ q → False ∘ q) (λ _ → Π)∘ proj₂) Π bs') →
+                         (((True ∘ q) ∩ OutOfRangeB bs') ∘ proj₁)) →
             CaseBranchTriple R R' ReentryCond bs ((p , normal b q) ∷ bs') →
             CaseBranchTriple R R' ReentryCond ((p , normal b q) ∷ bs) bs'
     _∷ᴬ_ : {p : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → Bool} {f : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → ⟦ S ⟧ (μ F)}
            {bs bs' : List (CaseBranch F S V)} →
-           let Pre = R ∩ (True ∘ uncurry p) ∩ OutOfDomain (List.map proj₁ bs')
-           in  ((Pre ⊆ (R ∩ ReentryCond) ∘ < uncurry f , proj₂ >) × 
-                ((Pre ∘ proj₂) ∩ (R' ∘ Product.map id < uncurry f , proj₂ >) ⊆ R')) →
-               CaseBranchTriple R R' ReentryCond bs ((p , adaptive f) ∷ bs') →
-               CaseBranchTriple R R' ReentryCond ((p , adaptive f) ∷ bs) bs'
+           ((s : ⟦ S ⟧ (μ F)) (v : ⟦ V ⟧ (μ F)) → (R ∩ (True ∘ uncurry p) ∩ OutOfDomain (List.map proj₁ bs')) (s , v) →
+              (R ∩ ReentryCond) (f s v , v) × ((s' : ⟦ S ⟧ (μ F)) → R' (s' , f s v , v) → R' (s' , s , v))) →
+           CaseBranchTriple R R' ReentryCond bs ((p , adaptive f) ∷ bs') →
+           CaseBranchTriple R R' ReentryCond ((p , adaptive f) ∷ bs) bs'
 
 infixr 5 _∷ᴺ_ _∷ᴬ_
 
@@ -98,11 +103,10 @@ case-main-cond-lemma ((p , normal _ _) ∷ bs) = cong (p ∷_) (case-main-cond-l
 case-main-cond-lemma ((p , adaptive _) ∷ bs) = cong (p ∷_) (case-main-cond-lemma bs)
 
 case-out-of-range-lemma : {n : ℕ} {F : Functor n} {S V : U n} (bs : List (CaseBranch F S V)) →
-                          foldr (_∩_ ∘ elimCaseBranchType (λ _ q → False ∘ q) (λ _ → Π)∘ proj₂) Π bs ⊆
-                          OutOfRange (interp-CaseBranch bs)
+                          OutOfRangeB bs ⊆ OutOfRange (interp-CaseBranch bs)
 case-out-of-range-lemma []                      = id
 case-out-of-range-lemma ((p , normal _ _) ∷ bs) = Product.map id (case-out-of-range-lemma bs)
-case-out-of-range-lemma ((p , adaptive _) ∷ bs) = Product.map (const tt) (case-out-of-range-lemma bs)
+case-out-of-range-lemma ((p , adaptive _) ∷ bs) = case-out-of-range-lemma bs
 
 soundness : {n : ℕ} {F : Functor n} {S V : U n}
             {R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} {b : BiGUL F S V} {R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} →
@@ -119,15 +123,16 @@ soundness {n} {F} {S} {V} (case {bs = bs} {R} {R'} ts dom) =
     (subst (BranchSound R R' (interp-CaseBranch bs) [] ∘ NormalCaseDomain)
            (case-branch-type-lemma bs) (case-soundness-lemma ts))
     (subst (λ ps → R ⊆ CaseDomain ps) (case-main-cond-lemma bs) dom)
-    (case-disjointness-lemma ts)
   where
     case-soundness-lemma : {bs bs' : List (CaseBranch F S V)} {ReentryCond : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} →
                            CaseBranchTriple R R' ReentryCond bs bs' →
                            BranchSound R R' (interp-CaseBranch bs) (interp-CaseBranch bs') ReentryCond
     case-soundness-lemma [] = tt
-    case-soundness-lemma ((t , _) ∷ᴺ ts) with soundness t
-    case-soundness-lemma {bs' = bs'} ((t , _) ∷ᴺ ts) | s rewrite case-main-cond-lemma bs' = s , case-soundness-lemma ts
-    case-soundness-lemma {bs' = bs'} (r ∷ᴬ ts) rewrite case-main-cond-lemma bs' = lift r , case-soundness-lemma ts
+    case-soundness-lemma (t ∷ᴺ ts) with soundness t
+    case-soundness-lemma {bs' = bs'} (t ∷ᴺ ts) | sound rewrite case-main-cond-lemma bs' =
+      (λ sv pre → let (s' , put↦ , r' , (peq , outd) , qeq , outr) = sound sv pre
+                  in   s' , put↦ , r' , (peq , outd) , qeq , case-out-of-range-lemma bs' outr) , case-soundness-lemma ts
+    case-soundness-lemma {bs' = bs'} (p ∷ᴬ ts) rewrite case-main-cond-lemma bs' = lift p , case-soundness-lemma ts
 
     case-branch-type-lemma : (bs : List (CaseBranch F S V)) →
                              List.map (Product.map id (elimCaseBranchType (λ _ _ → true) (λ _ → false))) bs ≡
@@ -135,13 +140,6 @@ soundness {n} {F} {S} {V} (case {bs = bs} {R} {R'} ts dom) =
     case-branch-type-lemma [] = refl
     case-branch-type-lemma ((p , normal _ _) ∷ bs) = cong ((p , true ) ∷_) (case-branch-type-lemma bs)
     case-branch-type-lemma ((p , adaptive _) ∷ bs) = cong ((p , false) ∷_) (case-branch-type-lemma bs)
-
-    case-disjointness-lemma : {bs bs' : List (CaseBranch F S V)} {ReentryCond : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} →
-                              CaseBranchTriple R R' ReentryCond bs bs' →
-                              RangeDisjoint (interp-CaseBranch bs) (interp-CaseBranch bs')
-    case-disjointness-lemma [] = tt
-    case-disjointness-lemma {bs' = bs'} ((t , x) ∷ᴺ ts) = case-out-of-range-lemma bs' ∘ x , case-disjointness-lemma ts
-    case-disjointness-lemma (_ ∷ᴬ ts) = case-disjointness-lemma ts
 soundness (conseq q t q') = consequence _ _ _ (soundness t) _ q _ q'
 
 expand : ℕ → {n : ℕ} {F : Functor n} {S V : U n} → (BiGUL F S V → BiGUL F S V) → BiGUL F S V
@@ -208,8 +206,7 @@ mutual
     []   : {bs' : List (CaseBranch F S V)} → CaseBranchTripleR R [] bs'
     _∷ᴺ_ : {p : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → Bool} {b : BiGUL F S V} {q : ⟦ S ⟧ (μ F) → Bool}
            {bs bs' : List (CaseBranch F S V)} {P : ℙ (⟦ S ⟧ (μ F))} →
-           TripleR (R ∩ (True ∘ uncurry p) ∩ OutOfDomain (List.map proj₁ bs')) b P × (P ⊆ (True ∘ q)) ×
-           ((True ∘ q) ⊆ foldr (_∩_ ∘ elimCaseBranchType (λ _ q → False ∘ q) (λ _ → Π)∘ proj₂) Π bs') →
+           TripleR (R ∩ (True ∘ uncurry p) ∩ OutOfDomain (List.map proj₁ bs')) b P × (P ⊆ (True ∘ q) ∩ OutOfRangeB bs') →
            CaseBranchTripleR R bs ((p , normal b q) ∷ bs') → CaseBranchTripleR R ((p , normal b q) ∷ bs) bs'
     •∷ᴬ_ : {p : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → Bool} {f : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → ⟦ S ⟧ (μ F)}
            {bs bs' : List (CaseBranch F S V)} →
@@ -234,14 +231,15 @@ soundnessR (rearrS {tpat = tpat} {c = c} {b} R P t) = rearrS-soundnessG _ tpat _
 soundnessR (rearrV {wpat = wpat} {c = c} {b} R   t) = rearrV-soundnessG _ wpat _ c (interp b) _ R (soundnessR t)
 soundnessR (dep {V' = V'} {f} {b} R {P} t) = dep-soundnessG f (U-dec V') (interp b) P R (soundnessR t)
 soundnessR {n} {F} {S} {V} {R} (case ts) =
-  case-soundnessG _ _ (case-soundnessR-lemma ts) (CaseRange ts) (case-range-lemma ts) (case-disjointness-lemma ts)
+  case-soundnessG _ _ (case-soundnessR-lemma ts) (CaseRange ts) (case-range-lemma ts)
   where
     case-soundnessR-lemma :
       {bs bs' : List (CaseBranch F S V)} → CaseBranchTripleR R bs bs' →
       BranchSoundG R (interp-CaseBranch bs) (interp-CaseBranch bs')
     case-soundnessR-lemma [] = tt
-    case-soundnessR-lemma {bs' = bs'} (_∷ᴺ_ {P = P} (t , P⊆ , _) ts)
-      rewrite case-main-cond-lemma bs' = (P , P⊆ , soundnessR t) , case-soundnessR-lemma ts
+    case-soundnessR-lemma {bs' = bs'} (_∷ᴺ_ {P = P} (t , P⊆) ts)
+      rewrite case-main-cond-lemma bs' =
+      (P , Product.map id (case-out-of-range-lemma bs') ∘ P⊆ , soundnessR t) , case-soundnessR-lemma ts
     case-soundnessR-lemma (•∷ᴬ ts) = case-soundnessR-lemma ts
 
     case-range-lemma :
@@ -251,13 +249,6 @@ soundnessR {n} {F} {S} {V} {R} (case ts) =
     case-range-lemma {bs' = bs'} (_ ∷ᴺ ts) (inj₁ p) rewrite case-main-cond-lemma bs' = inj₁ p
     case-range-lemma {bs' = bs'} (_ ∷ᴺ ts) (inj₂ r) rewrite case-main-cond-lemma bs' = inj₂ (case-range-lemma ts r)
     case-range-lemma (•∷ᴬ ts) r = case-range-lemma ts r
-
-    case-disjointness-lemma : {bs bs' : List (CaseBranch F S V)} →
-                              CaseBranchTripleR R bs bs' →
-                              RangeDisjoint (interp-CaseBranch bs) (interp-CaseBranch bs')
-    case-disjointness-lemma [] = tt
-    case-disjointness-lemma {bs' = bs'} ((_ , _ , x) ∷ᴺ ts) = case-out-of-range-lemma bs' ∘ x , case-disjointness-lemma ts
-    case-disjointness-lemma (•∷ᴬ ts) = case-disjointness-lemma ts   
 soundnessR (conseq R∩Q⊆T t Q⊆P) = consequenceG _ _ _ (soundnessR t) _ Q⊆P _ R∩Q⊆T
 
 expandTripleR :
