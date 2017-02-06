@@ -1,5 +1,5 @@
 %% For double-blind review submission
-\documentclass[acmlarge,fleqn,review]{acmart}\settopmatter{printfolios=true}
+\documentclass[acmlarge,fleqn,review,anonymous]{acmart}\settopmatter{printfolios=true}
 %% For single-blind review submission
 %\documentclass[acmlarge,review]{acmart}\settopmatter{printfolios=true}
 %% For final camera-ready submission
@@ -45,15 +45,18 @@
 %format <~ = "{\hookleftarrow}"
 %format LUB = "{\textstyle\bigsqcup}\kern-\smallskipamount"
 %format BIGCUP = "{\textstyle\bigcup}\kern-\smallskipamount"
-%format (POWER x) = "\mathcal P\," x
+%format (POWER x) = "\mathcal P" x
 %format SUBSETEQ = "{\subseteq}"
 %format CAP = "{\cap}"
 %format CUP = "{\cup}"
 %format (GRAPH x) = "{\mathcal G}" x
 %format TIMES = "{\times}"
 %format (VEC(x)) = "\vec{" x "}"
-%format (NORM(x)) = "\hat{" x "}"
+%format (NORM(x)) = "\widehat{" x "}"
 %format INNER = "\rotatebox[origin=c]{180}{\ensuremath{\Lsh}}"
+%format OR = "\kern-1.25\smallskipamount/\kern-1.25\smallskipamount"
+%format Domain = "\awa{\mathcal N}{\mathcal D}"
+%format NormalDomain = "\mathcal N"
 
 %format fail = "\keyword{fail}"
 %format skip = "\keyword{skip}"
@@ -424,16 +427,16 @@ can indeed be regarded as a simple variant of separating conjunction~\citep{Reyn
 \begin{align*}
 & \begin{array}{l}
 |all((normal M exit E INNER b) `elem` branches)| \\
-\quad |(ASSERT(R CAP (NORM M))) ~ b ~ (ASSERT(s' s v || R s' s v && (NORM M) s' v && (NORM E) s'))| \\
+\quad |(ASSERT(R CAP (NORM M))) ~ b ~ (ASSERT(s' s v || R' s' s v && (NORM M) s' v && (NORM E) s'))| \\
 |all((adaptive M INNER f) `elem` branches)| \\
 \quad |all(s, v) ~ R s v && (NORM M) s v ~ =>| \\
-\qquad \awa{\text{\emph{postcondition}\kern.5pt:\ \ }}{\text{\color{putback}\emph{reentry}\kern.5pt:\ \ }} |R (f s v) v ~ && ~ (NORM N) (f s v) v| \quad|&&|
+\qquad \awa{\text{\emph{postcondition}\kern.5pt:\ \ }}{\text{\color{putback}\emph{reentry}\kern.5pt:\ \ }} |R (f s v) v && NormalDomain (f s v) v| \quad|&&|
 \\
-\qquad \text{\color{putback}\emph{postcondition}\kern.5pt:\ \ } |(all(s')) ~ R' s' (f s v) v ~ => ~ R' s' s v| \\ \hline
-|(ASSERT(R CAP N)) ~ case branches ~ (ASSERT R')|
+\qquad \text{\color{putback}\emph{postcondition}\kern.5pt:\ \ } |(all(s')) R' s' (f s v) v => R' s' s v| \\ \hline
+|(ASSERT(R CAP Domain)) ~ case branches ~ (ASSERT R')|
 \end{array} \\
-& \quad |where|\;|N = BIGCUP ~ [ M || (normal M exit E INNER b) `elem` branches ]| \\[-1ex]
-& \quad \awa{|where|}{}\; |(NORM N) = BIGCUP ~ [ (NORM M) || (normal M exit E INNER b) `elem` branches ]|
+& \quad |where|\;|Domain = BIGCUP ~ [ M || (normal OR adaptive M ...) `elem` branches ]| \\[-1ex]
+& \quad \awa{|where|}{}\; |NormalDomain = BIGCUP ~ [ (NORM M) || (normal M ...) `elem` branches ]|
 \end{align*}
 
 \[ \begin{array}{l}
@@ -473,8 +476,6 @@ case
     \ (w, h) v -> (v, v)
     (ASSERT'(reentry)(COM((w, _) v | w = v) (v, v) v))
     (ASSERT'(postcondition)(all(w', h') Post (w', h') (v, v) v => Post (w', h') (w, h) v))
-  (ASSERT'(coverage)(COM((w, _) v | w = v) CUP (COM(_ _)) ))
-  (ASSERT'(disjointness)(True))
 (ASSERT(Post @ (COM((w', h') (w, h) v | w' = v && (w = v => h' = h) && (w /= v => w' = h'))))) (ASSERTRANGE(_))
 \end{code}
 
@@ -610,11 +611,12 @@ We will write
 \quad |P'_n SUBSETEQ (NORM E)| \\ \hline
 |(ASSERTRANGE R) ~ case branches ~ (ASSERTRANGE(P'))|
 \end{array} \\
-& \quad |where P' = BIGCUP ~ [ P'_n || n = (normal M exit E INNER b) `elem` branches ]|
+& \quad |where P' = BIGCUP ~ [ P'_n || n = (normal ...) `elem` branches ]|
 \end{align*}
 
 \begin{lemma}
-\[ |(ASSERT R) ~ b ~ (ASSERT(s' _ _ || Q s')) (ASSERTRANGE P)| \quad|=>|\quad |P SUBSETEQ Q| \]
+Let |b : S <~ V|, |R : (POWER(S TIMES V))|, |P' : (POWER S)|, and |Q' : (POWER S)|.
+\[ \IF |(ASSERT R) ~ b ~ (ASSERT(s' _ _ || Q' s')) (ASSERTRANGE P')| \THEN |P' SUBSETEQ Q'| \PERIOD \]
 \end{lemma}
 
 \begin{code}
