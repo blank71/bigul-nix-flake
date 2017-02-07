@@ -166,6 +166,14 @@ expandTriple f measure R R' g (suc l) n    n≤suc-l = g n (expand (suc l) f) au
                                (expandTriple f measure R R' g l l (DecTotalOrder.refl Nat.decTotalOrder))
                                proj₁
 
+expand-sound :
+  {n : ℕ} {F : Functor n} {S V : U n} (f : BiGUL F S V → BiGUL F S V)
+  (measure : ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F) → ℕ) →
+  (R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))) (R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))) →
+  (l : ℕ) →((n : ℕ) → n ≤ l → Triple (R ∩ ((_≡ n) ∘ measure)) (expand (suc l) f) R') →
+  Sound (R ∩ ((_≤ l) ∘ measure)) (Lens.put (interp (expand (suc l) f))) R'
+expand-sound f measure R R' l ts (s , v) (Rsv , m≤l) = soundness (ts (measure (s , v)) m≤l) (s , v) (Rsv , refl)
+
 mutual
 
   data TripleR {n : ℕ} {F : Functor n} : {S V : U n} →
@@ -270,3 +278,13 @@ expandTripleR f measure R P g (suc l) n    n≤suc-l = g n (expand (suc l) f) au
     aux {m} | no ¬m<n = conseq (λ { (_ , _ , m<n) → ⊥-elim (¬m<n m<n) })
                                (expandTripleR f measure R P g l l (DecTotalOrder.refl Nat.decTotalOrder))
                                (λ { (_ , m<n) → ⊥-elim (¬m<n m<n) })
+
+expand-soundG :
+  {n : ℕ} {F : Functor n} {S V : U n} (f : BiGUL F S V → BiGUL F S V)
+  (measure : ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F) → ℕ)
+  (R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))) (P' : ℕ → ℙ (⟦ S ⟧ (μ F)))
+  (l : ℕ) → ((n : ℕ) → n ≤ l → TripleR (R ∩ ((_≡ n) ∘ measure)) (expand (suc l) f) (P' n)) →
+  SoundG (λ s → Σ[ n ∈ ℕ ] n ≤ l × P' n s) (Lens.get (interp (expand (suc l) f))) (R ∩ ((_≤ l) ∘ measure))
+expand-soundG f measure R P' l ts s (n , n≤l , P'-n-s) =
+  let (v , get↦ , Rsv , meq) = soundnessR (ts n n≤l) s P'-n-s
+  in  v , get↦ , Rsv , subst (_≤ l) (sym meq) n≤l

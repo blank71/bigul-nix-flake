@@ -55,7 +55,7 @@
 %format (NORM(x)) = "\widehat{" x "}"
 %format INNER = "\rotatebox[origin=c]{180}{\ensuremath{\Lsh}}"
 %format OR = "\kern-1.25\smallskipamount/\kern-1.25\smallskipamount"
-%format Domain = "\awa{\mathcal N}{\mathcal D}"
+%format Domain = "\mathcal D"
 %format NormalDomain = "\mathcal N"
 
 %format fail = "\keyword{fail}"
@@ -68,6 +68,9 @@
 %format exit = "\keyword{exit}"
 %format exit' = "\identifier{exit}"
 %format adaptive = "\keyword{adaptive}"
+
+%format zero = "\mathsf{zero}"
+%format suc = "\mathsf{suc}"
 
 \definecolor{putback}{RGB}{60,116,219}
 \definecolor{range}{RGB}{0,140,0}
@@ -344,7 +347,7 @@ Let |l, r : S <~ V|.
 
 \begin{notation}
 Relations on types |A_1|, |A_2|, $\ldots,$ |A_n| are considered inhabitants of the type |POWER(A_1 TIMES A_2 TIMES {-"\cdots\;"-} TIMES A_n)|.
-When a relation~|R| of this type relates elements |x_1 : A_1|, |x_2 : A_2|, $\ldots,$ |x_n : A_n|, we write |R x_1 x_2 ... x_n|\,. %(in a curried form, to save parentheses and commas).
+When a relation~|R| of this type relates elements |x_1 : A_1|\,, |x_2 : A_2|\,, $\ldots,$ |x_n : A_n|\,, we write |R x_1 x_2 ... x_n|\,. %(in a curried form, to save parentheses and commas).
 \end{notation}
 
 \begin{definition}
@@ -435,7 +438,7 @@ can indeed be regarded as a simple variant of separating conjunction~\citep{Reyn
 \qquad \text{\color{putback}\emph{postcondition}\kern.5pt:\ \ } |(all(s')) R' s' (f s v) v => R' s' s v| \\ \hline
 |(ASSERT(R CAP Domain)) ~ case branches ~ (ASSERT R')|
 \end{array} \\
-& \quad |where|\;|Domain = BIGCUP ~ [ M || (normal OR adaptive M ...) `elem` branches ]| \\[-1ex]
+& \quad |where|\;|{-"\awa{\mathcal N}{\mathcal D}\;"-} = BIGCUP ~ [ M || (normal OR adaptive M ...) `elem` branches ]| \\[-1ex]
 & \quad \awa{|where|}{}\; |NormalDomain = BIGCUP ~ [ (NORM M) || (normal M ...) `elem` branches ]|
 \end{align*}
 
@@ -659,44 +662,35 @@ expand zero     f = fail
 expand (suc n)  f = f (expand n f)
 \end{code}
 
-\begin{lemma}[finite expansion of putback triples]
+\begin{theorem}[finite expansion of putback triples]
 Let |f : (S <~ V) -> (S <~ V)| and |measure : S -> V -> Nat|.
 If, for all |n : Nat| and |rec : S <~ V|,
-\[ |((all m) (ASSERT(R CAP (COM(s v || measure s v = m && m < n)))) ~ rec ~ (ASSERT R'))| \quad|=>|\quad |(ASSERT(R CAP (COM(s v || measure s v = n)))) ~ f rec ~ (ASSERT R')| \]
+\begin{align}
+& |((all m) (ASSERT(R CAP (COM(s v || measure s v = m && m < n)))) ~ rec ~ (ASSERT R'))| \nonumber \\
+& \quad|=>|\quad |(ASSERT(R CAP (COM(s v || measure s v = n)))) ~ f rec ~ (ASSERT R')| \label{prop:putback-recursion}
+\end{align}
 then, for all |l : Nat| and |n : Nat| such that |n <= l|,
-\[ |(ASSERT(R CAP (COM(s v || measure s v = n)))) ~ expand (suc l) f ~ (ASSERT R')| \]
-\end{lemma}
-
-\begin{lemma}
-\[ |(ASSERT R) ~ b ~ (ASSERT R')| \quad|&&|\quad |(ASSERT T) ~ b ~ (ASSERT T')| \quad|=>|\quad |(ASSERT(R CUP T)) ~ b ~ (ASSERT(R' CUP T'))| \]
-\end{lemma}
+\[ |(ASSERT(R CAP (COM(s v || measure s v = n)))) ~ expand (suc l) f ~ (ASSERT R')| \PERIOD \]
+\end{theorem}
 
 \begin{corollary} For all |l : Nat|,
-\[ |(ASSERT(R CAP (COM(s v || measure s v <= l)))) ~ expand (suc l) f ~ (ASSERT R')| \]
+\[ \models |(ASSERT(R CAP (COM(s v || measure s v <= l)))) ~ expand (suc l) f ~ (ASSERT R')| \]
 \end{corollary}
-
-\begin{lemma}
-Let |(VEC R) : Nat -> (POWER(S TIMES V))|, |(VEC b) : Nat -> (S <~ V)|, and |(VEC R') : Nat -> (POWER(S TIMES S TIMES V))| be nondecreasing chains.
-\[ |((all(i)) (ASSERT(VEC R i)) ~ (VEC b i) ~ (ASSERT(VEC R' i)))| \quad|=>|\quad |(ASSERT(BIGCUP(VEC R))) ~ LUB(VEC b) ~ (ASSERT(BIGCUP(VEC R')))| \]
-\end{lemma}
-
-\begin{corollary}
-\[ |(ASSERT R) ~ LUB(\ l -> expand (suc l) f) ~ (ASSERT R')| \]
-\end{corollary}
-\begin{proof}
-|(\ l -> R CUP (COM(s v || measure s v <= l)))| is a nondecreasing chain with~|R| as its least upper bound.
-\end{proof}
 
 \begin{theorem}[finite expansion of range triples]
 Let |f : (S <~ V) -> (S <~ V)|, |measure : S -> V -> Nat|, and |P : Nat -> (POWER S)|.
 If, for all |n : Nat| and |rec : S <~ V|,
-\[ |((all m) (ASSERTRANGE(R CAP (COM(s v || measure s v = m)))) ~ rec ~ (ASSERTRANGE(P m CAP (COM(_ || m < n)))))| \quad|=>|\quad |(ASSERTRANGE(R CAP (COM(s v || measure s v = n)))) ~ f rec ~ (ASSERTRANGE(P n))| \]
+\begin{align}
+& |((all m) (ASSERTRANGE(R CAP (COM(s v || measure s v = m)))) ~ rec ~ (ASSERTRANGE(P m CAP (COM(_ || m < n)))))| \nonumber \\
+& \quad|=>|\quad |(ASSERTRANGE(R CAP (COM(s v || measure s v = n)))) ~ f rec ~ (ASSERTRANGE(P n))| \label{prop:range-recursion}
+\end{align}
 then, for all |l : Nat| and |n : Nat| such that |n <= l|,
 \[ |(ASSERTRANGE(R CAP (COM(s v || measure s v = n)))) ~ expand (suc l) f ~ (ASSERTRANGE(P n))| \]
 \end{theorem}
+
 \begin{corollary}
 For all |l : Nat|,
-\[ |(ASSERTRANGE(R && (COM(s v || measure s v <= l)))) ~ expand (suc l) f ~ (ASSERTRANGE(LUB(n <= l) P n))| \]
+\[ \models |(ASSERTRANGE(R CAP (COM(s v || measure s v <= l)))) ~ expand (suc l) f ~ (ASSERTRANGE(BIGCUP ~ [ P n || n <= l ]))| \]
 \end{corollary}
 
 %$b \preceq c$ exactly when |(all(s, v, s')) put b s v = Just s' => put c s v = Just s'|
@@ -837,7 +831,7 @@ keyAlign ks kv b c =
           *  keyAlign ks kv b c
     adaptive (_ :: _) []
       \ _ _ -> []
-    adaptive ss (v :: vs) | kv v `elem` map ks ss
+    adaptive ss (v :: _) | kv v `elem` map ks ss
       \ ss (v :: _) -> extract ks kv v ss
     adaptive _ (_ :: _)
       \ ss (v :: _) -> c v :: ss
@@ -862,8 +856,8 @@ A proper characterisation of the behaviour of composition will be essential for 
 \\ \hline
 |(ASSERT(R CAP (COM(a _ || P a)))) ~ l . r ~ (ASSERT(a' a c || (some(b, b')) T' a' a b' && U' b' b c ))|
 \end{array} \]
-This requires the putback and range triples be defined mutually inductively.
-A mutually inductive treatment can also shift the disjointness requirement to the ranges of normal branches instead of their exit conditions, allowing the exit conditions to be specified trivially, which can have a serious impact on runtime efficiency in the forward direction, but can be helpful when prototypic or experimental programs need to be developed without too much time for careful reasoning.
+This requires the putback and range triples to be defined mutually inductively.
+%A mutually inductive treatment can also shift the disjointness requirement to the ranges of normal branches instead of their exit conditions, allowing the exit conditions to be specified trivially, which can have a serious impact on runtime efficiency in the forward direction, but can be helpful when prototypic or experimental programs need to be developed without too much time for careful reasoning.
 
 It has been realised~\citep[Section~4.1]{Stevens-QVT}\todo{some other citations}\ that, for practical bidirectional applications, a declarative approach --- in the sense that the programmer writes down only a consistency relation and relies on the system to derive a well-behaved but otherwise arbitrary implementation --- is hardly enough.
 The BX community currently concentrates on the exploration of more forms of well-behavedness properties, but we should not be satisfied with only well-behavedness guarantees; instead, we should also start aiming to precisely characterise the behaviour of bidirectional programs, treating bidirectional programming seriously as we treat general-purpose programming.
@@ -878,7 +872,7 @@ Within the realm of asymmetric lenses, the get-based approach is fundamentally j
 \textit{Doesn't \autoref{thm:total-forward-consistency} say that we need to reason in both directions anyway?}
 Even if the sceptic reader insists that constructing the range triples requires thinking in the forward direction, they will still have to admit that, according to \autoref{thm:total-forward-consistency}, what needs to be verified in the forward direction is normally much easier than proving that |get| is contained in the consistency relation. This is because the major work has been done in the backward direction.
 
-Completeness has not been proved, but we have shown that the logic works for various examples.
+Completeness has not been proved, but we have shown that the logic works for various examples. Relationship with constructive continuity.
 
 \BiGUL\ is stateful, but only in the ``Reader'' way, in particular using the Reader monad's `|local|' operation to modify the current source and view.
 Our Hoare-style logic can be said to be merely tracking how the current source and view are manipulated by implicit `|local|' operations.
