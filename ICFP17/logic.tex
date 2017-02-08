@@ -38,6 +38,7 @@
 %format Rational = "\mathbb{Q}"
 %format ~ = " "
 %format ... = "\ldots"
+%format VDOTS = "\vdots"
 
 %format (all(x)) = "\forall" x "."
 %format (some(x)) = "\exists" x "."
@@ -57,6 +58,7 @@
 %format OR = "\kern-1.25\smallskipamount/\kern-1.25\smallskipamount"
 %format Domain = "\mathcal D"
 %format NormalDomain = "\mathcal N"
+%format CaseRange = "\mathcal P^\prime"
 
 %format fail = "\keyword{fail}"
 %format skip = "\keyword{skip}"
@@ -80,7 +82,7 @@
 \newcommand{\assertrange}[1]{{\color{range}\{\!\{}\,#1\,{\color{range}\}\!\}}}
 \newcommand{\varassertrange}[2]{{\color{range}\{\!\{\,#1\kern-\smallskipamount:}\ \ #2\,{\color{range}\}\!\}}}
 
-%format (ENV(x)) = "\overline{" x "}"
+%format (ENV(x)) = "\overrightarrow{" x "}"
 %format (COM(x)) = "\langle\," x "\,\rangle"
 %format (ASSERT(x)) = "\assert{" x "}"
 %format (ASSERT'(y)(x)) = "\varassert{" y "}{" x "}"
@@ -92,8 +94,12 @@
 
 \newcommand{\awa}[2]{\mathrlap{#2}\phantom{#1}} % as wide as
 \newcommand{\IF}{\text{If}\quad}
+\newcommand{\AND}{\quad\text{and}\quad}
 \newcommand{\THEN}{\quad\text{then}\quad}
 \newcommand{\PERIOD}{\quad\text{.}}
+\newcommand{\rulepsep}{\hspace{1.5em}}
+\newcommand{\rulehsep}{\hspace{2em}}
+\newcommand{\rulevsep}{\vspace{2ex}}
 
 %% Some recommended packages.
 \usepackage{booktabs}   %% For formal tables:
@@ -277,6 +283,8 @@ Text of abstract \ldots.
 \section{Introduction}
 \label{sec:introduction}
 
+
+
 \citet{Ko-BiGUL}
 
 \citet{Foster-lenses}
@@ -322,7 +330,11 @@ In an instance~\citep{Anjorin-BenchmarX-reloaded}, the \BiGUL\ program skipping 
 \section{Theory of asymmetric lenses and putback triples}
 \label{sec:putback-triples}
 
-\begin{definition}
+We start from a brief review of the theory of asymmetric lenses, but we state the facts directly in terms of \BiGUL.%
+\todo{specific \BiGUL\ constructs to be introduced later}\
+Every \BiGUL\ program denotes a \emph{well-behaved lens}, which consists of two transformations inverse to each other in a certain sense.
+
+\begin{definition} \label{def:put-and-get}
 \BiGUL\ programs operating on source type~|S| and view type~|V| are assigned the type |S <~ V|, and have two semantics:
 \begin{code}
 put  : (S <~ V) -> S -> V  -> Maybe S
@@ -332,21 +344,30 @@ The |put| --- or \emph{putback} --- semantics is also called the \emph{backward}
 \end{definition}
 
 \begin{theorem}[well-behavedness]
-Any \BiGUL\ program |b : S <~ V| satisfies the following two \emph{well-behavedness} properties, \emph{\ref{prop:PutGet}} and \emph{\ref{prop:GetPut}}:
+Any \BiGUL\ program~|b| satisfies the following two \emph{well-behavedness} properties, \emph{\ref{prop:PutGet}} and \emph{\ref{prop:GetPut}}:
 \begin{align}
 & |all(s, v, s')| \quad |put b s v = Just s'| \quad|=>|\quad \awa{|put|}{|get|}\;|b|\;\awa{|s v|}{|s'|}\;|= Just v| \tag{PutGet}\label{prop:PutGet} \\
 & \awa{|all(s', s, v)|}{|all(s, v)|} \quad \awa{|put|}{|get|}\;\awa{|b s v|}{|b s|}\;|= Just|\;\awa{|s'|}{|v|} \quad|=>|\quad |put b s v = Just s| \tag{GetPut} \label{prop:GetPut}
 \end{align}
 \end{theorem}
+
 This theorem was proved by \citet{Ko-BiGUL} for the original \BiGUL; we have patched the proof of this theorem to work for the version of \BiGUL\ used in this paper.
 
-\begin{theorem}[dominance of putback semantics]
+\BiGUL\ is designed such that the \BiGUL\ programmer can think solely in the putback direction.
+This is theoretically feasible because of the following theorem (originally \citet{Foster-thesis}'s Lemma~2.2.5), which says that once the programmer specifies a putback transformation, the corresponding forward transformation is uniquely determined.\todo{no ambiguity, comparison with get-based approach, etc}
+
+\begin{theorem}[dominance of putback semantics] \label{thm:dominance}
 Let |l, r : S <~ V|.
 \[ \IF |put l = put r| \THEN |get l = get r| \PERIOD \]
 \end{theorem}
 
+Programming a putback transformation is comparable to programming with states:
+the \BiGUL\ programmer is given a source state and a view state, and writes a \BiGUL\ program to manipulate the two states, with the aim of transferring all information in the view to the source.
+Reasoning about \BiGUL\ programs thus consists of tracking the properties satisfied by the states at each step, and it should not come as a surprise that a Hoare-style logic is well suited for performing this kind of reasoning about states.
+Before introducing Hoare-style triples for \BiGUL\ programs, let us fix our notation of relations (for specifying preconditions and postconditions).
+
 \begin{notation}
-Relations on types |A_1|, |A_2|, $\ldots,$ |A_n| are considered inhabitants of the type |POWER(A_1 TIMES A_2 TIMES {-"\cdots\;"-} TIMES A_n)|.
+Relations on types |A_1|\,, |A_2|\,, $\ldots,$ |A_n| are considered inhabitants of the type |POWER(A_1 TIMES A_2 TIMES {-"\cdots\;"-} TIMES A_n)|.
 When a relation~|R| of this type relates elements |x_1 : A_1|\,, |x_2 : A_2|\,, $\ldots,$ |x_n : A_n|\,, we write |R x_1 x_2 ... x_n|\,. %(in a curried form, to save parentheses and commas).
 \end{notation}
 
@@ -358,24 +379,38 @@ where
 \item |R : (POWER(S TIMES V))| is the \emph{precondition} (on the original source and view), and
 \item |R' : (POWER(S TIMES S TIMES V))| is the \emph{postcondition} (on the updated source, original source, and view).
 \end{itemize}
-Valid putback triples are inductively defined by the rules in \autoref{sec:putback-proof-rules}.
+Valid putback triples are inductively defined by the rules in \autoref{fig:putback-proof-rules}.
 \end{definition}
+
+The meaning of the putback triples is given by the following soundness theorem:
 
 \begin{theorem}[soundness of putback triples] \label{thm:putback-soundness}
 Let |b : S <~ V|, |R : (POWER(S TIMES V))|, and |R' : (POWER(S TIMES S TIMES V))|.
 \[ \IF |(ASSERT R) ~ b ~ (ASSERT R')| \THEN |(all(s, v)) ~ R s v ~ => ~ (some(s')) ~ put b s v = Just s' ~ && ~ R' s' s v| \PERIOD \]
 \end{theorem}
 
+In prose: proving a putback triple |(ASSERT R) b (ASSERT R')| guarantees that if the original source and the view satisfies the precondition~|R|, then |put b| will successfully produce an updated source satisfying the postcondition~|R'|, which can relate the updated source to the original source and the view.
+This theorem is proved by induction on the proof rules, as usual.
+
+\autoref{thm:dominance} tells us that putback behaviour completely determines get behaviour.
+On the other hand, putback triples are about putback behaviour --- shouldn't they tell us something about get behaviour as well?
+This is indeed the case, as will be shown by \autoref{thm:partial-forward-consistency}.
+Its statement will make use of some additional definitions and notational conventions, which will also be used throughout the rest of this paper.
+
 \begin{definition}
 A \emph{comprehension relation} of type |(POWER(A_1 TIMES A_2 TIMES {-"\cdots\,"-} TIMES A_n))| has the form
 \[ |COM(pat_1 pat_2 ... pat_n || prop)| \]
 where each |pat_i| is a pattern for elements of type~|A_i| and |prop| is a proposition that can refer to the variables in the patterns.
+The patterns we use in the paper include variables, constructors, and the wildcard pattern~(`|_|').
 The relation holds for |x_1 : A_1|, $\ldots,$ |x_n : A_n| exactly when each |x_i| matches |pat_i| and |prop| holds after substituting the matched components for the corresponding pattern variables.
 \end{definition}
 
 \begin{notation}
-We usually omit the proposition part of a comprehension relation when it is trivially true, keeping only the pattern part.
-(For example, |COM((_ :: _))| holds exactly for non-empty lists, and |COM(_ _)| is the always true binary relation.)
+We usually omit the proposition part of a comprehension relation when the proposition is trivially true, keeping only the pattern part.
+For example, |COM((_ :: _))| holds exactly for non-empty lists, and |COM(_ _)| is the always true binary relation.
+\end{notation}
+
+\begin{notation}
 An assertion whose body is a comprehension relation, like |(ASSERT(COM(pat || prop)))|, is usually written with the angle brackets omitted, like |(ASSERT(pat || prop))|.
 \end{notation}
 
@@ -391,63 +426,156 @@ Let |b : S <~ V|, |R : (POWER(S TIMES V))|, and |R' : (POWER(S TIMES V))|.
 Suppose |get b s = Just v| and |R s v|.
 The latter triggers \autoref{thm:putback-soundness}, so we know that |put b s v = Just s'| for some~|s'| and that |R' s' v| holds.
 On the other hand, by \ref{prop:GetPut}, we can turn |get b s = Just v| into |put b s v = Just s|.
-Since |put b| is deterministic, we can deduce |s' = s|, and thus having |R' s' v| is the same as having |R' s v|.
+Seeing that |put b s v| computes to both |s'|~and~|s|, we can deduce |s' = s|, and thus having |R' s' v| is the same as having |R' s v|.
 \end{proof}
+
+That is, if we can prove that a putback transformation establishes consistency~|R'| between the updated source and the view, then, roughly speaking, the behaviour of the corresponding forward transformation will be constrained by~|R'|.
+We call \autoref{thm:partial-forward-consistency} \emph{partial} forward consistency for two reasons:
+The first reason is that \autoref{thm:partial-forward-consistency} does not guarantee that the entire graph of the forward transformation will be contained in~|R'| --- the containment is guaranteed only for the part of the graph that falls within~|R|.
+In practice, this makes \autoref{thm:partial-forward-consistency} not very helpful unless |R|~is trivially true, in which case the entire graph will indeed be guaranteed to be contained in~|R'|.
+Even in this case, though, \autoref{thm:partial-forward-consistency} still says nothing about the totality/partiality of the forward transformation, i.e., on which subset of input sources the transformation can successfully produce results, and this is the second reason.
+We will augment \autoref{thm:partial-forward-consistency} to get a practically useful version, which will be \autoref{thm:total-forward-consistency}.
+But before that, let us look at the concrete putback proof rules and some examples of putback reasoning.
 
 \section{\BiGUL\ and the putback proof rules}
 \label{sec:putback-proof-rules}
 
-\[ \begin{array}{l} \hline
+\begin{figure}
+
+$\begin{array}[t]{c} \hline
 |(ASSERT EMPTY) ~ fail ~ (ASSERT EMPTY)|
-\end{array} \]
-
-\[ \begin{array}{l} \hline
+\end{array}$
+\rulehsep
+$\begin{array}[t]{c} \hline
 |(ASSERT(_ _)) ~ replace ~ (ASSERT(s' _ v || s' = v))|
-\end{array} \]
-
-\[ \begin{array}{l} \hline
+\end{array}$
+\rulehsep
+$\begin{array}[t]{c} \hline
 |(ASSERT(s v || f s = v)) ~ skip f ~ (ASSERT(s' s _ || s' = s))|
-\end{array} \]
+\end{array}$
 
-\[ \begin{array}{l}
-|{-"\assert{\awa{T}{R}}\;"-} ~ {-"\awa{r}{l}\;\;"-} ~ {-"\assert{\awa{T^\prime}{R^\prime}}"-}| \\
-|{-"\assert{T}\;"-} ~ {-"r\;\;"-} ~ {-"\assert{T^\prime}"-}| \\ \hline
-|(ASSERT(R * T)) ~ l * r ~ (ASSERT(R' * T'))|
-\end{array} \]
+\rulevsep
 
-can indeed be regarded as a simple variant of separating conjunction~\citep{Reynolds-separation-logic}
+$\begin{array}[t]{c}
+|(ASSERT L) ~ l ~ (ASSERT L')| \rulepsep
+|(ASSERT R) ~ r ~ (ASSERT R')| \\ \hline
+|(ASSERT(L * R)) ~ l * r ~ (ASSERT(L' * R'))|
+\end{array}$
+\rulehsep
+$\begin{array}[t]{l}
+|T ~ SUBSETEQ ~ R| \rulepsep
+|{-"\assert{\awa{T}{R}}\;"-} ~ b ~ {-"\;\assert{\awa{T^\prime}{R^\prime}}"-}| \rulepsep
+|R' CAP (COM(_ s v || T s v)) ~ SUBSETEQ ~ T'| \\ \hline
+\phantom{|T ~ SUBSETEQ ~ R| \rulepsep}|{-"\assert{T}\;"-} ~ b ~ {-"\;\assert{T^\prime}"-}|
+\end{array}$
 
-\[ \begin{array}{l}
+\rulevsep
+
+$\begin{array}[t]{c}
 |(ASSERT(s wpat || R s (ENV(wpat)))) ~ b ~ (ASSERT(s' s wpat || R' s' s (ENV(wpat))))| \\ \hline
 |(ASSERT(s vpat || R s (ENV(vpat)))) ~ rearrV vpat -> wpat INNER b ~ (ASSERT(s' s vpat || R' s' s (ENV(vpat))))|
-\end{array} \]
+\end{array}$
 
-\[ \begin{array}{l}
+\rulevsep
+
+$\begin{array}[t]{c}
 |(ASSERT(tpat v || R (ENV(tpat)) v)) ~ b ~ (ASSERT(tpat' tpat v || R' (ENV(tpat')) (ENV(tpat)) v))| \\ \hline
 |(ASSERT(spat v || R (ENV(spat)) v)) ~ rearrS spat -> tpat INNER b ~ (ASSERT(spat' spat v || R' (ENV(spat')) (ENV(spat)) v))|
-\end{array} \]
+\end{array}$
 
-\begin{align*}
-& \begin{array}{l}
+\rulevsep
+
+$\begin{array}[t]{ll}
 |all((normal M exit E INNER b) `elem` branches)| \\
-\quad |(ASSERT(R CAP (NORM M))) ~ b ~ (ASSERT(s' s v || R' s' s v && (NORM M) s' v && (NORM E) s'))| \\
+\quad |(ASSERT(R CAP (NORM M))) ~ b ~ (ASSERT(R' CAP (COM(s' _ v || (NORM M) s' v && (NORM E) s'))))| \\
 |all((adaptive M INNER f) `elem` branches)| \\
 \quad |all(s, v) ~ R s v && (NORM M) s v ~ =>| \\
 \qquad \awa{\text{\emph{postcondition}\kern.5pt:\ \ }}{\text{\color{putback}\emph{reentry}\kern.5pt:\ \ }} |R (f s v) v && NormalDomain (f s v) v| \quad|&&|
-\\
-\qquad \text{\color{putback}\emph{postcondition}\kern.5pt:\ \ } |(all(s')) R' s' (f s v) v => R' s' s v| \\ \hline
-|(ASSERT(R CAP Domain)) ~ case branches ~ (ASSERT R')|
-\end{array} \\
-& \quad |where|\;|{-"\awa{\mathcal N}{\mathcal D}\;"-} = BIGCUP ~ [ M || (normal OR adaptive M ...) `elem` branches ]| \\[-1ex]
-& \quad \awa{|where|}{}\; |NormalDomain = BIGCUP ~ [ (NORM M) || (normal M ...) `elem` branches ]|
-\end{align*}
+& |where| \\
+\qquad \text{\color{putback}\emph{postcondition}\kern.5pt:\ \ } |(all(s')) R' s' (f s v) v => R' s' s v|
+& \quad |NormalDomain = BIGCUP ~ [ (NORM M) || (normal M ...) `elem` branches ]| \\ \cline{1-1}
+\multicolumn{1}{c}{|(ASSERT(R CAP Domain)) ~ case branches ~ (ASSERT R')|}
+& \quad |{-"\awa{\mathcal N}{\mathcal D}\;"-} = BIGCUP ~ [ M || (normal OR adaptive M ...) `elem` branches ]|
+\end{array}$
 
-\[ \begin{array}{l}
-|(ASSERT R) ~ b ~ (ASSERT R')| \\
-|T ~ SUBSETEQ ~ R| \\
-|R' CAP (COM(_ s v || T s v)) ~ SUBSETEQ ~ T'| \\ \hline
-|(ASSERT T) ~ b ~ (ASSERT T')|
-\end{array} \]
+\caption{Putback proof rules}
+\label{fig:putback-proof-rules}
+
+\end{figure}
+
+The proof rules are syntax-directed except for the consequence rule (the right one on the second row).
+For each \BiGUL\ construct, we will introduce its type, which is essential for inferring the types of entities in assertions, and  explain the corresponding proof rule with the help of the operational intuition of the construct.
+
+\paragraph{Atomic constructs.}
+
+\begin{itemize}
+\item The |fail| construct has type |S <~ V| for any |S|~and~|V|.
+The precondition of the |fail| rule is the empty relation~|EMPTY|, indicating that no input can make |fail| compute successfully.
+\item The |replace| construct has type |S <~ S| for any~|S|, and replaces the source with the view; correspondingly, the postcondition states that the updated source~|s'| will be equal to the view~|v|.
+\item The |skip| construct takes a function |f : S -> V| as an argument and has type |S <~ V|.
+It ignores the view and leaves the source as it is; correspondingly, the postcondition states that the updated source~|s'| will be equal to the original source~|s|.
+Skipping cannot be performed unconditionally, however --- before throwing the view away, we must ensure that it can be recovered from the source, or otherwise there is no hope to establish \ref{prop:PutGet}.
+The precondition thus requires that the view can be computed from the source by~|f|.
+\end{itemize}
+
+\paragraph{Product.}
+
+Given two \BiGUL\ programs |l : S <~ V| and |r : T <~ W|, we can form the product of the two programs |l * r : (S TIMES T) <~ (V TIMES W)|.
+If two putback triples with preconditions |L|~and~|R| have been established for |l|~and~|r|, the precondition of the product program will be |L * R = (COM((s, t) (v, w) || L s v && R t w))|; its postcondition is defined analogously.
+This relation-level `|*|' operator can (indeed) be seen as a simple variant of separating conjunction~\citep{Reynolds-separation-logic}, constructing a relation on pairs from two relations respectively on the first and second components.
+
+\begin{example}
+We can now construct simple derivations like the following one for |replace * replace|:
+\begin{code}
+(ASSERT((_ , _) (_ , _)))
+   (ASSERT(_ _))
+   replace
+   (ASSERT(s' _ v | s' = v))
+*  (ASSERT(_ _))
+   replace
+   (ASSERT(t' _ w | t' = w))
+(ASSERT((s', t') (_ , _) (v , w) | s' = v && t' = w))
+\end{code}
+First, note that the syntax tree structure of |replace * replace| is reflected in indentation: the top-level node is `|*|', whose two sub-nodes, both being |replace|, are indented one level more.
+Then, following the indentation structure, the assertions are added: the assertions about a construct are put on the same indentation level as the construct, with the precondition and postcondition appearing respectively before and after the construct.
+This format is compact and yet retains the tree structure of the derivation, making it easy to verify the correctness of the derivation.
+\end{example}
+
+\paragraph{The consequence rule.}
+The consequence rule we adopt (the right one on the second row in \autoref{fig:putback-proof-rules}) may seem unusual, but first note that it is a stronger version of the usual one:
+\begin{equation}
+\begin{array}{l}
+|T ~ SUBSETEQ ~ R| \rulepsep
+|{-"\assert{\awa{T}{R}}\;"-} ~ b ~ {-"\;\assert{\awa{T^\prime}{R^\prime}}"-}| \rulepsep
+|R' ~ SUBSETEQ ~ T'| \\ \hline
+\phantom{|T ~ SUBSETEQ ~ R| \rulepsep}|{-"\assert{T}\;"-} ~ b ~ {-"\;\assert{T^\prime}"-}|
+\end{array}
+\label{eq:usual-consequence-rule}
+\end{equation}
+To see why we need a stronger consequence rule, consider proving this triple:
+\[ |(ASSERT(_ (v, w) || v = w)) ~ replace * replace ~ (ASSERT((s', t') _ _ || s' = t'))| \]
+where there is some entanglement between the first and second components in the precondition and postcondition, so the product rule is not directly applicable.
+With the usual consequence rule~(\ref{eq:usual-consequence-rule}), we can get as far as
+\begin{code}
+(ASSERT((_ , _) (_ , _)))
+   (ASSERT(_ _))
+   replace
+   (ASSERT(s' _ v | s' = v))
+*  (ASSERT(_ _))
+   replace
+   (ASSERT(t' _ w | t' = w))
+(ASSERT((s', t') (_ , _) (v , w) | s' = v && t' = w))
+VDOTS
+(ASSERT((s', t') _ _ | s' = t'))
+\end{code}
+Adjacent assertions on the same indentation level indicate an invocation of the consequence rule, with the one above implying the one below.
+In this case, |(COM((_ , _) (v , w) || v = w))| implies |(COM((_ , _) (_ , _)))|, which is used as the precondition of the product rule.
+However, the postcondition that we can establish, namely |(COM((s', t') (s, t) (_ , _) || s' = s && t' = t))|, does not imply the postcondition we want to establish, namely |(COM((s', t') _ _ || s' = t'))| (hence the vertical dots separating the two postconditions in the derivation, to make it clear that the implication has not been established).
+The consequence rule~(\ref{eq:usual-consequence-rule}) can help us to get rid of the entanglement |v = w|, but that entanglement is needed for establishing the final implication (since |s' = v = w = t'|).
+We thus need the stronger consequence rule in \autoref{fig:putback-proof-rules}, which allows us to carry over whatever we know about the original source and the view from the precondition into the postcondition.
+When working in our derivation format, the stronger consequence rule allows us to prove an implication between adjacent postconditions using whichever preconditions on the same indentation level as additional premises.
+
+\paragraph{Rearrangement.}
 
 \begin{code}
 (ASSERT(_ _))
@@ -569,53 +697,66 @@ We will write
 \section{The range proof rules}
 \label{sec:range-proof-rules}
 
-\[ \begin{array}{l}
-|(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \\
-|R CAP (COM(s _ || Q s)) ~ SUBSETEQ ~ T| \\
-|Q ~ SUBSETEQ ~ P| \\ \hline
-|(ASSERTRANGE T) ~ b ~ (ASSERTRANGE Q)|
-\end{array} \]
+\begin{figure}
 
-\[ \begin{array}{l}
+$\begin{array}{c}
 \hline
 |(ASSERTRANGE EMPTY) ~ fail ~ (ASSERTRANGE EMPTY)|
-\end{array} \]
-
-\[ \begin{array}{l}
+\end{array}$
+\rulehsep
+$\begin{array}{c}
 \hline
 |(ASSERTRANGE(s v || f s = v)) ~ skip f ~ (ASSERTRANGE _)|
-\end{array} \]
-
-\[ \begin{array}{l}
+\end{array}$
+\rulehsep
+$\begin{array}{c}
 \hline
 |(ASSERTRANGE(s v || s = v)) ~ replace ~ (ASSERTRANGE _)|
-\end{array} \]
+\end{array}$
 
-\[ \begin{array}{l}
-|{-"\assertrange{\awa{T}{R}}\;"-} ~ {-"\awa{r}{l}\;\;"-} ~ {-"\assertrange{\awa{Q'}{P'}}"-}| \\
-|{-"\assertrange{T}\;"-} ~ {-"r\;\;"-} ~ {-"\assertrange{Q'}"-}| \\ \hline
-|(ASSERTRANGE(R * T)) ~ l * r ~ (ASSERTRANGE(P' * Q'))|
-\end{array} \]
+\rulevsep
 
-\[ \begin{array}{l}
+$\begin{array}{c}
+|(ASSERTRANGE L) ~ l ~ (ASSERTRANGE P')| \rulepsep
+|(ASSERTRANGE R) ~ r ~ (ASSERTRANGE Q')| \\ \hline
+|(ASSERTRANGE(L * R)) ~ l * r ~ (ASSERTRANGE(P' * Q'))|
+\end{array}$
+\rulehsep
+$\begin{array}{l}
+|R CAP (COM(s _ || Q' s)) ~ SUBSETEQ ~ T| \rulepsep
+|{-"\assertrange{\awa{T}{R}}\;"-} ~ b ~ {-"\;\assertrange{\awa{Q^\prime}{P^\prime}}"-}| \rulepsep
+|Q' ~ SUBSETEQ ~ P'| \\ \hline
+\phantom{|R CAP (COM(s _ || Q' s)) ~ SUBSETEQ ~ T| \rulepsep} |{-"\assertrange{T}\;"-} ~ b ~ {-"\;\assertrange{Q^\prime}"-}|
+\end{array}$
+
+\rulevsep
+
+$\begin{array}{c}
 |(ASSERTRANGE(s wpat || R s (ENV(wpat)))) ~ b ~ (ASSERTRANGE P')| \\ \hline
 |(ASSERTRANGE(s vpat || R s (ENV(vpat)))) ~ rearrV vpat -> wpat INNER b ~ (ASSERTRANGE P')|
-\end{array} \]
+\end{array}$
 
-\[ \begin{array}{l}
-|(ASSERTRANGE(tpat v || R (ENV(tpat)) v)) ~ b ~ (ASSERTRANGE(tpat || P (ENV(tpat))))| \\ \hline
-|(ASSERTRANGE(spat v || R (ENV(spat)) v)) ~ rearrS spat -> tpat INNER b ~ (ASSERTRANGE(spat || P (ENV(spat))))|
-\end{array} \]
+\rulevsep
 
-\begin{align*}
-& \begin{array}{l}
+$\begin{array}{c}
+|(ASSERTRANGE(tpat v || R (ENV(tpat)) v)) ~ b ~ (ASSERTRANGE(tpat || P' (ENV(tpat))))| \\ \hline
+|(ASSERTRANGE(spat v || R (ENV(spat)) v)) ~ rearrS spat -> tpat INNER b ~ (ASSERTRANGE(spat || P' (ENV(spat))))|
+\end{array}$
+
+\rulevsep
+
+$\begin{array}{ll}
 |all(n = (normal M exit E INNER b) `elem` branches)| \\
-\quad |(ASSERTRANGE(R CAP (NORM M))) ~ b ~ (ASSERTRANGE P'_n)| \\
-\quad |P'_n SUBSETEQ (NORM E)| \\ \hline
-|(ASSERTRANGE R) ~ case branches ~ (ASSERTRANGE(P'))|
-\end{array} \\
-& \quad |where P' = BIGCUP ~ [ P'_n || n = (normal ...) `elem` branches ]|
-\end{align*}
+\quad |(ASSERTRANGE(R CAP (NORM M))) ~ b ~ (ASSERTRANGE P'_n)|
+\rulehsep (\,|P'_n ~ SUBSETEQ ~ (NORM E)|\,) \\ \cline{1-1}
+\multicolumn{1}{c}{|(ASSERTRANGE R) ~ case branches ~ (ASSERTRANGE(CaseRange))|}
+& |where CaseRange = BIGCUP ~ [ P'_n || n = (normal ...) `elem` branches ]|
+\end{array}$
+
+\caption{Range proof rules}
+\label{fig:range-proof-rules}
+
+\end{figure}
 
 \begin{lemma}
 Let |b : S <~ V|, |R : (POWER(S TIMES V))|, |P' : (POWER S)|, and |Q' : (POWER S)|.

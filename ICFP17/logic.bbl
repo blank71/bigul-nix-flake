@@ -97,6 +97,16 @@
 \url{http://dx.doi.org/10.1007/s11432-015-5316-8}}
 
 
+\bibitem[\protect\citeauthoryear{Foster}{Foster}{2009}]%
+        {Foster-thesis}
+\bibfield{author}{\bibinfo{person}{John~Nathan Foster}.}
+  \bibinfo{year}{2009}\natexlab{}.
+\newblock {\em \bibinfo{title}{Bidirectional Programming Languages}}.
+\newblock \bibinfo{thesistype}{Ph.D. Dissertation}. \bibinfo{school}{University
+  of Pennsylvania}.
+\newblock
+
+
 \bibitem[\protect\citeauthoryear{Foster, Greenwald, Moore, Pierce, and
   Schmitt}{Foster et~al\mbox{.}}{2007}]%
         {Foster-lenses}
