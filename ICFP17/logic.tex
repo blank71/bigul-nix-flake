@@ -379,7 +379,7 @@ where
 \item |R : (POWER(S TIMES V))| is the \emph{precondition} (on the original source and view), and
 \item |R' : (POWER(S TIMES S TIMES V))| is the \emph{postcondition} (on the updated source, original source, and view).
 \end{itemize}
-Valid putback triples are inductively defined by the rules in \autoref{fig:putback-proof-rules}.
+Valid putback triples are inductively defined by the rules in \autoref{fig:putback-proof-rules} (which will be explained in \autoref{sec:putback-proof-rules}).
 \end{definition}
 
 The meaning of the putback triples is given by the following soundness theorem:
@@ -389,7 +389,7 @@ Let |b : S <~ V|, |R : (POWER(S TIMES V))|, and |R' : (POWER(S TIMES S TIMES V))
 \[ \IF |(ASSERT R) ~ b ~ (ASSERT R')| \THEN |(all(s, v)) ~ R s v ~ => ~ (some(s')) ~ put b s v = Just s' ~ && ~ R' s' s v| \PERIOD \]
 \end{theorem}
 
-In prose: proving a putback triple |(ASSERT R) b (ASSERT R')| guarantees that if the original source and the view satisfies the precondition~|R|, then |put b| will successfully produce an updated source satisfying the postcondition~|R'|, which can relate the updated source to the original source and the view.
+In prose: a valid putback triple |(ASSERT R) b (ASSERT R')| guarantees that if the original source and the view satisfies the precondition~|R|, then |put b| will successfully produce an updated source satisfying the postcondition~|R'|, which can relate the updated source to the original source and the view.
 This theorem is proved by induction on the proof rules, as usual.
 
 \autoref{thm:dominance} tells us that putback behaviour completely determines get behaviour.
@@ -401,7 +401,7 @@ Its statement will make use of some additional definitions and notational conven
 A \emph{comprehension relation} of type |(POWER(A_1 TIMES A_2 TIMES {-"\cdots\,"-} TIMES A_n))| has the form
 \[ |COM(pat_1 pat_2 ... pat_n || prop)| \]
 where each |pat_i| is a pattern for elements of type~|A_i| and |prop| is a proposition that can refer to the variables in the patterns.
-The patterns we use in the paper include variables, constructors, and the wildcard pattern~(`|_|').
+The patterns we use in the paper include variables, constants, constructors, and the wildcard pattern~(`|_|').
 The relation holds for |x_1 : A_1|, $\ldots,$ |x_n : A_n| exactly when each |x_i| matches |pat_i| and |prop| holds after substituting the matched components for the corresponding pattern variables.
 \end{definition}
 
@@ -429,11 +429,11 @@ On the other hand, by \ref{prop:GetPut}, we can turn |get b s = Just v| into |pu
 Seeing that |put b s v| computes to both |s'|~and~|s|, we can deduce |s' = s|, and thus having |R' s' v| is the same as having |R' s v|.
 \end{proof}
 
-That is, if we can prove that a putback transformation establishes consistency~|R'| between the updated source and the view, then, roughly speaking, the behaviour of the corresponding forward transformation will be constrained by~|R'|.
+That is, if we can prove that a putback transformation establishes consistency~|R'| between the updated source and the view, then, roughly speaking, a part of the behaviour of the corresponding forward transformation will be constrained by~|R'|.
 We call \autoref{thm:partial-forward-consistency} \emph{partial} forward consistency for two reasons:
 The first reason is that \autoref{thm:partial-forward-consistency} does not guarantee that the entire graph of the forward transformation will be contained in~|R'| --- the containment is guaranteed only for the part of the graph that falls within~|R|.
 In practice, this makes \autoref{thm:partial-forward-consistency} not very helpful unless |R|~is trivially true, in which case the entire graph will indeed be guaranteed to be contained in~|R'|.
-Even in this case, though, \autoref{thm:partial-forward-consistency} still says nothing about the totality/partiality of the forward transformation, i.e., on which subset of input sources the transformation can successfully produce results, and this is the second reason.
+Even in this case, though, \autoref{thm:partial-forward-consistency} still says nothing about the totality/partiality of the forward transformation, i.e., on which subset of input sources the forward transformation can successfully produce results, and this is the second reason.
 We will augment \autoref{thm:partial-forward-consistency} to get a practically useful version, which will be \autoref{thm:total-forward-consistency}.
 But before that, let us look at the concrete putback proof rules and some examples of putback reasoning.
 
@@ -503,28 +503,29 @@ $\begin{array}[t]{ll}
 
 \end{figure}
 
-The proof rules are syntax-directed except for the consequence rule (the right one on the second row).
-For each \BiGUL\ construct, we will introduce its type, which is essential for inferring the types of entities in assertions, and  explain the corresponding proof rule with the help of the operational intuition of the construct.
+The proof rules are syntax-directed except for the consequence rule (the right one in the second row).
+For each \BiGUL\ construct, we will introduce its type, which is essential for inferring the types of entities in assertions, and  explain the corresponding proof rule with the help of the operational intuition of the construct.\todo{rules are semantic rather than syntactic}\
 
-\paragraph{Atomic constructs.}
+\subsection{Atomic constructs}
 
+\BiGUL\ has three atomic constructs, whose corresponding rules are in the first row of \autoref{fig:putback-proof-rules}.
 \begin{itemize}
 \item The |fail| construct has type |S <~ V| for any |S|~and~|V|.
-The precondition of the |fail| rule is the empty relation~|EMPTY|, indicating that no input can make |fail| compute successfully.
+The precondition of the |fail| rule is the empty relation~|EMPTY|, saying that no input can make |fail| compute successfully.
 \item The |replace| construct has type |S <~ S| for any~|S|, and replaces the source with the view; correspondingly, the postcondition states that the updated source~|s'| will be equal to the view~|v|.
 \item The |skip| construct takes a function |f : S -> V| as an argument and has type |S <~ V|.
 It ignores the view and leaves the source as it is; correspondingly, the postcondition states that the updated source~|s'| will be equal to the original source~|s|.
-Skipping cannot be performed unconditionally, however --- before throwing the view away, we must ensure that it can be recovered from the source, or otherwise there is no hope to establish \ref{prop:PutGet}.
+Unlike |replace|, we cannot |skip| under all circumstances --- before throwing the view away, we must ensure that it can be recovered from the source, or otherwise there is no hope to establish \ref{prop:PutGet}.
 The precondition thus requires that the view can be computed from the source by~|f|.
 \end{itemize}
 
-\paragraph{Product.}
+\subsection{Product}
 
 Given two \BiGUL\ programs |l : S <~ V| and |r : T <~ W|, we can form the product of the two programs |l * r : (S TIMES T) <~ (V TIMES W)|.
 If two putback triples with preconditions |L|~and~|R| have been established for |l|~and~|r|, the precondition of the product program will be |L * R = (COM((s, t) (v, w) || L s v && R t w))|; its postcondition is defined analogously.
 This relation-level `|*|' operator can (indeed) be seen as a simple variant of separating conjunction~\citep{Reynolds-separation-logic}, constructing a relation on pairs from two relations respectively on the first and second components.
 
-\begin{example}
+\begin{example}[parallel replacement] \label{ex:replace-squared}
 We can now construct simple derivations like the following one for |replace * replace|:
 \begin{code}
 (ASSERT((_ , _) (_ , _)))
@@ -536,13 +537,14 @@ We can now construct simple derivations like the following one for |replace * re
    (ASSERT(t' _ w | t' = w))
 (ASSERT((s', t') (_ , _) (v , w) | s' = v && t' = w))
 \end{code}
-First, note that the syntax tree structure of |replace * replace| is reflected in indentation: the top-level node is `|*|', whose two sub-nodes, both being |replace|, are indented one level more.
-Then, following the indentation structure, the assertions are added: the assertions about a construct are put on the same indentation level as the construct, with the precondition and postcondition appearing respectively before and after the construct.
-This format is compact and yet retains the tree structure of the derivation, making it easy to verify the correctness of the derivation.
+First, note that the syntax tree structure of |replace * replace| is reflected in indentation: the top-level node is~`|*|', whose two sub-nodes --- both being |replace| --- are indented to the next level.
+Then, following the indentation structure, the assertions are added: the assertions about a node are put on the same indentation level as the node, with the precondition and postcondition appearing respectively before and after the node.
+This format is compact and yet retains the tree structure of the derivation, making it easier to check the correctness of the derivation.
 \end{example}
 
-\paragraph{The consequence rule.}
-The consequence rule we adopt (the right one on the second row in \autoref{fig:putback-proof-rules}) may seem unusual, but first note that it is a stronger version of the usual one:
+\subsection{The consequence rule}
+
+The consequence rule we adopt (the right one in the second row in \autoref{fig:putback-proof-rules}) may seem unusual, but first note that it is a stronger version of the usual one:
 \begin{equation}
 \begin{array}{l}
 |T ~ SUBSETEQ ~ R| \rulepsep
@@ -552,45 +554,111 @@ The consequence rule we adopt (the right one on the second row in \autoref{fig:p
 \end{array}
 \label{eq:usual-consequence-rule}
 \end{equation}
-To see why we need a stronger consequence rule, consider proving this triple:
+To see why we need a stronger consequence rule, consider deriving this triple:
 \[ |(ASSERT(_ (v, w) || v = w)) ~ replace * replace ~ (ASSERT((s', t') _ _ || s' = t'))| \]
 where there is some entanglement between the first and second components in the precondition and postcondition, so the product rule is not directly applicable.
-With the usual consequence rule~(\ref{eq:usual-consequence-rule}), we can get as far as
+We can try to extend the derivation in Example~\ref{ex:replace-squared} using the usual consequence rule~(\ref{eq:usual-consequence-rule}):
 \begin{code}
+(ASSERT(_ (v, w) | v = w))
 (ASSERT((_ , _) (_ , _)))
-   (ASSERT(_ _))
-   replace
-   (ASSERT(s' _ v | s' = v))
-*  (ASSERT(_ _))
-   replace
-   (ASSERT(t' _ w | t' = w))
+replace * replace
 (ASSERT((s', t') (_ , _) (v , w) | s' = v && t' = w))
 VDOTS
 (ASSERT((s', t') _ _ | s' = t'))
 \end{code}
 Adjacent assertions on the same indentation level indicate an invocation of the consequence rule, with the one above implying the one below.
-In this case, |(COM((_ , _) (v , w) || v = w))| implies |(COM((_ , _) (_ , _)))|, which is used as the precondition of the product rule.
-However, the postcondition that we can establish, namely |(COM((s', t') (s, t) (_ , _) || s' = s && t' = t))|, does not imply the postcondition we want to establish, namely |(COM((s', t') _ _ || s' = t'))| (hence the vertical dots separating the two postconditions in the derivation, to make it clear that the implication has not been established).
-The consequence rule~(\ref{eq:usual-consequence-rule}) can help us to get rid of the entanglement |v = w|, but that entanglement is needed for establishing the final implication (since |s' = v = w = t'|).
-We thus need the stronger consequence rule in \autoref{fig:putback-proof-rules}, which allows us to carry over whatever we know about the original source and the view from the precondition into the postcondition.
+In this derivation, there is one such invocation, which turns |(COM(_ (v , w) || v = w))| into |(COM((_ , _) (_ , _)))| so that the product rule can apply.
+On the other hand, the postcondition that we can establish, namely |(COM((s', t') (_ , _) (v, w) || s' = v && t' = w))|, does not imply the postcondition we want to establish, namely |(COM((s', t') _ _ || s' = t'))| (hence the vertical dots separating the two postconditions in the derivation, to avoid suggesting that the consequence rule is invoked).
+The usual consequence rule~(\ref{eq:usual-consequence-rule}) can help us to get rid of the entanglement |v = w|, but that entanglement is needed for establishing the final implication (since |s' = v = w = t'|).
+We thus need the stronger consequence rule in \autoref{fig:putback-proof-rules} to be able to carry over whatever we know about the original source and the view from the precondition to the postcondition.
 When working in our derivation format, the stronger consequence rule allows us to prove an implication between adjacent postconditions using whichever preconditions on the same indentation level as additional premises.
 
-\paragraph{Rearrangement.}
+\subsection{Rearrangement}
 
+The product combinator allows us to synchronise source and view tuples of arbitrary size, provided that their structures are the same.
+When this is not the case, in \BiGUL\ we can use a ``simple'' pattern-matching $\lambda$-expression to rearrange the source and/or the view so that their structures match and are ready for further synchronisation.
+For example, the first height-keeping strategy we proposed for the rectangle width updating problem in \autoref{sec:introduction} can be expressed in \BiGUL\ as:
+\begin{code}
+keepHeight  : (Nat , Nat) <~ Nat
+keepHeight  =  rearrV v -> (v, ())
+                    replace
+                 *  skip const ()
+\end{code}
+Initially, the view is a single number, whereas the source is a pair.
+To make their structures match, we use the view rearrangement operation |rearrV v -> (v, ())| to apply the $\lambda$-expression |\ v -> (v, ())| to the view and use the result as the new view.
+Inside |rearrV|, the source and view are both pairs now, so we can use |replace * skip const ()| to replace the width with the view and keep the height as it is.
+Below we will mainly discuss view rearrangement; source rearrangement is largely analogous, and will be briefly discussed towards the end of this subsection.
+
+The general form of view rearrangement is |rearrV vpat -> wpat INNER b : S <~ V|, where |vpat| is a pattern for the original view type~|V|, |wpat| is a ``pattern'' for a new view type~|W|, and the inner program~|b| has type |S <~ W|.
+(The symbol~`|INNER|' indicates that |b|~is syntactically a sub-node of `|rearrV vpat -> wpat|'.)
+Strictly speaking, |wpat| is not a pattern but an expression, which can consist of variables in |vpat|, constants, and constructors.
+(Apart from the fact that |wpat| looks similar to a pattern, we will explain why it is beneficial to think of |wpat| as a pattern shortly.)
+Wildcards are not allowed in |vpat|, and all variables in |vpat| must appear in |wpat| and can appear multiple times --- these synctactic restrictions ensure that the $\lambda$-expression does not lose information (and can be inverted).
+
+Intuitively, a rearrangement only massages the state into an alternate shape suitable for further processing, rather than applying an arbitrary and distorting transformation.
+This intuition significantly influences the design of the rearrangement rules, which suggest that rearrangement is essentially just a ``change of perspective''.
+If we are rearranging the view from |vpat| to |wpat|, it must mean that the view matches |vpat| right before the rearrangement, and we should be able to state properties satisfied by the view at that point in terms of its components.
+The precondition for |rearrV| is thus a comprehension relation |(COM(s vpat || R s (ENV(vpat))))|, which requires that the view matches |vpat| and that any properties about the view is stated in terms of the variables in |vpat|, which we denote by |(ENV(vpat))|.
+After the rearrangement, the new view will retain all the components of the original view; the components may be shuffled around and duplicated, but whatever we knew about the components will remain true.
+The precondition for the inner program~|b| is thus |(COM(s wpat || R s (ENV(wpat))))|, asserting that the new view matches |wpat| and whatever holds for |(ENV(vpat))| also holds for |(ENV(wpat))|.
+This is why it is beneficial to think of |wpat| also as a pattern, even though that means in general we have to allow non-linear patterns, where multiple occurrences of the same variable indicate implicitly that values at those positions should be equal.
+When using the rule in actual derivations, the two preconditions will differ only in their view patterns and have the same proposition part, since the syntactic restriction on |rearrV| implies |(ENV(wpat)) = (ENV(vpat))|,
+Therefore, the view rearrangement rule only changes the shape we expect the view to take, not the properties we know about the content of the view.
+This change-of-perspective interpretation works for the postconditions as well.
+
+\begin{example}[rectangle width updating --- keeping the height]
+We can now verify the |keepHeight| program as follows:
 \begin{code}
 (ASSERT(_ _))
 rearrV v -> (v, ())
   (ASSERT(_ (_ , ())))
      (ASSERT(_ _))
      replace
-     (ASSERT(w' _ v | w' = v)) (ASSERTRANGE(_))
+     (ASSERT(w' _ v | w' = v))
   *  (ASSERT(_ ()))
      (ASSERT(h () | const () h = ()))
      skip const ()
-     (ASSERT(h' h () | h' = h)) (ASSERTRANGE(_))
-  (ASSERT((w', h') (_ , h) (v, ()) | w' = v && h' = h)) (ASSERTRANGE(_))
-(ASSERT((w', h') (_ , h) v | w' = v && h' = h)) (ASSERTRANGE(_))
+     (ASSERT(h' h () | h' = h))
+  (ASSERT((w', h') (_ , h) (v, ()) | w' = v && h' = h))
+(ASSERT((w', h') (_ , h) v | w' = v && h' = h))
 \end{code}
+\end{example}
+
+\begin{example}[rectangle width updating --- always producing squares]
+One way to implement the square-producing strategy is to wrap the |replace * replace| program inside `|rearrV v -> (v, v)|'.
+The derivation, which reuses the one in Example~\ref{ex:replace-squared}, is as follows:
+\begin{code}
+produceSquare' : (Nat , Nat) <~ Nat
+produceSquare' =
+  (ASSERT(_ _))
+  rearrV v -> (v, v)
+    (ASSERT(_ (v, v)))
+    (ASSERT((_ , _) (_ , _)))
+    replace * replace
+    (ASSERT((w', h') (_ , _) (u, v) | w' = u && h' = v))
+    (ASSERT((w', h') _ (v, v) | w' = v && h' = v))
+  (ASSERT((w', h') _ v | w' = v && h' = v))
+\end{code}
+\end{example}
+
+Source rearrangement is analogous to view rearrangement.
+The general form is |rearrS spat -> tpat INNER b : S <~ V| where |spat| is a pattern for the original source type~|S|, |tpat| is a pattern for the new source type~|T|, and the inner program~|b| has type |T <~ V|.
+The same syntactic restrictions apply to |spat| and |tpat|.
+Operationally, the source is transformed using |\ spat -> tpat|, and |b| is executed on the new source and the view; after that, the updated source must match |tpat|, and will be transformed back to the shape of |spat| (as if evaluating |\ spat -> tpat| backwards).
+This operational intuition is faithfully captured in the source rearrangement rule, which still suggests a change of perspective.
+In particular, the postcondition for~|b| says clearly that the updated source produced by~|b| should match |tpat|, a requirement often overlooked by novice \BiGUL\ programmers.
+(The pattern |tpat'| is just |tpat| with its variables freshly renamed, to avoid name clashes with the other occurrence of |tpat| for the original source.)
+
+Finally, whereas the rearrangement rules we have presented rely essentially on pattern-matching comprehension relations, the actual \Agda\ formalisation takes a different approach and avoids modelling pattern-matching comprehension relations entirely.
+The formalisation is sketched here for the curious reader.
+We build on \citet{Ko-BiGUL}'s formalisation of pattern matching, which uses heavily indexed types to guarantee various kinds of safety.
+To avoid introducing the heavy \Agda\ notation below, we will give a simplified account within the specific scenario of rearranging the view from |vpat| for type~|V| to |wpat| for type~|W|.
+The actual formalisation first defines a type |PatResult|: an inhabitant of |PatResult| is the result of matching a value of type~|V| with |vpat|, and can be thought of as a mapping from every variable in |vpat| to the component matching the variable.
+Two relations are then defined: |Match : (POWER(V TIMES PatResult))| relates |v : V| and |r : PatResult| exactly when |v|~matches |vpat| and |r|~is the result, and |Eval : (POWER(PatResult TIMES W))| relates |r : PatResult| and |w : W| exactly when |w|~is the result of evaluating |wpat| (as an expression) using |r|~as the environment.
+With these two relations, we state the precondition for the whole |rearrV| program as |(COM(s v || (some(r)) Match v r && R s r))|, and the precondition for the inner program as |(COM(s w || (some(r)) Eval r w && R s r))|, making no use of pattern-matching comprehension relations.
+
+
+\subsection{Case analysis}
 
 \begin{code}
 (ASSERT(_ _))
@@ -611,18 +679,12 @@ case
 \end{code}
 
 \begin{code}
-putAndKeepRatio  : (Rational , Rational) <~ Rational
-putAndKeepRatio  =
-  (ASSERT(_ v | v /= 0))
-  case
-    adaptive (0, _) _
-      \ (_ , h) v -> (v, h)
-    normal (w, _) v | w == v exit _
-      skip fst
-    adaptive _ _
-      \ (w, h) v -> (v, h TIMES (v/w))
-  (ASSERT((w', h') (w, h) v | w' = v && (w = 0 => h' = h) && (w /= 0 => h'/w' = h/w)))
-  (ASSERTRANGE((w, _) | w /= 0))
+emb : Eq V => (S -> V) -> (S -> V -> S) -> (S <~ V)
+emb g p =  case
+             normal s v | g s == v exit _
+               skip g
+             adaptive _ _
+               p
 \end{code}
 
 \todo[inline]{Exit condition: compare with assertions in reversible conditionals~\citep{Yokoyama-Janus}}
@@ -764,23 +826,6 @@ Let |b : S <~ V|, |R : (POWER(S TIMES V))|, |P' : (POWER S)|, and |Q' : (POWER S
 \end{lemma}
 
 \begin{code}
-putSquare' =
-  (ASSERT(_ _))
-  rearrV v -> (v, v)
-    (ASSERT(_ (v, v)))
-    (ASSERT'(weaken)(_ _))
-       (ASSERT(_ _))
-       replace
-       (ASSERT(x' _ v | x' = v))
-    *  (ASSERT(_ _))
-       replace
-       (ASSERT(y' _ w | y' = w))
-    (ASSERT((x', y') _ (v, w) | x' = v && y' = w))
-    (ASSERT((x', y') _ (v, v) | x' = v && y' = v))
-  (ASSERT((x', y') _ v | x' = v && y' = v))
-\end{code}
-
-\begin{code}
 (ASSERTRANGE(_ (v, w) | v = w))
 
 (ASSERTRANGE((s, t) (v, w) | s = v && t = w))
@@ -792,6 +837,21 @@ putSquare' =
    (ASSERTRANGE _)
 (ASSERTRANGE _)
 (ASSERTRANGE((s, t) | s = t))
+\end{code}
+
+\begin{code}
+putAndKeepRatio  : (Rational , Rational) <~ Rational
+putAndKeepRatio  =
+  (ASSERT(_ v | v /= 0))
+  case
+    adaptive (0, _) _
+      \ (_ , h) v -> (v, h)
+    normal (w, _) v | w == v exit _
+      skip fst
+    adaptive _ _
+      \ (w, h) v -> (v, h TIMES (v/w))
+  (ASSERT((w', h') (w, h) v | w' = v && (w = 0 => h' = h) && (w /= 0 => h'/w' = h/w)))
+  (ASSERTRANGE((w, _) | w /= 0))
 \end{code}
 
 \section{Recursion}
@@ -1017,6 +1077,8 @@ Completeness has not been proved, but we have shown that the logic works for var
 
 \BiGUL\ is stateful, but only in the ``Reader'' way, in particular using the Reader monad's `|local|' operation to modify the current source and view.
 Our Hoare-style logic can be said to be merely tracking how the current source and view are manipulated by implicit `|local|' operations.
+
+Towards a syntactic treatment for automation.
 
 It has been argued that ``putback'' is the essence of bidirectional programming~\citep{Fischer-essence-of-BX}.
 We would like to amend this statement: Putback-based \emph{reasoning} is the essence of bidirectional programming.
