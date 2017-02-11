@@ -36,14 +36,21 @@ emb {V = V} g p = case (((λ s v → ⌊ U-dec V (g s) v ⌋) ,
 emb-correctness : {n : ℕ} {F : Functor n} {S V : U n}
                   (g : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F)) (p : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → ⟦ S ⟧ (μ F)) →
                   ({s : ⟦ S ⟧ (μ F)} {v : ⟦ V ⟧ (μ F)} → g (p s v) ≡ v) →
-                  Triple Π (emb {F = F} {S} {V} g p) (λ { (s' , _ , v) → g s' ≡ v })
+                  Triple Π (emb {F = F} {S} {V} g p)
+                         (λ { (s' , s , v) → g s' ≡ v × (g s ≡ v → s' ≡ s) × (g s ≢ v → s' ≡ p s v) })
 emb-correctness g p PutGet =
-  case (conseq
-          (λ { (_ , eqn , _) → trueToWitness eqn })
-          skip
-          (λ { {.s , s , v} (refl , _ , eqn , _) → trueToWitness eqn , (eqn , tt) , refl , tt }) ∷ᴺ
-        (λ { s v _ → (tt , (inj₁ (trueFromWitness PutGet))) , (λ _ → id) }) ∷ᴬ [])
-       (λ _ → inj₂ (inj₁ refl))
+  case
+    (conseq
+       (λ { (_ , eqn , _) → trueToWitness eqn })
+       skip
+       (λ { {.s , s , v} (refl , _ , eqn , _) →
+              (trueToWitness eqn , (λ _ → refl) , (λ g-s≢v → ⊥-elim (g-s≢v (trueToWitness eqn)))) ,
+              (eqn , tt) , refl , tt }) ∷ᴺ
+     (λ { s v (_ , _ , feqn , _) →
+            (tt , inj₁ (trueFromWitness PutGet)) ,
+            λ { s' (g-s'≡v , PutGet⇒s'≡p-s-v , _) →
+                  g-s'≡v , (λ g-s≡v → ⊥-elim (falseToWitness feqn g-s≡v)) , (λ _ → PutGet⇒s'≡p-s-v PutGet) } }) ∷ᴬ [])
+    (λ _ → inj₂ (inj₁ refl))
 
 emb-correctness' : {n : ℕ} {F : Functor n} {S V : U n}
                    (g : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F)) (p : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → ⟦ S ⟧ (μ F)) →

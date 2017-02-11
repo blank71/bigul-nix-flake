@@ -45,10 +45,10 @@
   Diskin}, \bibinfo{person}{Fr{\'e}d{\'e}ric Jouault},
   \bibinfo{person}{Hsiang-Shang Ko}, \bibinfo{person}{Erhan Leblebici}, {and}
   \bibinfo{person}{Bernhard Westfechtel}.} \bibinfo{year}{2017}\natexlab{}.
-\newblock \bibinfo{title}{{BenchmarX} Reloaded: a Practical Benchmark Framework
+\newblock \bibinfo{title}{{BenchmarX} Reloaded: A Practical Benchmark Framework
   for Bidirectional Transformations}.
-\newblock \bibinfo{howpublished}{Submitted for publication}.
-  (\bibinfo{year}{2017}).
+\newblock \bibinfo{howpublished}{To appear in \textit{International Workshop on
+  Bidirectional Transformations (BX'17)}}.   (\bibinfo{year}{2017}).
 \newblock
 
 
@@ -65,6 +65,23 @@
 \newblock
 \showDOI{%
 \url{http://dx.doi.org/10.1145/1863543.1863572}}
+
+
+\bibitem[\protect\citeauthoryear{Czarnecki, Foster, Hu, L{\"a}mmel, Sch{\"u}rr,
+  and Terwilliger}{Czarnecki et~al\mbox{.}}{2009}]%
+        {Czarnecki-BX}
+\bibfield{author}{\bibinfo{person}{Krzysztof Czarnecki},
+  \bibinfo{person}{J.~Nathan Foster}, \bibinfo{person}{Zhenjiang Hu},
+  \bibinfo{person}{Ralf L{\"a}mmel}, \bibinfo{person}{Andy Sch{\"u}rr}, {and}
+  \bibinfo{person}{James~F. Terwilliger}.} \bibinfo{year}{2009}\natexlab{}.
+\newblock \showarticletitle{Bidirectional Transformations: A Cross-Discipline
+  Perspective}. In \bibinfo{booktitle}{{\em International Conference on Model
+  Transformation}} {\em (\bibinfo{series}{Lecture Notes in Computer Science})},
+  Vol.~\bibinfo{volume}{5563}. \bibinfo{publisher}{Springer},
+  \bibinfo{pages}{260--283}.
+\newblock
+\showDOI{%
+\url{http://dx.doi.org/10.1007/978-3-642-02408-5_19}}
 
 
 \bibitem[\protect\citeauthoryear{Diskin, Xiong, and Czarnecki}{Diskin
@@ -115,7 +132,7 @@
   \bibinfo{person}{Benjamin~C. Pierce}, {and} \bibinfo{person}{Alan Schmitt}.}
   \bibinfo{year}{2007}\natexlab{}.
 \newblock \showarticletitle{Combinators for Bidirectional Tree Transformations:
-  a Linguistic Approach to the View-Update Problem}.
+  A Linguistic Approach to the View-Update Problem}.
 \newblock \bibinfo{journal}{{\em ACM Transactions on Programming Languages and
   Systems\/}} \bibinfo{volume}{29}, \bibinfo{number}{3} (\bibinfo{year}{2007}),
   \bibinfo{pages}{17}.
@@ -124,11 +141,24 @@
 \url{http://dx.doi.org/10.1145/1232420.1232424}}
 
 
+\bibitem[\protect\citeauthoryear{Hu and Ko}{Hu and Ko}{2016}]%
+        {Hu-BiGUL-tutorial}
+\bibfield{author}{\bibinfo{person}{Zhenjiang Hu} {and}
+  \bibinfo{person}{Hsiang-Shang Ko}.} \bibinfo{year}{2016}\natexlab{}.
+\newblock \bibinfo{title}{Principle and Practice of Bidirectional Programming
+  in {BiGUL}}.
+\newblock \bibinfo{howpublished}{Draft manuscript for the \textit{Oxford Summer
+  School on Bidirectional Transformations}}.   (\bibinfo{year}{2016}).
+\newblock
+\showURL{%
+\url{https://bitbucket.org/prl_tokyo/bigul/raw/master/SummerSchool16/paper/paper.pdf}}
+
+
 \bibitem[\protect\citeauthoryear{Ko, Zan, and Hu}{Ko et~al\mbox{.}}{2016}]%
         {Ko-BiGUL}
 \bibfield{author}{\bibinfo{person}{Hsiang-Shang Ko}, \bibinfo{person}{Tao Zan},
   {and} \bibinfo{person}{Zhenjiang Hu}.} \bibinfo{year}{2016}\natexlab{}.
-\newblock \showarticletitle{{BiGUL}: a Formally Verified Core Language for
+\newblock \showarticletitle{{BiGUL}: A Formally Verified Core Language for
   Putback-Based Bidirectional Programming}. In \bibinfo{booktitle}{{\em Partial
   Evaluation and Program Manipulation}} {\em (\bibinfo{series}{PEPM'16})}.
   \bibinfo{publisher}{ACM}, \bibinfo{pages}{61--72}.
@@ -155,7 +185,7 @@
         {Reynolds-separation-logic}
 \bibfield{author}{\bibinfo{person}{John~C. Reynolds}.}
   \bibinfo{year}{2002}\natexlab{}.
-\newblock \showarticletitle{Separation Logic: a Logic for Shared Mutable Data
+\newblock \showarticletitle{Separation Logic: A Logic for Shared Mutable Data
   Structures}. In \bibinfo{booktitle}{{\em Logic in Computer Science}} {\em
   (\bibinfo{series}{LICS'02})}. \bibinfo{publisher}{IEEE},
   \bibinfo{pages}{55--74}.
