@@ -3,6 +3,7 @@
 %include lhs2TeX-macros.lhs
 
 \section{Parsing and reflective printing}
+\label{sec:BiYacc}
 
 \ignore{
 \begin{code}
@@ -20,7 +21,7 @@ import Text.ParserCombinators.Parsec.Pos
 \end{code}
 }
 
-When we mention the \emph{front-end} of a compiler, we usually think of a \emph{parser} that turns concrete syntax, which is designed to be programmer-friendly and provides convenient syntactic sugar, into abstract syntax, which is concise, structured, and easily manipulable by the compiler back-end.
+When we mention the \emph{front-end} of a compiler, we usually think of a \emph{parser} that turns \emph{concrete syntax}, which is designed to be programmer-friendly and provides convenient syntactic sugar, into \emph{abstract syntax}, which is concise, structured, and easily manipulable by the compiler back-end.
 There is another direction, though, in which a \emph{printer} turns abstract syntax back into concrete syntax.
 This is useful, for example, for reporting the result of compiler optimizations done on abstract syntax to the programmer, who knows only concrete syntax.
 In this case, though, we would want to print the optimized program in a form that is as close to the original program as possible, so the programmer can spot what are changed --- and not changed --- correctly and more easily.
@@ -47,7 +48,7 @@ data Arith  =  Num Int
             |  Sub  Arith Arith
   deriving Show
 \end{code}
-This is a nice representation for the compiler, but we cannot expect the programmer to write something like ``|Sub (Num 1) (Add (Num 2) (Num 3))|'', and should provide a concrete syntax so they can write ``$1 - (2+3)$''.
+This is a nice representation for the compiler, but we cannot expect the programmer to write something like ``|Sub (Num 1) (Add (Num 2) (Num 3))|'', and should provide a concrete syntax so that they can write ``$1 - (2+3)$''.
 Such a concrete syntax is usually defined in terms of a BNF grammar:
 \begin{spec}
 Exp     ->  Exp '+' Factor
@@ -62,13 +63,13 @@ The two-level structure of |Exp| and |Factor| ensures that plus and minus associ
 And, to spice up the problem a little, we allow minus to be used also as a negative sign, as specified by the second production rule for |Factor|.
 BiGUL deals with structured data only, so we should represent a string generated using this grammar as a concrete syntax tree of the following type:
 \begin{code}
-data Exp  =  Plus   Exp Factor
-          |  Minus  Exp Factor
+data Exp  =  Plus Exp Factor
+          |  Minus Exp Factor
           |  EF Factor
           |  ENull
 
-data Factor  =  Lit  Int
-             |  Neg  Factor
+data Factor  =  Lit Int
+             |  Neg Factor
              |  Paren Exp
              |  FNull
 \end{code}%
@@ -95,10 +96,7 @@ instance Show Factor where
 \end{code}
 Conversely, using modern parser technologies like Haskell's \texttt{parsec} parser combinator library, we can easily implement a ``concrete parser'' that turns a string into a concrete syntax tree:
 \begin{spec}
-parseExp :: String -> Either ParseError Exp
-
-unsafeParseExp    ::  String -> Exp
-unsafeParseExp s  =   let (Right e) = parseExp s in e
+parseExp :: String -> Exp
 \end{spec}%
 \ignore{%
 \begin{code}
@@ -151,11 +149,11 @@ factorParser =
 tokeniseAndParse :: Parser tok -> GenParser tok () a -> String -> Either ParseError a
 tokeniseAndParse tokeniser parser = (parse parser "" =<<) . parse (many tokeniser >|> eof) ""
 
-parseExp :: String -> Either ParseError Exp
-parseExp = tokeniseAndParse expTokeniser expParser
+safeParseExp :: String -> Either ParseError Exp
+safeParseExp = tokeniseAndParse expTokeniser expParser
 
-unsafeParseExp    ::  String -> Exp
-unsafeParseExp s  =   let (Right e) = parseExp s in e
+parseExp    ::  String -> Exp
+parseExp s  =   let (Right e) = safeParseExp s in e
 \end{code}
 }%
 The rest of the job is then write a BiGUL program between |Exp| and |Arith|.
@@ -173,78 +171,78 @@ pFactorArith  =   Case undefined
 \end{spec}
 The branch for plus and addition can then be written as:
 \begin{spec}
-$(update  [p| Plus l r |] [p| Add l r |]
-          [d| l = pExpArith; r = pFactorArith |])
+$(update  (P( Plus l r )) (P( Add l r ))
+          (D( l = pExpArith; r = pFactorArith )))
 \end{spec}
 Following the same line of thought, we can fill in other branches to relate all abstract constructors with concrete production rules:
 \begin{spec}
 pExpArith  ::  BiGUL Exp Arith
 pExpArith  =   Case
-  [ $(normalSV [p| Plus _ _ |] [p| Add _ _ |] [p| Plus _ _ |])
-    ==> $(update  [p| Plus l r |] [p| Add l r |]
-                  [d| l = pExpArith; r = pFactorArith |])
-  , $(normalSV [p| Minus _ _ |] [p| Sub _ _ |] [p| Minus _ _ |])
-    ==> $(update  [p| Minus l r |] [p| Sub l r |]
-                  [d| l = pExpArith; r = pFactorArith |])
-  , $(normalSV [p| EF _ |] [p| _ |] [p| EF _ |])
-    ==> $(update  [p| EF t |] [p| t |]
-                  [d| t = pFactorArith |])
+  [ $(normalSV (P( Plus _ _ )) (P( Add _ _ )) (P( Plus _ _ )))
+    ==> $(update  (P( Plus l r )) (P( Add l r ))
+                  (D( l = pExpArith; r = pFactorArith )))
+  , $(normalSV (P( Minus _ _ )) (P( Sub _ _ )) (P( Minus _ _ )))
+    ==> $(update  (P( Minus l r )) (P( Sub l r ))
+                  (D( l = pExpArith; r = pFactorArith )))
+  , $(normalSV (P( EF _ )) (P( _ )) (P( EF _ )))
+    ==> $(update  (P( EF t )) (P( t ))
+                  (D( t = pFactorArith )))
   ]
 
 pFactorArith  ::  BiGUL Factor Arith
 pFactorArith  =   Case
-  [ $(normalSV [p| Lit _ |] [p| Num _ |] [p| Lit _ |])
-    ==> $(update [p| Lit i |] [p| Num i |] [d| i = Replace |])
-  , $(normalSV [p| Neg _ |] [p| Sub (Num 0) _ |] [p| Neg _ |])
-    ==> $(update [p| Neg t |] [p| Sub (Num 0) t |] [d| t = pFactorArith |])
-  , $(normalSV [p| Paren _ |] [p| _ |] [p| Paren _ |])
-    ==> $(update [p| Paren t |] [p| t |] [d| t = pExpArith |])
+  [ $(normalSV (P( Lit _ )) (P( Num _ )) (P( Lit _ )))
+    ==> $(update (P( Lit i )) (P( Num i )) (D( i = Replace )))
+  , $(normalSV (P( Neg _ )) (P( Sub (Num 0) _ )) (P( Neg _ )))
+    ==> $(update (P( Neg t )) (P( Sub (Num 0) t )) (D( t = pFactorArith )))
+  , $(normalSV (P( Paren _ )) (P( _ )) (P( Paren _ )))
+    ==> $(update (P( Paren t )) (P( t )) (D( t = pExpArith )))
   ]
 \end{spec}
 
 This covers only ``normal'' cases though, namely when the source and view are ``the same'' except for parentheses and literals.
 What about the cases when the source and view have mismatched shapes?
 For these cases, we need adaptation.
-Corresponding to each branch we have already written, we add an adaptive branch which looks at the shape of the view only, throws away a mismatched source, and creates an incomplete one whose shape matches that of the view; the source will be complete created through recursive processing.
+Corresponding to each branch we have already written, we add an adaptive branch which looks at the shape of the view only, throws away a mismatched source, and creates an incomplete one whose shape matches that of the view; the source will be completely created through recursive processing.
 For example, corresponding to the plus/addition branch, we write:
 \begin{spec}
-S(adaptiveSV (P(_)) (P(Add _ _)))
+$(adaptiveSV (P( _ )) (P( Add _ _ )))
   ==> \ _ _ -> Plus ENull FNull
 \end{spec}
 The full programs are:
 \begin{code}
 pExpArith  ::  BiGUL Exp Arith
 pExpArith  =   Case
-  [ $(normalSV [p| Plus _ _ |] [p| Add _ _ |] [p| Plus _ _ |])
-    ==> $(update [p| Plus l r |] [p| Add l r |]
-                 [d| l = pExpArith; r = pFactorArith |])
-  , $(normalSV [p| Minus _ _ |] [p| Sub _ _ |] [p| Minus _ _ |])
-    ==> $(update [p| Minus l r |] [p| Sub l r |]
-                 [d| l = pExpArith; r = pFactorArith |])
-  , $(normalSV [p| EF _ |] [p| _ |] [p| EF _ |])
-    ==> $(update [p| EF t |] [p| t |]
-                 [d| t = pFactorArith |])
-  , $(adaptiveSV [p| _ |] [p| Add _ _ |])
+  [ $(normalSV (P( Plus _ _ )) (P( Add _ _ )) (P( Plus _ _ )))
+    ==> $(update (P( Plus l r )) (P( Add l r ))
+                 (D( l = pExpArith; r = pFactorArith )))
+  , $(normalSV (P( Minus _ _ )) (P( Sub _ _ )) (P( Minus _ _ )))
+    ==> $(update (P( Minus l r )) (P( Sub l r ))
+                 (D( l = pExpArith; r = pFactorArith )))
+  , $(normalSV (P( EF _ )) (P( _ )) (P( EF _ )))
+    ==> $(update (P( EF t )) (P( t ))
+                 (D( t = pFactorArith )))
+  , $(adaptiveSV (P( _ )) (P( Add _ _ )))
     ==> \ _ _ -> Plus ENull FNull
-  , $(adaptiveSV [p| _ |] [p| Sub _ _ |])
+  , $(adaptiveSV (P( _ )) (P( Sub _ _ )))
     ==> \ _ _ -> Minus ENull FNull
-  , $(adaptiveSV [p| _ |] [p| _ |])
+  , $(adaptiveSV (P( _ )) (P( _ )))
     ==> \ _ _ -> EF FNull
   ]
 
 pFactorArith  ::  BiGUL Factor Arith
 pFactorArith  =   Case
-  [ $(normalSV [p| Lit _ |] [p| Num _ |] [p| Lit _ |])
-    ==> $(update [p| Lit i |] [p| Num i |] [d| i = Replace |])
-  , $(normalSV [p| Neg _ |] [p| Sub (Num 0) _ |] [p| Neg _ |])
-    ==> $(update [p| Neg t |] [p| Sub (Num 0) t |] [d| t = pFactorArith |])
-  , $(normalSV [p| Paren _ |] [p| _ |] [p| Paren _ |])
-    ==> $(update [p| Paren t |] [p| t |] [d| t = pExpArith |])
-  , $(adaptiveSV [p| _ |] [p| Num _ |])
+  [ $(normalSV (P( Lit _ )) (P( Num _ )) (P( Lit _ )))
+    ==> $(update (P( Lit i )) (P( Num i )) (D( i = Replace )))
+  , $(normalSV (P( Neg _ )) (P( Sub (Num 0) _ )) (P( Neg _ )))
+    ==> $(update (P( Neg t )) (P( Sub (Num 0) t )) (D( t = pFactorArith )))
+  , $(normalSV (P( Paren _ )) (P( _ )) (P( Paren _ )))
+    ==> $(update (P( Paren t )) (P( t )) (D( t = pExpArith )))
+  , $(adaptiveSV (P( _ )) (P( Num _ )))
     ==> \ _ _ -> Lit 0
-  , $(adaptiveSV [p| _ |] [p| Sub (Num 0) _ |])
+  , $(adaptiveSV (P( _ )) (P( Sub (Num 0) _ )))
     ==> \ _ _ -> Neg FNull
-  , $(adaptiveSV [p| _ |] [p| _ |])
+  , $(adaptiveSV (P( _ )) (P( _ )))
     ==> \ _ _ -> Paren ENull
   ]
 \end{code}
@@ -254,39 +252,39 @@ pFactorArith  =   Case
 The BiGUL programs, being bidirectional, can be executed in the |put| direction as a reflective printer, or in the |get| direction as a parser.
 Let us look at parsing first. For example:
 \begin{verbatim}
-*Main> get pExpArith (unsafeParseExp "(-(3+4))")
-Just (Sub (Num 0) (Add (Num 3) (Num 4)))
+*Main> get pExpArith (parseExp "(-(3+0))")
+Just (Sub (Num 0) (Add (Num 3) (Num 0)))
 \end{verbatim}
-Note that a unary minus is considered as syntactic sugar, and is desugared into a subtraction whose left operand is zero.
+Note that a unary minus is regarded as syntactic sugar, and is desugared into a subtraction whose left operand is zero.
 Also note that parentheses are turned into correct structure of the abstract syntax tree, and nothing more --- excessive parentheses are cleanly discarded.
 
 For reflective printing, as we mentioned, one application is reporting what compiler optimizations do.
-We can replace the sub-expression $3+4$ with its value~$1$, for example, and the reflective printer will be able to retain the excessive parentheses:
+We can optimize the sub-expression $3+0$ by getting rid of the superfluous $+0$, for example, and the reflective printer will be able to retain the excessive parentheses:
 \begin{verbatim}
-*Main> put pExpArith (unsafeParseExp "(-(3+4))")
-                     (Sub (Num 0) (Num 7))
-Just (-(7))
+*Main> put pExpArith (parseExp "(-(3+0))")
+                     (Sub (Num 0) (Num 3))
+Just (-(3))
 \end{verbatim}
 Notice also that the unary minus is preserved.
 If the original concrete expression uses a binary minus instead, it will be preserved as well:
 \begin{verbatim}
-*Main> put pExpArith (unsafeParseExp "(0-(3+4))")
-                     (Sub (Num 0) (Num 7))
-Just (0-(7))
+*Main> put pExpArith (parseExp "(0-(3+0))")
+                     (Sub (Num 0) (Num 3))
+Just (0-(3))
 \end{verbatim}
 
-More generally, the steps in an evaluation sequence of an abstract syntax tree can all be reflected to concrete syntax.
+Another thing we can do is reflecting the steps in an evaluation sequence of an abstract syntax tree to concrete syntax.
 For example, starting from:
 \begin{verbatim}
-*Main> get pExpArith (unsafeParseExp "1+(2+3)")
+*Main> get pExpArith (parseExp "1+(2+3)")
 Just (Add (Num 1) (Add (Num 2) (Num 3)))
 \end{verbatim}
 it takes two steps to evaluate this expression:
 \begin{verbatim}
-*Main> put pExpArith (unsafeParseExp "1+(2+3)")
+*Main> put pExpArith (parseExp "1+(2+3)")
                      (Add (Num 1) (Num 5))
 Just 1+(5)
-*Main> put pExpArith (unsafeParseExp "1+(5)") (Num 6)
+*Main> put pExpArith (parseExp "1+(5)") (Num 6)
 Just 6
 \end{verbatim}
 This means that if we have an evaluator on the abstract syntax, we will automatically get an evaluator on the concrete syntax!
@@ -301,7 +299,7 @@ You have probably noticed that the subtraction is reflected as a binary minus in
 This behavior is easily customizable:
 By adding an adaptive branch before the one dealing generically with |Sub| in |pExpArith|:
 \begin{spec}
-$(adaptiveSV [p| _ |] [p| Sub (Num 0) _ |])
+$(adaptiveSV (P( _ )) (P( Sub (Num 0) _ )))
   ==> \ _ _ -> EF FNull
 \end{spec}
 the above abstract syntax tree can be printed as:
@@ -310,7 +308,7 @@ the above abstract syntax tree can be printed as:
 Just -(1+1)
 \end{verbatim}
 
-\subsection{A domain-codeific language}
+\subsection{A domain-specific language}
 
 As a final remark, the above programs may look long, but at the core of them are merely the correspondences between concrete production rules and abstract constructors.
 We can design a domain-specific language (DSL) that expresses such correspondences concisely, and then expand programs in this DSL into BiGUL.
@@ -327,4 +325,4 @@ For example, all the programs we have written can be generated from the followin
   Sub (Num 0) r +> '-' (r +> Factor);
   f             +> '(' (f +> Exp) ')';
 \end{verbatim}
-See our draft paper\footnote{\url{http://www.prg.nii.ac.jp/members/zhu/papers/sle2016_draft.pdf}} for more interesting experiments about reflective printing, done on a more realistic imperative language.
+See our SLE 2016 paper~\cite{Zhu-BiYacc} for more interesting experiments about reflective printing, done on a more realistic imperative language.

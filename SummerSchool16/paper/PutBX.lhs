@@ -1,14 +1,17 @@
+% !TEX root = paper.tex
+
 %include lhs2TeX-macros.lhs
 
 \section{Putback-based bidirectional programming}
+\label{sec:PutBX}
 
-A {\em bidirectional transformation} basically consists of a pair of
-transformations: the {\em forward} transformation |get s| is used to
-produce a target view |v| from a source |s|, while the {\em putback}
-transformation |put s v| is used to reflect modifications on the view
-|v| to the source |s|.  These two transformations should be {\em
+In this tutorial, the kind of bidirectional transformations (BXs) we discuss is \emph{aymmetric lenses}~\cite{Lenses},
+which basically consist of a pair of transformations:
+a {\em forward} transformation |get| producing a \emph{view} from a \emph{source}, and a {\em backward}, or {\em putback},
+transformation |put| which takes a source and a possibly modified view, and reflects the modifications on the view to the source, producing an updated source.
+These two transformations should be {\em
 well-behaved} in the sense that they satisfy the following
-round-tripping laws.
+round-tripping laws:
 \begin{align*}
 \tag*{\textsc{GetPut}}
 \label{GetPut}
@@ -17,18 +20,18 @@ round-tripping laws.
 \label{PutGet}
 |get (put s v)  = v|
 \end{align*}
-The \ref{GetPut} property requires that no changing on the view shall
+The \ref{GetPut} property requires that no changing on the view should
 be reflected as no changing on the source, while the \ref{PutGet}
-property requires all changes in the view to be completely reflected
-to the source so that the changed view can be computed again by
-applying the forward transformation to
+property requires that all changes in the view should be completely reflected
+to the source so that the changed view can be successfully recovered by
+applying the forward transformation to the updated source.
 
-{\em Bidirectional programming} is to develop well-behaved
-bidirectional transformations (BXs) to solve various synchronization
+The purpose of {\em bidirectional programming} is to develop well-behaved
+bidirectional transformations to solve various synchronization
 problems.  A straightforward approach to bidirectional programming is
-to write two unidirectional transformations. Although this ad-hoc
+to write two unidirectional transformations. Although this ad hoc
 solution provides full control over both get and putback
-transformations and can be realized using standard programming
+transformations, and can be realized using standard programming
 languages, the programmer needs to show that the two transformations
 satisfy the well-behavedness laws, and a modification to one of the
 transformations requires a redefinition of the other transformation as
@@ -38,37 +41,37 @@ preferable to write just a single program that can denote both
 transformations.
 
 Lots of work \cite{Lenses,Bohannon:06,Bohannon:08,Hofmann:2011,XLHZ07,MHNHT07,Voigt09,Hidaka:10} has been devoted to the {\em get-based}
-approach, allowing users to write the forward
+approach, allowing the programmer to write the forward
 transformation |get| and deriving a suitable putback transformation.
 While the get-based approach is friendly, 
 a |get| function may not be injective, so there may exist
 many possible |put| functions that can be combined with it to form a
-valid BX and there is no way to control the choice of |put| through
-the change of |get|. 
-This ambiguity of put is what makes bidirectional
+valid BX, and there is no way to control the choice of |put| through
+the definition of |get|. 
+This ambiguity of |put| is what makes bidirectional
 programming challenging and unpredictable in practice.
 
 The main topic of this tutorial is the {\em putback-based} approach
 to bidirectional programming.
-In contrast to the get-based approach, it allows users to write the backward 
+In contrast to the get-based approach, it allows the programmer to write a backward 
 transformation |put| and derives a suitable |get| that can be
-paired with |put| to form a bidirectional transformation if it exists.
+paired with this |put| to form a bidirectional transformation.
 Interestingly, while |get| usually loses information
 when mapping from a source to a view, |put| must preserve information
 when putting back from the view to the source, according to the
 \ref{PutGet} property.
 
-Before explaining how to write |put|, let us briefly review
-the foundation~\cite{Foster:09,FiHP15,FiHP15b}, showing that "putback"
+Before explaining how to program |put| in practice, let us briefly review
+the foundation~\cite{Foster:09,FiHP15,FiHP15b}, showing that ``putback''
 is the essence of bidirectional programming.
-We start by defining validity of |put| as follows.
+We start by defining validity of |put| as follows:
 
 \begin{definition}[Validity of |put|]
 We say that a |put| is {\em valid} if there exists a |get|
 such that both \ref{GetPut} and \ref{PutGet} are satisfied. 
 \end{definition}
 
-The first interesting fact is that, for a valid |put|, there exists at most one |get|
+The first interesting fact is that, for a valid |put|, there exists exactly one |get|
 that can form a BX with it. This is in sharp contrast to get-based 
 bidirectional programming, where many |put|s may be paired with a |get|
 to form a BX. 
@@ -84,16 +87,16 @@ check validity of |put| without mentioning |get|.
 The following are two important properties on |put|.
 \begin{itemize}
 \item 
- The first, that we call \emph{view determination}, says that equivalence 
+ The first, which we call \emph{view determination}, says that equivalence 
 of updated sources produced by a |put| implies equivalence of views that are put back.
 \begin{align*}
 	\label{PutDet}
 	\tag*{\textsc{ViewDetermination}}
 	\forall~s,s',v,v'.~put~s~v~=~put~s'~v'~\Rightarrow~v~=~v'
 \end{align*}
-Note that the view determination implies that |put s| is injective (with |s=s'|).
+Note that view determination implies that |put s| is injective (with |s=s'|).
 
-\item The second, that we call \emph{source stability}, denotes a slightly stronger notion of surjectivity for every source:
+\item The second, which we call \emph{source stability}, denotes a slightly stronger notion of surjectivity for every source:
 \begin{align*}
 	\label{PutStable}
 	\tag*{\textsc{SourceStability}}
@@ -104,21 +107,22 @@ Actually, these two properties together provide an equivalent characterization o
 the validity of |put|. 
 \begin{theorem}
 \label{th:put2}
-A |put| function is valid if and only if it satisfies the \ref{PutDet} and \ref{PutStable} properties. 
+A |put| function is valid if and only if it satisfies \ref{PutDet} and \ref{PutStable}. 
 \end{theorem}
 
-Practically, there are few languages supporting put-based
-bidirectional programming. This is not without reason: as argued in
-\cite{Foster:09}, it is far from being straightforward to construct a
+Practically, there are few languages supporting putback-based
+bidirectional programming. This is not without reason: as argued by Foster~\cite{Foster:09},
+it is more difficult to construct a
 framework that can directly support putback-based bidirectional
 programming.
 
-This tutorial introduces BiGUL \cite{KoZH16}, a simple but powerful
-putback-based bidirectional language,
-which grew out of the work \cite{PaHF14,PaZH14}.
-We shall demonstrate how to program with BiGUL, explain the
-principle behind BiGUL, and show its applications in
-developing various of bidirectional transformations.
+In the rest of this tutorial, we will introduce BiGUL~\cite{KoZH16} (which we pronounce as ``beagle''),
+a simple yet powerful putback-based bidirectional language,
+which grew out of some prior putback-based languages~\cite{PaHF14,PaZH14}.
+BiGUL is implemented as an embedded language in Haskell, and we will assume that the reader is reasonably familiar with Haskell.
+After briefly explaining how to install BiGUL in Section~\ref{sec:install}, we will introduce basic BiGUL programming in Section~\ref{sec:tour}, and see a few more examples about lists in Section~\ref{sec:lists}.
+We will then move on to the underlying principles in Section~\ref{sec:bidirectionality}, explaining the design and implementation of BiGUL in detail.
+The last three sections will show how various bidirectional applications can be developed, including list alignment in Section~\ref{sec:alignment}, relational database updating in Section~\ref{sec:Brul}, and parsing and ``reflective'' printing in Section~\ref{sec:BiYacc}.
 
 
 

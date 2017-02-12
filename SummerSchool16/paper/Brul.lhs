@@ -1,6 +1,7 @@
 %include lhs2TeX-macros.lhs
 
 \section{Bidirectionalizing relational queries with BiGUL}
+\label{sec:Brul}
 
 \ignore{
 
@@ -41,25 +42,28 @@ can be automatically derived.
 %
 \item |unjoin| is to decompose a join view to update two sources.
 \end{itemize}
-In this tutorial, we will focus on |align|, which can describe flexible update strategies
-related to selection/projection queries. 
+
+In this tutorial, we will focus on |align|. As will be seen in Section
+\ref{sec:policy}, it can describe more flexible update strategies
+(related to selection/projection queries) than the relational lenses. 
 
 \subsection{Relational database representation}
 \label{sec:table}
 
-A relational table is a list of records,
-and each record is a list of attribute elements of type.
+A relational table (|RT|) is denoted by a list of records (where the order
+does not really matter),
+and each record (|Record|) is denoted by a list of attributes of type |RType|, which could
+be an integer, a string, a floating point number, or a double-precision floating point number.
 \begin{code}
 type RT = [Record]
 type Record = [RType]
-data RType = RInt Int 
-           | RString String
-           | RFloat Float
-           | RDouble Double
+data RType  =  RInt Int 
+            |  RString String
+            |  RFloat Float
+            |  RDouble Double
       deriving (Show, Eq, Ord)
 \end{code}
-Here we introduce a new datatype |RType|. To do pattern matching on
-the data of this type, we need to declare
+To allow pattern matching on |RType| in BiGUL, we need to declare as follows.
 \begin{code}
 deriveBiGULGeneric  ''RType
 \end{code}
@@ -125,18 +129,21 @@ berrorn s = error $ "updated record according to functional dependency shall sat
 
 }
 
-As an example, consider the table in Figure~\ref{example:s} that
+Consider the table in Figure~\ref{example:s} that
 stores five music track records, and each record contains its Track
 name, release Date, Rating, Album, and the Quantity of this Album.
-It can be represented as follows.
+We can represent it as follows, where all the records have the same structure.
 \begin{code}
-s  =  [ [RString "Lullaby",  RInt 1989, RInt 3, RString "Galore", RInt 1]
+s  =  [[RString "Lullaby",  RInt 1989, RInt 3, RString "Galore", RInt 1]
       , [RString "Lullaby",  RInt 1989, RInt 3, RString "Show"  , RInt 3]
       , [RString "Lovesong", RInt 1989, RInt 5, RString "Galore", RInt 1]
-      , [RString "Lovesong", RInt 1989, RInt 5, RString "Disintegration" , RInt 4]
+      , [RString "Lovesong", RInt 1989  , RInt 5
+                                        , RString "Disintegration", RInt 4]
       , [RString "Trust",    RInt 1992, RInt 4, RString "Wish"  , RInt 5]
       ]
 \end{code}
+
+
 \begin{figure}[t]
 \centering
 \begin{tabular}{c c c c c}
@@ -154,6 +161,7 @@ Trust     &  1992 & 4 &  Wish   & 5  \\
 \label{example:s}
 \end{figure}
 
+\ignore{
 A table may have functional dependencies.  We use
 |FDMap| to store functional
 dependencies of a table
@@ -173,14 +181,17 @@ can be specified by
 sfdMap :: FDMap
 sfdMap = Map.fromList [(0,[1,2]), (3,[4])]
 \end{code}
+}
 
 \subsection{Relation Alignment}
 
-The alignment of two relational tables is similar to the key-based list alignment
+The alignment of two relational tables, which is related by a selection/projection query, is similar to the key-based list alignment
 in Section \ref{sec:alignment}. The difference is that we need to consider
-filtering on the source records and maintaining of functional dependency
-on the source elements when updates on the view happen.
+filtering on (i.e., selection of) the source records.
+%and maintaining of functional dependency
+%on the source elements when updates on the view happen.
 
+\ignore{
 Our relation alignment has the form of
 <relAlign p ks kv b c h fd
 where |p| is a predicate for filtering out those source elements that do not satisfy |p|,
@@ -202,19 +213,22 @@ corresponding matching view element, |h|
 is used to conceal the element (from the view) by either
 deleting this source element or modifying it so that it does not
 satisfy the filter condition.
+}
 
 Let us see how to extend |keyAlign| (in Section \ref{sec:alignment})
-to implement |relAlign|.
-We do this extension by two steps. First, we consider an alignment
-that only deals with filtering of source elements.
-We extend |keyAlign| with two new arguments, one is
+to implement the new align |pAlign| that can deal with filtering of source elements.
+We extend |keyAlign| with two new arguments; one is
 the predicate |p| for filtering source elements,
-and the other is a function |h| for hiding/concealing source elements
+and the other is the function |h| for hiding/concealing source elements
 if their corresponding
 elements are removed from the view.
-As seen below, |pAlign| has a similar structure 
-to that of |keyAlign|, where we refine the third case of |keyAlign|
-into two cases (the third and the fourth cases of |pAlign|).
+As seen below, |pAlign| has a similar case structure 
+as that of |keyAlign|, except that we refine the third case of |keyAlign|
+into two cases (the third and the fourth cases of |pAlign|): the third case
+says that if the view |v| is empty but the first record in the source satisfies |p|,
+we should hide this record using |h|, and the fourth case says that
+if the first record of the source dies not satisfies |p|, we simply ignore it and
+continue with the rest records.
 
 \begin{code}
 pAlign :: forall s v k. (Show s, Show v, Eq k)
@@ -223,19 +237,22 @@ pAlign :: forall s v k. (Show s, Show v, Eq k)
             -> (s -> Maybe s) {- conceal function -}
             -> BiGUL [s] [v]
 pAlign p ks kv b c h = Case
-  [ $(normalSV [p| [] |] [p| [] |] [p| [] |])
-    ==> $(update [p| [] |] [p| [] |] [d| |])
-  , $(normal [| \(s:ss) (v:vs) -> p s && ks s == kv v |] [| \(s:ss) -> p s |])
-    ==> $(update [p| x:xs |] [p| x:xs |] [d| x = b; xs = pAlign p ks kv b c h |])
-  , $(adaptive [| \(s:ss) v -> p s && null v|])
+  [ $(normalSV (P( [] )) (P( [] )) (P( [] )))
+    ==> $(update (P( [] )) (P( [] )) (D( )))
+  , $(normal (Q( \(s:ss) (v:vs) -> p s && ks s == kv v )) (Q( \(s:ss) -> p s )))
+    ==> $(update (P( x:xs )) (P( x:xs )) (D( x = b; xs = pAlign p ks kv b c h )))
+  , $(adaptive (Q( \(s:ss) v -> p s && null v)))
     ==> \(s:ss) v -> maybe [] (:[]) (h s) ++ ss
-  , $(normal [| \(s:ss) v -> not (p s) |] [| \(s:ss) -> not (p s) |])
-    ==> $(update [p| _:xs |] [p| xs |] [d| xs = pAlign p ks kv b c h |])
-  , $(adaptive [| \ss (v:vs) -> kv v `elem` map ks (filter p ss) |])
+  , $(normal (Q( \(s:ss) v -> not (p s) )) (Q( \(s:ss) -> not (p s) )))
+    ==> $(update (P( _:xs )) (P( xs )) (D( xs = pAlign p ks kv b c h )))
+  , $(adaptive (Q( \ss (v:vs) -> kv v `elem` map ks (filter p ss) )))
     ==> \ss (v:_) -> uncurry (:) (extract (kv v) ss)
-  , $(adaptiveSV [p| _ |] [p| _:_ |])
+  , $(adaptiveSV (P( _ )) (P( _:_ )))
     ==> \ss (v:_) -> filterCheck p (c v) : ss
   ]
+\end{code}
+\ignore{
+\begin{code}
   where
     extract :: k -> [s] -> (s, [s])
     extract k (x:xs)  | p x && ks x == k = (x, xs)
@@ -244,14 +261,17 @@ pAlign p ks kv b c h = Case
     filterCheck p v  | p v = v
                      | otherwise = error "error in filter checking"
 \end{code}
+}
 
 To test, recall the example in Section \ref{sec:alignment}.
-Consider the following use of |pAlign|:
+Consider the following use of |pAlign|, denoting that the view is selected
+from those records from the source whose salary is greater than |1000|, and that
+if a view record is removed, the corresponding record in the source will be removed (and thus hidden).
 \begin{code}
 pSelProj = pAlign (\(k,(n,s)) -> s > 1000) fst fst bx cr' (const Nothing)
   where cr' (k,n) = (k,(n, 2000))
 \end{code}
-we have:
+We have:
 \begin{verbatim}
 *Brul> get pSelProj employees
 Just [(2,"Jeremy")]
@@ -260,6 +280,7 @@ Just [(0,("Zhenjiang",1000)),(1,("Josh",400)),(0,("Zhenjiang",2000)),
 (2,("Jeremy",2000))]
 \end{verbatim}
 
+\ignore{
 Second, we extend |pAlign| to deal with functional dependency consistency
 when updates happen.
 To this end, we add a new parameter |fd|, a function for updating source records
@@ -274,23 +295,23 @@ relAlign :: forall s v k. (Show s, Show v, Eq k, Eq s)
             -> (s -> s) {- dependency maintaining function -}
             -> BiGUL [s] [v]
 relAlign p ks kv b c h fd = Case
-  [ $(normalSV [p| [] |] [p| [] |] [p| [] |])
-    ==> $(update [p| [] |] [p| [] |] [d| |])
-  , $(normal [| \(s:ss) (v:vs) -> p s && ks s == kv v |] [| \(s:ss) -> p s |])
-    ==> $(update [p| x:xs |] [p| x:xs |] [d| x = b; xs = relAlign p ks kv b c h fd |])
+  [ $(normalSV (P( [] )) (P( [] )) (P( [] )))
+    ==> $(update (P( [] )) (P( [] )) (D( )))
+  , $(normal (Q( \(s:ss) (v:vs) -> p s && ks s == kv v )) (Q( \(s:ss) -> p s )))
+    ==> $(update (P( x:xs )) (P( x:xs )) (D( x = b; xs = relAlign p ks kv b c h fd )))
 
-  , $(adaptive [| \(s:ss) v -> p s && null v|])
+  , $(adaptive (Q( \(s:ss) v -> p s && null v)))
     ==> \(s:ss) v -> maybe [] ((:[]) . filterCheck p . fd) (h s) ++ ss
-  , $(normal [| \(s:ss) v -> not (p s) |] [| \(s:ss) -> not (p s) |])
+  , $(normal (Q( \(s:ss) v -> not (p s) )) (Q( \(s:ss) -> not (p s) )))
     ==> Case
-     [ $(adaptive [| \(s:_) _ -> fd s /= s |])
+     [ $(adaptive (Q( \(s:_) _ -> fd s /= s )))
         ==> \(s:ss) _ -> filterCheck (not.p) (fd s) : ss
-     , $(normal [|\_ _ -> True |] [| const True |])
-        ==> $(update [p| _:xs |] [p| xs |] [d| xs = relAlign p ks kv b c h fd |])
+     , $(normal (Q(\_ _ -> True )) (Q( const True )))
+        ==> $(update (P( _:xs )) (P( xs )) (D( xs = relAlign p ks kv b c h fd )))
      ]
-  , $(adaptive [| \ss (v:vs) -> kv v `elem` map ks (filter p ss) |])
+  , $(adaptive (Q( \ss (v:vs) -> kv v `elem` map ks (filter p ss) )))
     ==> \ss (v:_) -> uncurry (:) (extract (kv v) ss)
-  , $(adaptiveSV [p| _ |] [p| _:_ |])
+  , $(adaptiveSV (P( _ )) (P( _:_ )))
     ==> \ss (v:_) -> filterCheck p (c v) : ss
   ]
   where
@@ -302,33 +323,36 @@ relAlign p ks kv b c h fd = Case
                      | otherwise = error "error in filter checking"
 
 \end{code}
+}
 
 \subsection{Describing update policies in selection/projection}
+\label{sec:policy}
 
-With |relAlign|, we can describe various update policies
+With |pAlign|, we can describe various update policies
 for the selection/projection queries. To be concrete,
 consider the following selection/projection query:
 < select Track, Rating, Album, Quantity as v
 < from s
 < where Quantity > 2
+which extract the track, rating, album and quality information from
+those music tracks in the source |s| whose quality is greater than |2|.
 Let us see how to write a single BiGUL program so that its |get|
 does the above query and its |put| describes an intended update policy.
 
 The first \textsc{BiGUL} program is |u0| below.
 \begin{code}
 u0 :: RType -> (Record -> Record) -> BiGUL [Record] [Record]
-u0 d =
-  relAlign
-    (\r -> (r !! 4) > RInt 2)
-    (\s -> (s !! 0, s!!3))
-    (\v -> (v !! 0, v !! 2))
-    $(update [p| (t: _: r: a: q: [])|]
-             [p| (t: r: a: q: []) |]
-             [d| t = Replace; r = Replace; a = Replace; q = Replace |])
-    (\(t: r: a: q: []) -> (t: d: r: a: q: []))
-    (\rs -> Nothing)
+u0 =  pAlign
+        (\r -> (r !! 4) > RInt 2)
+        (\s -> (s !! 0, s!!3))
+        (\v -> (v !! 0, v !! 2))
+        $(update  (P( (t: _: r: a: q: [])))
+                  (P( (t: r: a: q: []) ))
+                  (D( t = Replace; r = Replace; a = Replace; q = Replace )))
+        (\(t: r: a: q: []) -> (t: d: r: a: q: []))
+        (const Nothing)
 \end{code}
-It matches the source records whose |Quantity| is greater than |2|
+It tries to match the source records whose |Quantity| is greater than |2|
 with the view records by the key (|Track|, |Album|).
 There are three cases:
 \begin{itemize}
@@ -350,52 +374,60 @@ delete this record by return |Nothing|.
 
 \end{itemize}
 
-Now if we would like to hide the source record by setting its Quantity to |0|
+Now if we wish to hide the source record by setting its Quantity to |0|
 rather than deleting it if it has no marching view record,
-we can simply change the last line of |u0| and get |u1| as follows.
+we could simply change the last line of |u0| and get |u1| as follows.
 
 \begin{code}
 u1 :: RType -> (Record -> Record) -> BiGUL [Record] [Record]
-u1 d =
-  relAlign
-    (\r -> (r !! 4) > RInt 2)
-    (\s -> (s !! 0, s!!3))
-    (\v -> (v !! 0, v !! 2))
-    $(update [p| (t: _: r: a: q: [])|]
-             [p| (t: r: a: q: []) |]
-             [d| t = Replace; r = Replace; a = Replace; q = Replace |])
-    (\(t: r: a: q: []) -> (t: d: r: a: q: []))
-    (\(t: d: r: a: _: []) -> Just (t: d: r: a: RInt 0:[]))
+u1 =  relAlign
+        (\r -> (r !! 4) > RInt 2)
+        (\s -> (s !! 0, s!!3))
+        (\v -> (v !! 0, v !! 2))
+        $(update  (P( (t: _: r: a: q: [])))
+                  (P( (t: r: a: q: []) ))
+                  (D( t = Replace; r = Replace; a = Replace; q = Replace )))
+        (\(t: r: a: q: []) -> (t: d: r: a: q: []))
+        (\(t: d: r: a: _: []) -> Just (t: d: r: a: RInt 0:[]))
 \end{code}
 
-To be concrete, let us see some concrete running examples of using |u0|.
+To test, let us see some concrete running examples of using |u0|.
 Recall |s| defined in Section \ref{sec:table}. We can confirm that |get| does
 the query given at the start of this subsection.
+{\small
 \begin{verbatim}
-*Brul> get (u0 (RInt (-1)) id) s
+*Brul> get u0 s
 Just
 [[RString "Lullaby",RInt 3,RString "Show",RInt 3],
 [RString "Lovesong",RInt 5,RString "Disintegration",RInt 4],
 [RString "Trust",RInt 4,RString "Wish",RInt 5]]
 \end{verbatim}
-Now suppose that we change the above view to the following:
+}
+Now suppose that we change the above result (view) to the following
+by raising the rating of |Lullaby| from |3| to |4|, raising the quality of |lovesong| from |4| to |7|, and deleting |Trust|:
 \begin{code}
 v =  [ [RString "Lullaby" , RInt 4, RString "Show"  , RInt 3]
      , [RString "Lovesong", RInt 5, RString "Disintegration" , RInt 7]
      ]
 \end{code}
-and we can reflect this change to the source by performing |put| as follows.
+We can reflect these changes to the source by performing |put|.
+{\small
 \begin{verbatim}
-*Brul> put (u0 (RInt (-1)) (fdFun sfdMap vfdMap svMap v)) s v
+*Brul> put u0 s v
 Just
 [[RString "Lullaby",RInt 1989,RInt 4,RString "Galore",RInt 1],
 [RString "Lullaby",RInt 1989,RInt 4,RString "Show",RInt 3],
 [RString "Lovesong",RInt 1989,RInt 5,RString "Galore",RInt 1],
 [RString "Lovesong",RInt 1989,RInt 5,RString "Disintegration",RInt 7]]
 \end{verbatim}
-Note that the above |(fdFun sfdMap vfdMap svMap v)| denotes a function
-generated by applying |fdFun| to several dependency mappings and view |v|.
-We omit the definition of |fdFun| here.
+}
+In the updated source, the changes of rating and quality are correctly reflected,
+and the music track |Trust| is removed.
+
+
+%Note that the above |(fdFun sfdMap vfdMap svMap v)| denotes a function
+%generated by applying |fdFun| to several dependency mappings and view |v|.
+%We omit the definition of |fdFun| here.
 
 \ignore{
 \begin{code}
