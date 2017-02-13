@@ -141,17 +141,17 @@
 \url{http://dx.doi.org/10.1145/1232420.1232424}}
 
 
-\bibitem[\protect\citeauthoryear{Hu and Ko}{Hu and Ko}{2016}]%
+\bibitem[\protect\citeauthoryear{Hu and Ko}{Hu and Ko}{2017}]%
         {Hu-BiGUL-tutorial}
 \bibfield{author}{\bibinfo{person}{Zhenjiang Hu} {and}
-  \bibinfo{person}{Hsiang-Shang Ko}.} \bibinfo{year}{2016}\natexlab{}.
+  \bibinfo{person}{Hsiang-Shang Ko}.} \bibinfo{year}{2017}\natexlab{}.
 \newblock \bibinfo{title}{Principle and Practice of Bidirectional Programming
   in {BiGUL}}.
 \newblock \bibinfo{howpublished}{Draft manuscript for the \textit{Oxford Summer
-  School on Bidirectional Transformations}}.   (\bibinfo{year}{2016}).
+  School on Bidirectional Transformations}}.   (\bibinfo{year}{2017}).
 \newblock
 \showURL{%
-\url{https://bitbucket.org/prl_tokyo/bigul/raw/master/SummerSchool16/paper/paper.pdf}}
+\url{https://bitbucket.org/prl_tokyo/bigul/raw/master/SummerSchool16/paper/BiGUL_tutorial.pdf}}
 
 
 \bibitem[\protect\citeauthoryear{Ko, Zan, and Hu}{Ko et~al\mbox{.}}{2016}]%
@@ -179,6 +179,19 @@
 \newblock
 \showURL{%
 \url{http://grace-center.jp/wp-content/uploads/2016/04/GRACE-TR-2016-03.pdf}}
+
+
+\bibitem[\protect\citeauthoryear{Norell}{Norell}{2007}]%
+        {Norell-thesis}
+\bibfield{author}{\bibinfo{person}{Ulf Norell}.}
+  \bibinfo{year}{2007}\natexlab{}.
+\newblock {\em \bibinfo{title}{Towards a Practical Programming Language based
+  on Dependent Type Theory}}.
+\newblock \bibinfo{thesistype}{Ph.D. Dissertation}. \bibinfo{school}{Chalmers
+  University of Technology}.
+\newblock
+\showURL{%
+\url{http://www.cse.chalmers.se/~ulfn/papers/thesis.html}}
 
 
 \bibitem[\protect\citeauthoryear{Reynolds}{Reynolds}{2002}]%

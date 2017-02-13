@@ -93,6 +93,12 @@ kℕ = k ℕ Nat._≟_
 replace² : BiGUL emptyF (kℕ ⊗ kℕ) (kℕ ⊗ kℕ)
 replace² = prod replace replace
 
+replace²-correctness : Triple Π replace² (λ { ((x' , y') , _ , (v , w)) → x' ≡ v × y' ≡ w })
+replace²-correctness = conseq (λ _ → tt , tt) (prod replace replace) proj₁
+
+replace²-range : TripleR Π replace² Π
+replace²-range = conseq (λ _ → tt) (prod replace replace) (λ _ → tt , tt)
+
 replace²-equal-view-correctness : Triple (uncurry _≡_ ∘ proj₂) replace² (uncurry _≡_ ∘ proj₁ ∩ uncurry _≡_ ∘ Product.map id proj₂)
 replace²-equal-view-correctness =
   conseq
@@ -132,8 +138,8 @@ keepHeight-range =
           (λ { tt → tt , tt })))
     id
 
-makeSquare : BiGUL emptyF (kℕ ⊗ kℕ) kℕ
-makeSquare =
+produceSquare : BiGUL emptyF (kℕ ⊗ kℕ) kℕ
+produceSquare =
   case
     (((λ { (w , _) v → ⌊ w Nat.≟ v ⌋ }) ,
       normal (skip proj₁)
@@ -141,9 +147,9 @@ makeSquare =
      (((λ _ _ → true) ,
       adaptive (λ { _ v → (v , v) }))) ∷ [])
 
-makeSquare-correctness :
-  Triple Π makeSquare (λ { ((w' , h') , (w , h) , v) → w' ≡ v × (w ≡ v → h' ≡ h) × (w ≢ v → w' ≡ h') })
-makeSquare-correctness =
+produceSquare-correctness :
+  Triple Π produceSquare (λ { ((w' , h') , (w , h) , v) → w' ≡ v × (w ≡ v → h' ≡ h) × (w ≢ v → w' ≡ h') })
+produceSquare-correctness =
   case
     ((conseq
         (λ { {(w , h) , v} (_ , e , _) → trueToWitness e })
@@ -156,8 +162,8 @@ makeSquare-correctness =
               w'≡v , (λ w≡v → ⊥-elim (falseToWitness ne w≡v)) , (λ _ → trans w'≡v (sym (v≡v→h'≡v refl))) } }) ∷ᴬ [])
     (λ _ → inj₂ (inj₁ refl))
 
-makeSquare-range : TripleR Π makeSquare Π
-makeSquare-range =
+produceSquare-range : TripleR Π produceSquare Π
+produceSquare-range =
   conseq
     proj₁
     (case
@@ -167,6 +173,73 @@ makeSquare-range =
            (λ _ → tt) ,
          (λ _ → refl , tt)) ∷ᴺ •∷ᴬ []))
     inj₁
+
+resetHeight : BiGUL emptyF (kℕ ⊗ kℕ) kℕ
+resetHeight =
+  case
+    (((λ { (w , _) v → ⌊ w Nat.≟ v ⌋ }) ,
+      normal (skip proj₁)
+             (const true)) ∷
+     (((λ _ _ → true) ,
+      adaptive (λ { _ v → (v , zero) }))) ∷ [])
+
+resetHeight-correctness :
+  Triple Π resetHeight (λ { ((w' , h') , (w , h) , v) → w' ≡ v × (w ≡ v → h' ≡ h) × (w ≢ v → h' ≡ zero) })
+resetHeight-correctness =
+  case
+    ((conseq
+        (λ { {(w , h) , v} (_ , e , _) → trueToWitness e })
+        skip
+        (λ { {.(w , h) , (w , h) , v} (refl , _ , e , _) →
+             (trueToWitness e , (λ _ → refl) , (λ w≢v → ⊥-elim (w≢v (trueToWitness e)))) , (e , tt) , refl , tt })) ∷ᴺ
+     (λ { (w , h) v (tt , _ , ne , _) →
+          (tt , inj₁ (trueFromWitness refl)) ,
+          λ { (w' , h') (w'≡v , v≡v→h'≡0 , _) →
+              w'≡v , (λ w≡v → ⊥-elim (falseToWitness ne w≡v)) , (λ _ → v≡v→h'≡0 refl) } }) ∷ᴬ [])
+    (λ _ → inj₂ (inj₁ refl))
+
+resetHeight-range : TripleR Π resetHeight Π
+resetHeight-range =
+  conseq
+    proj₁
+    (case
+       ((conseq
+           (λ { {(w , h) , v} (w≡v , _) → tt , trueFromWitness w≡v , tt })
+           skip
+           (λ _ → tt) ,
+         (λ _ → refl , tt)) ∷ᴺ •∷ᴬ []))
+    inj₁
+
+resetHeight' : BiGUL emptyF (kℕ ⊗ kℕ) kℕ
+resetHeight' = rearrV var (prod var (k {G = kℕ} zero)) (refl , tt) (return refl) replace²
+
+resetHeight'-correctness : Triple Π resetHeight' (λ { ((w' , h') , _ , v) → w' ≡ v × h' ≡ zero })
+resetHeight'-correctness =
+  conseq
+    (λ _ → _ , tt , refl)
+    (rearrV Π (λ { ((w' , h') , _ , v) → w' ≡ v × h' ≡ zero })
+       (conseq
+          (λ _ → tt)
+          replace²-correctness
+          (λ { {(.u , .v) , (w , h) , (u , v)} ((refl , refl) , _ , _ , _ , 0≡v) →
+                 _ , (refl , sym 0≡v) , (refl , 0≡v) })))
+    (λ { ((_ , p , refl) , _) → p })
+
+resetHeight'-range : TripleR Π resetHeight' ((_≡ zero) ∘ proj₂)
+resetHeight'-range =
+  conseq
+    (λ _ → tt)
+    (rearrV Π
+       (conseq {Q = (_≡ zero) ∘ proj₂}
+          (λ { ((_ , v≡0) , _) → _ , tt , refl , sym v≡0 })
+          (prod
+             replace
+             (conseq
+                (λ { (s≡v , s≡0) → trans (sym s≡v) s≡0 })
+                replace
+                (λ _ → tt)))
+          (_,_ tt)))
+    id
 
 just-lemma : {A : Set} {x y : A} → (Maybe A ∋ just x) ≡ just y → x ≡ y
 just-lemma refl = refl
