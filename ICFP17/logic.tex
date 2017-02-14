@@ -422,6 +422,8 @@ where
 Valid putback triples are inductively defined by the proof rules in \autoref{fig:putback-proof-rules} (which will be explained in \autoref{sec:putback-proof-rules}).
 \end{definition}
 
+Instead of requiring preconditions and postconditions to be syntactic entities drawn from a particular logic, we treat them semantically and will freely use whatever relations that are expressible mathematically (or, if that sounds too lax, in Type Theory~\citep{ML-TT84}).
+
 The meaning of putback triples is given by the following soundness theorem.
 
 \begin{theorem}[soundness of putback triples] \label{thm:putback-soundness}
@@ -451,7 +453,8 @@ For example, |COM((_ :: _))| holds exactly for non-empty lists, and |COM(_ _)| i
 \end{notation}
 
 \begin{notation} \label{notation:angle-brackets}
-An assertion whose body is a comprehension relation, like |(ASSERT(COM(pat || prop)))|, is usually written with the angle brackets omitted, like |(ASSERT(pat || prop))|.
+The angle brackets delimiting a comprehension relation may be omitted where delimitation is unnecessary, like in an assertion containing only a comprehension relation.
+For example, |ASSERT(COM(s v || s = v))| is usually abbreviated to |ASSERT(s v || s = v)|.
 \end{notation}
 
 \begin{definition}
@@ -543,7 +546,7 @@ $\begin{array}[t]{ll}
 
 \end{figure}
 
-In this section we will introduce the putback proof rules for \BiGUL, as shown in \autoref{fig:putback-proof-rules}.
+In this section we will introduce the putback proof rules for \BiGUL, shown in \autoref{fig:putback-proof-rules}.
 Except for the consequence rule (the right one in the second row), every rule corresponds to a \BiGUL\ construct and gives an axiomatic formulation of its semantics.
 For each \BiGUL\ construct, we will introduce its type, which is essential for inferring the types of entities in assertions, and  explain the corresponding proof rule with the help of the operational meaning of the construct.
 We will not, however, go into the rationale behind the design of the constructs, for which the interested reader is referred to \citet[Section~5]{Hu-BiGUL-tutorial}.
@@ -806,7 +809,7 @@ states that (before the rerunning) the adapted source |f s v| and the view~|v| s
 \begin{code}
 Postcondition ~  = ~ (COM(s' s v | R' s' (f s v) v))
 \end{code}
-states that (after the rerunning) |R'|~has been established for the updated source~|s'|, the adapted source |f s v|, and the view~|v|, then we could invoke the consequence rule:
+states that (after the rerunning) |R'|~is established for the updated source~|s'|, the adapted source |f s v|, and the view~|v|, then we could invoke the consequence rule:
 \begin{equation}
 \begin{array}{l}
 |R CAP (NORM M) ~ SUBSETEQ ~ Reentry|
@@ -865,13 +868,13 @@ For example, we tend to omit assertion~1 in practice since we can see that the a
 
 What happens in the adaptive branch is worth tracing.
 After the rerunning of the |case| produces an updated source~|s'|, assertion~4 states that the postcondition (assertion~5) holds for~|s'|, the adapted source |(v, 0)|, and the view~|v|.
-We can then deduce that the updated width~|w'| is~|v| and, by substituting |(v, 0)| for |(w, h)| in the ``retentive'' conjunct |w = v => h' = h| in assertion~4, that the updated height~|h'| is zero, arriving at assertion~6.
-Having |h' = 0| is sufficient for establishing the ``resetting'' conjunct |w /= v => h' = 0| in assertion~7, whose ``retentive'' conjunct |w = v => h' = h| becomes vacuous due to assertion~8.
+We can then deduce that the updated width~|w'| is~|v| and, by substituting |(v, 0)| for |(w, h)| in the ``retentive conjunct'' |w = v => h' = h| in assertion~4, that the updated height~|h'| is zero, arriving at assertion~6.
+Having |h' = 0| is sufficient for establishing the ``resetting conjunct'' |w /= v => h' = 0| in assertion~7, whose ``retentive conjunct'' |w = v => h' = h| is vacuous due to assertion~8.
 \end{example}
 
 \begin{example}[embedding pairs of transformations into \BiGUL]
 The |resetHeight| program in fact exhibits a general programming pattern: a |case| with a normal branch accepting consistent states and leaving the source as it is, and an adaptive branch recovering from inconsistency.
-We can abstract this pattern to the following |emb| program, which takes a pair of (total) forward and backward transformations and embed them into \BiGUL:
+We can abstract this pattern to the following |emb| program, which takes a pair of (total) forward and backward transformations and embeds them into \BiGUL:
 \begin{code}
 emb : Eq V => (S -> V) -> (S -> V -> S) -> (S <~ V)
 emb g p =
