@@ -184,10 +184,7 @@ replaceAll-range n rec rec-t =
                  (λ _ → tt)))
            (λ { {[]ᴹ        } ()
               ; {_ ∷ᴹ []ᴹ   } 1≡n → _ , (1≡n , (λ _ ())) , refl , refl
-              ; {_ ∷ᴹ _ ∷ᴹ _} () }) ,
-         (λ { {[]ᴹ        } ()
-            ; {_ ∷ᴹ []ᴹ   } _ → refl , tt
-            ; {_ ∷ᴹ _ ∷ᴹ _} () })) ∷ᴺ
+              ; {_ ∷ᴹ _ ∷ᴹ _} () })) ∷ᴺ
         (conseq {Q = λ { (x ∷ᴹ y ∷ᴹ ss) →
                            2 + length (toList ss) ≡ n × x ≡ y × ((s' : A) → Any (_≡ s') (toList ss) → x ≡ s')
                        ; _ → ⊥ }}
@@ -215,13 +212,11 @@ replaceAll-range n rec rec-t =
                  id))
            (λ { {[]ᴹ         } ()
               ; {_ ∷ᴹ []ᴹ    } ()
-              ; {x ∷ᴹ y ∷ᴹ ss} p → (x , y ∷ᴹ ss) , p , refl , refl }) ,
-         (λ { {[]ᴹ        } ()
-            ; {_ ∷ᴹ []ᴹ   } ()
-            ; {_ ∷ᴹ _ ∷ᴹ _} _ → refl , refl , tt })) ∷ᴺ []))
+              ; {x ∷ᴹ y ∷ᴹ ss} p → (x , y ∷ᴹ ss) , p , refl , refl })) ∷ᴺ []))
     (λ { {[]ᴹ         } ()
-       ; {_ ∷ᴹ []ᴹ    } (1≡n , _) → inj₁ 1≡n
-       ; {x ∷ᴹ y ∷ᴹ ss} (neq , alleq) → inj₂ (inj₁ (neq , alleq y (here refl) , (λ s' i → alleq s' (there i)))) })
+       ; {_ ∷ᴹ []ᴹ    } (1≡n , _) → inj₁ (1≡n , refl , tt)
+       ; {x ∷ᴹ y ∷ᴹ ss} (neq , alleq) →
+           inj₂ (inj₁ ((neq , alleq y (here refl) , (λ s' i → alleq s' (there i))) , refl , refl , tt)) })
 
 replaceAll-finite-expansionR :
   (l n : ℕ) → n ≤ l → TripleR ((_≡ n) ∘ length ∘ toList ∘ proj₁) (expand (suc l) replaceAllᴮ) (PostR n)

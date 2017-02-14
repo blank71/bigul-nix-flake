@@ -214,7 +214,7 @@ mutual
     []   : {bs' : List (CaseBranch F S V)} → CaseBranchTripleR R [] bs'
     _∷ᴺ_ : {p : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → Bool} {b : BiGUL F S V} {q : ⟦ S ⟧ (μ F) → Bool}
            {bs bs' : List (CaseBranch F S V)} {P : ℙ (⟦ S ⟧ (μ F))} →
-           TripleR (R ∩ (True ∘ uncurry p) ∩ OutOfDomain (List.map proj₁ bs')) b P × (P ⊆ (True ∘ q) ∩ OutOfRangeB bs') →
+           TripleR (R ∩ (True ∘ uncurry p) ∩ OutOfDomain (List.map proj₁ bs')) b P →
            CaseBranchTripleR R bs ((p , normal b q) ∷ bs') → CaseBranchTripleR R ((p , normal b q) ∷ bs) bs'
     •∷ᴬ_ : {p : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → Bool} {f : ⟦ S ⟧ (μ F) → ⟦ V ⟧ (μ F) → ⟦ S ⟧ (μ F)}
            {bs bs' : List (CaseBranch F S V)} →
@@ -222,9 +222,9 @@ mutual
 
   CaseRange : {n : ℕ} {F : Functor n} {S V : U n} {R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))}
               {bs bs' : List (CaseBranch F S V)} → CaseBranchTripleR R bs bs' → ℙ (⟦ S ⟧ (μ F))
-  CaseRange []                  = ∅
-  CaseRange (_∷ᴺ_ {P = P} _ ts) = P ∪ CaseRange ts
-  CaseRange (•∷ᴬ            ts) = CaseRange ts
+  CaseRange             []                          = ∅
+  CaseRange {bs' = bs'} (_∷ᴺ_ {q = q} {P = P} _ ts) = (P ∩ (True ∘ q) ∩ OutOfRangeB bs') ∪ CaseRange ts
+  CaseRange             (•∷ᴬ                    ts) = CaseRange ts
 
 infixr 5 •∷ᴬ_
 
@@ -245,16 +245,16 @@ soundnessR {n} {F} {S} {V} {R} (case ts) =
       {bs bs' : List (CaseBranch F S V)} → CaseBranchTripleR R bs bs' →
       BranchSoundG R (interp-CaseBranch bs) (interp-CaseBranch bs')
     case-soundnessR-lemma [] = tt
-    case-soundnessR-lemma {bs' = bs'} (_∷ᴺ_ {P = P} (t , P⊆) ts)
-      rewrite case-main-cond-lemma bs' =
-      (P , Product.map id (case-out-of-range-lemma bs') ∘ P⊆ , soundnessR t) , case-soundnessR-lemma ts
+    case-soundnessR-lemma {bs' = bs'} (_∷ᴺ_ {P = P} t ts)
+      rewrite case-main-cond-lemma bs' = (P , soundnessR t) , case-soundnessR-lemma ts
     case-soundnessR-lemma (•∷ᴬ ts) = case-soundnessR-lemma ts
 
     case-range-lemma :
       {bs bs' : List (CaseBranch F S V)} (ts : CaseBranchTripleR R bs bs') →
       CaseRange ts ⊆ Range R (interp-CaseBranch bs) (interp-CaseBranch bs') (case-soundnessR-lemma ts)
     case-range-lemma [] ()
-    case-range-lemma {bs' = bs'} (_ ∷ᴺ ts) (inj₁ p) rewrite case-main-cond-lemma bs' = inj₁ p
+    case-range-lemma {bs' = bs'} (_ ∷ᴺ ts) (inj₁ (p , q , out))
+      rewrite case-main-cond-lemma bs' = inj₁ (p , q , case-out-of-range-lemma bs' out)
     case-range-lemma {bs' = bs'} (_ ∷ᴺ ts) (inj₂ r) rewrite case-main-cond-lemma bs' = inj₂ (case-range-lemma ts r)
     case-range-lemma (•∷ᴬ ts) r = case-range-lemma ts r
 soundnessR (conseq R∩Q⊆T t Q⊆P) = consequenceG _ _ _ (soundnessR t) _ Q⊆P _ R∩Q⊆T

@@ -338,9 +338,7 @@ keyAlign-range keq ks kv b c b-t c-eq n rec rec-t =
                     ; {_ ∷ᴹ _ , tt} (_ , ()) })
                  skip
                  (λ _ → tt)))
-           id ,
-         (λ { {[]ᴹ   } _ → refl , tt
-            ; {_ ∷ᴹ _} () })) ∷ᴺ
+           id) ∷ᴺ
         (conseq {Q = λ { []ᴹ → ⊥; (_ ∷ᴹ ss) → suc (length (toList₀ ss)) ≡ n }}
            (λ { {[]ᴹ     , []ᴹ    } (_ , ())
               ; {[]ᴹ     , _ ∷ᴹ _ } (_ , ())
@@ -367,11 +365,10 @@ keyAlign-range keq ks kv b c b-t c-eq n rec rec-t =
                  (λ { {s' , ss'} ((s , ss) , (len-ss≡pred-n , pred-n<n) , s≡s' , ss≡ss') →
                       trans (cong (length ∘ toList₀) (sym ss≡ss')) len-ss≡pred-n , pred-n<n })))
            (λ { {[]ᴹ} ()
-              ; {s ∷ᴹ ss} suc-len-ss≡n → (s , ss) , (cong pred suc-len-ss≡n , pred-lemma suc-len-ss≡n) , refl , refl }) ,
-         (λ { {[]ᴹ   } ()
-            ; {_ ∷ᴹ _} _ → refl , refl , tt })) ∷ᴺ •∷ᴬ •∷ᴬ •∷ᴬ []))
-    (λ { {[]ᴹ   } → inj₁
-       ; {_ ∷ᴹ _} → inj₂ ∘ inj₁ })
+              ; {s ∷ᴹ ss} suc-len-ss≡n →
+                  (s , ss) , (cong pred suc-len-ss≡n , pred-lemma suc-len-ss≡n) , refl , refl })) ∷ᴺ •∷ᴬ •∷ᴬ •∷ᴬ []))
+    (λ { {[]ᴹ   } → inj₁ ∘ (_, (refl , tt))
+       ; {_ ∷ᴹ _} → inj₂ ∘ inj₁ ∘ (_, (refl , refl , tt)) })
 
 keyAlign-finite-expansionR :
   {K : Set} (keq : Decidable (_≡_ {A = K})) (ks : S → K) (kv : V → K) (b : BiGUL F Sᵁ Vᵁ) (c : V → S) →

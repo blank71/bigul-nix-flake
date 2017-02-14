@@ -133,29 +133,27 @@ case-soundness bs R R' sound dom (s , v) sRv =
 BranchSoundG : (R : ℙ (S × V)) → List Branch → List Branch → Set₁
 BranchSoundG R []                      bs' = ⊤
 BranchSoundG R ((p , normal l q) ∷ bs) bs' =
-  (Σ[ P ∈ ℙ S ] (P ⊆ (True ∘ q) ∩ OutOfRange bs') ×
-                SoundG P (Lens.get l)
-                (R ∩ (True ∘ uncurry p) ∩ OutOfDomain (List.map proj₁ bs'))) ×
+  (Σ[ P ∈ ℙ S ] SoundG P (Lens.get l) (R ∩ (True ∘ uncurry p) ∩ OutOfDomain (List.map proj₁ bs'))) ×
   BranchSoundG R bs ((p , normal l q) ∷ bs')
 BranchSoundG R ((p , adaptive f) ∷ bs) bs' = BranchSoundG R bs ((p , adaptive f) ∷ bs')
 
 DecRange : (R : ℙ (S × V)) (bs bs' : List Branch) → BranchSoundG R bs bs' → ℙ S
 DecRange R []                      bs' _                  = ∅
-DecRange R ((p , normal l q) ∷ bs) bs' ((P , _) , soundG) = P ∪ ((False ∘ q) ∩ DecRange R bs ((p , normal l q) ∷ bs') soundG)
+DecRange R ((p , normal l q) ∷ bs) bs' ((P , _) , soundG) = (P ∩ (True ∘ q)) ∪ ((False ∘ q) ∩ DecRange R bs ((p , normal l q) ∷ bs') soundG)
 DecRange R ((p , adaptive f) ∷ bs) bs' soundG             = DecRange R bs ((p , adaptive f) ∷ bs') soundG
 
 Range : (R : ℙ (S × V)) (bs bs' : List Branch) → BranchSoundG R bs bs' → ℙ S
 Range R []                      bs' _                  = ∅
-Range R ((p , normal l q) ∷ bs) bs' ((P , _) , soundG) = P ∪ Range R bs ((p , normal l q) ∷ bs') soundG
+Range R ((p , normal l q) ∷ bs) bs' ((P , _) , soundG) = (P ∩ (True ∘ q) ∩ OutOfRange bs') ∪ Range R bs ((p , normal l q) ∷ bs') soundG
 Range R ((p , adaptive f) ∷ bs) bs' soundG             = Range R bs ((p , adaptive f) ∷ bs') soundG
 
 toDecRange : (R : ℙ (S × V)) (bs bs' : List Branch) (soundG : BranchSoundG R bs bs') →
              Range R bs bs' soundG ⊆ DecRange R bs bs' soundG ∩ OutOfRange bs'
 toDecRange R []                      bs' soundG ()
-toDecRange R ((p , normal l q) ∷ bs) bs' ((P , P⊆ , soundG) , soundGs) (inj₁ ps) = inj₁ ps , proj₂ (P⊆ ps)
-toDecRange R ((p , normal l q) ∷ bs) bs' ((P , P⊆ , soundG) , soundGs) {s} (inj₂ range)
+toDecRange R ((p , normal l q) ∷ bs) bs' ((P , soundG) , soundGs) (inj₁ (ps , q-s≡true , out-bs'-s)) = inj₁ (ps , q-s≡true) , out-bs'-s
+toDecRange R ((p , normal l q) ∷ bs) bs' ((P , soundG) , soundGs) {s} (inj₂ range)
   with toDecRange R bs ((p , normal l q) ∷ bs') soundGs range
-toDecRange R ((p , normal l q) ∷ bs) bs' ((P , P⊆ , soundG) , soundGs) {s} (inj₂ range)
+toDecRange R ((p , normal l q) ∷ bs) bs' ((P , soundG) , soundGs) {s} (inj₂ range)
   | decRange , q-s≡false , out = (inj₂ (q-s≡false , decRange)) , out
 toDecRange R ((p , adaptive f) ∷ bs) bs' soundG range = toDecRange R bs ((p , adaptive f) ∷ bs') soundG range
 
@@ -163,14 +161,14 @@ case-soundnessG-main : (bs bs' : List Branch) (R : ℙ (S × V)) (soundG : Branc
                        (s : S) → DecRange R bs bs' soundG s →
                        Σ[ v ∈ V ] Lens.get (case-lens bs) s ↦ v × R (s , v) × OutOfDomain (List.map proj₁ bs') (s , v)
 case-soundnessG-main []                      bs' R soundG s ()
-case-soundnessG-main ((p , normal l q) ∷ bs) bs' R ((P , P⊆ , soundG) , soundGs) s (inj₁ ps)
+case-soundnessG-main ((p , normal l q) ∷ bs) bs' R ((P , soundG) , soundGs) s (inj₁ (ps , q-s≡true))
   with soundG s ps
-case-soundnessG-main ((p , normal l q) ∷ bs) bs' R ((P , P⊆ , soundG) , soundGs) s (inj₁ ps)
+case-soundnessG-main ((p , normal l q) ∷ bs) bs' R ((P , soundG) , soundGs) s (inj₁ (ps , q-s≡true))
   | v , get↦ , Rsv , p-s-v≡true , out =
-  v , catch-fst (assert proj₁ (P⊆ ps) then get↦ >>= (assert p-s-v≡true then return refl)) (return refl) , Rsv , out
-case-soundnessG-main ((p , normal l q) ∷ bs) bs' R ((P , P⊆ , soundG) , soundGs) s (inj₂ (q-s≡false , range-s))
+  v , catch-fst (assert q-s≡true then get↦ >>= (assert p-s-v≡true then return refl)) (return refl) , Rsv , out
+case-soundnessG-main ((p , normal l q) ∷ bs) bs' R ((P , soundG) , soundGs) s (inj₂ (q-s≡false , range-s))
   with case-soundnessG-main bs ((p , normal l q) ∷ bs') R soundGs s range-s
-case-soundnessG-main ((p , normal l q) ∷ bs) bs' R ((P , P⊆ , soundG) , soundGs) s (inj₂ (q-s≡false , range-s))
+case-soundnessG-main ((p , normal l q) ∷ bs) bs' R ((P , soundG) , soundGs) s (inj₂ (q-s≡false , range-s))
   | v , get↦ , Rsv , p-s-v≡false , out =
   v , catch-snd (assert-fst q-s≡false) (get↦ >>= (assert-not p-s-v≡false then return refl)) , Rsv , out
 case-soundnessG-main ((p , adaptive f) ∷ bs) bs' R soundG s range-s

@@ -38,6 +38,7 @@
 %format `elem` = "{\in}"
 %format . = "{\circ}"
 %format !! = "{!\kern-.75pt!}"
+%format / = "\kern-\smallskipamount{/}\kern-1.5\smallskipamount"
 %format Nat = "\mathbb{N}"
 %format Int = "\mathbb{Z}"
 %format Rational = "\mathbb{Q}"
@@ -675,8 +676,8 @@ which requires that the view matches |vpat| and that any properties about the vi
 After the rearrangement, due to the invertibility restrictions, the new view will retain all the components of the original view; the components may be shuffled around and duplicated, but whatever we knew about the components will remain true.
 The precondition for the inner program~|b| is thus:
 \[ |(COM(s wpat || R s (ENV(wpat))))| \]
-This inner precondition asserts that the new view matches |wpat| and that whatever holds for |(ENV(vpat))| also holds for |(ENV(wpat))|, which is the same as |ENV(vpat)| because of the invertibility restrictions.
-This is why it is beneficial to think of |wpat| also as a pattern, even though that means in general we have to allow non-linear patterns, where multiple occurrences of the same variable indicate implicitly that values at those positions should be equal.
+This inner precondition asserts that the new view matches |wpat| and that whatever holds for |(ENV(vpat))| in the outer precondition also holds here for |(ENV(wpat))|, which is the same as |ENV(vpat)| because of the invertibility restrictions.
+Being able to state this inner precondition is the reason that we think of |wpat| also as a pattern, even though that means in general we have to allow non-linear patterns, where multiple occurrences of the same variable indicate implicitly that values at those positions should be equal.
 When using the rule in actual derivations, the two preconditions will differ only in their view patterns and have the same proposition part.
 Therefore, the view rearrangement rule only changes the shape we expect the view to take, not the properties we know about the content of the view.
 This change-of-perspective interpretation works for the postconditions as well.
@@ -710,13 +711,13 @@ Operationally, the source is transformed using |\ spat -> tpat|, and |b| is exec
 Dual to the view rearrangement rule, the source rearrangement rule also reflects a change of perspective by varying the source patterns.
 Notably, the postcondition for~|b|
 \[ |COM(tpat' tpat v || R' (ENV(tpat')) (ENV(tpat)) v)| \]
-says explicitly that the updated source produced by~|b| should match |tpat|, a requirement often overlooked by novice \BiGUL\ programmers.
-(The pattern |tpat'| is just |tpat| with its variables freshly renamed, to avoid name clashes with those variables in the other occurrence of |tpat|.)
+says explicitly that the updated source produced by~|b| should match |tpat'| (which is just |tpat| with its variables freshly renamed, to avoid name clashes with those variables in the other occurrence of |tpat|), which is a requirement often overlooked by novice \BiGUL\ programmers.
+
 
 \paragraph{Formalisation.}
 
 The rearrangement rules we have presented rely essentially on pattern-matching comprehension relations, but the actual \Agda\ formalisation takes a different approach and avoids modelling pattern-matching comprehension relations entirely.
-The formalisation is sketched here for the curious reader.
+The formalisation is sketched here for the curious (and perhaps dubious) reader.
 We build on \citet{Ko-BiGUL}'s formalisation of pattern matching, which makes use of heavily indexed types to guarantee various kinds of safety.
 To avoid introducing the heavy \Agda\ notation, below we will give a simplified account, hiding all parameters and indices.
 Suppose that we are rearranging the view from |vpat| for type~|V| to |wpat| for type~|W|.
@@ -872,7 +873,7 @@ We can then deduce that the updated width~|w'| is~|v| and, by substituting |(v, 
 Having |h' = 0| is sufficient for establishing the ``resetting conjunct'' |w /= v => h' = 0| in assertion~7, whose ``retentive conjunct'' |w = v => h' = h| is vacuous due to assertion~8.
 \end{example}
 
-\begin{example}[embedding pairs of transformations into \BiGUL]
+\begin{example}[embedding pairs of transformations into \BiGUL] \label{ex:emb}
 The |resetHeight| program in fact exhibits a general programming pattern: a |case| with a normal branch accepting consistent states and leaving the source as it is, and an adaptive branch recovering from inconsistency.
 We can abstract this pattern to the following |emb| program, which takes a pair of (total) forward and backward transformations and embeds them into \BiGUL:
 \begin{code}
@@ -885,10 +886,14 @@ emb g p =
       p
 \end{code}
 The `|Eq V =>|' part in the type of |emb| indicates that we need decidable equality on~|V| for the program to be executable.
-Interestingly, we only require that |g|~and~|p| satisfy \PutGet\ (|(all(s, v)) g (p s v) = v|) to be able to prove the following triple, which generalises what we proved in \autoref{ex:resetHeight}:
+It is easy to see that |resetHeight = emb fst (\ _ v -> (v, 0))|.
+What we proved for |resetHeight| in \autoref{ex:resetHeight} can be generalised to the following triple for |emb g p|, where |g|~is used to define consistency:
 \begin{code}
 (ASSERT(_ _)) ~ emb g p ~ (ASSERT(s' s v | g s' = v && (g s = v => s' = s) && (g s /= v => s' = p s v)))
 \end{code}
+Interestingly, to prove this triple, we only require |g|~and~|p| to satisfy \PutGet\ (|(all(s, v)) g (p s v) = v|); \GetPut\ of |emb g p| arises from the logic of |emb| itself and does not depend on |g|~and~|p|.
+Indeed, in the case of |resetHeight|, the pair of transformations being embedded only satisfy \PutGet.
+
 On the other hand, to prove that the putback behaviour of |emb g p| completely coincides with~|p|, both \PutGet\ and \GetPut\ (|all(s) p s (g s) = s|) are required:
 \begin{code}
 (ASSERT(_ _))
@@ -897,14 +902,14 @@ case
     (ASSERT(s v | g s = v))
     skip g
     (ASSERT(s' s _ | s' = s))
-    (ASSERT(s' s _ | p s v = s' && g s' = v))(ASSERTNUMBER *1)
+    (ASSERT(s' s _ | s' = p s v && g s' = v))(ASSERTNUMBER *1)
   adaptive _ _
     (ASSERT(s v | g s /= v))
     (ASSERT(s v | g (p s v) = v))(ASSERTNUMBER *2)
     p
-    (ASSERT(s' s v | p (p s v) v = s'))
-    (ASSERT(s' s v | p s v = s'))(ASSERTNUMBER *3)
-(ASSERT(s' s v | p s v = s'))
+    (ASSERT(s' s v | s' = p (p s v) v))
+    (ASSERT(s' s v | s' = p s v))(ASSERTNUMBER *3)
+(ASSERT(s' s v | s' = p s v))
 \end{code}
 \GetPut\ is used for assertion~1, and \PutGet\ is used for assertion~2.
 Assertion~3 requires the \PutTwice\ property:
@@ -915,13 +920,25 @@ which is known to follow from \PutGet\ and \GetPut.
 \section{Theory of range triples}
 \label{sec:range-triples}
 
+We have seen in \autoref{ex:emb} that any pair of transformations satisfying only \PutGet\ can be embedded into \BiGUL\ and become well-behaved by using the |emb| program to wrap extra logic around the transformations to achieve \GetPut, though at the expense of not having exactly the same putback behaviour as the backward transformation being embedded.
+In particular, |resetHeight| in \autoref{ex:resetHeight} can be seen as |emb fst reset| where |reset = \ _ v -> (v, 0)|.
+There is, however, a way to embed |reset| precisely, which is to express it directly in terms of \BiGUL's constructs:
 \begin{code}
 alwaysResetHeight : (Nat , Nat) <~ Nat
-alwaysResetHeight =
-  rearrV v -> (v, 0)
-       replace
-    *  replace
+alwaysResetHeight =  rearrV v -> (v, 0)
+                          replace
+                       *  replace
 \end{code}
+We can prove that the putback behaviour of |alwaysResetHeight| coincides with |reset| by deriving the putback triple |(ASSERT(_ _)) alwaysResetHeight (ASSERT(s' _ v || s' = (v, 0)))|.
+By \autoref{thm:well-behavedness}, the |put| and |get| semantics of |alwaysResetHeight| must form a well-behaved pair, so we can actually achieve precise embedding of |reset|'s putback behaviour and well-behavedness at the same time and without introducing the extra logic of |emb|\kern1pt!
+There is, of course, no free lunch:  |alwaysResetHeight| has a serious disadvantage compared to |emb fst reset|.
+By \autoref{thm:partial-forward-consistency}, we have
+\[ |(GRAPH(get (emb fst reset)) ~ SUBSETEQ ~ (COM((w, _) v || w = v))| \AND |(GRAPH(get alwaysResetHeight)) ~ SUBSETEQ ~ (COM((w, 0) v || w = v))| \PERIOD \]
+In fact, both inclusions can be strengthened to equalities, so |get alwaysResetHeight| has a strictly smaller domain (which is the subset of inputs that a potentially partial transformation can successfully map to a result).
+However, we do not have the necessary machinery to strengthen the inclusions to equalities yet.
+More generally, as noted below \autoref{thm:partial-forward-consistency}, we still need to develop an additional piece of machinery so that we can know more about forward behaviour.
+
+
 
 \begin{theorem}[soundness of range triples] \label{thm:range-soundness}
 Let |b : S <~ V|, |R : (POWER(S TIMES V))|, and |P' : (POWER S)|.
@@ -932,13 +949,13 @@ Thanks to well-behavedness, we can rewrite the right-hand side of \autoref{thm:r
 
 \begin{lemma}
 The conclusion of \autoref{thm:range-soundness} is equivalent to
-\[ (|(all(s')) ~ P' s' ~ => ~ (some(s, v)) ~ put b s v = Just s' ~ && ~ R s v|) \quad|&&|\quad |(GRAPH(get b)) CAP (COM(s _ || P' s)) ~ SUBSETEQ ~ R| \]
+\[ (|(all(s')) ~ P' s' ~ => ~ (some(s, v)) ~ R s v ~ && ~ put b s v = Just s'|) \quad|&&|\quad |(GRAPH(get b)) CAP (COM(s _ || P' s)) ~ SUBSETEQ ~ R| \]
 \end{lemma}
 
 The left conjunct is the primary way in which we think about these new triples: if |(ASSERTRANGE R) b (ASSERTRANGE P')| can be derived, then the \emph{range} of updated sources produced by applying |put b| to those inputs satisfying~|R| will be at least~|P'|.
 Hence the name \emph{range triples}.
 The right conjunct says that there is a ``side effect'' when we think about these triples in the putback direction: the subset of inputs considered will be forced to include those related by |get| with its domain restricted to~|P'|.
-So, for example, we will not be able to deduce |(ASSERTRANGE(m n || m = n+1)) replace (ASSERTRANGE(_))| even though the left conjunct is true for this pair of |R|~and~|P'|.
+So, for example, we will not be able to deduce |(ASSERTRANGE(m n || m = n + 1)) replace (ASSERTRANGE(_))| even though the left conjunct is true for this pair of |R|~and~|P'|.
 This ``side effect'' normally does not get in the way, though, since the preconditions we specify are normally larger than the consistency relations, which in turn contain the |get| functions.
 
 \begin{theorem}[total forward consistency] \label{thm:total-forward-consistency}
@@ -999,12 +1016,12 @@ $\begin{array}{c}
 
 \rulevsep
 
-$\begin{array}{ll}
+$\begin{array}{cl}
 |all(n = (normal M exit E INNER b) `elem` branches)| \\
-\quad |(ASSERTRANGE(R CAP (NORM M))) ~ b ~ (ASSERTRANGE P'_n)|
-\rulehsep (\,|P'_n ~ SUBSETEQ ~ (NORM E)|\,) \\ \cline{1-1}
-\multicolumn{1}{c}{|(ASSERTRANGE R) ~ case branches ~ (ASSERTRANGE(CaseRange))|}
-& |where CaseRange = BIGCUP ~ [ P'_n || n = (normal ...) `elem` branches ]|
+|(ASSERTRANGE(R CAP (NORM M))) ~ b ~ (ASSERTRANGE P'_n)|
+& |where| \\ \cline{1-1}
+|(ASSERTRANGE R) ~ case branches ~ (ASSERTRANGE(CaseRange))|
+& \quad |CaseRange = BIGCUP ~ [ P'_n CAP (NORM E) || n = (normal M exit E INNER b) `elem` branches ]|
 \end{array}$
 
 \caption{Range proof rules}
@@ -1017,21 +1034,20 @@ Let |b : S <~ V|, |R : (POWER(S TIMES V))|, |P' : (POWER S)|, and |Q' : (POWER S
 \[ \IF |(ASSERT R) ~ b ~ (ASSERT(s' _ _ || Q' s')) (ASSERTRANGE P')| \THEN |P' SUBSETEQ Q'| \PERIOD \]
 \end{lemma}
 
-\autoref{lem:branch-range-containment}
-
+\begin{example}[embedding pairs of transformations in \BiGUL]
+Straightforward.
 \begin{code}
-(ASSERTRANGE(_ (v, w) | v = w))
-
-(ASSERTRANGE((s, t) (v, w) | s = v && t = w))
-   (ASSERTRANGE(s v | s = v))
-   replace
-   (ASSERTRANGE _)
-*  (ASSERTRANGE(t w | t = w))
-   replace
-   (ASSERTRANGE _)
-(ASSERTRANGE _)
-(ASSERTRANGE((s, t) | s = t))
+(ASSERTRANGE(_ _))
+case
+  normal s v | g s = v exit _
+    (ASSERTRANGE(s v | g s = v))
+    skip g
+    (ASSERTRANGE(_))
+  adaptive _ _
+    p
+(ASSERTRANGE(_))
 \end{code}
+\end{example}
 
 \begin{example}[rectangle width updating --- always resetting the height]
 Verify the range of |alwaysResetHeight|:
@@ -1042,74 +1058,18 @@ alwaysResetHeight =
   rearrV v -> (v, 0)
     (ASSERTRANGE(_ (_ , 0)))
        (ASSERTRANGE(_ _))
+       (ASSERTRANGE(w v | w = v))
        replace
        (ASSERTRANGE(_))
-    *  (ASSERTRANGE(_ 0))
-       (ASSERTRANGE(s v | s = v))
+    *  (ASSERTRANGE(_ 0)) (ASSERTRANGENUMBER *1)
+       (ASSERTRANGE(h v | h = v)) (ASSERTRANGENUMBER *2)
        replace
-       (ASSERTRANGE(0))
+       (ASSERTRANGE(_))
+       (ASSERTRANGE(0)) (ASSERTRANGENUMBER *3)
     (ASSERTRANGE((_ , 0)))
   (ASSERTRANGE((_ , 0)))
 \end{code}
 \end{example}
-
-\begin{example}[rectangle width updating --- keeping the height-to-width ratio]
-\label{ex:keepRatio}
-We need to change the type of width and height to~|Rational|.
-\begin{code}
-keepRatio : (Rational , Rational) <~ Rational
-keepRatio =
-  (ASSERT(_ v | v /= 0))
-  case
-    adaptive (0, _) _
-      \ (_ , h) v -> (v, h)
-    normal (w, _) v | w == v exit _
-      skip fst
-    adaptive _ _
-      \ (w, h) v -> (v, h TIMES (v/w))
-  (ASSERT((w', h') (w, h) v | w' = v && (w = 0 => h' = h) && (w /= 0 => h'/w' = h/w)))
-  (ASSERTRANGE((w, _) | w /= 0))
-\end{code}
-\end{example}
-
-\begin{code}
-replaceHead =
-  (ASSERT((_ :: _) _))
-  rearrS (s::ss) -> (s, ss)
-    (ASSERT((_ , _) _))
-    rearrV v -> (v, ())
-      (ASSERT((_ , _) (_ , ())))
-         (ASSERT(_ _))
-         replace
-         (ASSERT(s' _ v | s' = v)) (ASSERTRANGE(_))
-      *  (ASSERT(_ ()))
-         (ASSERT(ss () | const () ss = ()))
-         skip const ()
-         (ASSERT(ss' ss _  | ss' = ss)) (ASSERTRANGE(_))
-         (ASSERT(ss' ss () | ss' = ss))
-      (ASSERT((s', ss') (s, ss) (v, ()) | s' = v && ss' = ss)) (ASSERTRANGE((_ , _)))
-    (ASSERT((s', ss') (s, ss) v | s' = v && ss' = ss)) (ASSERTRANGE((_ , _)))
-  (ASSERT((s'::ss') (s::ss) v | s' = v && ss' = ss)) (ASSERTRANGE((_ :: _)))
-  (ASSERT((s'::ss') ss v | s' = v && ss' = tail ss))
-\end{code}
-
-\begin{code}
-(ASSERT(_ _))
-case
-  normal (_ :: _) _ exit _
-    (ASSERT((_ :: _) _))
-    replaceHead
-    (ASSERT((s'::ss') ss v | s' = v && ss' = tail ss)) (ASSERTRANGE((_ :: _)))
-  adaptive _ _
-    (ASSERT(not (COM((_ :: _) _))))
-    (ASSERT([] _))
-    \ _ v -> [v]
-    (ASSERT'(reentry)(COM((_ :: _) _) [v] v))
-    (ASSERT'(postcondition)(all(ss') Post ss' [v] v => Post ss' [] v))
-  (ASSERT'(coverage)(COM((_ :: _) _) CUP (COM(_ _))))
-  (ASSERT'(disjointness)(True))
-(ASSERT(Post @ (COM((s'::ss') ss v | s' = v && ss' = tail ss)))) (ASSERTRANGE((_ :: _)))
-\end{code}
 
 \section{Recursion}
 \label{sec:recursion}

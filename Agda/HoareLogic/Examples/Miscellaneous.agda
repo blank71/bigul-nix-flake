@@ -76,12 +76,11 @@ emb-range g p =
   conseq
     (λ _ → tt)
     (case
-       (((conseq
-            (λ { (eq , _) → tt , trueFromWitness eq , tt })
-            skip
-            id) ,
-         (λ _ → refl , tt)) ∷ᴺ •∷ᴬ []))
-    inj₁
+       ((conseq
+           (λ { (eq , _) → tt , trueFromWitness eq , tt })
+           skip
+           id) ∷ᴺ •∷ᴬ []))
+    (λ _ → inj₁ (tt , refl , tt))
 
 
 emptyF : Functor 0
@@ -170,9 +169,8 @@ produceSquare-range =
        ((conseq
            (λ { {(w , h) , v} (w≡v , _) → tt , trueFromWitness w≡v , tt })
            skip
-           (λ _ → tt) ,
-         (λ _ → refl , tt)) ∷ᴺ •∷ᴬ []))
-    inj₁
+           (λ _ → tt)) ∷ᴺ •∷ᴬ []))
+    (λ _ → inj₁ (tt , refl , tt))
 
 resetHeight : BiGUL emptyF (kℕ ⊗ kℕ) kℕ
 resetHeight =
@@ -206,9 +204,8 @@ resetHeight-range =
        ((conseq
            (λ { {(w , h) , v} (w≡v , _) → tt , trueFromWitness w≡v , tt })
            skip
-           (λ _ → tt) ,
-         (λ _ → refl , tt)) ∷ᴺ •∷ᴬ []))
-    inj₁
+           (λ _ → tt)) ∷ᴺ •∷ᴬ []))
+    (λ _ → inj₁ (tt , refl , tt))
 
 resetHeight' : BiGUL emptyF (kℕ ⊗ kℕ) kℕ
 resetHeight' = rearrV var (prod var (k {G = kℕ} zero)) (refl , tt) (return refl) replace²
@@ -314,6 +311,5 @@ module _ (Rational : Set) (_≟_ : Decidable (_≡_ {A = Rational}))
                     (λ { {(w , h) , v} (w≡v , w≢zero) →
                          subst (_≢ zero) w≡v w≢zero , trueFromWitness w≡v , falseFromWitness w≢zero , tt })
                     skip
-                    (λ _ → tt) ,
-                  (λ _ → refl , tt)) ∷ᴺ •∷ᴬ []))
-      inj₁
+                    (λ _ → tt)) ∷ᴺ •∷ᴬ []))
+      (inj₁ ∘ (_, (refl , tt)))
