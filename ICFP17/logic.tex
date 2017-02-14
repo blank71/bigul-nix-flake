@@ -355,12 +355,14 @@ Let us consider a simple problem where the source is a pair of numbers represent
 \begin{itemize}
 \item Keeping the height (the typical ``least-change'' strategy, \autoref{ex:keepHeight})
 \item Resetting the height to zero if inconsistent (invalidating associated data and leaving them for the source side to update, \autoref{ex:resetHeight})
-\item Keeping the height-to-width ratio (maintaining some kind of internal consistency, \autoref{ex:keepRatio})
+\item Deciding to keep or reset the height depending on whether the difference between the source width and the view is small enough (a more flexible variation of the above one)
+\item Keeping the height-to-width ratio (maintaining some kind of internal consistency on the source side)
+\item Using the height as a counter that is incremented every time an inconsistency is repaired (bizarre for rectangle width updating but sensible under some other interpretations)
 \end{itemize}
 
-They maintain the same consistency but have different retentive behaviour.
+They maintain the same consistency relation but have different retentive behaviour.
 
-There are, of course, other strategies, like deciding to keep or reset the height depending on whether the difference between the width and the view is small enough, or using the height as an update counter that is incremented every time an inconsistency is repaired --- the possibilities are already endless for a simple problem like rectangle width updating, and even more so in complex, real-world scenarios.
+There are already many possibilities for a simple problem like rectangle width updating, and even more in complex, real-world scenarios.
 
 In an instance~\citep{Anjorin-BenchmarX-reloaded}, the \BiGUL\ program skipping all the dynamic checks runs about 20 times faster.
 
@@ -402,8 +404,8 @@ Let |l, r : S <~ V|.
 \[ \IF |put l = put r| \THEN |get l = get r| \PERIOD \]
 \end{theorem}
 
-Programming a putback transformation is comparable to programming with states:
-the \BiGUL\ programmer is given a source state and a view state, and manipulates the two states with the aim of transferring all information in the view to the source; in the end, the updated source is returned as the result of the transformation.
+Programming a putback transformation in \BiGUL\ is comparable to programming with states:
+the \BiGUL\ programmer is given a source state and a view state, and manipulates the two states with the aim of transferring all information in the view to the source; in the end, the updated source is returned as the result of the putback transformation.
 Reasoning about \BiGUL\ programs thus consists of tracking the properties satisfied by the states at each step, and it should not come as a surprise that a Hoare-style logic is well suited for performing this kind of reasoning about states.
 Before introducing Hoare-style triples for \BiGUL\ programs, let us fix our notation of relations (for specifying preconditions and postconditions).
 
@@ -413,13 +415,9 @@ When a relation~|R| of this type relates elements |x_1 : A_1|\,, |x_2 : A_2|\,, 
 \end{notation}
 
 \begin{definition}
-A \emph{putback triple} is a \BiGUL\ program |b : S <~ V| surrounded by two \emph{assertions}:
+A \emph{putback triple} is a \BiGUL\ program |b : S <~ V| surrounded by two \emph{putback assertions}:
 \[ |(ASSERT R) ~ b ~ (ASSERT R')| \]
-where
-\begin{itemize}
-\item |R : (POWER(S TIMES V))| is the \emph{precondition} (on the original source and view), and
-\item |R' : (POWER(S TIMES S TIMES V))| is the \emph{postcondition} (on the updated source, original source, and view).
-\end{itemize}
+where |R : (POWER(S TIMES V))| is the \emph{precondition} (on the original source and the view) and |R' : (POWER(S TIMES S TIMES V))| is the \emph{postcondition} (on the updated source, the original source, and the view).
 Valid putback triples are inductively defined by the proof rules in \autoref{fig:putback-proof-rules} (which will be explained in \autoref{sec:putback-proof-rules}).
 \end{definition}
 
@@ -477,7 +475,7 @@ That is, if we can prove that a putback transformation establishes consistency~|
 We call \autoref{thm:partial-forward-consistency} \emph{partial} forward consistency for two reasons.
 The first reason is that \autoref{thm:partial-forward-consistency} does not guarantee that the entire graph of the forward transformation will be contained in~|C| --- the containment is guaranteed only for the part of the graph that falls within~|R|.
 In practice, this makes \autoref{thm:partial-forward-consistency} not very helpful unless |R|~is trivially true, in which case the entire graph will indeed be contained in~|C|.
-Even in this case, though, there is still the second reason: \autoref{thm:partial-forward-consistency} says nothing about the totality/partiality of the forward transformation, i.e., on which subset of input sources the forward transformation can successfully produce results.
+Even in this case, though, there is still the second reason: \autoref{thm:partial-forward-consistency} says nothing about the totality/partiality of the forward transformation, i.e., on which subset of sources the forward transformation can successfully produce results.
 We will augment \autoref{thm:partial-forward-consistency} to get a practically useful version, which will be \autoref{thm:total-forward-consistency}.
 But before that, let us look at the concrete putback proof rules and some examples of putback reasoning.
 
@@ -572,8 +570,8 @@ The precondition thus requires that the view can be computed from the source by~
 Given two \BiGUL\ programs |l : S <~ V| and |r : T <~ W|, we can form the product of the two programs |l * r : (S TIMES T) <~ (V TIMES W)|.
 If two putback triples with preconditions |L|~and~|R| have been established for |l|~and~|r|, the precondition of the product program will be
 \[ |L * R ~ = ~ (COM((s, t) (v, w) || L s v && R t w))| \]
-Its postcondition is analogous.
-This relation-level `|*|' operator can (indeed) be seen as a simple variant of separating conjunction~\citep{Reynolds-separation-logic}, constructing a relation on pairs from one relation on all the first components and the other on all the second components.
+The relation-level `|*|'~operator can (indeed) be seen as a simple variant of separating conjunction~\citep{Reynolds-separation-logic}, and can be defined arity-generically to construct an relation on $n$~pairs from an $n$-ary relation on all the first components and the other on all the second components.
+The postcondition can then be stated also in terms of this `|*|'~operator.
 
 \begin{example}[parallel replacement] \label{ex:replace-squared}
 We can now construct simple derivations like the following one for |replace * replace|, which we use as an example to explain our derivation format:
@@ -894,7 +892,7 @@ What we proved for |resetHeight| in \autoref{ex:resetHeight} can be generalised 
 Interestingly, to prove this triple, we only require |g|~and~|p| to satisfy \PutGet\ (|(all(s, v)) g (p s v) = v|); \GetPut\ of |emb g p| arises from the logic of |emb| itself and does not depend on |g|~and~|p|.
 Indeed, in the case of |resetHeight|, the pair of transformations being embedded only satisfy \PutGet.
 
-On the other hand, to prove that the putback behaviour of |emb g p| completely coincides with~|p|, both \PutGet\ and \GetPut\ (|all(s) p s (g s) = s|) are required:
+On the other hand, if we have both \PutGet\ and \GetPut\ (|all(s) p s (g s) = s|), then we can derive a stronger triple saying that the putback behaviour of |emb g p| completely coincides with~|p|:
 \begin{code}
 (ASSERT(_ _))
 case
@@ -917,7 +915,7 @@ Assertion~3 requires the \PutTwice\ property:
 which is known to follow from \PutGet\ and \GetPut.
 \end{example}
 
-\section{Theory of range triples}
+\section{Range triples}
 \label{sec:range-triples}
 
 We have seen in \autoref{ex:emb} that any pair of transformations satisfying only \PutGet\ can be embedded into \BiGUL\ and become well-behaved by using the |emb| program to wrap extra logic around the transformations to achieve \GetPut, though at the expense of not having exactly the same putback behaviour as the backward transformation being embedded.
@@ -931,41 +929,71 @@ alwaysResetHeight =  rearrV v -> (v, 0)
 \end{code}
 We can prove that the putback behaviour of |alwaysResetHeight| coincides with |reset| by deriving the putback triple |(ASSERT(_ _)) alwaysResetHeight (ASSERT(s' _ v || s' = (v, 0)))|.
 By \autoref{thm:well-behavedness}, the |put| and |get| semantics of |alwaysResetHeight| must form a well-behaved pair, so we can actually achieve precise embedding of |reset|'s putback behaviour and well-behavedness at the same time and without introducing the extra logic of |emb|\kern1pt!
-There is, of course, no free lunch:  |alwaysResetHeight| has a serious disadvantage compared to |emb fst reset|.
+There is no free lunch though: |alwaysResetHeight| has a serious disadvantage compared to |emb fst reset|.
 By \autoref{thm:partial-forward-consistency}, we have
-\[ |(GRAPH(get (emb fst reset)) ~ SUBSETEQ ~ (COM((w, _) v || w = v))| \AND |(GRAPH(get alwaysResetHeight)) ~ SUBSETEQ ~ (COM((w, 0) v || w = v))| \PERIOD \]
-In fact, both inclusions can be strengthened to equalities, so |get alwaysResetHeight| has a strictly smaller domain (which is the subset of inputs that a potentially partial transformation can successfully map to a result).
-However, we do not have the necessary machinery to strengthen the inclusions to equalities yet.
-More generally, as noted below \autoref{thm:partial-forward-consistency}, we still need to develop an additional piece of machinery so that we can know more about forward behaviour.
+\[ |(GRAPH(get (emb fst reset)) ~ SUBSETEQ ~ (COM((w, _) v || w = v))| \AND |(GRAPH(get alwaysResetHeight)) ~ SUBSETEQ ~ (COM((w, 0) v || w = v))| \]
+so both |get (emb fst reset)| and |get alwaysResetHeight| behave like |fst|.
+In fact, both inclusions can be strengthened to equalities, enabling us to distinguish |get (emb fst reset)|, which can compute successfully on all inputs, from |get alwaysResetHeight|, which fails to compute on inputs whose second component is non-zero.
+However, we do not have the necessary machinery to strengthen the inclusions to equalities yet --- what is missing here is the ability to estimate the \emph{domain} of a forward transformation, i.e., the subset of sources on which the forward transformation can compute successfully.
+To make such estimates for \BiGUL\ programs, which are understood as putback transformations, the key insight is that, for a well-behaved pair of |put| and |get|, the domain of |get| coincides with the \emph{range} of |put|, i.e., the subset of sources that can be produced by |put|.
+(To see the coincidence, observe that \ref{prop:PutGet} (as stated in \autoref{thm:well-behavedness}) can be read roughly as ``if |s'|~is produced by |put b|, i.e., |s'|~is in the range of |put b|, then |get b| will compute successfully on~|s'|, i.e., |s'|~will be in the domain of~|get b|'', and \ref{prop:GetPut} says the converse.)
+The problem with |alwaysResetHeight| is now clear: it can only produce the sources whose second component is zero, so |get alwaysResetHeight| can compute successfully only on these sources.
+In contrast, |emb fst reset| is capable of producing all possible pairs.
+Our way ahead is to develop machinery for making such range estimates reliably, and that machinery is a second set of Hoare-style triples.
 
+\subsection{Theory of range triples}
 
+\begin{definition}
+A \emph{range triple} is a \BiGUL\ program |b : S <~ V| surrounded by two \emph{range assertions}:
+\[ |(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P')| \]
+where |R : (POWER(S TIMES V))| is the precondition (on the original source and the view) and |P' : (POWER S)| is the postcondition (on the updated source).
+Valid range triples are inductively defined by the proof rules in \autoref{fig:range-proof-rules} (which will be explained in \autoref{sec:range-proof-rules}).
+\end{definition}
+
+While the intended interpretation of a range triple for~|b| is about the range of |put b|, we actually need a (slightly) stronger interpretation about |get b| (to make \autoref{thm:total-forward-consistency} work), as stated by the following soundness theorem, whose statement is, in a sense, dual to \autoref{thm:putback-soundness}.
 
 \begin{theorem}[soundness of range triples] \label{thm:range-soundness}
 Let |b : S <~ V|, |R : (POWER(S TIMES V))|, and |P' : (POWER S)|.
 \[ \IF |(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P')| \THEN |(all(s)) ~ P' s ~ => ~ (some(v)) ~ get b s = Just v ~ && ~ R s v| \PERIOD \]
 \end{theorem}
 
-Thanks to well-behavedness, we can rewrite the right-hand side of \autoref{thm:range-soundness} into a statement primarily about |put|:
+We can recover the intended interpretation of range triples by rewriting the right-hand side of \autoref{thm:range-soundness} into an equivalent statement primarily about |put|:
 
-\begin{lemma}
+\begin{lemma} \label{lem:range-interpretation}
 The conclusion of \autoref{thm:range-soundness} is equivalent to
 \[ (|(all(s')) ~ P' s' ~ => ~ (some(s, v)) ~ R s v ~ && ~ put b s v = Just s'|) \quad|&&|\quad |(GRAPH(get b)) CAP (COM(s _ || P' s)) ~ SUBSETEQ ~ R| \]
 \end{lemma}
 
-The left conjunct is the primary way in which we think about these new triples: if |(ASSERTRANGE R) b (ASSERTRANGE P')| can be derived, then the \emph{range} of updated sources produced by applying |put b| to those inputs satisfying~|R| will be at least~|P'|.
-Hence the name \emph{range triples}.
-The right conjunct says that there is a ``side effect'' when we think about these triples in the putback direction: the subset of inputs considered will be forced to include those related by |get| with its domain restricted to~|P'|.
-So, for example, we will not be able to deduce |(ASSERTRANGE(m n || m = n + 1)) replace (ASSERTRANGE(_))| even though the left conjunct is true for this pair of |R|~and~|P'|.
-This ``side effect'' normally does not get in the way, though, since the preconditions we specify are normally larger than the consistency relations, which in turn contain the |get| functions.
+The left conjunct in \autoref{lem:range-interpretation} is the primary way in which we think about the range triples: if |(ASSERTRANGE R) b (ASSERTRANGE P')| can be derived, then the range of updated sources produced by applying |put b| to those inputs satisfying~|R| will be at least~|P'|.
+The right conjunct in \autoref{lem:range-interpretation} says that there is a ``side effect'' when we think about these triples in the putback direction: the subset of input pairs considered will be forced to include those related by |get| with its domain restricted to~|P'|.
+So, for example, we will not be able to deduce |(ASSERTRANGE(m n || m = n + 1)) replace (ASSERTRANGE(_))| even though the left conjunct in \autoref{lem:range-interpretation} is true for this pair of |R|~and~|P'|.
+This ``side effect'' normally does not prevent us from deriving range triples, though, since the preconditions we specify are normally larger than the consistency relations, which in turn contain the |get| functions.
+
+Back in \autoref{sec:putback-triples}, where we only had putback triples, \autoref{thm:partial-forward-consistency} only enabled us to understand the forward behaviour of \BiGUL\ programs to a limited extent.
+Now, with range triples, we can prove a stronger and satisfactory result.
 
 \begin{theorem}[total forward consistency] \label{thm:total-forward-consistency}
-\[ |(ASSERT R) ~ b ~ (ASSERT(s' _ v || C s' v))| \quad|&&|\quad |(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P')| \quad|=>|\quad |(all(s)) P' s => (some(v)) get b s = Just v && C s v| \]
+Let |b : S <~ V|, |R : (POWER(S TIMES V))|, |C : (POWER(S TIMES V))|, and |P' : (POWER S)|.
+\[ \IF |(ASSERT R) ~ b ~ (ASSERT(s' _ v || C s' v))| \AND |(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P')| \THEN |(all(s)) ~ P' s ~ => ~ (some(v)) ~ get b s = Just v ~ && ~ C s v| \PERIOD \]
 \end{theorem}
 
-We will write
-\[ |(ASSERT R) ~ b ~ (ASSERT R') (ASSERTRANGE P)| \quad\text{as an abbreviation of}\quad |(ASSERT R) ~ b ~ (ASSERT R') ~ ~ && ~ ~ (ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \]
+\begin{proof}
+Suppose that |P'|~holds for a source~|s|.
+By the range triple and \autoref{thm:range-soundness}, |get b s| will compute successfully to some view~|v| such that |R s v| holds, making |s|~and~|v| fall into |(GRAPH(get b)) CAP R|.
+The putback triple and \autoref{thm:partial-forward-consistency} can then take over and establish |C s v| as required.
+\end{proof}
 
-\section{The range proof rules}
+That is, by supplementing a putback triple for~|b| with a range triple with the same precondition, we can know on which subset of sources |get b| will compute successfully and that the behaviour of |get b| conforms to the consistency relation.
+
+Now we have enough machinery to tell us all we want to know about the bidirectional behaviour of a \BiGUL\ program:
+By deriving a putback triple |(ASSERT R) b (ASSERT(s' s v || C s' v && R' s' s v))| to reason about the behaviour of~|b|, we know that |put b| will compute successfully on~|R|, establish consistency~|C|, and have retentive behaviour~|R'|.
+Then, by additionally deriving a range triple |(ASSERTRANGE R) b (ASSERTRANGE P')| to estimate the range of~|b|, we know that |get b| will compute successfully on~|P'| and conform to the same consistency relation~|C| established by |put b|.
+Notably, as we will see next, derivations of range triples are usually significantly easier than derivations of putback triples, so in practice there is usually not much more work to do than deriving putback triples.
+
+%We will write
+%\[ |(ASSERT R) ~ b ~ (ASSERT R') (ASSERTRANGE P)| \quad\text{as an abbreviation of}\quad |(ASSERT R) ~ b ~ (ASSERT R') ~ ~ && ~ ~ (ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \]
+
+\subsection{The range proof rules}
 \label{sec:range-proof-rules}
 
 \begin{figure}
@@ -1029,10 +1057,10 @@ $\begin{array}{cl}
 
 \end{figure}
 
-\begin{lemma} \label{lem:branch-range-containment}
-Let |b : S <~ V|, |R : (POWER(S TIMES V))|, |P' : (POWER S)|, and |Q' : (POWER S)|.
-\[ \IF |(ASSERT R) ~ b ~ (ASSERT(s' _ _ || Q' s')) (ASSERTRANGE P')| \THEN |P' SUBSETEQ Q'| \PERIOD \]
-\end{lemma}
+%\begin{lemma} \label{lem:branch-range-containment}
+%Let |b : S <~ V|, |R : (POWER(S TIMES V))|, |P' : (POWER S)|, and |Q' : (POWER S)|.
+%\[ \IF |(ASSERT R) ~ b ~ (ASSERT(s' _ _ || Q' s')) (ASSERTRANGE P')| \THEN |P' SUBSETEQ Q'| \PERIOD \]
+%\end{lemma}
 
 \begin{example}[embedding pairs of transformations in \BiGUL]
 Straightforward.
@@ -1073,6 +1101,8 @@ alwaysResetHeight =
 
 \section{Recursion}
 \label{sec:recursion}
+
+In this paper we will develop just enough theory to justify our rule for reasoning about recursive programs, and refrain from delving into coinductiveness or constructive continuity.
 
 \begin{code}
 expand : Nat -> ((S <~ V) -> (S <~ V)) -> (S <~ V)
@@ -1349,6 +1379,9 @@ Towards a syntactic treatment for automation.
 It has been argued that ``putback'' is the essence of bidirectional programming~\citep{Fischer-essence-of-BX}.
 We would like to amend this statement: Putback-based \emph{reasoning} is the essence of bidirectional programming.
 This paper has shown, with the Hoare-style logic, what such reasoning can look like.
+
+Understanding the bidirectional behaviour of a \BiGUL\ program almost only involves understanding its putback behaviour.
+A successful extension of \autoref{thm:dominance}.
 
 % Acknowledgements
 \begin{acks}                            %% acks environment is optional
