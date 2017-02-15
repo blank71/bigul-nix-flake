@@ -883,7 +883,7 @@ emb g p =
     adaptive _ _
       p
 \end{code}
-The `|Eq V =>|' part in the type of |emb| indicates that we need decidable equality on~|V| for the program to be executable.
+The `|Eq V =>|' constraint in the type of |emb| indicates that we need decidable equality on~|V| for the program to be executable.
 It is easy to see that |resetHeight = emb fst (\ _ v -> (v, 0))|.
 What we proved for |resetHeight| in \autoref{ex:resetHeight} can be generalised to the following triple for |emb g p|, where |g|~is used to define consistency:
 \begin{code}
@@ -919,7 +919,7 @@ which is known to follow from \PutGet\ and \GetPut.
 \label{sec:range-triples}
 
 We have seen in \autoref{ex:emb} that any pair of transformations satisfying only \PutGet\ can be embedded into \BiGUL\ and become well-behaved by using the |emb| program to wrap extra logic around the transformations to achieve \GetPut, though at the expense of not having exactly the same putback behaviour as the backward transformation being embedded.
-In particular, |resetHeight| in \autoref{ex:resetHeight} can be seen as |emb fst reset| where |reset = \ _ v -> (v, 0)|.
+For example, |resetHeight| in \autoref{ex:resetHeight} can be seen as |emb fst reset| where |reset = \ _ v -> (v, 0)|.
 There is, however, a way to embed |reset| precisely, which is to express it directly in terms of \BiGUL's constructs:
 \begin{code}
 alwaysResetHeight : (Nat , Nat) <~ Nat
@@ -927,17 +927,23 @@ alwaysResetHeight =  rearrV v -> (v, 0)
                           replace
                        *  replace
 \end{code}
-We can prove that the putback behaviour of |alwaysResetHeight| coincides with |reset| by deriving the putback triple |(ASSERT(_ _)) alwaysResetHeight (ASSERT(s' _ v || s' = (v, 0)))|.
-By \autoref{thm:well-behavedness}, the |put| and |get| semantics of |alwaysResetHeight| must form a well-behaved pair, so we can actually achieve precise embedding of |reset|'s putback behaviour and well-behavedness at the same time and without introducing the extra logic of |emb|\kern1pt!
-There is no free lunch though: |alwaysResetHeight| has a serious disadvantage compared to |emb fst reset|.
-By \autoref{thm:partial-forward-consistency}, we have
+We can easily prove that the putback behaviour of |alwaysResetHeight| coincides with |reset| by deriving the putback triple |(ASSERT(_ _)) alwaysResetHeight (ASSERT(s' _ v || s' = (v, 0)))|; then, by \autoref{thm:well-behavedness}, the |put| and |get| semantics of |alwaysResetHeight| must form a well-behaved pair.
+Let us compare |alwaysResetHeight| and |emb fst reset|:
+\begin{itemize}
+\item With |emb fst reset|, apart from providing |reset|, we also need to provide a forward transformation to pair with |reset| and prove \PutGet\ for them. In the end we obtain well-behavedness but not precise embedding of |reset|'s behaviour.
+\item With |alwaysResetHeight|, we simply express |reset| in \BiGUL, and obtain the corresponding forward transformation, well-behavedness, and precise embedding.
+\end{itemize}
+It would seem that |alwaysResetHeight| is clearly the better solution, but that is only because we have been concentrating on the putback direction.
+In the forward direction, \autoref{thm:partial-forward-consistency} tells us that
 \[ |(GRAPH(get (emb fst reset)) ~ SUBSETEQ ~ (COM((w, _) v || w = v))| \AND |(GRAPH(get alwaysResetHeight)) ~ SUBSETEQ ~ (COM((w, 0) v || w = v))| \]
-so both |get (emb fst reset)| and |get alwaysResetHeight| behave like |fst|.
-In fact, both inclusions can be strengthened to equalities, enabling us to distinguish |get (emb fst reset)|, which can compute successfully on all inputs, from |get alwaysResetHeight|, which fails to compute on inputs whose second component is non-zero.
-However, we do not have the necessary machinery to strengthen the inclusions to equalities yet --- what is missing here is the ability to estimate the \emph{domain} of a forward transformation, i.e., the subset of sources on which the forward transformation can compute successfully.
+so both |get (emb fst reset)| and |get alwaysResetHeight| necessarily behave like |fst|.
+But that is not the whole story --- in fact, we can distinguish |get (emb fst reset)| from |get alwaysResetHeight| because the former can compute successfully on all inputs, whereas the latter can only compute successfully on inputs whose second component is zero, and is usually not what one wants in practice.
+
+The moral of the above story is that we still lack the machinery for understanding forward behaviour, so that we could not see that |alwaysResetHeight| was actually less useful.
+What helped us to arrive at the right conclusion is the ability to estimate the \emph{domain} of a forward transformation, i.e., the subset of sources on which the forward transformation can compute successfully.
 To make such estimates for \BiGUL\ programs, which are understood as putback transformations, the key insight is that, for a well-behaved pair of |put| and |get|, the domain of |get| coincides with the \emph{range} of |put|, i.e., the subset of sources that can be produced by |put|.
 (To see the coincidence, observe that \ref{prop:PutGet} (as stated in \autoref{thm:well-behavedness}) can be read roughly as ``if |s'|~is produced by |put b|, i.e., |s'|~is in the range of |put b|, then |get b| will compute successfully on~|s'|, i.e., |s'|~will be in the domain of~|get b|'', and \ref{prop:GetPut} says the converse.)
-The problem with |alwaysResetHeight| is now clear: it can only produce the sources whose second component is zero, so |get alwaysResetHeight| can compute successfully only on these sources.
+The problem with |alwaysResetHeight| is now clear: it can only produce the sources whose second component is zero, so |get alwaysResetHeight| can compute successfully only on those sources.
 In contrast, |emb fst reset| is capable of producing all possible pairs.
 Our way ahead is to develop machinery for making such range estimates reliably, and that machinery is a second set of Hoare-style triples.
 
@@ -946,7 +952,7 @@ Our way ahead is to develop machinery for making such range estimates reliably, 
 \begin{definition}
 A \emph{range triple} is a \BiGUL\ program |b : S <~ V| surrounded by two \emph{range assertions}:
 \[ |(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P')| \]
-where |R : (POWER(S TIMES V))| is the precondition (on the original source and the view) and |P' : (POWER S)| is the postcondition (on the updated source).
+where |R : (POWER(S TIMES V))| is the precondition or \emph{input range} (on the original source and the view) and |P' : (POWER S)| is the postcondition or \emph{output range} (on the updated source).
 Valid range triples are inductively defined by the proof rules in \autoref{fig:range-proof-rules} (which will be explained in \autoref{sec:range-proof-rules}).
 \end{definition}
 
@@ -957,7 +963,7 @@ Let |b : S <~ V|, |R : (POWER(S TIMES V))|, and |P' : (POWER S)|.
 \[ \IF |(ASSERTRANGE R) ~ b ~ (ASSERTRANGE P')| \THEN |(all(s)) ~ P' s ~ => ~ (some(v)) ~ get b s = Just v ~ && ~ R s v| \PERIOD \]
 \end{theorem}
 
-We can recover the intended interpretation of range triples by rewriting the right-hand side of \autoref{thm:range-soundness} into an equivalent statement primarily about |put|:
+We can recover the intended interpretation of range triples by showing that the conclusion of \autoref{thm:range-soundness} is equivalent to a statement primarily about |put|:
 
 \begin{lemma} \label{lem:range-interpretation}
 The conclusion of \autoref{thm:range-soundness} is equivalent to
@@ -965,7 +971,7 @@ The conclusion of \autoref{thm:range-soundness} is equivalent to
 \end{lemma}
 
 The left conjunct in \autoref{lem:range-interpretation} is the primary way in which we think about the range triples: if |(ASSERTRANGE R) b (ASSERTRANGE P')| can be derived, then the range of updated sources produced by applying |put b| to those inputs satisfying~|R| will be at least~|P'|.
-The right conjunct in \autoref{lem:range-interpretation} says that there is a ``side effect'' when we think about these triples in the putback direction: the subset of input pairs considered will be forced to include those related by |get| with its domain restricted to~|P'|.
+The right conjunct in \autoref{lem:range-interpretation} says that there is a ``side effect'' when we think about these triples in the putback direction: the input range considered will be forced to include those related by |get| with its domain restricted to~|P'|.
 So, for example, we will not be able to deduce |(ASSERTRANGE(m n || m = n + 1)) replace (ASSERTRANGE(_))| even though the left conjunct in \autoref{lem:range-interpretation} is true for this pair of |R|~and~|P'|.
 This ``side effect'' normally does not prevent us from deriving range triples, though, since the preconditions we specify are normally larger than the consistency relations, which in turn contain the |get| functions.
 
@@ -983,9 +989,9 @@ By the range triple and \autoref{thm:range-soundness}, |get b s| will compute su
 The putback triple and \autoref{thm:partial-forward-consistency} can then take over and establish |C s v| as required.
 \end{proof}
 
-That is, by supplementing a putback triple for~|b| with a range triple with the same precondition, we can know on which subset of sources |get b| will compute successfully and that the behaviour of |get b| conforms to the consistency relation.
+\autoref{thm:total-forward-consistency} tells us that, by supplementing a putback triple for~|b| with a range triple with the same precondition, we can know on which subset of sources |get b| will compute successfully and that the behaviour of |get b| conforms to the consistency relation.
 
-Now we have enough machinery to tell us all we want to know about the bidirectional behaviour of a \BiGUL\ program:
+In summary, now we have enough machinery to tell us all we want to know about the bidirectional behaviour of a \BiGUL\ program:
 By deriving a putback triple |(ASSERT R) b (ASSERT(s' s v || C s' v && R' s' s v))| to reason about the behaviour of~|b|, we know that |put b| will compute successfully on~|R|, establish consistency~|C|, and have retentive behaviour~|R'|.
 Then, by additionally deriving a range triple |(ASSERTRANGE R) b (ASSERTRANGE P')| to estimate the range of~|b|, we know that |get b| will compute successfully on~|P'| and conform to the same consistency relation~|C| established by |put b|.
 Notably, as we will see next, derivations of range triples are usually significantly easier than derivations of putback triples, so in practice there is usually not much more work to do than deriving putback triples.
@@ -1062,8 +1068,26 @@ $\begin{array}{cl}
 %\[ \IF |(ASSERT R) ~ b ~ (ASSERT(s' _ _ || Q' s')) (ASSERTRANGE P')| \THEN |P' SUBSETEQ Q'| \PERIOD \]
 %\end{lemma}
 
-\begin{example}[embedding pairs of transformations in \BiGUL]
-Straightforward.
+The range proof rules are shown in \autoref{fig:range-proof-rules}.
+The most interesting rule is probably the consequence rule (the right one in the second row), whose direction is just the opposite of the putback consequence rule given in \autoref{fig:putback-proof-rules}.
+An explanation is that the ultimate interpretation of range triples, as stated by \autoref{thm:range-soundness}, is about forward behaviour, and the output/input range in a range triple in fact serves the role of precondition/postcondition for the forward transformation.
+But, interestingly, the consequence rule can also be understood in the putback direction:
+If |(ASSERTRANGE R) b (ASSERTRANGE P')| has been established, meaning that the inputs in~|R| can induce everything in~|P'| through the execution of~|b|, then a larger input range~|T| can of course still induce everything in~|P'|, or indeed everything in any output range~|Q'| smaller than~|P'|.
+In fact, |T|~is not necessarily larger than~|R|: if what we eventually target is a smaller output range, then we will be allowed to also shrink the input range.
+The consequence rule makes it clear what kind of shrinking is valid --- we are allowed to use~|Q'| to constrain the sources in the input range.
+Since the direction of the range consequence rule is the opposite of the putback one, when deriving a range triple using the consequence rule in our derivation format, logical implications go upwards, and we can use the postconditions for a node as additional premises when proving implications between preconditions for the same node, opposite to what we are familiar with in putback derivations.
+
+Other rules should be largely intuitive.
+The |fail| rule has the empty predicate as its output range since |fail| can never produce anything (and its input range can be any relation because of the consequence rule).
+Both |replace| and |skip| can produce everything as long as the input range is large enough --- because of the ``side effect'' explained below \autoref{lem:range-interpretation}, their input ranges have to be large enough to include the graphs of their forward semantics.
+The product and rearrangement rules are analogous to their putback counterparts.
+For |case|, only the normal branches matter since the execution of |case| always ends in a normal branch.
+We estimate an output range |P'_n| for the body of every normal branch~|n|, and the estimated output range for that branch is |P'_n| intersected with the actual exit condition, since only outputs satisfying the actual exit condition can be produced.
+The estimated output range for the entire |case| is then the union of the estimated output ranges for all the normal branches.
+
+\begin{example}[embedding pairs of transformations in \BiGUL] \label{ex:emb-range}
+As we mentioned, derivations of range triples can be very straightforward in simple cases.
+In the case of |emb|, for example, we can effortlessly prove that it produces everything:
 \begin{code}
 (ASSERTRANGE(_ _))
 case
@@ -1077,26 +1101,28 @@ case
 \end{code}
 \end{example}
 
-\begin{example}[rectangle width updating --- always resetting the height]
-Verify the range of |alwaysResetHeight|:
+\begin{example}[rectangle width updating --- always resetting the height] \label{ex:alwaysResetHeight}
+Verifying the range of |alwaysResetHeight| is a more interesting example, since we will see how a non-trivial output range can be derived with the consequence rule:
 \begin{code}
-alwaysResetHeight : (Nat , Nat) <~ Nat
-alwaysResetHeight =
-  (ASSERTRANGE(_ _))
-  rearrV v -> (v, 0)
-    (ASSERTRANGE(_ (_ , 0)))
-       (ASSERTRANGE(_ _))
-       (ASSERTRANGE(w v | w = v))
-       replace
-       (ASSERTRANGE(_))
-    *  (ASSERTRANGE(_ 0)) (ASSERTRANGENUMBER *1)
-       (ASSERTRANGE(h v | h = v)) (ASSERTRANGENUMBER *2)
-       replace
-       (ASSERTRANGE(_))
-       (ASSERTRANGE(0)) (ASSERTRANGENUMBER *3)
-    (ASSERTRANGE((_ , 0)))
+(ASSERTRANGE(_ _))
+rearrV v -> (v, 0)
+  (ASSERTRANGE(_ (_ , 0)))
+     (ASSERTRANGE(_ _))
+     (ASSERTRANGE(w v | w = v))
+     replace
+     (ASSERTRANGE(_))
+  *  (ASSERTRANGE(_ 0)) (ASSERTRANGENUMBER *3)
+     (ASSERTRANGE(h v | h = v)) (ASSERTRANGENUMBER *1)
+     replace
+     (ASSERTRANGE(_)) (ASSERTRANGENUMBER *2)
+     (ASSERTRANGE(0)) (ASSERTRANGENUMBER *4)
   (ASSERTRANGE((_ , 0)))
+(ASSERTRANGE((_ , 0)))
 \end{code}
+The interesting part is the second |replace|, for which we first establish the input and output ranges as assertions 1~and~2, as dictated by the |replace| rule.
+However, because of the outer |rearrV|, the views in the actual input range for the second |replace| are restricted to zero, as stated by assertion~3, which does not contain assertion~1.
+We therefore need to shrink our estimate of the output range of |replace| to just zero (assertion~4) to allow us to also restrict the views in the input range to zero.
+Logically, assertions 1~and~4 indeed imply assertion~3, adhering to the consequence rule.
 \end{example}
 
 \section{Recursion}
