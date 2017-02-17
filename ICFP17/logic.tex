@@ -1136,30 +1136,31 @@ Logically, assertions 1~and~4 together indeed imply assertion~3, adhering to the
 \section{Recursion}
 \label{sec:recursion}
 
-\BiGUL\ is designed datatype-generically for inductive data structures.
+\BiGUL\ is designed to work datatype-generically with inductive data structures.
 A lot of recursive programs processing inductive data have been written using the \Haskell\ port of \BiGUL, and our Hoare-style logic would not be useful at all if we could not reason about such recursive \BiGUL\ programs.
-For example, let us peek at the key-based alignment program |keyAlign| in \autoref{fig:keyAlign}, which we will verify in \autoref{sec:key-based-alignment}.
+For example, let us take a peek at the key-based alignment program |keyAlign| in \autoref{fig:keyAlign}, which we will verify in \autoref{sec:key-based-alignment}.
 All we need to care about |keyAlign| now is its recursive structure.
 Both the source and view are lists, and in the second branch of the |case|, they are both non-empty.
 Inside the branch, each of them is rearranged into a pair of its head and tail, and we recursively invoke the program to process the tails.
 Intuitively, we know that this program terminates for any input because the size of the initial source and view is strictly larger than the size of the source and view at the point of the recursive invocation.
-We will need to incorporate this size-based termination argument into our proof rule for recursive programs, and show that the rule is sound.
+We will need to incorporate this size-based termination argument into our proof rules for recursive programs, and show that the rules are sound.
 
 There is difficulty dealing with recursive programs in the \Agda\ formalisation underlying this paper, though.
 Observe that the program structure of |keyAlign| is infinite, which is fine in \Haskell; in the \Agda\ formalisation, however, \BiGUL\ programs are modelled inductively and are necessarily finite.
 One possible solution is to redefine \BiGUL\ programs coinductively and bring in the partiality monad~\citep{Capretta-general-recursion} to explicitly model non-termination in \Haskell, but this means abandoning most (if not all) of the previous formalisation effort.
-Another possible solution is to stay with inductive \BiGUL\ programs and introduce a ``constructive fixed-point'' which can decide, for every input, how many times the body of a fixed-point should be expanded, thereby circumventing the need for truly infinite programs.
+Another possible solution is to stay with inductive \BiGUL\ programs and introduce a ``constructive fixed-point'' which can decide, for every input, how many times the body of a fixed-point should be expanded, thereby circumventing infinite program structures.
 This approach will be relevant in a constructive setting, but we anticipate that there will be extra constructivity requirements that are not relevant for the \Haskell\ port of \BiGUL, in which most (recursive) \BiGUL\ programs are written.
 Since what we aim at in this paper is not thorough formalisation but a semi-formal reasoning framework for the working \BiGUL\ programmer, we will develop just enough theory to justify our rules for reasoning about recursive programs, and refrain from delving into coinductiveness or constructive domain theory.
 
-Let |b : S <~ V| be a recursive program of the form |b = f b| where |f : (S <~ V) -> (S <~ V)| is the usual non-recursive function defining the body of~|b|, and suppose that we want to show $\models |(ASSERT R) b (ASSERT R')|$, i.e., the conclusion of \autoref{thm:putback-soundness} for some specific precondition~|R| and postcondition~|R'| --- we cannot hope to establish a putback triple for~|b|, since putback triples are defined for finite programs, whereas |b|~is infinite.
+Let |b : S <~ V| be a recursive program of the form |b = f b| where |f : (S <~ V) -> (S <~ V)| is the usual non-recursive function defining the body of~|b|, and suppose that we want to verify that |b|~can successfully turn any input satisfying a precondition~|R| into an output satisfying a postcondition~|R'|.
+We cannot hope to establish |(ASSERT R) b (ASSERT R')| since putback triples are defined for finite programs, whereas |b|~is infinite.
 Instead, when we say in this paper that we are verifying~|b|, what we precisely mean is verifying the behaviour of all \emph{finite expansions} of its body~|f|, where finite expansions are defined by:
 \begin{code}
 expand : Nat -> ((S <~ V) -> (S <~ V)) -> (S <~ V)
 expand zero     f = fail
 expand (suc n)  f = f (expand n f)
 \end{code}
-The basic proof idea is to prove something about~|f| like:
+The basic idea is to prove something about~|f| like:
 \begin{equation}
 |(all(rec : S <~ V))| \quad |(ASSERT R) ~ rec ~ (ASSERT R')| \quad|=>|\quad |(ASSERT R) ~ f rec ~ (ASSERT R')|
 \label{prop:basic-proof-idea}
@@ -1177,23 +1178,17 @@ If
 & \quad|=>|\quad |(ASSERT(R CAP (COM(s v || measure s v = n)))) ~ f rec ~ (ASSERT R')| \tag{\PutbackRecursion} \label{prop:PutbackRecursion}
 \end{align}
 then:
-\[ |(all(l, n)) ~ l >= n ~ =>| \quad |(ASSERT(R CAP (COM(s v || measure s v = n)))) ~ expand (suc l) f ~ (ASSERT R')| \]
+\[ |(all(l, n)) ~ n <= l ~ =>| \quad |(ASSERT(R CAP (COM(s v || measure s v = n)))) ~ expand (suc l) f ~ (ASSERT R')| \]
 \end{theorem}
 \begin{proof}
 Nested induction on |l|~and~|n|.
 \end{proof}
 
-The conclusion of \autoref{thm:putback-finite-expansion} says that a finite expansion of~|f| will compute successfully from~|R| to~|R'| if |f|~is expanded more times than the measured size of the input.
-We can say this more directly with the following semantic statement.
-\begin{corollary} \label{cor:putback-finite-expansion-semantics}
-The conclusion of \autoref{thm:putback-finite-expansion} implies:
-\[ |(all(l))| \quad \models |(ASSERT(R CAP (COM(s v || measure s v <= l)))) ~ expand (suc l) f ~ (ASSERT R')| \]
-\end{corollary}
+\ref{prop:PutbackRecursion} will be the proof rule we use for reasoning about the putback behaviour of recursive programs.
+It combines the basic proof idea~(\ref{prop:basic-proof-idea}) with the sized-based termination argument given in the beginning of this section: in the outermost precondition, the size of the input source and view is bound to a ghost variable~|n|, and we can make recursive invocations wherever the size~|m| of the current source and view is strictly less than~|n|.
+The soundness of \ref{prop:PutbackRecursion} is justified by \autoref{thm:putback-finite-expansion}, whose conclusion implies that any input in~|R| can be successfully turned into an output in~|R'| as long as |f|~is expanded enough times.
 
-\autoref{cor:putback-finite-expansion-semantics} justifies the soundness of \ref{prop:PutbackRecursion} as a proof rule for recursive programs, since it implies that all inputs in~|R| can be dealt with when |f|~is expanded enough times and the outputs will fall into~|R'| as required.
-The \ref{prop:PutbackRecursion} rule itself combines the basic proof idea~(\ref{prop:basic-proof-idea}) with the sized-based termination argument given in the beginning of this section: in the outermost precondition, the size of the input source and view is bound to a ghost variable~|n|, and we can make recursive invocations wherever the size~|m| of the current source and view is strictly less than~|n|.
-
-Analogously for range triples, we have a \ref{prop:RangeRecursion} rule, whose soundness is justified by \autoref{thm:range-finite-expansion} and \autoref{cor:range-finite-expansion-semantics} below.
+Analogously, we have a \ref{prop:RangeRecursion} rule for estimating the output ranges of recursive programs.
 
 \begin{theorem}[finite expansion of range triples] \label{thm:range-finite-expansion}
 Let |f : (S <~ V) -> (S <~ V)|, |R : (POWER(S TIMES V))|, |P' : Nat -> (POWER S)|, and |measure : S -> V -> Nat|.
@@ -1203,17 +1198,13 @@ If
 & \quad|=>|\quad |(ASSERTRANGE(R CAP (COM(s v || measure s v = n)))) ~ f rec ~ (ASSERTRANGE(P' n))| \tag{\RangeRecursion} \label{prop:RangeRecursion}
 \end{align}
 then:
-\[ |(all(l, n)) ~ l >= n ~ =>| \quad |(ASSERTRANGE(R CAP (COM(s v || measure s v = n)))) ~ expand (suc l) f ~ (ASSERTRANGE(P' n))| \]
+\[ |(all(l, n)) ~ n <= l ~ =>| \quad |(ASSERTRANGE(R CAP (COM(s v || measure s v = n)))) ~ expand (suc l) f ~ (ASSERTRANGE(P' n))| \]
 \end{theorem}
 
-\begin{corollary} \label{cor:range-finite-expansion-semantics}
-The conclusion of \autoref{thm:range-finite-expansion} implies:
-\[ |(all(l))| \quad \models |(ASSERTRANGE(R CAP (COM(s v || measure s v <= l)))) ~ expand (suc l) f ~ (ASSERTRANGE(BIGCUP ~ [ P' n || n <= l ]))| \]
-\end{corollary}
-
-The \ref{prop:RangeRecursion} rule instructs us to derive an output range |P' n| that can depend on the ghost variable~|n| bound to the size of the input in the precondition.
-(In the case of |keyAlign|, the range triple we will derive is |(ASSERTRANGE(_ vs || length vs = n)) keyAlign ... (ASSERTRANGE(ss || length ss = n))|.)
-Recursive invocations can be made in the derivation, and the estimated output range for the recursive invocation is |P' m| where |m|~is the size of the current input, provided that |m|~is strictly less than~|n| --- otherwise, the estimated output range will be empty.
+The \ref{prop:RangeRecursion} rule instructs us to derive an output range |P' n| that can depend on the ghost variable~|n| bound to the size of the input source and view in the precondition.
+(For example, the range triple we will derive for |keyAlign| is |(ASSERTRANGE(_ vs || length vs = n)) keyAlign ... (ASSERTRANGE(ss || length ss = n))|.)
+Recursive invocations can be made in the derivation, and the estimated output range for a recursive invocation is |P' m| where |m|~is the size of the current source and view, provided that |m|~is strictly less than~|n| --- otherwise, the estimated output range will be empty.
+The conclusion of \autoref{thm:range-finite-expansion} justifies the soundness of \ref{prop:RangeRecursion}, as it implies that every output in $\bigcup_{|n : Nat|} |P' n|$ can be produced from some input of the right size in~|R| as long as |f|~is expanded enough times.
 
 Having the two recursion rules, we are now ready to verify |keyAlign|.
 
