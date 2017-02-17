@@ -67,6 +67,17 @@
 \url{http://dx.doi.org/10.1145/1863543.1863572}}
 
 
+\bibitem[\protect\citeauthoryear{Capretta}{Capretta}{2005}]%
+        {Capretta-general-recursion}
+\bibfield{author}{\bibinfo{person}{Venanzio Capretta}.}
+  \bibinfo{year}{2005}\natexlab{}.
+\newblock \showarticletitle{General Recursion via Coinductive Types}.
+\newblock \bibinfo{journal}{{\em Logical Methods in Computer Science\/}}
+  \bibinfo{volume}{1}, \bibinfo{number}{2} (\bibinfo{year}{2005}),
+  \bibinfo{pages}{1--28}.
+\newblock
+
+
 \bibitem[\protect\citeauthoryear{Czarnecki, Foster, Hu, L{\"a}mmel, Sch{\"u}rr,
   and Terwilliger}{Czarnecki et~al\mbox{.}}{2009}]%
         {Czarnecki-BX}
