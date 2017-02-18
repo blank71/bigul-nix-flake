@@ -19,6 +19,9 @@
   \resizebox{\@@tempdima}{\height}{=}%
 }
 \makeatother
+\definecolor{indent}{gray}{.6}
+\newcommand{\idots}{\kern.25pt\vphantom{||}{\color{indent}\smash{\rlap{\rule[6.75pt]{1pt}{1pt}}\rlap{\rule[3.5pt]{1pt}{1pt}}\rlap{\rule[0.25pt]{1pt}{1pt}}\rlap{\rule[-3pt]{1pt}{1pt}}}}\kern-.25pt\quad}
+%\newcommand{\idots}{\kern.25pt\vphantom{||}{\color{indent}\smash{\rlap{\rule[8.8pt]{1pt}{1pt}}\rlap{\rule[6.2pt]{1pt}{1pt}}\rlap{\rule[3.6pt]{1pt}{1pt}}\rlap{\rule[1pt]{1pt}{1pt}}\rlap{\rule[-1.6pt]{1pt}{1pt}}\rlap{\rule[-4.2pt]{1pt}{1pt}}}}\kern-.25pt\quad}
 
 %format of = "\keyword{of}"
 %format if = "\keyword{if}"
@@ -38,14 +41,15 @@
 %format : = "{:}"
 %format `elem` = "{\in}"
 %format . = "{\circ}"
-%format !! = "{!\kern-.75pt!}"
+%format !! = "\kern-1pt{!\kern-.75pt!}\kern-1pt"
 %format / = "\kern-\smallskipamount{/}\kern-1.5\smallskipamount"
 %format Nat = "\mathbb{N}"
 %format Int = "\mathbb{Z}"
 %format Rational = "\mathbb{Q}"
 %format ~ = " "
 %format ... = "\ldots"
-%format VDOTS = "\vdots"
+%format VDOTS = "\kern.5pt\vphantom{|}\smash{\raisebox{-2pt}{\vdots}}"
+%format ^ = "\idots"
 
 %format (all(x)) = "\forall" x "."
 %format (some(x)) = "\exists" x "."
@@ -372,9 +376,9 @@ Everything from theorems to derivations has been formalised and checked in \Agda
 
 \Agda\ under the imperfect disguise of \Haskell
 
-\todo[inline]{``In summary'' at the end of the theory of range triples}
+\todo{``In summary'' at the end of the theory of range triples}
 
-\todo[inline]{display more things if possible}
+\todo{display more things if possible}
 
 \section{Theory of asymmetric lenses and putback triples}
 \label{sec:putback-triples}
@@ -385,7 +389,7 @@ These facts are true for \BiGUL\ programs in general and can be stated without r
 \todo{explain the overall structure: semantic model and axiomatic system, facts first and specific details later}
 
 \begin{definition} \label{def:put-and-get}
-A \BiGUL\ program~|b| operating on source type~|S| and view type~|V| is assigned the type |S <~ V|, and has two semantics:
+A \BiGUL\ program~|b| operating on source type~|S| and view type~|V| inhabits the type |S <~ V|, and has two semantics:
 \begin{code}
 put  b : S -> V  -> Maybe S
 get  b : S       -> Maybe V
@@ -402,7 +406,7 @@ Any \BiGUL\ program~|b| satisfies the following two \emph{well-behavedness} prop
 \end{theorem}
 
 \autoref{thm:well-behavedness} was proved by \citet{Ko-BiGUL} for the original \BiGUL; we have patched the proof to work for the version of \BiGUL\ used in this paper.
-As noted by \citeauthor{Ko-BiGUL}, \autoref{def:put-and-get} models potentially partial computations explicitly as total |Maybe|-computations, and \autoref{thm:well-behavedness} gives a stronger well-behavedness guarantee than \citet{Foster-lenses}'s original definition.
+As noted by \citeauthor{Ko-BiGUL}, \autoref{def:put-and-get} models potentially partial computations explicitly as total |Maybe|-computations, and \autoref{thm:well-behavedness} gives a stronger well-behavedness guarantee~\citep{Macedo-composing-least-change-lenses, Pacheco-putlenses} than \citet{Foster-lenses}'s original definition.
 
 \BiGUL\ is designed such that the \BiGUL\ programmer can think and program solely in the putback direction.
 This is theoretically feasible because of the following theorem (originally \citet{Foster-thesis}'s Lemma~2.2.5), which says that once the programmer specifies a putback transformation, the corresponding forward transformation is uniquely determined.
@@ -419,7 +423,7 @@ Before introducing Hoare-style triples for \BiGUL\ programs, let us fix our nota
 
 \begin{notation}
 Relations on types |A_1|\,, |A_2|\,, $\ldots,$ |A_n| are considered inhabitants of the type |POWER(A_1 TIMES A_2 TIMES {-"\cdots\;"-} TIMES A_n)|.
-When a relation~|R| of this type relates elements |x_1 : A_1|\,, |x_2 : A_2|\,, $\ldots,$ |x_n : A_n|\,, we write |R x_1 x_2 ... x_n|\,. %(in a curried form, to save parentheses and commas).
+When a relation~|R| of this type relates elements |a_1 : A_1|\,, |a_2 : A_2|\,, $\ldots,$ |a_n : A_n|\,, we write |R a_1 a_2 ... a_n|\,. %(in a curried form, to save parentheses and commas).
 \end{notation}
 
 \begin{definition}
@@ -451,7 +455,7 @@ A \emph{comprehension relation} of type |(POWER(A_1 TIMES A_2 TIMES {-"\cdots\,"
 \[ |COM(pat_1 pat_2 ... pat_n || prop)| \]
 where each |pat_i| is a pattern for elements of type~|A_i| and |prop| is a proposition that can refer to the variables in the patterns.
 The patterns we use in the paper include variables, constructors, and the wildcard pattern~(`|_|').
-The relation holds for |x_1 : A_1|, $\ldots,$ |x_n : A_n| exactly when each |x_i| matches |pat_i| and |prop| holds after substituting the matched components for the corresponding pattern variables.
+The relation holds for |a_1 : A_1|, $\ldots,$ |a_n : A_n| exactly when each |a_i| matches |pat_i| and |prop| holds after substituting the matched components for the corresponding pattern variables.
 \end{definition}
 
 \begin{notation} \label{notation:trivially-true-proposition}
@@ -461,7 +465,7 @@ For example, |COM((_ :: _))| holds exactly for non-empty lists, and |COM(_ _)| i
 
 \begin{notation} \label{notation:angle-brackets}
 The angle brackets delimiting a comprehension relation may be omitted where delimitation is unnecessary, like in an assertion containing only a comprehension relation.
-For example, |ASSERT(COM(s v || s = v))| is usually abbreviated to |ASSERT(s v || s = v)|.
+For example, |ASSERT(COM(s v || s = v))| is abbreviated to |ASSERT(s v || s = v)|.
 \end{notation}
 
 \begin{definition}
@@ -585,17 +589,18 @@ The postcondition can then be stated also in terms of this `|*|'~operator.
 We can now construct simple derivations like the following one for |replace * replace|, which we use as an example to explain our derivation format:
 \begin{code}
 (ASSERT((_ , _) (_ , _)))
-   (ASSERT(_ _))
-   replace
-   (ASSERT(s' _ v | s' = v))
+^  (ASSERT(_ _))
+^  replace
+^  (ASSERT(s' _ v | s' = v))
 *  (ASSERT(_ _))
-   replace
-   (ASSERT(t' _ w | t' = w))
+^  replace
+^  (ASSERT(t' _ w | t' = w))
 (ASSERT((s', t') (_ , _) (v , w) | s' = v && t' = w))
 \end{code}
 First, note that the syntax tree structure of |replace * replace| is reflected in indentation: the top-level node is~`|*|', whose two sub-nodes --- both being |replace| --- are indented to the next level.
 Then, following the indentation structure, the assertions are added: the assertions about a node are put on the same indentation level as the node, with the precondition and postcondition appearing respectively before and after the node.
 This format is compact and yet retains the tree structure of the derivation, making it easier to check the correctness of the derivation.
+(Auxiliary dotted lines are also added to make indentation levels clearer, especially when derivations spread across pages.)
 \end{example}
 
 \subsection{The consequence rule}
@@ -655,8 +660,8 @@ For example, the height-keeping strategy we proposed for the rectangle width upd
 \begin{code}
 keepHeight  : (Nat , Nat) <~ Nat
 keepHeight  =  rearrV v -> (v, ())
-                    replace
-                 *  skip const ()
+               ^  ^  replace
+               ^  *  skip const ()
 \end{code}
 Initially, the view is a single number, whereas the source is a pair.
 To make their structures match, we use the view rearrangement operation |rearrV v -> (v, ())| to apply the $\lambda$-expression |\ v -> (v, ())| to the view and make the result the new view.
@@ -694,16 +699,16 @@ We can now verify the |keepHeight| program as follows, where the precondition (a
 \begin{code}
 (ASSERT(_ _))(ASSERTNUMBER *1)
 rearrV v -> (v, ())
-  (ASSERT(_ (_ , ())))(ASSERTNUMBER *3)
-     (ASSERT(_ _))
-     replace
-     (ASSERT(w' _ v | w' = v))
-  *  (ASSERT(_ ()))
-     (ASSERT(h v | const () h = v))
-     skip const ()
-     (ASSERT(h' h _ | h' = h))
-     (ASSERT(h' h () | h' = h))
-  (ASSERT((w', h') (_ , h) (v, ()) | w' = v && h' = h))(ASSERTNUMBER *4)
+^   (ASSERT(_ (_ , ())))(ASSERTNUMBER *3)
+^  ^  (ASSERT(_ _))
+^  ^  replace
+^  ^  (ASSERT(w' _ v | w' = v))
+^  *  (ASSERT(_ ()))
+^  ^  (ASSERT(h v | const () h = v))
+^  ^  skip const ()
+^  ^  (ASSERT(h' h _ | h' = h))
+^  ^  (ASSERT(h' h () | h' = h))
+^  (ASSERT((w', h') (_ , h) (v, ()) | w' = v && h' = h))(ASSERTNUMBER *4)
 (ASSERT((w', h') (_ , h) v | w' = v && h' = h))(ASSERTNUMBER *2)
 \end{code}
 Note that when working out the derivation inwards from the initial precondition and postcondition, it is effortless to push them inside `|rearrV v -> (v, ())|' and turn them into assertions 3~and~4 just by changing the view pattern to a pair pattern, as instructed by the |rearrV|.
@@ -739,10 +744,10 @@ For a simple example, the height-resetting strategy for the rectangle width upda
 \begin{code}
 resetHeight : (Nat , Nat) <~ Nat
 resetHeight =  case
-                 normal (w, _) v | w = v exit _
-                   skip fst
-                 adaptive _ _
-                   \ _ v -> (v, 0)
+               ^  normal (w, _) v | w = v exit _
+               ^  ^  skip fst
+               ^  adaptive _ _
+               ^  ^  \ _ v -> (v, 0)
 \end{code}
 Roughly speaking, this program checks whether the width of the source is equal to the view, and skips if that is the case; otherwise, it creates a new rectangle whose width is the view and whose height is zero.
 
@@ -761,16 +766,16 @@ Operationally, the execution of a |case| finds the first branch whose main condi
 Suppose that the precondition and postcondition we want to verify for the entire |case| is |R|~and~|R'|.
 The |case| rule in \autoref{fig:putback-proof-rules} says that the precondition should be restricted to |R CAP Domain| where |Domain| is the union of all the main conditions, so that the precondition is strong enough to guarantee that some branch will be entered.
 (Of course, the consequence rule allows us to use just~|R| as the precondition if |R SUBSETEQ Domain|.)
-Then it suffices to verify each branch.
+The rest of the job is to verify each branch.
 
 \paragraph{Normal branches.}
 
-If a normal branch |normal M exit E INNER b| is entered, its body~|b| is executed; the |case| rule thus requires us to verify |b|'s behaviour by deriving the following triple:
+If a normal branch |normal M exit E INNER b| is entered, its body~|b| is executed; the |case| rule thus requires us to verify the behaviour  of~|b| by deriving the following triple:
 \[ |(ASSERT(R CAP (NORM M))) ~ b ~ (ASSERT(R' CAP (COM(s' _ v || (NORM M) s' v && (NORM E) s'))))| \]
 The precondition is strengthened with the main condition since we know that the source and view must satisfy the main condition if the branch is entered.
 However, the precise condition satisfied is not~|M| --- since the branches are tried in order and a branch is entered only when the main conditions of all the previous branches are not satisfied, we should regard the actual main condition of a branch as |M|~intersected with the negation of the main conditions of all the previous branches.
 We denote this actual main condition by~|NORM M|, and the precondition for~|b| is strengthened to |R CAP (NORM M)|.
-(One way to avoid distinguishing actual and ``superficial'' main conditions is to rewrite the program such that the main conditions are all disjoint, in which case |NORM M = M|.)
+(The programmer can avoid distinguishing actual and ``superficial'' main conditions by writing programs where the main conditions are all disjoint, in which case |NORM M = M|.)
 As for the postcondition, in addition to~|R'|, we also require \,(i)~that the updated source and the view satisfy the actual main condition~|NORM M| and \,(ii)~that the updated source satisfy the actual exit condition |NORM E|, which is |E|~intersected with the negation of the exit conditions of all the previous normal branches.
 Requirement~(i) is for guaranteeing well-behavedness, while requirement~(ii) makes exit conditions comparable with ``assertions'' (not to be confused with Hoare-style assertions) in reversible conditionals~\citep{Yokoyama-Janus}.
 
@@ -833,13 +838,13 @@ states that (after the rerunning) |R'|~is established for the updated source~|s'
 We therefore propose the following derivation format for adaptive branches:
 \begin{code}
 adaptive M
-  (ASSERT(R CAP (NORM M)))
-  VDOTS
-  (ASSERT Reentry)
-  f
-  (ASSERT Postcondition)
-  VDOTS
-  (ASSERT R')
+^  (ASSERT(R CAP (NORM M)))
+^  VDOTS
+^  (ASSERT Reentry)
+^  f
+^  (ASSERT Postcondition)
+^  VDOTS
+^  (ASSERT R')
 \end{code}
 The way to think about this format is that eventually we want to establish |(ASSERT(R CAP (NORM M)) f (ASSERT R')|, but the actual precondition and postcondition of~|f| are |Reentry|~and~|Postcondition| instead, and hence we should invoke the consequence rule~(\ref{eq:adaptation-consequence}) and prove the two inclusions.
 Let us emphasise that assertions in adaptive branches do not really constitute triples, but are merely an organisation of the proof obligations for adaptive branches such that we can work with the proof obligations in the same way as we work with real triples.
@@ -851,22 +856,22 @@ Now we can verify the |resetHeight| program as follows, where the precondition i
 (ASSERT(_ _))
 (ASSERT(COM(_ _) CAP ((COM((w, _) v | w = v)) CUP (COM(_ _))) ))(ASSERTNUMBER *1)
 case
-  normal (w, _) v | w = v exit _
-    (ASSERT(COM(_ _) CAP (COM((w, _) v | w = v))))
-    (ASSERT((w, h) v | w = v))
-    (ASSERT((w, h) v | fst (w, h) = v))
-    skip fst
-    (ASSERT((w', h') (w, h) _ | (w', h') = (w, h)))
-    (ASSERT((w', h') (w, h) v | w' = v && (w = v => h' = h) && (w /= v => h' = 0)))(ASSERTNUMBER *3)
-    (ASSERT((w', h') (w, h) v | w' = v && (w = v => h' = h) && (w /= v => h' = 0) && w' = v && (COM(_)) (w', h')))(ASSERTNUMBER *2)
-  adaptive _ _
-    (ASSERT(COM(_ _) CAP ((COM(_ _)) CAP not (COM((w, _) v | w = v)))))
-    (ASSERT((w, _) v | w /= v))(ASSERTNUMBER *8)
-    (ASSERT(_ v | (COM(_ _) (v, 0) v && (COM((w , _) v | w = v)) (v, 0) v)))
-    \ _ v -> (v, 0)
-    (ASSERT(s' _ v | (COM((w', h') (w, h) v | w' = v && (w = v => h' = h) && (w /= v => h' = 0)) s' (v, 0) v)))(ASSERTNUMBER *4)
-    (ASSERT((w', h') _ v | w' = v && h' = 0))(ASSERTNUMBER *6)
-    (ASSERT((w', h') (w, h) v | w' = v && (w = v => h' = h) && (w /= v => h' = 0)))(ASSERTNUMBER *7)
+^  normal (w, _) v | w = v exit _
+^  ^  (ASSERT(COM(_ _) CAP (COM((w, _) v | w = v))))
+^  ^  (ASSERT((w, h) v | w = v))
+^  ^  (ASSERT((w, h) v | fst (w, h) = v))
+^  ^  skip fst
+^  ^  (ASSERT((w', h') (w, h) _ | (w', h') = (w, h)))
+^  ^  (ASSERT((w', h') (w, h) v | w' = v && (w = v => h' = h) && (w /= v => h' = 0)))(ASSERTNUMBER *3)
+^  ^  (ASSERT((w', h') (w, h) v | w' = v && (w = v => h' = h) && (w /= v => h' = 0) && w' = v && (COM(_)) (w', h')))(ASSERTNUMBER *2)
+^  adaptive _ _
+^  ^  (ASSERT(COM(_ _) CAP ((COM(_ _)) CAP not (COM((w, _) v | w = v)))))
+^  ^  (ASSERT((w, _) v | w /= v))(ASSERTNUMBER *8)
+^  ^  (ASSERT(_ v | (COM(_ _) (v, 0) v && (COM((w , _) v | w = v)) (v, 0) v)))
+^  ^  \ _ v -> (v, 0)
+^  ^  (ASSERT(s' _ v | (COM((w', h') (w, h) v | w' = v && (w = v => h' = h) && (w /= v => h' = 0)) s' (v, 0) v)))(ASSERTNUMBER *4)
+^  ^  (ASSERT((w', h') _ v | w' = v && h' = 0))(ASSERTNUMBER *6)
+^  ^  (ASSERT((w', h') (w, h) v | w' = v && (w = v => h' = h) && (w /= v => h' = 0)))(ASSERTNUMBER *7)
 (ASSERT((w', h') (w, h) v | w' = v && (w = v => h' = h) && (w /= v => h' = 0)))(ASSERTNUMBER *5)
 \end{code}
 
@@ -884,12 +889,11 @@ The |resetHeight| program in fact exhibits a general programming pattern: a |cas
 We can abstract this pattern to the following |emb| program, which takes a pair of (total) forward and backward transformations and embeds them into \BiGUL:
 \begin{code}
 emb : Eq V => (S -> V) -> (S -> V -> S) -> (S <~ V)
-emb g p =
-  case
-    normal s v | g s = v exit _
-      skip g
-    adaptive _ _
-      p
+emb g p =  case
+           ^  normal s v | g s = v exit _
+           ^  ^  skip g
+           ^  adaptive _ _
+           ^  ^  p
 \end{code}
 The `|Eq V|' constraint in the type of |emb| indicates that we need decidable equality on~|V| for the program to be executable.
 It is easy to see that |resetHeight = emb fst (\ _ v -> (v, 0))|.
@@ -904,17 +908,17 @@ On the other hand, if we have both \PutGet\ and \GetPut\ (|all(s) p s (g s) = s|
 \begin{code}
 (ASSERT(_ _))
 case
-  normal s v | g s = v exit _
-    (ASSERT(s v | g s = v))
-    skip g
-    (ASSERT(s' s _ | s' = s))
-    (ASSERT(s' s _ | s' = p s v && g s' = v))(ASSERTNUMBER *1)
-  adaptive _ _
-    (ASSERT(s v | g s /= v))
-    (ASSERT(s v | g (p s v) = v))(ASSERTNUMBER *2)
-    p
-    (ASSERT(s' s v | s' = p (p s v) v))
-    (ASSERT(s' s v | s' = p s v))(ASSERTNUMBER *3)
+^  normal s v | g s = v exit _
+^  ^  (ASSERT(s v | g s = v))
+^  ^  skip g
+^  ^  (ASSERT(s' s _ | s' = s))
+^  ^  (ASSERT(s' s _ | s' = p s v && g s' = v))(ASSERTNUMBER *1)
+^  adaptive _ _
+^  ^  (ASSERT(s v | g s /= v))
+^  ^  (ASSERT(s v | g (p s v) = v))(ASSERTNUMBER *2)
+^  ^  p
+^  ^  (ASSERT(s' s v | s' = p (p s v) v))
+^  ^  (ASSERT(s' s v | s' = p s v))(ASSERTNUMBER *3)
 (ASSERT(s' s v | s' = p s v))
 \end{code}
 \GetPut\ is used for assertion~1, and \PutGet\ is used for assertion~2.
@@ -932,8 +936,8 @@ There is, however, a way to embed |reset| precisely, which is to express it dire
 \begin{code}
 alwaysResetHeight : (Nat , Nat) <~ Nat
 alwaysResetHeight =  rearrV v -> (v, 0)
-                          replace
-                       *  replace
+                     ^  ^  replace
+                     ^  *  replace
 \end{code}
 We can easily prove that the putback behaviour of |alwaysResetHeight| coincides with |reset| by deriving the putback triple |(ASSERT(_ _)) alwaysResetHeight (ASSERT(s' _ v || s' = (v, 0)))|; then, by \autoref{thm:well-behavedness}, the |put| and |get| semantics of |alwaysResetHeight| must form a well-behaved pair.
 Let us compare |alwaysResetHeight| and |emb fst reset|:
@@ -981,7 +985,7 @@ The conclusion of \autoref{thm:range-soundness} is equivalent to
 The left conjunct in \autoref{lem:range-interpretation} is the primary way in which we think about the range triples: if |(ASSERTRANGE R) b (ASSERTRANGE P')| can be derived, then the range of updated sources produced by applying |put b| to those inputs satisfying~|R| will be at least~|P'|.
 The right conjunct in \autoref{lem:range-interpretation} says that there is a ``side effect'' when we think about these triples in the putback direction: the input range considered will be forced to include those related by |get| with its domain restricted to~|P'|.
 So, for example, we will not be able to deduce |(ASSERTRANGE(m n || m = n + 1)) replace (ASSERTRANGE(_))| even though the left conjunct in \autoref{lem:range-interpretation} is true for this pair of |R|~and~|P'|.
-This ``side effect'' normally does not prevent us from deriving range triples, though, since the preconditions we specify are normally larger than the consistency relations, which in turn contain the |get| functions.
+This ``side effect'' normally does not prevent us from deriving range triples, though, since preconditions are normally larger than consistency relations, which in turn contain the graphs of |get| functions.
 
 Back in \autoref{sec:putback-triples}, where we only had putback triples, \autoref{thm:partial-forward-consistency} only enabled us to understand the forward behaviour of \BiGUL\ programs to a limited extent.
 Now, with range triples, we can prove a stronger and satisfactory result.
@@ -1082,7 +1086,7 @@ An explanation is that the ultimate interpretation of range triples, as stated b
 But, interestingly, the consequence rule can also be understood in the putback direction:
 If |(ASSERTRANGE R) b (ASSERTRANGE P')| has been established, meaning that the inputs in~|R| can induce everything in~|P'| through the execution of~|b|, then a larger input range~|T| can still induce everything in~|P'|, or indeed everything in any output range~|Q'| smaller than~|P'|.
 In fact, |T|~is not necessarily larger than~|R|: if what we eventually target is a smaller output range, then we will be allowed to also shrink the input range.
-The consequence rule makes it clear what kind of shrinking is valid --- we are allowed to use~|Q'| to constrain the sources in the input range.
+The consequence rule makes it clear what kind of shrinking is valid: we are allowed to use~|Q'| to constrain the sources in the input range.
 Since the direction of the range consequence rule is the opposite of the putback one, when deriving a range triple using the consequence rule in our derivation format, logical implications go upwards, and we can use the postconditions for a node as additional premises when proving implications between preconditions for the same node, opposite to what we are familiar with in putback derivations.
 
 Other rules should be largely intuitive.
@@ -1099,32 +1103,32 @@ In the case of |emb|, for example, we can effortlessly prove that it produces ev
 \begin{code}
 (ASSERTRANGE(_ _))
 case
-  normal s v | g s = v exit _
-    (ASSERTRANGE(s v | g s = v))
-    skip g
-    (ASSERTRANGE(_))
-  adaptive _ _
-    p
+^  normal s v | g s = v exit _
+^  ^  (ASSERTRANGE(s v | g s = v))
+^  ^  skip g
+^  ^  (ASSERTRANGE(_))
+^  adaptive _ _
+^  ^  p
 (ASSERTRANGE(_))
 \end{code}
 \end{example}
 
 \begin{example}[rectangle width updating --- always resetting the height] \label{ex:alwaysResetHeight}
-Verifying the range of |alwaysResetHeight| is a more interesting example, where we will see how a non-trivial output range can be derived with the consequence rule:
+Verifying the range of |alwaysResetHeight| is a more interesting example, where we will see how a non-trivial output range can be derived with the help of the consequence rule:
 \begin{code}
 (ASSERTRANGE(_ _))
 rearrV v -> (v, 0)
-  (ASSERTRANGE(_ (_ , 0)))
-     (ASSERTRANGE(_ _))
-     (ASSERTRANGE(w v | w = v))
-     replace
-     (ASSERTRANGE(_))
-  *  (ASSERTRANGE(_ 0)) (ASSERTRANGENUMBER *3)
-     (ASSERTRANGE(h v | h = v)) (ASSERTRANGENUMBER *1)
-     replace
-     (ASSERTRANGE(_)) (ASSERTRANGENUMBER *2)
-     (ASSERTRANGE(0)) (ASSERTRANGENUMBER *4)
-  (ASSERTRANGE((_ , 0)))
+^  (ASSERTRANGE(_ (_ , 0)))
+^  ^   (ASSERTRANGE(_ _))
+^  ^   (ASSERTRANGE(w v | w = v))
+^  ^   replace
+^  ^   (ASSERTRANGE(_))
+^  *   (ASSERTRANGE(_ 0)) (ASSERTRANGENUMBER *3)
+^  ^   (ASSERTRANGE(h v | h = v)) (ASSERTRANGENUMBER *1)
+^  ^   replace
+^  ^   (ASSERTRANGE(_)) (ASSERTRANGENUMBER *2)
+^  ^   (ASSERTRANGE(0)) (ASSERTRANGENUMBER *4)
+^  (ASSERTRANGE((_ , 0)))
 (ASSERTRANGE((_ , 0)))
 \end{code}
 The interesting part is the second |replace|, for which we first establish the input and output ranges as assertions 1~and~2 according to the |replace| rule.
@@ -1138,7 +1142,7 @@ Logically, assertions 1~and~4 together indeed imply assertion~3, adhering to the
 
 \BiGUL\ is designed to work datatype-generically with inductive data structures.
 A lot of recursive programs processing inductive data have been written using the \Haskell\ port of \BiGUL, and our Hoare-style logic would not be useful at all if we could not reason about such recursive \BiGUL\ programs.
-For example, let us take a peek at the key-based alignment program |keyAlign| in \autoref{fig:keyAlign}, which we will verify in \autoref{sec:key-based-alignment}.
+For example, let us take a peek at the key-based list alignment program |keyAlign| in \autoref{fig:keyAlign}, which we will verify in \autoref{sec:key-based-alignment}.
 All we need to care about |keyAlign| now is its recursive structure.
 Both the source and view are lists, and in the second branch of the |case|, they are both non-empty.
 Inside the branch, each of them is rearranged into a pair of its head and tail, and we recursively invoke the program to process the tails.
@@ -1148,7 +1152,7 @@ We will need to incorporate this size-based termination argument into our proof 
 There is difficulty dealing with recursive programs in the \Agda\ formalisation underlying this paper, though.
 Observe that the program structure of |keyAlign| is infinite, which is fine in \Haskell; in the \Agda\ formalisation, however, \BiGUL\ programs are modelled inductively and are necessarily finite.
 One possible solution is to redefine \BiGUL\ programs coinductively and bring in the partiality monad~\citep{Capretta-general-recursion} to explicitly model non-termination in \Haskell, but this means abandoning most (if not all) of the previous formalisation effort.
-Another possible solution is to stay with inductive \BiGUL\ programs and introduce a ``constructive fixed-point'' which can decide, for every input, how many times the body of a fixed-point should be expanded, thereby circumventing infinite program structures.
+Another possible solution is to stay with inductive \BiGUL\ programs and introduce a ``constructive fixed-point'' which can decide, for every input, how many times the body of a fixed-point should be expanded, thereby circumventing the modelling of infinite program structures.
 This approach will be relevant in a constructive setting, but we anticipate that there will be extra constructivity requirements that are not relevant for the \Haskell\ port of \BiGUL, in which most (recursive) \BiGUL\ programs are written.
 Since what we aim at in this paper is not thorough formalisation but a semi-formal reasoning framework for the working \BiGUL\ programmer, we will develop just enough theory to justify our rules for reasoning about recursive programs, and refrain from delving into coinductiveness or constructive domain theory.
 
@@ -1208,7 +1212,7 @@ The conclusion of \autoref{thm:range-finite-expansion} justifies the soundness o
 
 Having the two recursion rules, we are now ready to verify |keyAlign|.
 
-\section{Verifying key-based alignment}
+\section{Verifying key-based list alignment}
 \label{sec:key-based-alignment}
 
 \begin{figure}
@@ -1217,67 +1221,87 @@ Having the two recursion rules, we are now ready to verify |keyAlign|.
 keyAlign : Eq K => (S -> K) -> (V -> K) -> (S <~ V) -> (V -> S) -> ([S] <~ [V])
 keyAlign ks kv b c =
   case
-    normal [] [] exit []
-      rearrV [] -> ()
-         skip const ()
-    normal (s :: _) (v :: _) | ks s = kv v exit (_ :: _)
-      rearrS (s :: ss) -> (s, ss)
-        rearrV (v :: vs) -> (v, vs)
-             b
-          *  keyAlign ks kv b c
-    adaptive (_ :: _) []
-      \ _ _ -> []
-    adaptive ss (v :: _) | kv v `elem` map ks ss
-      \ ss (v :: _) -> extract ks kv v ss
-    adaptive _ (_ :: _)
-      \ ss (v :: _) -> c v :: ss
+  ^  normal [] [] exit []
+  ^  ^  rearrV [] -> ()
+  ^  ^  ^   skip const ()
+  ^  normal (s :: _) (v :: _) | ks s = kv v exit (_ :: _)
+  ^  ^  rearrS (s :: ss) -> (s, ss)
+  ^  ^  ^  rearrV (v :: vs) -> (v, vs)
+  ^  ^  ^  ^  ^  b
+  ^  ^  ^  ^  *  keyAlign ks kv b c
+  ^  adaptive (_ :: _) []
+  ^  ^  \ _ _ -> []
+  ^  adaptive ss (v :: _) | kv v `elem` map ks ss
+  ^  ^  \ ss (v :: _) -> extract ks kv v ss
+  ^  adaptive _ (_ :: _)
+  ^  ^  \ ss (v :: _) -> c v :: ss
   where
     extract : Eq K => (S -> K) -> (V -> K) -> V -> [S] -> S TIMES [S]
-    extract ks kv v (s :: ss) = if ks s = kv v  then  (s, ss)
-                                                else  let  (s', ss') = extract ks kv v ss
-                                                      in   (s', s :: ss')
+    extract ks kv v (s :: ss) = if ks s == kv v  then  (s, ss)
+                                                 else  let  (s', ss') = extract ks kv v ss
+                                                       in   (s', s :: ss')
 \end{code}
-\caption{Key-based alignment in \BiGUL}
+\caption{Key-based list alignment in \BiGUL}
 \label{fig:keyAlign}
 \end{figure}
 
-Several variants of alignment have been implemented in \BiGUL~\citep{Zan-Brul, Mendes-delta-alignment} .
-Here we choose to verify a variant that is non-trivial and yet not overly complicated: key-based alignment \citep[Section~6.2]{Hu-BiGUL-tutorial}.
+Alignment is one of the most important issues in synchronisation.
+In this paper, we consider the specialised (and asymmetric) setting where both the source and view are lists, which are consistent exactly when they have the same length and an element-level consistency relation is satisfied by each pair of the source and view elements at the same position.
+(For example, the source elements can be rectangles and the view elements are their widths.)
+View elements may be inserted, deleted, modified, or reordered.
+To put the updated view list back into the source list, we need to align the two lists, i.e., decide for each view element to which source element it corresponds (if any), before we can invoke an element-level consistency restorer on the right pairs of source and view elements.
 
-Different from \citet{Ko-BiGUL}'s original \BiGUL, which has two separate case analysis constructs on source and view respectively, the revised and unified |case| in the current \BiGUL\ has gone beyond \citet{Foster-lenses}'s ``general conditional'' in terms of expressiveness, allowing, e.g., key-based alignment to be implemented directly in \BiGUL\ --- in contrast, \citeauthor{Ko-BiGUL} had to provide alignment as an extra and complex primitive.
+Several variants of list alignment have been implemented in \BiGUL~\citep{Zan-Brul, Mendes-delta-alignment}.
+In this paper we choose to verify a variant that is non-trivial and yet not overly complicated: key-based alignment, an implementation of which was presented and explained with a concrete scenario by
+\citet[Section~6.2]{Hu-BiGUL-tutorial}.
+Their program |keyAlign| is shown in \autoref{fig:keyAlign}.
+The types of source and view elements are |S|~and~|V| respectively.
+The program takes two functions |ks : S -> K| and |kv : V -> K| as arguments, which can be used to extract a key value of type~|K| from every source or view element.
+Two more arguments |b|~and~|c| are needed to deal with two of the three possible situations that can occur during alignment:
+\begin{itemize}
+\item A view element~|v| is deemed to correspond to a source element~|s| only if their keys match, i.e., |ks s = kv v|; an element-level synchroniser |b : S <~ V| will then be invoked on this pair of source and view elements.
+\item If no source element has the same key as a view element, a function |c : V -> S| will be used to create a corresponding source.
+\item A source element will be deleted if there is no corresponding view element.
+\end{itemize}
 
-For now, \citet{Barbosa-matching-lenses}'s matching lenses may be more sophisticated, but they are special-purpose and require the invention of a new framework in which everything is built from scratch.
-Instead, we strive to implement all lenses from just a fixed set of primitives, aiming to promote bidirectional programming to the same status as general-purpose programming.\todo{probably move to the discussion section}
+\begin{code}
+(ASSERT(s v | ks s = kv v)) ~ b ~ (ASSERT(R' CAP (COM(s' _ v | ks s' = ks v))))
+(all(v)) ks (c v) = kv v
+\end{code}
+
+\begin{code}
+(ASSERTRANGE(s v | ks s = kv v)) ~ b ~ (ASSERTRANGE(_))
+\end{code}
 
 \begin{code}
 keyAlign ks kv b c =
   (ASSERTRANGE(_ vs | length vs = n))
   case
-    normal [] [] exit []
-      (ASSERTRANGE([] [] | 0 = n))
-      rearrV [] -> ()
-         (ASSERTRANGE([] () | 0 = n))
-         (ASSERTRANGE(ss v | const () ss = v))
-         skip const ()
-         (ASSERTRANGE([] | 0 = n))
-    normal (s :: _) (v :: _) | ks s = kv v exit (_ :: _)
-      (ASSERTRANGE((s :: _) (v :: vs) | ks s = kv v && 1 + length vs = n))
-      rearrS (s :: ss) -> (s, ss)
-        (ASSERTRANGE((s, _) (v :: vs) | ks s = kv v && 1 + length vs = n))
-        rearrV (v :: vs) -> (v, vs)
-          (ASSERTRANGE((s, _) (v, vs) | ks s = kv v && 1 + length vs = n))
-             (ASSERTRANGE(s v | ks s = kv v))
-             b
-             (ASSERTRANGE(_))
-          *  (ASSERTRANGE(_ vs | 1 + length vs = n))
-             (ASSERTRANGE(_ vs | length vs = prev n))
-             keyAlign ks kv b c
-             (ASSERTRANGE(ss | length ss = prev n && prev n < n))
-             (ASSERTRANGE(ss | 1 + length ss = n))
-          (ASSERTRANGE((_ , ss) | 1 + length ss = n))
-        (ASSERTRANGE((_ , ss) | 1 + length ss = n))
-      (ASSERTRANGE((_ :: ss) | 1 + length ss = n))
-    VDOTS
+  ^  normal [] [] exit []
+  ^  ^  (ASSERTRANGE([] [] | 0 = n))
+  ^  ^  rearrV [] -> ()
+  ^  ^  ^   (ASSERTRANGE([] () | 0 = n))
+  ^  ^  ^   (ASSERTRANGE(ss v | const () ss = v))
+  ^  ^  ^   skip const ()
+  ^  ^  ^   (ASSERTRANGE([] | 0 = n))
+  ^  normal (s :: _) (v :: _) | ks s = kv v exit (_ :: _)
+  ^  ^  (ASSERTRANGE((s :: _) (v :: vs) | ks s = kv v && 1 + length vs = n))
+  ^  ^  rearrS (s :: ss) -> (s, ss)
+  ^  ^  ^  (ASSERTRANGE((s, _) (v :: vs) | ks s = kv v && 1 + length vs = n))
+  ^  ^  ^  rearrV (v :: vs) -> (v, vs)
+  ^  ^  ^  ^  (ASSERTRANGE((s, _) (v, vs) | ks s = kv v && 1 + length vs = n))
+  ^  ^  ^  ^  ^   (ASSERTRANGE(s v | ks s = kv v))
+  ^  ^  ^  ^  ^   b
+  ^  ^  ^  ^  ^   (ASSERTRANGE(_))
+  ^  ^  ^  ^  *   (ASSERTRANGE(_ vs | 1 + length vs = n))
+  ^  ^  ^  ^  ^   (ASSERTRANGE(_ vs | length vs = prev n))
+  ^  ^  ^  ^  ^   keyAlign ks kv b c
+  ^  ^  ^  ^  ^   (ASSERTRANGE(ss | length ss = prev n && prev n < n))
+  ^  ^  ^  ^  ^   (ASSERTRANGE(ss | 1 + length ss = n))
+  ^  ^  ^  ^  (ASSERTRANGE((_ , ss) | 1 + length ss = n))
+  ^  ^  ^  (ASSERTRANGE((_ , ss) | 1 + length ss = n))
+  ^  ^  (ASSERTRANGE((_ :: ss) | 1 + length ss = n))
+  ^  VDOTS
   (ASSERTRANGE(COM([] | 0 = n) CUP (COM((_ :: ss) | 1 + length ss = n))))
   (ASSERTRANGE(ss | length ss = n))
 \end{code}
@@ -1296,43 +1320,47 @@ Count P  n        (x :: xs) ~ <== ~ not  P x && Count P n xs
 \end{code}
 
 \begin{code}
-keyAlignB : Eq K => (S -> K) -> (V -> K) -> (S <~ V) -> (V -> S) -> ([S] <~ [V]) -> ([S] <~ [V])
-keyAlignB ks kv b c rec =
-  (ASSERT(_ vs | length vs = n))
-  case
-    normal [] [] exit []
-      (ASSERT([] [] | 0 = n))
-      rearrV [] -> ()
-         (ASSERT([] () | 0 = n))
-         (ASSERT(ss v | const () ss = v))
-         skip const ()
-         (ASSERT(ss' ss _ | ss' = ss))
-         (ASSERT([] ss ()))
-      (ASSERT([] ss [])) (ASSERTNUMBER 1)
-    normal (s :: _) (v :: _) | ks s == kv v exit (_ :: _)
-      (ASSERT((s :: _) (v :: vs) | 1 + length vs = n && ks s = kv v))
-      rearrS (s :: ss) -> (s, ss)
-        rearrV (v :: vs) -> (v, vs)
-             b
-          *  rec
-      (ASSERT((s' :: ss') (s :: ss) (v :: vs) | (some(s'' , ss'')) R' s' s'' v && ks s' = kv v && (STAR(R' CAP (COM(s' _ v | ks s' = kv v)))) ss' ss'' vs && (all(s'' , i)) s'' = (s :: ss) !! i && Covered s'' i (s :: ss) (v :: vs)  => s'' `elem` ss''))
-      (ASSERT((s' :: ss') ss (v :: vs) | ks s' = kv v && (some(~ ss'')) (STAR(R' CAP (COM(s' _ v | ks s' = kv v)))) (s' :: ss') ss'' (v :: vs) && (all(s, i)) s = ss !! i && Covered s i ss (v :: vs)  => s `elem` ss''))
-    adaptive (_ :: _) []
-      (ASSERT((_ :: _) [] | 0 = n))
-      \ _ _ -> []
-      (ASSERT'(reentry)(_ _ | (COM([] [])) [] []))
-      (ASSERT'(postcondition)([] _ _))
-    adaptive ss (v :: _) | kv v `elem` map ks ss
-      \ ss (v :: _) -> extract ks kv v ss
-    adaptive _ (_ :: _)
-      \ ss (v :: _) -> c v :: ss
-  (ASSERT(ss' ss vs | (some(~ ss'')) (STAR(R' CAP (COM(s' _ v | ks s' = kv v)))) ss' ss'' vs && (all(s, i)) s = ss !! i && Covered s i ss vs  => s `elem` ss''))
+keyAlign : Eq K => (S -> K) -> (V -> K) -> (S <~ V) -> (V -> S) -> ([S] <~ [V])
+keyAlign ks kv b c =
+   (ASSERT(_ vs | length vs = n))
+   case
+   ^  normal [] [] exit []
+   ^  ^  (ASSERT([] [] | 0 = n))
+   ^  ^  rearrV [] -> ()
+   ^  ^  ^   (ASSERT([] () | 0 = n))
+   ^  ^  ^   (ASSERT(ss v | const () ss = v))
+   ^  ^  ^   skip const ()
+   ^  ^  ^   (ASSERT(ss' ss _ | ss' = ss))
+   ^  ^  ^   (ASSERT([] ss ()))
+   ^  ^  (ASSERT([] ss []))
+   ^  normal (s :: _) (v :: _) | ks s = kv v exit (_ :: _)
+   ^  ^  (ASSERT((s :: _) (v :: vs) | 1 + length vs = n && ks s = kv v))
+   ^  ^  rearrS (s :: ss) -> (s, ss)
+   ^  ^  ^  rearrV (v :: vs) -> (v, vs)
+   ^  ^  ^  ^  ^  b
+   ^  ^  ^  ^  *  keyAlign ks kv b c
+   ^    (ASSERT((s' :: ss') (s :: ss) (v :: vs) | (some(s'' , ss'')) R' s' s'' v && ks s' = kv v && (STAR(R' CAP (COM(s' _ v | ks s' = kv v)))) ss' ss'' vs && (all(s'' , i)) s'' = (s :: ss) !! i && Covered s'' i (s :: ss) (v :: vs)  => s'' `elem` ss''))
+   ^    (ASSERT((s' :: ss') ss (v :: vs) | ks s' = kv v && (some(~ ss'')) (STAR(R' CAP (COM(s' _ v | ks s' = kv v)))) (s' :: ss') ss'' (v :: vs) && (all(s, i)) s = ss !! i && Covered s i ss (v :: vs)  => s `elem` ss''))
+   ^  adaptive (_ :: _) []
+   ^  ^  \ _ _ -> []
+   ^  adaptive ss (v :: _) | kv v `elem` map ks ss
+   ^  ^  \ ss (v :: _) -> extract ks kv v ss
+   ^  adaptive _ (_ :: _)
+   ^  ^  \ ss (v :: _) -> c v :: ss
+   (ASSERT(ss' ss vs | (some(~ ss'')) (STAR(R' CAP (COM(s' _ v | ks s' = kv v)))) ss' ss'' vs && (all(i)) Keep i ss vs  => s !! i `elem` ss''))
 \end{code}
 
-|Covered s i ss vs = (some(m, n)) Count (COM(t || ks s = ks t)) m (take i ss) && Count (COM(v || ks s = ks v)) n vs && m < n|
+\begin{code}
+Keep i ss vs =  0 <= i < length ss &&
+                (some(m, n)) Count (COM(t | ks (ss !! i) = ks t)) m (take i ss) && Count (COM(v | ks (ss !! i) = ks v)) n vs && m < n
+\end{code}
 
 \section{Discussion}
 \label{sec:discussion}
+
+This section discusses\todo{\ldots}, and is organised in the format of questions and answers.
+
+\paragraph{Where is lens composition?}
 
 A proper characterisation of the behaviour of composition will be essential for avoiding problems about composition as discussed by, e.g., \citet[Section~2.2]{Diskin-delta-asymmetric}.
 \[ \begin{array}{l}
@@ -1342,41 +1370,52 @@ A proper characterisation of the behaviour of composition will be essential for 
 |(ASSERT(R CAP (COM(a _ || P a)))) ~ l . r ~ (ASSERT(a' a c || (some(b, b')) T' a' a b' && U' b' b c ))|
 \end{array} \]
 This requires the putback and range triples to be defined mutually inductively.
-%A mutually inductive treatment can also shift the disjointness requirement to the ranges of normal branches instead of their exit conditions, allowing the exit conditions to be specified trivially, which can have a serious impact on runtime efficiency in the forward direction, but can be helpful when prototypic or experimental programs need to be developed without too much time for careful reasoning.
 
-It has been realised~\citep[Section~4.1]{Stevens-QVT}\todo{some other citations}\ that, for practical bidirectional applications, a declarative approach --- in the sense that the programmer writes down only a consistency relation and relies on the system to derive a well-behaved but otherwise arbitrary implementation --- is hardly enough.
-The BX community currently concentrates on the exploration of more forms of well-behavedness properties, but we should not be satisfied with only well-behavedness guarantees; instead, we should also start aiming to precisely characterise the behaviour of bidirectional programs, treating bidirectional programming seriously as we treat general-purpose programming.
+\paragraph{How powerful is (the current) \BiGUL, especially compared with previous languages like the one proposed by \citet{Foster-lenses}?}
 
-We need general and formal reasoning principles for bidirectional programming to make it become a proper discipline of programming.
+Different from \citet{Ko-BiGUL}'s original \BiGUL, which has two separate case analysis constructs on source and view respectively, the revised and unified |case| in the current \BiGUL\ has gone beyond \citet{Foster-lenses}'s ``general conditional'' in terms of expressiveness, allowing, e.g., key-based list alignment to be implemented directly in \BiGUL\ --- in contrast, \citeauthor{Ko-BiGUL} had to provide list alignment as an extra and complex primitive.
 
-Programming languages should be shipped with reasoning principles; even domain-specific languages deserve domain-specific reasoning principles!
+\paragraph{Doesn't \autoref{thm:total-forward-consistency} say that we need to reason in both directions anyway?}
 
-\textit{Why isn't the title of this paper ``An Axiomatic Basis for \emph{Putback-Based} Bidirectional Programming''?}
+We have consistently explained how range triples can be derived in the putback direction.
+Even if the sceptic reader insists that deriving range triples requires thinking in the forward direction, they will still have to admit that, according to \autoref{thm:total-forward-consistency}, what needs to be verified in the forward direction is normally much easier than proving that |get| is contained in the consistency relation. This is because the major work has been done in derivations of putback triples.
+
+\paragraph{Why isn't the title of this paper ``An Axiomatic Basis for \emph{Putback-Based} Bidirectional Programming''?}
+
 Within the realm of asymmetric lenses, the get-based approach is fundamentally just about \emph{programming consistency specifications}; only with the putback-based approach can we start talking about \emph{programming to meet functional specifications}, and only in this case does an axiomatic semantics make sense.
 
-\textit{Doesn't \autoref{thm:total-forward-consistency} say that we need to reason in both directions anyway?}
-Even if the sceptic reader insists that constructing the range triples requires thinking in the forward direction, they will still have to admit that, according to \autoref{thm:total-forward-consistency}, what needs to be verified in the forward direction is normally much easier than proving that |get| is contained in the consistency relation. This is because the major work has been done in the backward direction.
+%Note that consistency is specified purely relationally in this case.
+%This reinforces the statement that it is the consistency relation that we have in mind before programming |put|, rather than the |get| function: for asymmetric lenses, a consistency relation must be functional (in the sense that every source is related to at most one view) but may well not be executable (as in the case of |replaceAll|), whereas a |get| function is executable, and its computational content is non-trivially derived from the |put| program.
+%\todo{Discuss asymmetric lenses from \citet[Section~4.1]{Stevens-QVT}'s perspective somewhere before, or move the entire remark to \autoref{sec:discussion}.}
+%\begin{proposition}
+%\[ |(ASSERT R) ~ b ~ (ASSERT(s' s _ || s' = s))| \quad|=>|\quad |R ~ SUBSETEQ ~ (GRAPH(get b))| \]
+%\end{proposition}
 
-Note that consistency is specified purely relationally in this case.
-This reinforces the statement that it is the consistency relation that we have in mind before programming |put|, rather than the |get| function: for asymmetric lenses, a consistency relation must be functional (in the sense that every source is related to at most one view) but may well not be executable (as in the case of |replaceAll|), whereas a |get| function is executable, and its computational content is non-trivially derived from the |put| program.
-\todo{Discuss asymmetric lenses from \citet[Section~4.1]{Stevens-QVT}'s perspective somewhere before, or move the entire remark to \autoref{sec:discussion}.}
-\begin{proposition}
-\[ |(ASSERT R) ~ b ~ (ASSERT(s' s _ || s' = s))| \quad|=>|\quad |R ~ SUBSETEQ ~ (GRAPH(get b))| \]
-\end{proposition}
+For now, \citet{Barbosa-matching-lenses}'s matching lenses may be more sophisticated, but they are special-purpose and require the invention of a new framework in which everything is built from scratch.
+Instead, we strive to implement all lenses from just a fixed set of primitives, aiming to promote bidirectional programming to the same status as general-purpose programming.
 
 Completeness has not been proved, but we have shown that the logic works for various examples. Relationship with constructive continuity.
 
-\BiGUL\ is stateful, but only in the ``Reader'' way, in particular using the Reader monad's `|local|' operation to modify the current source and view.
-Our Hoare-style logic can be said to be merely tracking how the current source and view are manipulated by implicit `|local|' operations.
+%\BiGUL\ is stateful, but only in the ``Reader'' way, in particular using the Reader monad's `|local|' operation to modify the current source and view.
+%Our Hoare-style logic can be said to be merely tracking how the current source and view are manipulated by implicit `|local|' operations.
 
 Towards a syntactic treatment for automation.
 
-It has been argued that ``putback'' is the essence of bidirectional programming~\citep{Fischer-essence-of-BX}.
-We would like to amend this statement: Putback-based \emph{reasoning} is the essence of bidirectional programming.
-This paper has shown, with the Hoare-style logic, what such reasoning can look like.
+\section{Conclusion}
 
-Understanding the bidirectional behaviour of a \BiGUL\ program almost only involves understanding its putback behaviour.
-A successful extension of \autoref{thm:dominance}.
+Based on \autoref{thm:dominance}, it has been argued that ``putback'' is the essence of bidirectional programming~\citep{Fischer-essence-of-BX}.
+We would like to amend this statement: putback-based \emph{reasoning} is the essence of bidirectional programming.
+This paper has shown, with the Hoare-style logic for \BiGUL, what such reasoning can look like.
+In particular, we have demonstrated how an adequate understanding of a \BiGUL\ program's bidirectional behaviour can be reduced to reasoning exclusively about its putback behaviour.
+
+It has long been realised by the BX community that declarative approaches --- in the sense that the programmer writes down only a consistency specification and relies on the system to derive a well-behaved but otherwise arbitrary implementation --- are hardly enough for practical bidirectional applications (see, e.g., \citet[Section~4.1]{Stevens-QVT}).
+The BX community currently concentrates on the exploration of more forms of well-behavedness properties (see, e.g., \citet{Cheney-least-surprise}), but we should not be satisfied with only well-behavedness guarantees; instead, we should also start aiming to precisely characterise the behaviour of bidirectional programs, treating bidirectional programming seriously as we treat general-purpose programming.
+
+More broadly, we believe that programming languages should be shipped with reasoning principles --- even domain-specific languages deserve domain-specific reasoning principles!
+In the case of \BiGUL, we have shown how the Hoare-style proof rules can help to introduce \BiGUL's semantics in an informal yet precise manner, and explained how and in what format semi-formal reasoning can be performed and integrated into the programs with reasonable effort.
+In fact, the evolution of \BiGUL\ is partly prompted by the development of the Hoare-style logic, whose eventual simplicity justifies \BiGUL's current design.
+If, as \citet{Dijkstra-EWD361} argued, programs and their correctness proofs should grow hand in hand, then programming languages and their reasoning principles ought to be developed together as well.
+\BiGUL\ and its Hoare-style logic make a nice example for this statement.
 
 % Acknowledgements
 \begin{acks}                            %% acks environment is optional

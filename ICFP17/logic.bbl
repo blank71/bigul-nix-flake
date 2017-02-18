@@ -76,6 +76,23 @@
   \bibinfo{volume}{1}, \bibinfo{number}{2} (\bibinfo{year}{2005}),
   \bibinfo{pages}{1--28}.
 \newblock
+\showDOI{%
+\url{http://dx.doi.org/10.2168/LMCS-1(2:1)2005}}
+
+
+\bibitem[\protect\citeauthoryear{Cheney, Gibbons, McKinna, and Stevens}{Cheney
+  et~al\mbox{.}}{2015}]%
+        {Cheney-least-surprise}
+\bibfield{author}{\bibinfo{person}{James Cheney}, \bibinfo{person}{Jeremy
+  Gibbons}, \bibinfo{person}{James McKinna}, {and} \bibinfo{person}{Perdita
+  Stevens}.} \bibinfo{year}{2015}\natexlab{}.
+\newblock \showarticletitle{Towards a {Principle of Least Surprise} for
+  Bidirectional Transformations}. In \bibinfo{booktitle}{{\em International
+  Workshop on Bidirectional Transformations}} {\em (\bibinfo{series}{BX'15})}.
+  \bibinfo{publisher}{CEUR-WS}, \bibinfo{pages}{66--80}.
+\newblock
+\showURL{%
+\url{http://ceur-ws.org/Vol-1396/p66-cheney.pdf}}
 
 
 \bibitem[\protect\citeauthoryear{Czarnecki, Foster, Hu, L{\"a}mmel, Sch{\"u}rr,
@@ -93,6 +110,19 @@
 \newblock
 \showDOI{%
 \url{http://dx.doi.org/10.1007/978-3-642-02408-5_19}}
+
+
+\bibitem[\protect\citeauthoryear{Dijkstra}{Dijkstra}{1974}]%
+        {Dijkstra-EWD361}
+\bibfield{author}{\bibinfo{person}{Edsger~W. Dijkstra}.}
+  \bibinfo{year}{1974}\natexlab{}.
+\newblock \showarticletitle{Programming as a discipline of mathematical
+  nature}.
+\newblock \bibinfo{journal}{{\it Amer. Math. Monthly}} \bibinfo{volume}{81},
+  \bibinfo{number}{6} (\bibinfo{year}{1974}), \bibinfo{pages}{608--612}.
+\newblock
+\showDOI{%
+\url{http://dx.doi.org/10.2307/2319209}}
 
 
 \bibitem[\protect\citeauthoryear{Diskin, Xiong, and Czarnecki}{Diskin
@@ -178,6 +208,21 @@
 \url{http://dx.doi.org/10.1145/2847538.2847544}}
 
 
+\bibitem[\protect\citeauthoryear{Macedo, Pacheco, Cunha, and Oliveira}{Macedo
+  et~al\mbox{.}}{2013}]%
+        {Macedo-composing-least-change-lenses}
+\bibfield{author}{\bibinfo{person}{Nuno Macedo}, \bibinfo{person}{Hugo
+  Pacheco}, \bibinfo{person}{Alcino Cunha}, {and} \bibinfo{person}{Jos{\'e}~N.
+  Oliveira}.} \bibinfo{year}{2013}\natexlab{}.
+\newblock \showarticletitle{Composing Least-Change Lenses}. In
+  \bibinfo{booktitle}{{\em International Workshop on Bidirectional
+  Transformations}} {\em (\bibinfo{series}{Electronic Communications of the
+  EASST})}. \bibinfo{publisher}{EASST}.
+\newblock
+\showDOI{%
+\url{http://dx.doi.org/10.14279/tuj.eceasst.57.868}}
+
+
 \bibitem[\protect\citeauthoryear{Martin-L{\"o}f}{Martin-L{\"o}f}{1984}]%
         {ML-TT84}
 \bibfield{author}{\bibinfo{person}{Per Martin-L{\"o}f}.}
@@ -212,6 +257,21 @@
 \newblock
 \showURL{%
 \url{http://www.cse.chalmers.se/~ulfn/papers/thesis.html}}
+
+
+\bibitem[\protect\citeauthoryear{Pacheco, Hu, and Fischer}{Pacheco
+  et~al\mbox{.}}{2014}]%
+        {Pacheco-putlenses}
+\bibfield{author}{\bibinfo{person}{Hugo Pacheco}, \bibinfo{person}{Zhenjiang
+  Hu}, {and} \bibinfo{person}{Sebastian Fischer}.}
+  \bibinfo{year}{2014}\natexlab{}.
+\newblock \showarticletitle{Monadic combinators for ``Putback'' style
+  bidirectional programming}. In \bibinfo{booktitle}{{\em Partial Evaluation
+  and Program Manipulation}} {\em (\bibinfo{series}{PEPM'14})}.
+  \bibinfo{publisher}{ACM}, \bibinfo{pages}{39--50}.
+\newblock
+\showDOI{%
+\url{http://dx.doi.org/10.1145/2543728.2543737}}
 
 
 \bibitem[\protect\citeauthoryear{Reynolds}{Reynolds}{2002}]%

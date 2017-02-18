@@ -317,12 +317,11 @@ keyAlign-finite-expansion keq ks kv b c R' b-t c-eq l n n≤l =
 keyAlign-range :
   {K : Set} (keq : Decidable (_≡_ {A = K})) (ks : S → K) (kv : V → K) (b : BiGUL F Sᵁ Vᵁ) (c : V → S) →
   TripleR (λ { (s , v) → ks s ≡ kv v }) b Π →
-  ((v : V) → ks (c v) ≡ kv v) →
   (n : ℕ) (rec : BiGUL F (var zero) (var (suc zero))) →
   ({m : ℕ} → TripleR (((_≡ m) ∘ length ∘ toList₁ ∘ proj₂)) rec
                      (((_≡ m) ∘ length ∘ toList₀) ∩ (λ _ → m < n))) →
   TripleR ((_≡ n) ∘ length ∘ toList₁ ∘ proj₂) (keyAlignᴮ keq ks kv b c rec) ((_≡ n) ∘ length ∘ toList₀)
-keyAlign-range keq ks kv b c b-t c-eq n rec rec-t =
+keyAlign-range keq ks kv b c b-t n rec rec-t =
   conseq
     proj₁
     (case
@@ -372,18 +371,18 @@ keyAlign-range keq ks kv b c b-t c-eq n rec rec-t =
 
 keyAlign-finite-expansionR :
   {K : Set} (keq : Decidable (_≡_ {A = K})) (ks : S → K) (kv : V → K) (b : BiGUL F Sᵁ Vᵁ) (c : V → S) →
-  TripleR (λ { (s , v) → ks s ≡ kv v }) b Π → ((v : V) → ks (c v) ≡ kv v) →
+  TripleR (λ { (s , v) → ks s ≡ kv v }) b Π →
   (l n : ℕ) → n ≤ l → TripleR ((_≡ n) ∘ length ∘ toList₁ ∘ proj₂)
                               (expand (suc l) (keyAlignᴮ keq ks kv b c))
                               ((_≡ n) ∘ length ∘ toList₀)
-keyAlign-finite-expansionR keq ks kv b c b-t c-eq l n n≤l =
+keyAlign-finite-expansionR keq ks kv b c b-t l n n≤l =
   conseq
     (proj₂ ∘ proj₁)
     (expandTripleR (keyAlignᴮ keq ks kv b c) (length ∘ toList₁ ∘ proj₂) Π (λ n → (_≡ n) ∘ length ∘ toList₀)
        (λ n rec rec-t →
           conseq
             ((_,_ tt) ∘ proj₁)
-            (keyAlign-range keq ks kv b c b-t c-eq n rec (conseq (proj₂ ∘ proj₁) rec-t id))
+            (keyAlign-range keq ks kv b c b-t n rec (conseq (proj₂ ∘ proj₁) rec-t id))
             id)
        l n n≤l)
     id
