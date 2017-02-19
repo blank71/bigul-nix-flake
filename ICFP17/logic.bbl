@@ -182,6 +182,20 @@
 \url{http://dx.doi.org/10.1145/1232420.1232424}}
 
 
+\bibitem[\protect\citeauthoryear{Hofmann, Pierce, and Wagner}{Hofmann
+  et~al\mbox{.}}{2011}]%
+        {Hofmann-symmetric-lenses}
+\bibfield{author}{\bibinfo{person}{Martin Hofmann}, \bibinfo{person}{Benjamin
+  Pierce}, {and} \bibinfo{person}{Daniel Wagner}.}
+  \bibinfo{year}{2011}\natexlab{}.
+\newblock \showarticletitle{Symmetric Lenses}. In \bibinfo{booktitle}{{\em
+  Principles of Programming Languages}} {\em (\bibinfo{series}{POPL'11})}.
+  \bibinfo{publisher}{ACM}, \bibinfo{pages}{371--384}.
+\newblock
+\showDOI{%
+\url{http://dx.doi.org/10.1145/1925844.1926428}}
+
+
 \bibitem[\protect\citeauthoryear{Hu and Ko}{Hu and Ko}{2017}]%
         {Hu-BiGUL-tutorial}
 \bibfield{author}{\bibinfo{person}{Zhenjiang Hu} {and}

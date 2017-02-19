@@ -20,8 +20,7 @@
 }
 \makeatother
 \definecolor{indent}{gray}{.6}
-\newcommand{\idots}{\kern.25pt\vphantom{||}{\color{indent}\smash{\rlap{\rule[6.75pt]{1pt}{1pt}}\rlap{\rule[3.5pt]{1pt}{1pt}}\rlap{\rule[0.25pt]{1pt}{1pt}}\rlap{\rule[-3pt]{1pt}{1pt}}}}\kern-.25pt\quad}
-%\newcommand{\idots}{\kern.25pt\vphantom{||}{\color{indent}\smash{\rlap{\rule[8.8pt]{1pt}{1pt}}\rlap{\rule[6.2pt]{1pt}{1pt}}\rlap{\rule[3.6pt]{1pt}{1pt}}\rlap{\rule[1pt]{1pt}{1pt}}\rlap{\rule[-1.6pt]{1pt}{1pt}}\rlap{\rule[-4.2pt]{1pt}{1pt}}}}\kern-.25pt\quad}
+\newcommand{\idots}{\kern.25pt\vphantom{||}{\color{indent}\smash{\rlap{\rule[13pt/4*2+.25pt]{1pt}{1pt}}\rlap{\rule[13pt/4*1+.25pt]{1pt}{1pt}}\rlap{\rule[13pt/4*0+.25pt]{1pt}{1pt}}\rlap{\rule[13pt/4*(-1)+.25pt]{1pt}{1pt}}}}\kern-.25pt\quad}
 
 %format of = "\keyword{of}"
 %format if = "\keyword{if}"
@@ -558,7 +557,7 @@ $\begin{array}[t]{ll}
 \end{figure}
 
 In this section we will introduce the putback proof rules for \BiGUL, shown in \autoref{fig:putback-proof-rules}.
-Except for the consequence rule (the right one in the second row), every rule corresponds to a \BiGUL\ construct and gives an axiomatic formulation of its semantics.
+Except for the consequence rule (the right one in the second row), every rule corresponds to a \BiGUL\ construct and gives an axiomatic encapsulation of its semantics.
 For each \BiGUL\ construct, we will introduce its type, which is essential for inferring the types of entities in assertions, and  explain the corresponding proof rule with the help of the operational meaning of the construct.
 We will not, however, go into the rationale behind the design of the constructs, for which the interested reader is referred to \citet[Section~5]{Hu-BiGUL-tutorial}.
 We emphasise that the assertions in the proof rules are intended to be semantic rather than syntactic --- for example, if the precondition stated in a rule is |COM(_ _)|, we will consider the rule directly applicable when the required precondition is, say, |COM(s v || s = s && v = v)|, which is different from |COM(_ _)| syntactically but still denotes the always true binary relation semantically.
@@ -582,7 +581,7 @@ The precondition thus requires that the view can be computed from the source by~
 Given two \BiGUL\ programs |l : S <~ V| and |r : T <~ W|, we can form the product of the two programs |l * r : (S TIMES T) <~ (V TIMES W)|.
 If two putback triples with preconditions |L|~and~|R| have been established for |l|~and~|r|, the precondition of the product program will be
 \[ |L * R ~ = ~ (COM((s, t) (v, w) || L s v && R t w))| \]
-The relation-level `|*|'~operator can (indeed) be seen as a simple variant of separating conjunction~\citep{Reynolds-separation-logic}, and can be defined arity-generically to construct an relation on $n$~pairs from an $n$-ary relation on all the first components and the other on all the second components.
+The relation-level `|*|'~operator can (indeed) be seen as a simple variant of separating conjunction~\citep{Reynolds-separation-logic}, and can be defined arity-generically to construct a relation on $n$~pairs from an $n$-ary relation on all the first components and the other on all the second components.
 The postcondition can then be stated also in terms of this `|*|'~operator.
 
 \begin{example}[parallel replacement] \label{ex:replace-squared}
@@ -711,7 +710,7 @@ rearrV v -> (v, ())
 ^  (ASSERT((w', h') (_ , h) (v, ()) | w' = v && h' = h))(ASSERTNUMBER *4)
 (ASSERT((w', h') (_ , h) v | w' = v && h' = h))(ASSERTNUMBER *2)
 \end{code}
-Note that when working out the derivation inwards from the initial precondition and postcondition, it is effortless to push them inside `|rearrV v -> (v, ())|' and turn them into assertions 3~and~4 just by changing the view pattern to a pair pattern, as instructed by the |rearrV|.
+Note that when constructing the derivation inwards from the initial precondition and postcondition, it is effortless to push them inside the |rearrV| and turn them into assertions 3~and~4 just by changing the view pattern to a pair pattern, as instructed by the |rearrV|.
 \end{example}
 
 \paragraph{Source rearrangement and the corresponding rule.}
@@ -1237,9 +1236,9 @@ keyAlign ks kv b c =
   ^  ^  \ ss (v :: _) -> c v :: ss
   where
     extract : Eq K => (S -> K) -> (V -> K) -> V -> [S] -> S TIMES [S]
-    extract ks kv v (s :: ss) = if ks s == kv v  then  (s, ss)
-                                                 else  let  (s', ss') = extract ks kv v ss
-                                                       in   (s', s :: ss')
+    extract ks kv v (s :: ss) = if ks s = kv v  then  (s, ss)
+                                                else  let  (s', ss') = extract ks kv v ss
+                                                      in   (s', s :: ss')
 \end{code}
 \caption{Key-based list alignment in \BiGUL}
 \label{fig:keyAlign}
@@ -1260,14 +1259,48 @@ The program takes two functions |ks : S -> K| and |kv : V -> K| as arguments, wh
 Two more arguments |b|~and~|c| are needed to deal with two of the three possible situations that can occur during alignment:
 \begin{itemize}
 \item A view element~|v| is deemed to correspond to a source element~|s| only if their keys match, i.e., |ks s = kv v|; an element-level synchroniser |b : S <~ V| will then be invoked on this pair of source and view elements.
-\item If no source element has the same key as a view element, a function |c : V -> S| will be used to create a corresponding source.
+\item If no source element has the same key as a view element, a function |c : V -> S| will be used to create a temporary corresponding source; this temporary source will then be fully synchronised with the view using~|b|.
 \item A source element will be deleted if there is no corresponding view element.
 \end{itemize}
 
+To verify |keyAlign|, we need to make some assumptions about its arguments.
+For simplicity, we assume that |b|~can run successfully for any pair of source and view elements as long as they have the same key; also, |b|~should guarantee that the updated source and the view will have the same key, apart from any other postcondition |R' : (POWER(S TIMES S TIMES V))| it can establish.
+As a putback triple:
+\[ |(ASSERT(s v || ks s = kv v)) ~ b ~ (ASSERT(R' CAP (COM(s' _ v || ks s' = ks v))))| \]
+We will abbreviate |R' CAP (COM(s' _ v || ks s' = ks v))| as~|T'|.
+For the source-creating function~|c|, since a created source will be further processed by~|b|, we require the key of the created source to be the same as that of the view, i.e.,
+\[ |(all(v)) ~ ks (c v) = kv v| \]
+We can then derive:
 \begin{code}
-(ASSERT(s v | ks s = kv v)) ~ b ~ (ASSERT(R' CAP (COM(s' _ v | ks s' = ks v))))
-(all(v)) ks (c v) = kv v
+(ASSERT(_ _)) ~ keyAlign ks kv b c ~ (ASSERT(ss' ss vs | (some(~ ss'')) (STAR T') ss' ss'' vs && Retentive ss vs ss''))
 \end{code}
+where |(STAR T') : (POWER([S] TIMES [S] TIMES [V]))| is defined inductively by the following two rules:
+\begin{code}
+(STAR T')  []           []             []
+(STAR T')  (s' :: ss')  (s'' :: ss'')  (v :: vs) ~ <== ~ T' s' s'' v &&  (STAR T') ss' ss'' vs
+\end{code}
+and |Retentive ss vs ss''| says that if a source element of~|ss| corresponds to a view element in~|vs|, then that source element will be in~|ss''|.
+This ``correspondence'' turns out to be tricky to define.
+
+
+\begin{code}
+normal (s :: _) (v :: _) | ks s = kv v exit (_ :: _)
+^  (ASSERT((s :: _) (v :: vs) | 1 + length vs = n && ks s = kv v))
+^  rearrS (s :: ss) -> (s, ss)
+^  ^  rearrV (v :: vs) -> (v, vs)
+^  ^  ^  ^  (ASSERT(s v | ks s = kv v))
+^  ^  ^  ^  b
+^  ^  ^  ^  (ASSERT T')
+^  ^  ^  *  (ASSERT(_ vs | 1 + length vs = n))
+^  ^  ^  ^  (ASSERT(_ vs | length vs = pred n && pred n < n))
+^  ^  ^  ^  keyAlign ks kv b c
+^  ^  ^  ^  (ASSERT(ss' ss vs | (some(~ ss'')) (STAR T') ss' ss'' vs && Keep ss vs ss''))
+^  (ASSERT((s' :: ss') (s :: ss) (v :: vs) | T' s' s v && (some(~ ss'')) (STAR T') ss' ss'' vs && Keep ss vs ss''))
+^  (ASSERT((s' :: ss') ss (v :: vs) | (some(~ ss'')) (STAR T') (s' :: ss') ss'' (v :: vs) && Keep ss (v :: vs) ss'' && ks s' = kv v))
+\end{code}
+
+|Keep ss vs ss'' && ks s = kv v ~ => ~ Keep (s :: ss) (v :: vs) (s :: ss'')|
+
 
 \begin{code}
 (ASSERTRANGE(s v | ks s = kv v)) ~ b ~ (ASSERTRANGE(_))
@@ -1306,11 +1339,7 @@ keyAlign ks kv b c =
   (ASSERTRANGE(ss | length ss = n))
 \end{code}
 
-\begin{code}
-(STAR R) : (POWER([A] TIMES [B] TIMES [C]))
-(STAR R)  []         []         []
-(STAR R)  (x :: xs)  (y :: ys)  (z :: zs) ~ <== ~ R x y z &&  (STAR R) xs ys zs
-\end{code}
+
 
 \begin{code}
 Count P : (POWER(Nat TIMES [A]))
@@ -1347,7 +1376,7 @@ keyAlign ks kv b c =
    ^  ^  \ ss (v :: _) -> extract ks kv v ss
    ^  adaptive _ (_ :: _)
    ^  ^  \ ss (v :: _) -> c v :: ss
-   (ASSERT(ss' ss vs | (some(~ ss'')) (STAR(R' CAP (COM(s' _ v | ks s' = kv v)))) ss' ss'' vs && (all(i)) Keep i ss vs  => s !! i `elem` ss''))
+   (ASSERT(ss' ss vs | (some(~ ss'')) (STAR T') ss' ss'' vs && (all(i)) Keep i ss vs  => s !! i `elem` ss''))
 \end{code}
 
 \begin{code}
@@ -1358,31 +1387,45 @@ Keep i ss vs =  0 <= i < length ss &&
 \section{Discussion}
 \label{sec:discussion}
 
-This section discusses\todo{\ldots}, and is organised in the format of questions and answers.
+\paragraph{How powerful is (the current) \BiGUL\ compared with previous bidirectional languages?}
+It might be said that most of the expressive power of the current \BiGUL\ stems from its |case| construct, which has gone beyond \citet{Foster-lenses}'s ``general conditional'' in terms of expressiveness, allowing, in particular, key-based list alignment to be implemented directly.
+The case analysis constructs in \citet{Ko-BiGUL}'s original \BiGUL\ were essentially the same as \citeauthor{Foster-lenses}'s conditionals, and \citeauthor{Ko-BiGUL} had to provide list alignment as an extra and complex primitive.
+
+While we are on the subject of alignment, the reader might be interested in a comparison with \citet{Barbosa-matching-lenses}'s matching lenses.
+Matching lenses offer some fairly sophisticated matching strategies that can be hard to implement nicely in \BiGUL\ so far, but they are special-purpose and require the invention of a new framework in which everything is built from scratch.
+In contrast, \BiGUL\ is designed with the ultimate aim of expressing all lenses using just a fixed set of simple primitives, like what we can do in general-purpose programming languages --- hence the need for a general reasoning principle like the Hoare-style logic.
+
+\paragraph{What reasoning principles were there for bidirectional programming?}
+
+There are some forms of reasoning principles proposed along with some of the more generically designed bidirectional languages --- for example,  \citet{Foster-lenses} offer systematic rules for proving totality, and \citet{Hofmann-symmetric-lenses} give some equational laws originated from category theory.
+None of them aimed to be as strong as our Hoare-style logic, however.
+We might say that the fundamental problem with those reasoning principles is that they are only auxiliary and cannot help the programmer to understand program behaviour without breaking the abstraction and reasoning in terms of the semantic definitions of the languages.
+In contrast, our Hoare-style logic completely shields the programmer from the highly detailed semantic definition of \BiGUL\ like the one presented by \citet{Ko-BiGUL}, yet still allows the programmer to precisely understand program behaviour with reasonable effort.
 
 \paragraph{Where is lens composition?}
 
-A proper characterisation of the behaviour of composition will be essential for avoiding problems about composition as discussed by, e.g., \citet[Section~2.2]{Diskin-delta-asymmetric}.
+In terms of consistency, the behaviour of lens composition is just relational composition; on the other hand, the retentive behaviour of lens composition is rather chaotic and hard to reason about.
+We can formulate a rule like:
 \[ \begin{array}{l}
-|(ASSERT (a b' || (some(b, c)) R a c && R' a b && U' b' b c)) ~ l ~ (ASSERT(COM(a' _ b || R' a' b) CAP T') (ASSERTRANGE P)| \\
+|(ASSERT (a b' || (some(b, c)) R a c && R' a b && U' b' b c)) ~ l ~ (ASSERT(COM(a' _ b || R' a' b) CAP T')| \\
+|(ASSERTRANGE (a b' || (some(b, c)) R a c && R' a b && U' b' b c)) ~ l ~ (ASSERTRANGE P')| \\
 |(ASSERT (b c || (some(a)) R' a b && R a c)) ~ r ~ (ASSERT U')|
 \\ \hline
-|(ASSERT(R CAP (COM(a _ || P a)))) ~ l . r ~ (ASSERT(a' a c || (some(b, b')) T' a' a b' && U' b' b c ))|
+|(ASSERT(R CAP (COM(a _ || P' a)))) ~ l . r ~ (ASSERT(a' a c || (some(b, b')) T' a' a b' && U' b' b c ))|
 \end{array} \]
-This requires the putback and range triples to be defined mutually inductively.
-
-\paragraph{How powerful is (the current) \BiGUL, especially compared with previous languages like the one proposed by \citet{Foster-lenses}?}
-
-Different from \citet{Ko-BiGUL}'s original \BiGUL, which has two separate case analysis constructs on source and view respectively, the revised and unified |case| in the current \BiGUL\ has gone beyond \citet{Foster-lenses}'s ``general conditional'' in terms of expressiveness, allowing, e.g., key-based list alignment to be implemented directly in \BiGUL\ --- in contrast, \citeauthor{Ko-BiGUL} had to provide list alignment as an extra and complex primitive.
+and we have actually proved that the rule is sound, but the form of the rule is too complex and hardly usable.
+We will probably need to find a sweet spot and design a composition rule that is perhaps not as general as the above one but can still say enough about the retentive behaviour.
+It should be noted that, while composition is included in other languages like \citet{Foster-lenses}'s, the problem with controlling the retentive behaviour of composition has always existed, as discussed by, e.g., \citet[Section~2.2]{Diskin-delta-asymmetric}.
 
 \paragraph{Doesn't \autoref{thm:total-forward-consistency} say that we need to reason in both directions anyway?}
 
-We have consistently explained how range triples can be derived in the putback direction.
-Even if the sceptic reader insists that deriving range triples requires thinking in the forward direction, they will still have to admit that, according to \autoref{thm:total-forward-consistency}, what needs to be verified in the forward direction is normally much easier than proving that |get| is contained in the consistency relation. This is because the major work has been done in derivations of putback triples.
+We have consistently explained how range triples can be derived by thinking in the putback direction.
+Even if the sceptic reader insisted that deriving range triples requires thinking in the forward direction, they would still have to admit that it is much easier to prove that |get| is contained in the precondition of |put|, as required by \autoref{thm:total-forward-consistency}, than to prove that it is contained in the consistency relation.
+The indisputable fact is that the major work is done in derivations of putback triples, making the reasoning putback-based.
 
-\paragraph{Why isn't the title of this paper ``An Axiomatic Basis for \emph{Putback-Based} Bidirectional Programming''?}
-
-Within the realm of asymmetric lenses, the get-based approach is fundamentally just about \emph{programming consistency specifications}; only with the putback-based approach can we start talking about \emph{programming to meet functional specifications}, and only in this case does an axiomatic semantics make sense.
+%\paragraph{Why isn't the title of this paper ``An Axiomatic Basis for \emph{Putback-Based} Bidirectional Programming''?}
+%
+%Within the realm of asymmetric lenses, the get-based approach is fundamentally just about \emph{programming consistency specifications}; only with the putback-based approach can we start talking about \emph{programming to meet functional specifications}, and only in this case does an axiomatic semantics make sense.
 
 %Note that consistency is specified purely relationally in this case.
 %This reinforces the statement that it is the consistency relation that we have in mind before programming |put|, rather than the |get| function: for asymmetric lenses, a consistency relation must be functional (in the sense that every source is related to at most one view) but may well not be executable (as in the case of |replaceAll|), whereas a |get| function is executable, and its computational content is non-trivially derived from the |put| program.
@@ -1391,28 +1434,26 @@ Within the realm of asymmetric lenses, the get-based approach is fundamentally j
 %\[ |(ASSERT R) ~ b ~ (ASSERT(s' s _ || s' = s))| \quad|=>|\quad |R ~ SUBSETEQ ~ (GRAPH(get b))| \]
 %\end{proposition}
 
-For now, \citet{Barbosa-matching-lenses}'s matching lenses may be more sophisticated, but they are special-purpose and require the invention of a new framework in which everything is built from scratch.
-Instead, we strive to implement all lenses from just a fixed set of primitives, aiming to promote bidirectional programming to the same status as general-purpose programming.
-
-Completeness has not been proved, but we have shown that the logic works for various examples. Relationship with constructive continuity.
+%Completeness has not been proved, but we have shown that the logic works for various examples. Relationship with constructive continuity.
 
 %\BiGUL\ is stateful, but only in the ``Reader'' way, in particular using the Reader monad's `|local|' operation to modify the current source and view.
 %Our Hoare-style logic can be said to be merely tracking how the current source and view are manipulated by implicit `|local|' operations.
 
-Towards a syntactic treatment for automation.
+%Towards a syntactic treatment for automation.
 
 \section{Conclusion}
 
 Based on \autoref{thm:dominance}, it has been argued that ``putback'' is the essence of bidirectional programming~\citep{Fischer-essence-of-BX}.
 We would like to amend this statement: putback-based \emph{reasoning} is the essence of bidirectional programming.
 This paper has shown, with the Hoare-style logic for \BiGUL, what such reasoning can look like.
-In particular, we have demonstrated how an adequate understanding of a \BiGUL\ program's bidirectional behaviour can be reduced to reasoning exclusively about its putback behaviour.
+More specifically, we have demonstrated how an adequate understanding of a \BiGUL\ program's bidirectional behaviour can be reduced to reasoning exclusively about its putback behaviour.
 
-It has long been realised by the BX community that declarative approaches --- in the sense that the programmer writes down only a consistency specification and relies on the system to derive a well-behaved but otherwise arbitrary implementation --- are hardly enough for practical bidirectional applications (see, e.g., \citet[Section~4.1]{Stevens-QVT}).
-The BX community currently concentrates on the exploration of more forms of well-behavedness properties (see, e.g., \citet{Cheney-least-surprise}), but we should not be satisfied with only well-behavedness guarantees; instead, we should also start aiming to precisely characterise the behaviour of bidirectional programs, treating bidirectional programming seriously as we treat general-purpose programming.
+It has long been realised by the BX community that declarative approaches --- where the programmer writes down only a consistency specification and relies on the system to derive a well-behaved but otherwise arbitrary implementation --- are hardly enough for practical bidirectional applications \citep[see, e.g.,][Section~4.1]{Stevens-QVT}.
+The BX community currently concentrates on the exploration of more forms of well-behavedness properties \citep[see, e.g.,][]{Cheney-least-surprise}, but we should not be satisfied with only well-behavedness guarantees.
+Instead, we should also start aiming to precisely characterise the behaviour of bidirectional programs like what the \BiGUL\ programmer can now do with the Hoare-style logic, treating bidirectional programming seriously as we treat general-purpose programming.
 
 More broadly, we believe that programming languages should be shipped with reasoning principles --- even domain-specific languages deserve domain-specific reasoning principles!
-In the case of \BiGUL, we have shown how the Hoare-style proof rules can help to introduce \BiGUL's semantics in an informal yet precise manner, and explained how and in what format semi-formal reasoning can be performed and integrated into the programs with reasonable effort.
+In the case of \BiGUL, we have shown how the precision of the Hoare-style proof rules can complement the informal description of \BiGUL's semantics, and explained how and in what format semi-formal reasoning can be performed for and integrated into \BiGUL\ programs with reasonable effort.
 In fact, the evolution of \BiGUL\ is partly prompted by the development of the Hoare-style logic, whose eventual simplicity justifies \BiGUL's current design.
 If, as \citet{Dijkstra-EWD361} argued, programs and their correctness proofs should grow hand in hand, then programming languages and their reasoning principles ought to be developed together as well.
 \BiGUL\ and its Hoare-style logic make a nice example for this statement.
