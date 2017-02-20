@@ -67,6 +67,21 @@
 \url{http://dx.doi.org/10.1145/1863543.1863572}}
 
 
+\bibitem[\protect\citeauthoryear{Bohannon, Pierce, and Vaughan}{Bohannon
+  et~al\mbox{.}}{2006}]%
+        {Bohannon-relational-lenses}
+\bibfield{author}{\bibinfo{person}{Aaron Bohannon},
+  \bibinfo{person}{Benjamin~C. Pierce}, {and} \bibinfo{person}{Jeffrey~A.
+  Vaughan}.} \bibinfo{year}{2006}\natexlab{}.
+\newblock \showarticletitle{Relational lenses: A language for updatable views}.
+  In \bibinfo{booktitle}{{\em Principles of Database Systems}} {\em
+  (\bibinfo{series}{PODS'06})}. \bibinfo{publisher}{ACM},
+  \bibinfo{pages}{338--347}.
+\newblock
+\showDOI{%
+\url{http://dx.doi.org/10.1145/1142351.1142399}}
+
+
 \bibitem[\protect\citeauthoryear{Capretta}{Capretta}{2005}]%
         {Capretta-general-recursion}
 \bibfield{author}{\bibinfo{person}{Venanzio Capretta}.}

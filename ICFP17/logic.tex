@@ -1395,10 +1395,28 @@ While we are on the subject of alignment, the reader might be interested in a co
 Matching lenses offer some fairly sophisticated matching strategies that can be hard to implement nicely in \BiGUL\ so far, but they are special-purpose and require the invention of a new framework in which everything is built from scratch.
 In contrast, \BiGUL\ is designed with the ultimate aim of expressing all lenses using just a fixed set of simple primitives, like what we can do in general-purpose programming languages --- hence the need for a general reasoning principle like the Hoare-style logic.
 
+\paragraph{\BiGUL\ claims to be putback-based but is still a lens language. Is there really a fundamental difference between \BiGUL\ and previous lens languages?}
+When it comes to language definition, \BiGUL\ programs denote lenses and have to be defined in both directions, exactly the same as other lens languages.
+It is when it comes to \emph{using} the lenses that the distinction between the |get|- and |put|-based approaches becomes meaningful.
+The majority of lens languages are |get|-based, as explained by \citet{Foster-thesis} below his Lemma~2.2.6:
+\begin{quote}
+[l]ens programmers often feel like they are writing the forward transformation (because the names of primitives typically connote the forward transformation) and getting the backward transformation ``for free[.]''
+\end{quote}
+This fact can be observed, for example, in \citet{Foster-lenses}'s Figure~8, which clearly shows that their lens programs are supposed to be constructed like writing |get|; for a second example, \citet{Bohannon-relational-lenses}'s relational lenses are written like database queries, which are |get| transformations.
+Inevitably they have to add annotations to gain more control of the putback behaviour, but that makes constructing and understanding such programs more awkward, having to think in both directions.
+In contrast, \BiGUL's putback-based design lets the programmer construct programs purely in the |put| direction.
+The Hoare-style logic makes the distinction between the two approaches absolutely clear for the first time --- it is possible to reason about bidirectional programs purely in the putback direction, whereas the same effect can never be achieved in the opposite direction.
+
+\paragraph{Doesn't \autoref{thm:total-forward-consistency} say that we need to reason in both directions anyway?}
+
+We have consistently explained how range triples can be derived by thinking in the putback direction.
+Even if the sceptic reader insisted that deriving range triples requires thinking in the forward direction, they would still have to admit that it is much easier to prove that |get| is contained in the precondition of |put|, as required by \autoref{thm:total-forward-consistency}, than to prove that it is contained in the consistency relation.
+The indisputable fact is that the major work is done in derivations of putback triples, making the reasoning putback-based.
+
 \paragraph{What reasoning principles were there for bidirectional programming?}
 
 There are some forms of reasoning principles proposed along with some of the more generically designed bidirectional languages --- for example,  \citet{Foster-lenses} offer systematic rules for proving totality, and \citet{Hofmann-symmetric-lenses} give some equational laws originated from category theory.
-None of them aimed to be as strong as our Hoare-style logic, however.
+None of them aim to be as strong as our Hoare-style logic, however.
 We might say that the fundamental problem with those reasoning principles is that they are only auxiliary and cannot help the programmer to understand program behaviour without breaking the abstraction and reasoning in terms of the semantic definitions of the languages.
 In contrast, our Hoare-style logic completely shields the programmer from the highly detailed semantic definition of \BiGUL\ like the one presented by \citet{Ko-BiGUL}, yet still allows the programmer to precisely understand program behaviour with reasonable effort.
 
@@ -1414,14 +1432,8 @@ We can formulate a rule like:
 |(ASSERT(R CAP (COM(a _ || P' a)))) ~ l . r ~ (ASSERT(a' a c || (some(b, b')) T' a' a b' && U' b' b c ))|
 \end{array} \]
 and we have actually proved that the rule is sound, but the form of the rule is too complex and hardly usable.
-We will probably need to find a sweet spot and design a composition rule that is perhaps not as general as the above one but can still say enough about the retentive behaviour.
-It should be noted that, while composition is included in other languages like \citet{Foster-lenses}'s, the problem with controlling the retentive behaviour of composition has always existed, as discussed by, e.g., \citet[Section~2.2]{Diskin-delta-asymmetric}.
-
-\paragraph{Doesn't \autoref{thm:total-forward-consistency} say that we need to reason in both directions anyway?}
-
-We have consistently explained how range triples can be derived by thinking in the putback direction.
-Even if the sceptic reader insisted that deriving range triples requires thinking in the forward direction, they would still have to admit that it is much easier to prove that |get| is contained in the precondition of |put|, as required by \autoref{thm:total-forward-consistency}, than to prove that it is contained in the consistency relation.
-The indisputable fact is that the major work is done in derivations of putback triples, making the reasoning putback-based.
+We will need to find a sweet spot and design a composition rule that is perhaps not as general as the above one but can still say enough about the retentive behaviour; more importantly, this rule should give an instruction on how composition can be effectively used, and only with such a rule can composition be justified as a worthy construct.
+It should be noted that while composition is included in other languages like \citet{Foster-lenses}'s, the problem with controlling the retentive behaviour of composition has always existed, as discussed by, e.g., \citet[Section~2.2]{Diskin-delta-asymmetric}.
 
 %\paragraph{Why isn't the title of this paper ``An Axiomatic Basis for \emph{Putback-Based} Bidirectional Programming''?}
 %
@@ -1448,7 +1460,8 @@ We would like to amend this statement: putback-based \emph{reasoning} is the ess
 This paper has shown, with the Hoare-style logic for \BiGUL, what such reasoning can look like.
 More specifically, we have demonstrated how an adequate understanding of a \BiGUL\ program's bidirectional behaviour can be reduced to reasoning exclusively about its putback behaviour.
 
-It has long been realised by the BX community that declarative approaches --- where the programmer writes down only a consistency specification and relies on the system to derive a well-behaved but otherwise arbitrary implementation --- are hardly enough for practical bidirectional applications \citep[see, e.g.,][Section~4.1]{Stevens-QVT}.
+Bidirectional programming has been highly declarative, in the sense that the programmer writes down only a consistency specification (perhaps with some behavioural annotations) and relies on the system to produce a well-behaved but otherwise arbitrary implementation.
+However, it has long been realised that declarative approaches are hardly enough for practical bidirectional applications \citep[see, e.g.,][Section~4.1]{Stevens-QVT}.
 The BX community currently concentrates on the exploration of more forms of well-behavedness properties \citep[see, e.g.,][]{Cheney-least-surprise}, but we should not be satisfied with only well-behavedness guarantees.
 Instead, we should also start aiming to precisely characterise the behaviour of bidirectional programs like what the \BiGUL\ programmer can now do with the Hoare-style logic, treating bidirectional programming seriously as we treat general-purpose programming.
 
