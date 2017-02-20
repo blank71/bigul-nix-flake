@@ -261,6 +261,19 @@
 \newblock
 
 
+\bibitem[\protect\citeauthoryear{Matsuda and Wang}{Matsuda and Wang}{2015}]%
+        {Matsuda-applicative-BX}
+\bibfield{author}{\bibinfo{person}{Kazutaka Matsuda} {and}
+  \bibinfo{person}{Meng Wang}.} \bibinfo{year}{2015}\natexlab{}.
+\newblock \showarticletitle{Applicative Bidirectional Programming with Lenses}.
+  In \bibinfo{booktitle}{{\em International Conference on Functional
+  Programming}} {\em (\bibinfo{series}{ICFP'15})}. \bibinfo{publisher}{ACM},
+  \bibinfo{pages}{62--74}.
+\newblock
+\showDOI{%
+\url{http://dx.doi.org/10.1145/2858949.2784750}}
+
+
 \bibitem[\protect\citeauthoryear{Mendes, Ko, and Hu}{Mendes
   et~al\mbox{.}}{2016}]%
         {Mendes-delta-alignment}

@@ -1156,7 +1156,7 @@ This approach will be relevant in a constructive setting, but we anticipate that
 Since what we aim at in this paper is not thorough formalisation but a semi-formal reasoning framework for the working \BiGUL\ programmer, we will develop just enough theory to justify our rules for reasoning about recursive programs, and refrain from delving into coinductiveness or constructive domain theory.
 
 Let |b : S <~ V| be a recursive program of the form |b = f b| where |f : (S <~ V) -> (S <~ V)| is the usual non-recursive function defining the body of~|b|, and suppose that we want to verify that |b|~can successfully turn any input satisfying a precondition~|R| into an output satisfying a postcondition~|R'|.
-We cannot hope to establish |(ASSERT R) b (ASSERT R')| since putback triples are defined for finite programs, whereas |b|~is infinite.
+We cannot hope to establish |(ASSERT R) b (ASSERT R')| (although we will abuse this notation in \autoref{sec:key-based-alignment}) since putback triples are defined for finite programs, whereas |b|~is infinite.
 Instead, when we say in this paper that we are verifying~|b|, what we precisely mean is verifying the behaviour of all \emph{finite expansions} of its body~|f|, where finite expansions are defined by:
 \begin{code}
 expand : Nat -> ((S <~ V) -> (S <~ V)) -> (S <~ V)
@@ -1183,13 +1183,11 @@ If
 then:
 \[ |(all(l, n)) ~ n <= l ~ =>| \quad |(ASSERT(R CAP (COM(s v || measure s v = n)))) ~ expand (suc l) f ~ (ASSERT R')| \]
 \end{theorem}
-\begin{proof}
-Nested induction on |l|~and~|n|.
-\end{proof}
 
 \ref{prop:PutbackRecursion} will be the proof rule we use for reasoning about the putback behaviour of recursive programs.
 It combines the basic proof idea~(\ref{prop:basic-proof-idea}) with the sized-based termination argument given in the beginning of this section: in the outermost precondition, the size of the input source and view is bound to a ghost variable~|n|, and we can make recursive invocations wherever the size~|m| of the current source and view is strictly less than~|n|.
 The soundness of \ref{prop:PutbackRecursion} is justified by \autoref{thm:putback-finite-expansion}, whose conclusion implies that any input in~|R| can be successfully turned into an output in~|R'| as long as |f|~is expanded enough times.
+The theorem is proved by nested induction on |l|~and~|n|.
 
 Analogously, we have a \ref{prop:RangeRecursion} rule for estimating the output ranges of recursive programs.
 
@@ -1235,10 +1233,10 @@ keyAlign ks kv b c =
   ^  adaptive _ (_ :: _)
   ^  ^  \ ss (v :: _) -> c v :: ss
   where
-    extract : Eq K => (S -> K) -> (V -> K) -> V -> [S] -> S TIMES [S]
-    extract ks kv v (s :: ss) = if ks s = kv v  then  (s, ss)
-                                                else  let  (s', ss') = extract ks kv v ss
-                                                      in   (s', s :: ss')
+    extract : Eq K => (S -> K) -> (V -> K) -> V -> [S] -> [S]
+    extract ks kv v (s :: ss) = if ks s = kv v  then  s :: ss
+                                                else  let  (s' :: ss') = extract ks kv v ss
+                                                      in   s' :: s :: ss'
 \end{code}
 \caption{Key-based list alignment in \BiGUL}
 \label{fig:keyAlign}
@@ -1262,9 +1260,17 @@ Two more arguments |b|~and~|c| are needed to deal with two of the three possible
 \item If no source element has the same key as a view element, a function |c : V -> S| will be used to create a temporary corresponding source; this temporary source will then be fully synchronised with the view using~|b|.
 \item A source element will be deleted if there is no corresponding view element.
 \end{itemize}
+Due to space restrictions, we will not be able to go through the program and its verification in detail in this paper, so here we offer a quick overview instead.
+The first branch is the base case.
+The second branch deals with ``happy coincidences'': the head elements in the source and view lists match, so we can simply synchronise the heads and recursively process the tails.
+The third branch deletes everything in the source when the view is empty.
+The fourth branch is the most interesting: the head view element~|v| has a corresponding source element (which is not at the head position), so we |extract| the first source element with the same key as~|v| and put it at the head (intending to reenter the second branch after adaptation).
+When there is no source element corresponding to the head view element, the fifth and last branch uses~|c| to create a temporary corresponding source element.
+Note that the program uses some partial functions, which are fine in \Haskell\ but not \Agda: |extract|, for example, misses two cases for empty source lists, and these cases have to be added for verification in \Agda. These missing cases are irrelevant, however, since |keyAlign| does not invoke |extract| on empty source lists.
+
 
 To verify |keyAlign|, we need to make some assumptions about its arguments.
-For simplicity, we assume that |b|~can run successfully for any pair of source and view elements as long as they have the same key; also, |b|~should guarantee that the updated source and the view will have the same key, apart from any other postcondition |R' : (POWER(S TIMES S TIMES V))| it can establish.
+For simplicity, we assume that |b|~can compute successfully for any pair of source and view elements as long as they have the same key; also, |b|~should guarantee that the updated source and the view will have the same key, apart from any other postcondition |R' : (POWER(S TIMES S TIMES V))| it can establish.
 As a putback triple:
 \[ |(ASSERT(s v || ks s = kv v)) ~ b ~ (ASSERT(R' CAP (COM(s' _ v || ks s' = ks v))))| \]
 We will abbreviate |R' CAP (COM(s' _ v || ks s' = ks v))| as~|T'|.
@@ -1272,117 +1278,106 @@ For the source-creating function~|c|, since a created source will be further pro
 \[ |(all(v)) ~ ks (c v) = kv v| \]
 We can then derive:
 \begin{code}
-(ASSERT(_ _)) ~ keyAlign ks kv b c ~ (ASSERT(ss' ss vs | (some(~ ss'')) (STAR T') ss' ss'' vs && Retentive ss vs ss''))
+(all n) {-"\quad"-} (ASSERT(_ vs | length vs = n)) ~ keyAlign ks kv b c ~ (ASSERT(ss' ss vs | (some(~ ss'')) (STAR T') ss' ss'' vs && Retentive ss vs ss''))
 \end{code}
-where |(STAR T') : (POWER([S] TIMES [S] TIMES [V]))| is defined inductively by the following two rules:
+In the precondition, we use the length of the view list as the termination measure, but otherwise impose no restrictions on the source and view lists.
+In the postcondition, the relation |(STAR T') : (POWER([S] TIMES [S] TIMES [V]))| is defined inductively by the following two rules:
 \begin{code}
 (STAR T')  []           []             []
 (STAR T')  (s' :: ss')  (s'' :: ss'')  (v :: vs) ~ <== ~ T' s' s'' v &&  (STAR T') ss' ss'' vs
 \end{code}
-and |Retentive ss vs ss''| says that if a source element of~|ss| corresponds to a view element in~|vs|, then that source element will be in~|ss''|.
-This ``correspondence'' turns out to be tricky to define.
+The postcondition thus guarantees that the updated source list |ss'| will have the same length as |vs|, and for each pair of source element~|s'| in~|ss'| and view element~|v| in~|vs| at the same position, |T'| will be established for |s'|,~some source element~|s''|, and~|v|.
+The elements~|s''| are collected into a list~|ss''|, and |Retentive ss vs ss''| says that |ss''|~contains those source elements in~|ss| that correspond to some view element in~|vs|.
+This |Retentive| relation turns out to be slightly tricky to define, especially when we do not require that keys in a list are all unique; the definition we adopt says that if a key appears |n|~times in the view list, then the first |n|~elements with that key in the original source list will be retained.
 
-
+We will only sketch the verification of the second normal branch and the second adaptive branch.
+The assertions for the second normal branch are as follows, where we omit the invocations of the |rearrS|, |rearrV|, and product rules since they are straightforward in this case:
 \begin{code}
 normal (s :: _) (v :: _) | ks s = kv v exit (_ :: _)
-^  (ASSERT((s :: _) (v :: vs) | 1 + length vs = n && ks s = kv v))
+^  (ASSERT((s :: _) (v :: vs) | 1 + length vs = n && ks s = kv v)) (ASSERTNUMBER *6)
 ^  rearrS (s :: ss) -> (s, ss)
 ^  ^  rearrV (v :: vs) -> (v, vs)
 ^  ^  ^  ^  (ASSERT(s v | ks s = kv v))
 ^  ^  ^  ^  b
 ^  ^  ^  ^  (ASSERT T')
-^  ^  ^  *  (ASSERT(_ vs | 1 + length vs = n))
-^  ^  ^  ^  (ASSERT(_ vs | length vs = pred n && pred n < n))
+^  ^  ^  *  (ASSERT(_ vs | 1 + length vs = n)) (ASSERTNUMBER *1)
+^  ^  ^  ^  (ASSERT(_ vs | length vs = pred n && pred n < n)) (ASSERTNUMBER *2)
 ^  ^  ^  ^  keyAlign ks kv b c
-^  ^  ^  ^  (ASSERT(ss' ss vs | (some(~ ss'')) (STAR T') ss' ss'' vs && Keep ss vs ss''))
-^  (ASSERT((s' :: ss') (s :: ss) (v :: vs) | T' s' s v && (some(~ ss'')) (STAR T') ss' ss'' vs && Keep ss vs ss''))
-^  (ASSERT((s' :: ss') ss (v :: vs) | (some(~ ss'')) (STAR T') (s' :: ss') ss'' (v :: vs) && Keep ss (v :: vs) ss'' && ks s' = kv v))
+^  ^  ^  ^  (ASSERT(ss' ss vs | (some(~ ss'')) (STAR T') ss' ss'' vs && Retentive ss vs ss'')) (ASSERTNUMBER *3)
+^  (ASSERT((s' :: ss') (s :: ss) (v :: vs) | T' s' s v && (some(~ ss'')) (STAR T') ss' ss'' vs && Retentive ss vs ss'')) (ASSERTNUMBER *4)
+^  (ASSERT((s' :: ss') ss (v :: vs) | (some(~ ss'')) (STAR T') (s' :: ss') ss'' (v :: vs) && Retentive ss (v :: vs) ss'' && ks s' = kv v)) (ASSERTNUMBER *5)
 \end{code}
+We first look at how the \ref{prop:PutbackRecursion} rule is applied.
+Assertion~1 is the actual precondition for the recursive invocation of |keyAlign ks kv b c|, and we rewrite it into assertion~2, saying that the length of the view list at this point is |pred n|, which is strictly less than~|n| since assertion~1 says that |n|~is a successor.
+(The predecessor function is defined by |pred zero = zero| and |pred (suc n) = n|.)
+The recursive invocation will thus succeed and establish assertion~3.
+For the postcondition, the |rearrS|, |rearrV|, and product rules give us assertion~4, while we need to prove assertion~5.
+The last conjunct |ks s' = kv v| in assertion~5 is part of |T' s' s v| in assertion~4 by definition.
+From |T' s' s v| and |(some(~ ss'')) (STAR T') ss' ss'' vs| in assertion~4, we see that we should use |s :: ss''| as the new |ss''| in assertion~5.
+We are left to prove |Retentive (s :: ss) (v :: vs) (s :: ss'')| (since |ss| in assertion~5 is |s :: ss| in assertion~4), which is implied by |Retentive ss vs ss''| in assertion~4 and |ks s = kv v| in assertion~6.
 
-|Keep ss vs ss'' && ks s = kv v ~ => ~ Keep (s :: ss) (v :: vs) (s :: ss'')|
+Now we turn to the second adaptive branch:
+\begin{code}
+adaptive ss (v :: _) | kv v `elem` map ks ss
+^  (ASSERT(ss (v :: _) | kv v `elem` map ks ss)) (ASSERTNUMBER *1)
+^  (ASSERT(ss (v :: vs) | (COM((s :: _) (v :: _) | ks s = kv v)) (extract ks kv v ss) (v :: vs))) (ASSERTNUMBER *2)
+^  \ ss (v :: _) -> extract ks kv v ss
+^  (ASSERT(ss' ss (v :: vs) | (COM(ss' ss vs | (some(~ ss'')) (STAR T') ss' ss'' vs && Retentive ss vs ss'')) ss' (extract ks kv v ss) (v :: vs))) (ASSERTNUMBER *3)
+^  (ASSERT(ss' ss vs | (some(~ ss'')) (STAR T') ss' ss'' vs && Retentive ss vs ss'')) (ASSERTNUMBER *4)
+\end{code}
+Assertion~1 (where we omit the negations of the previous main conditions) is sufficient to guarantee the reentry condition stated in assertion~2: the source list~|ss| must be nonempty so that |extract ks kv v ss| will successfully produce a nonempty list, whose head will then be guaranteed to have the same key as the head view element~|v|.
+After adaptation, the rerunning of the |case| establishes assertion~3, which should be shown to imply assertion~4, the final postcondition.
+Assertion~3 says that |STAR T'| holds for the updated source list |ss'|, some list |ss''| of source elements, and the view list, and we can directly use |ss''| as the witness and establish the first conjunct in assertion~4.
+Assertion~3 also says that |ss''| retains certain elements from the adapted source list, which is just the original source list with its first source element having key |kv v| moved to the head position, so we know that |ss''| retains the same elements in the original source list as well.
+This is a good example showing that adaptation should be done cautiously to maintain sufficient links between the adapted source and the original source, or otherwise it can be immensely difficult to prove the implication from the adapted postcondition to the final postcondition.
 
-
+We should not forget to derive a range triple for |keyAlign|:
+\begin{code}
+(all(n)) {-"\quad"-} (ASSERTRANGE(_ vs | length vs = n)) ~ keyAlign ks kv b c ~ (ASSERTRANGE(ss | length ss = n))
+\end{code}
+assuming:
 \begin{code}
 (ASSERTRANGE(s v | ks s = kv v)) ~ b ~ (ASSERTRANGE(_))
 \end{code}
+This tells us that if |b|~is capable of producing everything, then |keyAlign ks kv b c| can also produce everything.
+If |T' SUBSETEQ (COM(s' _ v || C s' v))| for some element-level consistency relation |C : (POWER(S TIMES V))|, then we know that, for any source list, |get (keyAlign ks kv b c)| will successfully produce a view list of the same length, and each pair of source and view elements at the same position will satisfy~|C|.
+For the actual derivation, again due to space restrictions we can only give a quick sketch:
+We only need to derive ranges for the two normal branches.
+The output range of the first branch can be derived as |COM([] || 0 = n)| --- that is, the branch can produce empty lists when |0 = n|; as for the output range of the second branch, we can derive |COM((_ :: ss) || 1 + length ss = n)|.
+Their union |COM(ss || length ss = n)| is the output range of the entire |case|.
 
-\begin{code}
-keyAlign ks kv b c =
-  (ASSERTRANGE(_ vs | length vs = n))
-  case
-  ^  normal [] [] exit []
-  ^  ^  (ASSERTRANGE([] [] | 0 = n))
-  ^  ^  rearrV [] -> ()
-  ^  ^  ^   (ASSERTRANGE([] () | 0 = n))
-  ^  ^  ^   (ASSERTRANGE(ss v | const () ss = v))
-  ^  ^  ^   skip const ()
-  ^  ^  ^   (ASSERTRANGE([] | 0 = n))
-  ^  normal (s :: _) (v :: _) | ks s = kv v exit (_ :: _)
-  ^  ^  (ASSERTRANGE((s :: _) (v :: vs) | ks s = kv v && 1 + length vs = n))
-  ^  ^  rearrS (s :: ss) -> (s, ss)
-  ^  ^  ^  (ASSERTRANGE((s, _) (v :: vs) | ks s = kv v && 1 + length vs = n))
-  ^  ^  ^  rearrV (v :: vs) -> (v, vs)
-  ^  ^  ^  ^  (ASSERTRANGE((s, _) (v, vs) | ks s = kv v && 1 + length vs = n))
-  ^  ^  ^  ^  ^   (ASSERTRANGE(s v | ks s = kv v))
-  ^  ^  ^  ^  ^   b
-  ^  ^  ^  ^  ^   (ASSERTRANGE(_))
-  ^  ^  ^  ^  *   (ASSERTRANGE(_ vs | 1 + length vs = n))
-  ^  ^  ^  ^  ^   (ASSERTRANGE(_ vs | length vs = prev n))
-  ^  ^  ^  ^  ^   keyAlign ks kv b c
-  ^  ^  ^  ^  ^   (ASSERTRANGE(ss | length ss = prev n && prev n < n))
-  ^  ^  ^  ^  ^   (ASSERTRANGE(ss | 1 + length ss = n))
-  ^  ^  ^  ^  (ASSERTRANGE((_ , ss) | 1 + length ss = n))
-  ^  ^  ^  (ASSERTRANGE((_ , ss) | 1 + length ss = n))
-  ^  ^  (ASSERTRANGE((_ :: ss) | 1 + length ss = n))
-  ^  VDOTS
-  (ASSERTRANGE(COM([] | 0 = n) CUP (COM((_ :: ss) | 1 + length ss = n))))
-  (ASSERTRANGE(ss | length ss = n))
-\end{code}
-
-
-
-\begin{code}
-Count P : (POWER(Nat TIMES [A]))
-Count P  zero     []
-Count P  (suc n)  (x :: xs) ~ <== ~      P x && Count P n xs
-Count P  n        (x :: xs) ~ <== ~ not  P x && Count P n xs
-\end{code}
-
-\begin{code}
-keyAlign : Eq K => (S -> K) -> (V -> K) -> (S <~ V) -> (V -> S) -> ([S] <~ [V])
-keyAlign ks kv b c =
-   (ASSERT(_ vs | length vs = n))
-   case
-   ^  normal [] [] exit []
-   ^  ^  (ASSERT([] [] | 0 = n))
-   ^  ^  rearrV [] -> ()
-   ^  ^  ^   (ASSERT([] () | 0 = n))
-   ^  ^  ^   (ASSERT(ss v | const () ss = v))
-   ^  ^  ^   skip const ()
-   ^  ^  ^   (ASSERT(ss' ss _ | ss' = ss))
-   ^  ^  ^   (ASSERT([] ss ()))
-   ^  ^  (ASSERT([] ss []))
-   ^  normal (s :: _) (v :: _) | ks s = kv v exit (_ :: _)
-   ^  ^  (ASSERT((s :: _) (v :: vs) | 1 + length vs = n && ks s = kv v))
-   ^  ^  rearrS (s :: ss) -> (s, ss)
-   ^  ^  ^  rearrV (v :: vs) -> (v, vs)
-   ^  ^  ^  ^  ^  b
-   ^  ^  ^  ^  *  keyAlign ks kv b c
-   ^    (ASSERT((s' :: ss') (s :: ss) (v :: vs) | (some(s'' , ss'')) R' s' s'' v && ks s' = kv v && (STAR(R' CAP (COM(s' _ v | ks s' = kv v)))) ss' ss'' vs && (all(s'' , i)) s'' = (s :: ss) !! i && Covered s'' i (s :: ss) (v :: vs)  => s'' `elem` ss''))
-   ^    (ASSERT((s' :: ss') ss (v :: vs) | ks s' = kv v && (some(~ ss'')) (STAR(R' CAP (COM(s' _ v | ks s' = kv v)))) (s' :: ss') ss'' (v :: vs) && (all(s, i)) s = ss !! i && Covered s i ss (v :: vs)  => s `elem` ss''))
-   ^  adaptive (_ :: _) []
-   ^  ^  \ _ _ -> []
-   ^  adaptive ss (v :: _) | kv v `elem` map ks ss
-   ^  ^  \ ss (v :: _) -> extract ks kv v ss
-   ^  adaptive _ (_ :: _)
-   ^  ^  \ ss (v :: _) -> c v :: ss
-   (ASSERT(ss' ss vs | (some(~ ss'')) (STAR T') ss' ss'' vs && (all(i)) Keep i ss vs  => s !! i `elem` ss''))
-\end{code}
-
-\begin{code}
-Keep i ss vs =  0 <= i < length ss &&
-                (some(m, n)) Count (COM(t | ks (ss !! i) = ks t)) m (take i ss) && Count (COM(v | ks (ss !! i) = ks v)) n vs && m < n
-\end{code}
+%\begin{code}
+%keyAlign ks kv b c =
+%  (ASSERTRANGE(_ vs | length vs = n))
+%  case
+%  ^  normal [] [] exit []
+%  ^  ^  (ASSERTRANGE([] [] | 0 = n))
+%  ^  ^  rearrV [] -> ()
+%  ^  ^  ^   (ASSERTRANGE([] () | 0 = n))
+%  ^  ^  ^   (ASSERTRANGE(ss v | const () ss = v))
+%  ^  ^  ^   skip const ()
+%  ^  ^  ^   (ASSERTRANGE([] | 0 = n))
+%  ^  normal (s :: _) (v :: _) | ks s = kv v exit (_ :: _)
+%  ^  ^  (ASSERTRANGE((s :: _) (v :: vs) | ks s = kv v && 1 + length vs = n))
+%  ^  ^  rearrS (s :: ss) -> (s, ss)
+%  ^  ^  ^  (ASSERTRANGE((s, _) (v :: vs) | ks s = kv v && 1 + length vs = n))
+%  ^  ^  ^  rearrV (v :: vs) -> (v, vs)
+%  ^  ^  ^  ^  (ASSERTRANGE((s, _) (v, vs) | ks s = kv v && 1 + length vs = n))
+%  ^  ^  ^  ^  ^   (ASSERTRANGE(s v | ks s = kv v))
+%  ^  ^  ^  ^  ^   b
+%  ^  ^  ^  ^  ^   (ASSERTRANGE(_))
+%  ^  ^  ^  ^  *   (ASSERTRANGE(_ vs | 1 + length vs = n))
+%  ^  ^  ^  ^  ^   (ASSERTRANGE(_ vs | length vs = prev n))
+%  ^  ^  ^  ^  ^   keyAlign ks kv b c
+%  ^  ^  ^  ^  ^   (ASSERTRANGE(ss | length ss = prev n && prev n < n))
+%  ^  ^  ^  ^  ^   (ASSERTRANGE(ss | 1 + length ss = n))
+%  ^  ^  ^  ^  (ASSERTRANGE((_ , ss) | 1 + length ss = n))
+%  ^  ^  ^  (ASSERTRANGE((_ , ss) | 1 + length ss = n))
+%  ^  ^  (ASSERTRANGE((_ :: ss) | 1 + length ss = n))
+%  ^  VDOTS
+%  (ASSERTRANGE(COM([] | 0 = n) CUP (COM((_ :: ss) | 1 + length ss = n))))
+%  (ASSERTRANGE(ss | length ss = n))
+%\end{code}
 
 \section{Discussion}
 \label{sec:discussion}
@@ -1402,10 +1397,11 @@ The majority of lens languages are |get|-based, as explained by \citet{Foster-th
 \begin{quote}
 [l]ens programmers often feel like they are writing the forward transformation (because the names of primitives typically connote the forward transformation) and getting the backward transformation ``for free[.]''
 \end{quote}
-This fact can be observed, for example, in \citet{Foster-lenses}'s Figure~8, which clearly shows that their lens programs are supposed to be constructed like writing |get|; for a second example, \citet{Bohannon-relational-lenses}'s relational lenses are written like database queries, which are |get| transformations.
+\citet{Matsuda-applicative-BX}, for example, explicitly state that their language adopts this design.
+\citet{Foster-lenses}'s Figure~8 also clearly shows that their lens programs are supposed to be constructed like writing |get|, and \citet{Bohannon-relational-lenses}'s relational lenses are written like database queries, which are |get| transformations.
 Inevitably they have to add annotations to gain more control of the putback behaviour, but that makes constructing and understanding such programs more awkward, having to think in both directions.
 In contrast, \BiGUL's putback-based design lets the programmer construct programs purely in the |put| direction.
-The Hoare-style logic makes the distinction between the two approaches absolutely clear for the first time --- it is possible to reason about bidirectional programs purely in the putback direction, whereas the same effect can never be achieved in the opposite direction.
+The Hoare-style logic makes the distinction between the two approaches absolutely clear for the first time --- it is possible to reason about bidirectional programs purely in the putback direction, whereas it is unthinkable that the same effect can be achieved in the opposite direction.
 
 \paragraph{Doesn't \autoref{thm:total-forward-consistency} say that we need to reason in both directions anyway?}
 
