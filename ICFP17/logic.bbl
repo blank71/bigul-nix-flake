@@ -38,20 +38,6 @@
 \providecommand\natexlab[1]{#1}
 \providecommand\showeprint[2][]{arXiv:#2}
 
-\bibitem[\protect\citeauthoryear{Anjorin, Diskin, Jouault, Ko, Leblebici, and
-  Westfechtel}{Anjorin et~al\mbox{.}}{2017}]%
-        {Anjorin-BenchmarX-reloaded}
-\bibfield{author}{\bibinfo{person}{Anthony Anjorin}, \bibinfo{person}{Zinovy
-  Diskin}, \bibinfo{person}{Fr{\'e}d{\'e}ric Jouault},
-  \bibinfo{person}{Hsiang-Shang Ko}, \bibinfo{person}{Erhan Leblebici}, {and}
-  \bibinfo{person}{Bernhard Westfechtel}.} \bibinfo{year}{2017}\natexlab{}.
-\newblock \bibinfo{title}{{BenchmarX} Reloaded: A Practical Benchmark Framework
-  for Bidirectional Transformations}.
-\newblock \bibinfo{howpublished}{To appear in \textit{International Workshop on
-  Bidirectional Transformations (BX'17)}}.   (\bibinfo{year}{2017}).
-\newblock
-
-
 \bibitem[\protect\citeauthoryear{Barbosa, Cretin, Foster, Greenberg, and
   Pierce}{Barbosa et~al\mbox{.}}{2010}]%
         {Barbosa-matching-lenses}
@@ -224,6 +210,22 @@
 \url{https://bitbucket.org/prl_tokyo/bigul/raw/master/SummerSchool16/paper/BiGUL_tutorial.pdf}}
 
 
+\bibitem[\protect\citeauthoryear{Hu, Pacheco, and Fischer}{Hu
+  et~al\mbox{.}}{2014}]%
+        {Hu-putback-validity}
+\bibfield{author}{\bibinfo{person}{Zhenjiang Hu}, \bibinfo{person}{Hugo
+  Pacheco}, {and} \bibinfo{person}{Sebastian Fischer}.}
+  \bibinfo{year}{2014}\natexlab{}.
+\newblock \showarticletitle{Validity Checking of Putback Transformations in
+  Bidirectional Programming}. In \bibinfo{booktitle}{{\em International
+  Symposium on Formal Methods}} {\em (\bibinfo{series}{Lecture Notes in
+  Computer Science})}, Vol.~\bibinfo{volume}{8442}.
+  \bibinfo{publisher}{Springer}, \bibinfo{pages}{1--15}.
+\newblock
+\showDOI{%
+\url{http://dx.doi.org/10.1007/978-3-319-06410-9_1}}
+
+
 \bibitem[\protect\citeauthoryear{Ko, Zan, and Hu}{Ko et~al\mbox{.}}{2016}]%
         {Ko-BiGUL}
 \bibfield{author}{\bibinfo{person}{Hsiang-Shang Ko}, \bibinfo{person}{Tao Zan},
@@ -302,11 +304,11 @@
 
 
 \bibitem[\protect\citeauthoryear{Pacheco, Hu, and Fischer}{Pacheco
-  et~al\mbox{.}}{2014}]%
+  et~al\mbox{.}}{2014a}]%
         {Pacheco-putlenses}
 \bibfield{author}{\bibinfo{person}{Hugo Pacheco}, \bibinfo{person}{Zhenjiang
   Hu}, {and} \bibinfo{person}{Sebastian Fischer}.}
-  \bibinfo{year}{2014}\natexlab{}.
+  \bibinfo{year}{2014}\natexlab{a}.
 \newblock \showarticletitle{Monadic combinators for ``Putback'' style
   bidirectional programming}. In \bibinfo{booktitle}{{\em Partial Evaluation
   and Program Manipulation}} {\em (\bibinfo{series}{PEPM'14})}.
@@ -314,6 +316,20 @@
 \newblock
 \showDOI{%
 \url{http://dx.doi.org/10.1145/2543728.2543737}}
+
+
+\bibitem[\protect\citeauthoryear{Pacheco, Zan, and Hu}{Pacheco
+  et~al\mbox{.}}{2014b}]%
+        {Pacheco-BiFluX}
+\bibfield{author}{\bibinfo{person}{Hugo Pacheco}, \bibinfo{person}{Tao Zan},
+  {and} \bibinfo{person}{Zhenjiang Hu}.} \bibinfo{year}{2014}\natexlab{b}.
+\newblock \showarticletitle{{BiFluX}: A Bidirectional Functional Update
+  Language for {XML}}. In \bibinfo{booktitle}{{\em Principles and Practice of
+  Declarative Programming}} {\em (\bibinfo{series}{PPDP'14})}.
+  \bibinfo{publisher}{ACM}, \bibinfo{pages}{147--158}.
+\newblock
+\showDOI{%
+\url{http://dx.doi.org/10.1145/2643135.2643141}}
 
 
 \bibitem[\protect\citeauthoryear{Reynolds}{Reynolds}{2002}]%

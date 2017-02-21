@@ -1,5 +1,5 @@
 %% For double-blind review submission
-\documentclass[acmlarge,fleqn,review]{acmart}\settopmatter{printfolios=true}
+\documentclass[acmlarge,fleqn,review,anonymous]{acmart}\settopmatter{printfolios=true}
 %% For single-blind review submission
 %\documentclass[acmlarge,review]{acmart}\settopmatter{printfolios=true}
 %% For final camera-ready submission
@@ -47,7 +47,7 @@
 %format Rational = "\mathbb{Q}"
 %format ~ = " "
 %format ... = "\ldots"
-%format VDOTS = "\kern.5pt\vphantom{|}\smash{\raisebox{-2pt}{\vdots}}"
+%format VDOTS = "\kern.6em\vphantom{|}\smash{\raisebox{-2pt}{\vdots}}"
 %format ^ = "\idots"
 
 %format (all(x)) = "\forall" x "."
@@ -295,7 +295,7 @@
 %% associated with a particular element.  It will appear immediately
 %% above the permission/copyright statement.
 %\thanks{with paper note}               %% \thanks is optional
-                                        %% can be repeated if necesary
+                                        %% can be repeated if necessary
                                         %% contents suppressed with 'anonymous'
 
 
@@ -303,7 +303,7 @@
 %% Note: \begin{abstract}...\end{abstract} environment must come
 %% before \maketitle command
 \begin{abstract}
-Text of abstract \ldots.
+\vspace{8\baselineskip}
 \end{abstract}
 
 
@@ -344,40 +344,62 @@ Text of abstract \ldots.
 \section{Introduction}
 \label{sec:introduction}
 
-\citet{Czarnecki-BX}
+The need for synchronisation --- or \emph{consistency maintenance} --- is pervasive in computing.
+A typical example is maintaining consistency among documents of different formats, where consistency means that the
+documents have the same content (despite being in different formats); whenever the content of one document is changed, the other documents should also be updated to restore consistency.
+%There are more complex scenarios as well: For example, in model-driven development, executable code is produced with respect to an abstract model describing high-level behaviour, and whenever the code is reorganised or the model is revised, the other side should be updated to maintain consistency --- in this case, consistency means that the behaviour of the code conforms to what the model specifies.
+Over the past decade, frameworks of \emph{bidirectional transformations}~(BXs) have been proposed by different communities to address various synchronisation problems~\citep{Czarnecki-BX}.
+One influential framework from the programming language community is \citet{Foster-lenses}'s \emph{asymmetric lenses}, which are designed for synchronising two pieces of data where one side --- which is called the \emph{source} --- has more information than the other, which is called the \emph{view}.
+The programmer writes a lens program to describe a forward |get| transformation that computes a consistent view from a source; whenever the source is changed, we can simply rerun |get| to produce a new consistent view.
+The same lens program can also be interpreted as a backward |put| transformation that takes a source and a possibly modified view, and produces an updated source that is consistent with the view and can retain some information of the original source.
 
-\citet{Foster-lenses}
+By construction, all lens programs satisfy two inverse-like \emph{well-behavedness} laws called \ref{prop:PutGet} and \ref{prop:GetPut} (\autoref{thm:well-behavedness}).
+\citet[Section~4.4]{Stevens-QVT} provides a revealing perspective to understand these well-behavedness laws: the |get| transformation denoted by a lens can be regarded as defining a consistency relation between the source and view; \ref{prop:PutGet} then says that the |put| transformation correctly restores consistency, i.e., the updated source and the view always satisfy the consistency relation, and \ref{prop:GetPut} says that the |put| transformation performs no update if the input source and view are already consistent.
+From this perspective, what \citet{Foster-lenses}'s lenses offer is a highly declarative programming model, in which the programmer only specifies a consistency relation (in terms of a |get| transformation) and obtains a consistency restorer (a |put| transformation) that is guaranteed (by well-behavedness) to respect the consistency relation but is otherwise arbitrary.
+This is unsatisfactory in practice, since we care not only about consistency but also about how consistency restoration is performed, whereas with lenses it is difficult to figure out the latter.
 
-\citet{Ko-BiGUL}
-
-Every \BiGUL\ program denotes a \emph{well-behaved lens}, which consists of two transformations inverse to each other in a certain sense (\autoref{thm:well-behavedness}).
-This result is not as strong as it seems because non-well-behavedness is merely swept under the partiality carpet.
-
-We care about not only \emph{consistency} but also \emph{retentiveness}.
-
-Let us consider a simple problem where the source is a pair of numbers representing the width and height of a rectangle, and the view is the width --- that is, the source and view are consistent when the view is equal to the width of the rectangle.
-
+To be concrete, let us consider a simple synchronisation problem where the source is a pair of numbers representing the width and height of a rectangle, and the view is the width --- that is, the source and view are consistent when the view is equal to the width of the rectangle.
+With respect to this definition of consistency, there are a variety of sensible consistency restoration strategies: given a rectangle and a view, in addition to replacing the width with the view,
 \begin{itemize}
-\item Keeping the height (the typical ``least-change'' strategy, \autoref{ex:keepHeight})
-\item Resetting the height to zero if inconsistent (invalidating associated data and leaving them for the source side to update, \autoref{ex:resetHeight})
-\item Deciding to keep or reset the height depending on whether the difference between the source width and the view is small enough (a more flexible variation of the above one)
-\item Keeping the height-to-width ratio (maintaining some kind of internal consistency on the source side)
-\item Using the height as a counter that is incremented every time an inconsistency is repaired (bizarre for rectangle width updating but sensible under some other interpretations)
-\end{itemize}\todo{still need concrete examples (programs and assertions)}
+\item we can always keep the height unchanged --- this is the typical ``least-change'' strategy that aims to perform as little update to the source as possible;
+\item we can update the height to keep the height-to-width ratio of the rectangle --- in general this can be maintaining some kind of internal consistency on the source side;
+\item we can reset the height to zero if the view is different from the width --- in general this strategy is useful when the view side does not know whether or how the source side maintains its internal consistency, and thus simply chooses to invalidate associated data and leave them for the source side to update later;
+\item we can decide to keep or reset the height depending on whether the difference between the width and the view is small enough --- this is a flexible mixture of the above strategy and the least-change one;
+\item we can use the height as a counter that is incremented every time an inconsistency is repaired --- this is somewhat bizarre for rectangle width updating, but may well be required for some other interpretations of the problem.
+\end{itemize}
+As we can see, even for a simple problem like rectangle width updating, there are already many possible update strategies, not to mention complex, real-world scenarios.
+All the above update strategies restore the same consistency relation but have different \emph{retentive} behaviour --- that is, they retain the information of the original source in different ways.
+The programmer must be empowered to reason about the retentive behaviour of their programs to be sure that the behaviour is suitable for their intended applications.
 
-They maintain the same consistency relation but have different retentive behaviour.
+To capture the myriad possibilities of update strategies, what can be better than having languages for \emph{programming} such strategies?
+Following a few other groups of authors~\citep{Pacheco-putlenses, Pacheco-BiFluX, Hu-putback-validity}, \citet{Ko-BiGUL} take exactly this approach, and propose a ``putback-based'' language \BiGUL\ (short for the \emph{Bidirectional Generic Update Language}).
+Analogous to \citet{Foster-lenses}'s lenses, every \BiGUL\ program denotes a well-behaved pair of |put| and |get| transformations, and that well-behavedness has been formally verified in \Agda~\citep{Norell-thesis};
+different from \citet{Foster-lenses}'s lenses, \BiGUL\ is designed for expressing |put| transformations, and gives the programmer unprecedented freedom to specify their intended update strategies directly.
 
-There are already many possibilities for a simple problem like rectangle width updating, and even more in complex, real-world scenarios.
+This paper takes the putback-based approach one step further: building on \citeauthor{Ko-BiGUL}'s work, we propose a \emph{Hoare-style logic} that empowers the programmer to precisely reason about both the |put| and |get| behaviour of \BiGUL\ programs.
+For example, the programmer can express the height-keeping and height-resetting strategies as two \BiGUL\ programs |keepHeight| and |resetHeight|, and with our Hoare-style logic, the programmer can prove two Hoare-style \emph{putback triples} to make sure that the two programs correctly restore the consistency and have the intended retentive behaviour:
+\begin{code}
+(ASSERT(_ _)) ~  keepHeight   ~ (ASSERT((w', h') (_  , h) v | w' = v && h' = h))
+(ASSERT(_ _)) ~  resetHeight  ~ (ASSERT((w', h') (w  , h) v | w' = v && (w = v => h' = h) && (w /= v => h' = 0)))
+\end{code}
+These two putback triples state that both |keepHeight| and |resetHeight| work on any input pairs of source and view (due to the always true precondition |ASSERT(_ _)|) and will update the width to be equal to the view (|w' = v|), that |keepHeight| will retain the original height (|h' = h|), and that |resetHeight| will retain the height if the original width is equal to the view (|w = v => h' = h|) or reset the height otherwise (|w /= v => h' = 0|).
+With just a bit more effort, the programmer can also prove that the |get| transformations denoted by these two programs work on any input rectangle and extract its width, conforming to the consistency relation (|w' = v|) stated in the above triples.
 
-In an instance~\citep{Anjorin-BenchmarX-reloaded}, the \BiGUL\ program skipping all the dynamic checks runs about 20 times faster.
+For the rest of this paper:
+We first review the theory of asymmetric lenses and build a theory of putback triples in \autoref{sec:putback-triples}.
+\autoref{sec:putback-proof-rules} then introduces the concrete putback proof rules along with \BiGUL's constructs, and gives some derivation examples, including those for |keepHeight| (\autoref{ex:keepHeight}) and |resetHeight| (\autoref{ex:resetHeight}).
+\autoref{sec:range-triples} complements putback triples with another set of \emph{range triples} so that \BiGUL's bidirectional behaviour can be completely characterised.
+\autoref{sec:recursion} further develops proof rules for recursive \BiGUL\ programs, and enables us to verify a \BiGUL\ implementation of key-based list alignment in \autoref{sec:key-based-alignment} as a showcase example.
+Discussion and conclusion follow in Sections \ref{sec:discussion}~and~\ref{sec:conclusion}.
 
-Everything from theorems to derivations has been formalised and checked in \Agda~\cite{Norell-thesis} version~2.5.2 with standard library version~0.13, but this paper will not present the \Agda\ formalisation, which is provided only as supplementary material; instead, we focus on explaining the intuition and present a semi-formal logic suitable for human reasoning with pencil and paper.
+Everything in this paper from theorems to derivations has been formalised and checked in \Agda\ version~2.5.2 with standard library version~0.13, but this paper does not present the \Agda\ formalisation, which is provided only as supplementary material.
+Instead, we focus on explaining the intuition, and present the Hoare-style logic in a semi-formal way to make it suitable for human reasoning.
+\BiGUL\ is originally developed in \Agda\ and later also ported to \Haskell\ as an embedded language, and the syntax of \BiGUL\ used in this paper is a hypothetical one abstracted from the \Haskell\ port of \BiGUL.
+The host language is total and can be thought of as \Agda\ under the imperfect disguise of \Haskell; in particular, we will use some standard \Haskell\ types and functions, and allow some ``superficial'' general recursion and partiality (which will be justified in Sections \ref{sec:recursion}~and~\ref{sec:key-based-alignment}).
 
-\Agda\ under the imperfect disguise of \Haskell
+%In an instance~\citep{Anjorin-BenchmarX-reloaded}, the \BiGUL\ program skipping all the dynamic checks runs about 20 times faster.
 
-\todo{``In summary'' at the end of the theory of range triples}
-
-\todo{display more things if possible}
+%\todo{display more things if possible}
 
 \section{Theory of asymmetric lenses and putback triples}
 \label{sec:putback-triples}
@@ -390,8 +412,8 @@ These facts are true for \BiGUL\ programs in general and can be stated without r
 \begin{definition} \label{def:put-and-get}
 A \BiGUL\ program~|b| operating on source type~|S| and view type~|V| inhabits the type |S <~ V|, and has two semantics:
 \begin{code}
-put  b : S -> V  -> Maybe S
-get  b : S       -> Maybe V
+put  b : S -> V ->  Maybe S
+get  b : S ->       Maybe V
 \end{code}
 The |put| --- or \emph{putback} --- semantics is also called the \emph{backward} semantics, and the |get| semantics is also called the \emph{forward} semantics.
 \end{definition}
@@ -406,6 +428,9 @@ Any \BiGUL\ program~|b| satisfies the following two \emph{well-behavedness} prop
 
 \autoref{thm:well-behavedness} was proved by \citet{Ko-BiGUL} for the original \BiGUL; we have patched the proof to work for the version of \BiGUL\ used in this paper.
 As noted by \citeauthor{Ko-BiGUL}, \autoref{def:put-and-get} models potentially partial computations explicitly as total |Maybe|-computations, and \autoref{thm:well-behavedness} gives a stronger well-behavedness guarantee~\citep{Macedo-composing-least-change-lenses, Pacheco-putlenses} than \citet{Foster-lenses}'s original definition.
+
+\todo[inline]{Every \BiGUL\ program denotes a \emph{well-behaved lens}, which consists of two transformations inverse to each other in a certain sense (\autoref{thm:well-behavedness}).
+This result is not as strong as it seems because non-well-behavedness is merely swept under the partiality carpet.}
 
 \BiGUL\ is designed such that the \BiGUL\ programmer can think and program solely in the putback direction.
 This is theoretically feasible because of the following theorem (originally \citet{Foster-thesis}'s Lemma~2.2.5), which says that once the programmer specifies a putback transformation, the corresponding forward transformation is uniquely determined.
@@ -1207,7 +1232,7 @@ The \ref{prop:RangeRecursion} rule instructs us to derive an output range |P' n|
 Recursive invocations can be made in the derivation, and the estimated output range for a recursive invocation is |P' m| where |m|~is the size of the current source and view, provided that |m|~is strictly less than~|n| --- otherwise, the estimated output range will be empty.
 The conclusion of \autoref{thm:range-finite-expansion} justifies the soundness of \ref{prop:RangeRecursion}, as it implies that every output in $\bigcup_{|n : Nat|} |P' n|$ can be produced from some input of the right size in~|R| as long as |f|~is expanded enough times.
 
-Having the two recursion rules, we are now ready to verify |keyAlign|.
+Having the two recursion rules, we are now ready to verify |keyAlign|.\todo{\autoref{thm:total-forward-consistency} and other theorems also work semantically}
 
 \section{Verifying key-based list alignment}
 \label{sec:key-based-alignment}
@@ -1266,7 +1291,7 @@ The second branch deals with ``happy coincidences'': the head elements in the so
 The third branch deletes everything in the source when the view is empty.
 The fourth branch is the most interesting: the head view element~|v| has a corresponding source element (which is not at the head position), so we |extract| the first source element with the same key as~|v| and put it at the head (intending to reenter the second branch after adaptation).
 When there is no source element corresponding to the head view element, the fifth and last branch uses~|c| to create a temporary corresponding source element.
-Note that the program uses some partial functions, which are fine in \Haskell\ but not \Agda: |extract|, for example, misses two cases for empty source lists, and these cases have to be added for verification in \Agda. These missing cases are irrelevant, however, since |keyAlign| does not invoke |extract| on empty source lists.
+Note that the program uses some partial functions, which are fine in \Haskell\ but not in \Agda: |extract|, for example, misses two cases for empty source lists, and these cases have to be added for verification in \Agda. These missing cases are irrelevant, however, since |keyAlign| does not invoke |extract| on empty source lists.
 
 
 To verify |keyAlign|, we need to make some assumptions about its arguments.
@@ -1331,7 +1356,8 @@ Assertion~3 says that |STAR T'| holds for the updated source list |ss'|, some li
 Assertion~3 also says that |ss''| retains certain elements from the adapted source list, which is just the original source list with its first source element having key |kv v| moved to the head position, so we know that |ss''| retains the same elements in the original source list as well.
 This is a good example showing that adaptation should be done cautiously to maintain sufficient links between the adapted source and the original source, or otherwise it can be immensely difficult to prove the implication from the adapted postcondition to the final postcondition.
 
-We should not forget to derive a range triple for |keyAlign|:
+We should not forget to derive a range triple for |keyAlign|.
+For simplicity, let us derive:
 \begin{code}
 (all(n)) {-"\quad"-} (ASSERTRANGE(_ vs | length vs = n)) ~ keyAlign ks kv b c ~ (ASSERTRANGE(ss | length ss = n))
 \end{code}
@@ -1339,7 +1365,7 @@ assuming:
 \begin{code}
 (ASSERTRANGE(s v | ks s = kv v)) ~ b ~ (ASSERTRANGE(_))
 \end{code}
-This tells us that if |b|~is capable of producing everything, then |keyAlign ks kv b c| can also produce everything.
+That is, if |b|~is capable of producing everything, then |keyAlign ks kv b c| can also produce everything.
 If |T' SUBSETEQ (COM(s' _ v || C s' v))| for some element-level consistency relation |C : (POWER(S TIMES V))|, then we know that, for any source list, |get (keyAlign ks kv b c)| will successfully produce a view list of the same length, and each pair of source and view elements at the same position will satisfy~|C|.
 For the actual derivation, again due to space restrictions we can only give a quick sketch:
 We only need to derive ranges for the two normal branches.
@@ -1390,7 +1416,7 @@ While we are on the subject of alignment, the reader might be interested in a co
 Matching lenses offer some fairly sophisticated matching strategies that can be hard to implement nicely in \BiGUL\ so far, but they are special-purpose and require the invention of a new framework in which everything is built from scratch.
 In contrast, \BiGUL\ is designed with the ultimate aim of expressing all lenses using just a fixed set of simple primitives, like what we can do in general-purpose programming languages --- hence the need for a general reasoning principle like the Hoare-style logic.
 
-\paragraph{\BiGUL\ claims to be putback-based but is still a lens language. Is there really a fundamental difference between \BiGUL\ and previous lens languages?}
+\paragraph{\BiGUL\ claims to be ``putback-based'' but is still a lens language. Is there really a fundamental difference between \BiGUL\ and previous ``|get|-based'' lens languages?}
 When it comes to language definition, \BiGUL\ programs denote lenses and have to be defined in both directions, exactly the same as other lens languages.
 It is when it comes to \emph{using} the lenses that the distinction between the |get|- and |put|-based approaches becomes meaningful.
 The majority of lens languages are |get|-based, as explained by \citet{Foster-thesis} below his Lemma~2.2.6:
@@ -1413,7 +1439,7 @@ The indisputable fact is that the major work is done in derivations of putback t
 
 There are some forms of reasoning principles proposed along with some of the more generically designed bidirectional languages --- for example,  \citet{Foster-lenses} offer systematic rules for proving totality, and \citet{Hofmann-symmetric-lenses} give some equational laws originated from category theory.
 None of them aim to be as strong as our Hoare-style logic, however.
-We might say that the fundamental problem with those reasoning principles is that they are only auxiliary and cannot help the programmer to understand program behaviour without breaking the abstraction and reasoning in terms of the semantic definitions of the languages.
+We might say that the fundamental problem with those reasoning principles is that they are only auxiliary and cannot help the programmer to gain an adequate understanding of program behaviour without breaking the abstraction and reasoning in terms of the semantic definitions of the languages.
 In contrast, our Hoare-style logic completely shields the programmer from the highly detailed semantic definition of \BiGUL\ like the one presented by \citet{Ko-BiGUL}, yet still allows the programmer to precisely understand program behaviour with reasonable effort.
 
 \paragraph{Where is lens composition?}
@@ -1428,7 +1454,7 @@ We can formulate a rule like:
 |(ASSERT(R CAP (COM(a _ || P' a)))) ~ l . r ~ (ASSERT(a' a c || (some(b, b')) T' a' a b' && U' b' b c ))|
 \end{array} \]
 and we have actually proved that the rule is sound, but the form of the rule is too complex and hardly usable.
-We will need to find a sweet spot and design a composition rule that is perhaps not as general as the above one but can still say enough about the retentive behaviour; more importantly, this rule should give an instruction on how composition can be effectively used, and only with such a rule can composition be justified as a worthy construct.
+We will need to find a sweet spot and design a composition rule that is perhaps not as general as the above one but can still say enough about the retentive behaviour; most importantly, this rule should give an instruction on how composition can be effectively used, and only with such a rule can composition be justified as a worthy construct.
 It should be noted that while composition is included in other languages like \citet{Foster-lenses}'s, the problem with controlling the retentive behaviour of composition has always existed, as discussed by, e.g., \citet[Section~2.2]{Diskin-delta-asymmetric}.
 
 %\paragraph{Why isn't the title of this paper ``An Axiomatic Basis for \emph{Putback-Based} Bidirectional Programming''?}
@@ -1450,6 +1476,7 @@ It should be noted that while composition is included in other languages like \c
 %Towards a syntactic treatment for automation.
 
 \section{Conclusion}
+\label{sec:conclusion}
 
 Based on \autoref{thm:dominance}, it has been argued that ``putback'' is the essence of bidirectional programming~\citep{Fischer-essence-of-BX}.
 We would like to amend this statement: putback-based \emph{reasoning} is the essence of bidirectional programming.
