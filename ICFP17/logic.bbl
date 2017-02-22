@@ -59,7 +59,7 @@
 \bibfield{author}{\bibinfo{person}{Aaron Bohannon},
   \bibinfo{person}{Benjamin~C. Pierce}, {and} \bibinfo{person}{Jeffrey~A.
   Vaughan}.} \bibinfo{year}{2006}\natexlab{}.
-\newblock \showarticletitle{Relational lenses: A language for updatable views}.
+\newblock \showarticletitle{Relational Lenses: A Language for Updatable Views}.
   In \bibinfo{booktitle}{{\em Principles of Database Systems}} {\em
   (\bibinfo{series}{PODS'06})}. \bibinfo{publisher}{ACM},
   \bibinfo{pages}{338--347}.
@@ -117,8 +117,8 @@
         {Dijkstra-EWD361}
 \bibfield{author}{\bibinfo{person}{Edsger~W. Dijkstra}.}
   \bibinfo{year}{1974}\natexlab{}.
-\newblock \showarticletitle{Programming as a discipline of mathematical
-  nature}.
+\newblock \showarticletitle{Programming as a Discipline of Mathematical
+  Nature}.
 \newblock \bibinfo{journal}{{\it Amer. Math. Monthly}} \bibinfo{volume}{81},
   \bibinfo{number}{6} (\bibinfo{year}{1974}), \bibinfo{pages}{608--612}.
 \newblock
@@ -181,20 +181,6 @@
 \newblock
 \showDOI{%
 \url{http://dx.doi.org/10.1145/1232420.1232424}}
-
-
-\bibitem[\protect\citeauthoryear{Hofmann, Pierce, and Wagner}{Hofmann
-  et~al\mbox{.}}{2011}]%
-        {Hofmann-symmetric-lenses}
-\bibfield{author}{\bibinfo{person}{Martin Hofmann}, \bibinfo{person}{Benjamin
-  Pierce}, {and} \bibinfo{person}{Daniel Wagner}.}
-  \bibinfo{year}{2011}\natexlab{}.
-\newblock \showarticletitle{Symmetric Lenses}. In \bibinfo{booktitle}{{\em
-  Principles of Programming Languages}} {\em (\bibinfo{series}{POPL'11})}.
-  \bibinfo{publisher}{ACM}, \bibinfo{pages}{371--384}.
-\newblock
-\showDOI{%
-\url{http://dx.doi.org/10.1145/1925844.1926428}}
 
 
 \bibitem[\protect\citeauthoryear{Hu and Ko}{Hu and Ko}{2017}]%
@@ -290,27 +276,14 @@
 \url{http://grace-center.jp/wp-content/uploads/2016/04/GRACE-TR-2016-03.pdf}}
 
 
-\bibitem[\protect\citeauthoryear{Norell}{Norell}{2007}]%
-        {Norell-thesis}
-\bibfield{author}{\bibinfo{person}{Ulf Norell}.}
-  \bibinfo{year}{2007}\natexlab{}.
-\newblock {\em \bibinfo{title}{Towards a Practical Programming Language based
-  on Dependent Type Theory}}.
-\newblock \bibinfo{thesistype}{Ph.D. Dissertation}. \bibinfo{school}{Chalmers
-  University of Technology}.
-\newblock
-\showURL{%
-\url{http://www.cse.chalmers.se/~ulfn/papers/thesis.html}}
-
-
 \bibitem[\protect\citeauthoryear{Pacheco, Hu, and Fischer}{Pacheco
   et~al\mbox{.}}{2014a}]%
         {Pacheco-putlenses}
 \bibfield{author}{\bibinfo{person}{Hugo Pacheco}, \bibinfo{person}{Zhenjiang
   Hu}, {and} \bibinfo{person}{Sebastian Fischer}.}
   \bibinfo{year}{2014}\natexlab{a}.
-\newblock \showarticletitle{Monadic combinators for ``Putback'' style
-  bidirectional programming}. In \bibinfo{booktitle}{{\em Partial Evaluation
+\newblock \showarticletitle{Monadic Combinators for ``Putback'' Style
+  Bidirectional Programming}. In \bibinfo{booktitle}{{\em Partial Evaluation
   and Program Manipulation}} {\em (\bibinfo{series}{PEPM'14})}.
   \bibinfo{publisher}{ACM}, \bibinfo{pages}{39--50}.
 \newblock
@@ -378,7 +351,7 @@
 \bibfield{author}{\bibinfo{person}{Tao Zan}, \bibinfo{person}{Li Liu},
   \bibinfo{person}{Hsiang-Shang Ko}, {and} \bibinfo{person}{Zhenjiang Hu}.}
   \bibinfo{year}{2016}\natexlab{}.
-\newblock \showarticletitle{\textsc{Brul}: a Putback-Based Bidirectional
+\newblock \showarticletitle{\textsc{Brul}: A Putback-Based Bidirectional
   Transformation Library for Updatable Views}. In \bibinfo{booktitle}{{\em
   International Workshop on Bidirectional Transformations}} {\em
   (\bibinfo{series}{BX'16})}. \bibinfo{publisher}{CEUR-WS},
