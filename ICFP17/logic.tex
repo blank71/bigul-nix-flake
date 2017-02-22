@@ -306,10 +306,10 @@
 
 Among the frameworks of bidirectional transformations proposed for addressing various synchronisation problems, \citeauthor{Foster-lenses}'s lenses have influenced the design of a generation of bidirectional programming languages.
 Most of these languages are highly declarative, and only allow the programmer to specify a consistency relation with limited control over the behaviour of the automatically derived consistency restorer.
-However, synchronisation problems are diverse and require vastly different consistency restoration strategies, and the programmer must be empowered to fully control and reason about the consistency restoration behaviour of their bidirectional programs.
+However, synchronisation problems are diverse and require vastly different consistency restoration strategies, and to cope with the diversity, the programmer must be empowered to fully control and reason about the consistency restoration behaviour of their bidirectional programs.
 The putback-based approach to bidirectional programming was proposed to address this issue once and for all, and this paper takes the approach one step further by proposing a Hoare-style logic for \citeauthor{Ko-BiGUL}'s putback-based language \BiGUL.
-With this Hoare-style logic, the \BiGUL\ programmer can precisely understand the bidirectional behaviour of their programs by reasoning solely in the putback direction.
-The theory underlying the Hoare-style logic has been formalised and checked in \Agda, but this paper gives a semi-formal presentation of the Hoare-style logic to make it easily understood and usable by the working \BiGUL\ programmer.
+With this Hoare-style logic, the \BiGUL\ programmer can precisely characterise the bidirectional behaviour of their programs by reasoning solely in the putback direction.
+The theory underlying the Hoare-style logic has been formalised and checked in \Agda, but this paper presents the Hoare-style logic in a semi-formal way to make it easily understood and usable by the working \BiGUL\ programmer.
 
 \end{abstract}
 
@@ -360,26 +360,26 @@ One influential framework from the programming language community is \citet{Fost
 The programmer writes a lens program to describe a forward |get| transformation that computes a consistent view from a source; whenever the source is changed, we can simply rerun |get| to produce a new consistent view.
 The same lens program can also be interpreted as a backward |put| transformation that takes a source and a possibly modified view, and produces an updated source that is consistent with the view and can retain some information of the original source.
 
-By construction, all lens programs satisfy two inverse-like \emph{well-behavedness} laws called \ref{prop:PutGet} and \ref{prop:GetPut} (\autoref{thm:well-behavedness}).
-\citet[Section~4.4]{Stevens-QVT} provided a revealing perspective to understand these well-behavedness laws: the |get| transformation denoted by a lens can be regarded as defining a consistency relation between the source and view; \ref{prop:PutGet} then says that the |put| transformation will correctly restore the consistency, i.e., the updated source and the view will satisfy the consistency relation, and \ref{prop:GetPut} says that the |put| transformation will perform no update if the input source and view are already consistent.
+By construction, the two transformations denoted by any lens program satisfy two inverse-like \emph{well-behavedness} laws called \ref{prop:PutGet} and \ref{prop:GetPut} (\autoref{thm:well-behavedness}).
+\citet[Section~4.4]{Stevens-QVT} provided a revealing perspective to understand these well-behavedness laws: the |get| transformation denoted by a lens can be regarded as defining a consistency relation on the source and view; \ref{prop:PutGet} then says that the |put| transformation will correctly restore the consistency, i.e., the updated source and the view will satisfy the consistency relation, and \ref{prop:GetPut} says that the |put| transformation will perform no update if the input source and view are already consistent.
 From this perspective, what \citet{Foster-lenses}'s lenses offer is a highly declarative programming model, in which the programmer only specifies a consistency relation (in terms of a |get| transformation) and obtains a consistency restorer (a |put| transformation) that is guaranteed (by well-behavedness) to respect the consistency relation but is otherwise arbitrary.
-This is unsatisfactory in practice, since we care not only about consistency but also about how consistency restoration is performed, whereas with lenses it is difficult to understand or control the latter.
+This is unsatisfactory in practice, since we care not only about consistency but also about how consistency restoration is performed, but with lenses it is difficult to understand or control the latter aspect.
 
 To be concrete, let us consider a simple synchronisation problem where the source is a pair of numbers representing the width and height of a rectangle, and the view is a single number, which is consistent with a rectangle exactly when it is equal to the width of the rectangle.
-With respect to this definition of consistency, there are a variety of sensible consistency restoration strategies: given a rectangle and a view, in addition to replacing the width with the view,
+With respect to this definition of consistency, there are a variety of consistency restoration strategies: given a rectangle and a view, in addition to replacing the width with the view, which is necessary for restoring the consistency,
 \begin{itemize}
 \item we can always keep the height unchanged --- this is the typical ``least-change'' strategy that aims to perform as little update to the source as possible;
 \item we can update the height to keep the height-to-width ratio of the rectangle --- in general this can be maintaining some kind of internal consistency on the source side;
-\item we can reset the height to zero if the view is different from the width --- in general this strategy is used when the view side does not know whether or how the source side maintains its internal consistency, and thus simply chooses to invalidate associated data and leave them for the source side to update later;
+\item we can reset the height to zero if the view is different from the width --- in general this is useful when the view side does not know whether or how the source side maintains its internal consistency, and thus simply chooses to invalidate associated data and leave them for the source side to update later;
 \item we can decide to keep or reset the height depending on whether the difference between the width and the view is small enough --- this is a flexible mixture of the above strategy and the least-change one;
 \item we can use the height as a counter that is incremented every time an inconsistency is repaired --- this is somewhat bizarre for rectangle width updating, but may well be required for some other interpretations of the problem.
 \end{itemize}
 As we can see, even for a simple problem like rectangle width updating, there are already many possible update strategies, not to mention complex, real-world scenarios.
-All the above update strategies restore the same consistency but have different \emph{retentive} behaviour --- the way in which the information of the original source is retained --- dealing with different needs.
+All the above update strategies restore the same consistency but have different \emph{retentive} behaviour --- the way in which the information of the original source is retained --- to deal with different needs.
 The programmer must be empowered to fully control and reason about the retentive behaviour of their programs to be sure that the behaviour is suitable for the intended applications.
 
-Seeing that there are a myriad possibilities of update strategies, what can be better than having languages for \emph{programming} such strategies, capturing the myriad possibilities once and for all?
-Following some previous work~\citep{Pacheco-putlenses, Pacheco-BiFluX, Hu-putback-validity} on this putback-based programming approach, \citet{Ko-BiGUL} proposed a language \BiGUL\ (short for the \emph{Bidirectional Generic Update Language}).
+Given that there are a myriad possibilities of update strategies, what can be better than having languages for \emph{programming} such strategies, capturing the myriad possibilities once and for all?
+Following some previous work~\citep{Pacheco-putlenses, Pacheco-BiFluX, Hu-putback-validity} which took exactly this \emph{putback-based} programming approach, \citet{Ko-BiGUL} proposed a language \BiGUL, short for the \emph{Bidirectional Generic Update Language}.
 Like the original lenses, every \BiGUL\ program denotes a well-behaved pair of |put| and |get| transformations;
 different from the original lenses, \BiGUL\ is designed for expressing |put| transformations, and gives the programmer unprecedented freedom to specify their intended update strategies directly.
 However, due to the more intricate nature of \BiGUL's bidirectional semantics, it is still hard to guarantee that a \BiGUL\ program will exhibit the intended behaviour.
@@ -390,7 +390,7 @@ For example, the programmer can express the height-keeping and height-resetting 
 (ASSERT(_ _)) ~  keepHeight   ~ (ASSERT((w', h') (_  , h) v | w' = v && h' = h))
 (ASSERT(_ _)) ~  resetHeight  ~ (ASSERT((w', h') (w  , h) v | w' = v && (w = v => h' = h) && (w /= v => h' = 0)))
 \end{code}
-These two putback triples state that both |keepHeight| and |resetHeight| work on any input pairs of source and view (due to the always true precondition |ASSERT(_ _)|) and will update the width to be equal to the view (|w' = v|), that |keepHeight| will retain the original height (|h' = h|), and that |resetHeight| will retain the height if the original width is equal to the view (|w = v => h' = h|) or reset the height otherwise (|w /= v => h' = 0|).
+These two putback triples state that both |keepHeight| and |resetHeight| work on any input pairs of source and view (due to the always true precondition |ASSERT(_ _)|) and will update the width with the view (|w' = v|), that |keepHeight| will retain the original height (|h' = h|), and that |resetHeight| will retain the height if the original width is equal to the view (|w = v => h' = h|) or reset the height otherwise (|w /= v => h' = 0|).
 With just a bit more effort, the programmer can also prove that the |get| transformations denoted by these two programs work on any input rectangle and extract its width, conforming to the consistency relation (|w' = v|) stated in the above triples.
 
 For the rest of this paper:
@@ -402,9 +402,9 @@ Discussion and conclusion will follow in Sections \ref{sec:discussion}~and~\ref{
 
 Everything in this paper from theorems to derivation examples has been formalised and checked in \Agda\ version~2.5.2 with standard library version~0.13, but this paper will not present the \Agda\ formalisation, which is provided only as supplementary material.
 Instead, we will focus on explaining the intuition, and present the Hoare-style logic in a semi-formal way to make it suitable for human reasoning.
-\BiGUL\ is originally developed in \Agda\ and also ported to \Haskell\ as an embedded language.
-The syntax of \BiGUL\ used in this paper is a hypothetical one abstracted from the \Haskell\ port of \BiGUL.
-The host language is total and can be thought of as \Agda\ imperfectly disguised as \Haskell; in particular, we will use some standard \Haskell\ types and functions, and allow some ``superficial'' general recursion and partiality (which will be justified in Sections \ref{sec:recursion}~and~\ref{sec:key-based-alignment}).
+\BiGUL\ is originally developed in \Agda\ and also ported to \Haskell\ as an embedded language, and this influences the choices of syntax used in this paper:
+our \BiGUL\ syntax is a hypothetical one abstracted from the \Haskell\ port of \BiGUL;
+the host functional language is total and may be thought of as \Agda\ imperfectly disguised as \Haskell\ --- in particular, we will use some standard \Haskell\ types and functions, and allow some ``superficial'' general recursion and partiality (which will be justified in Sections \ref{sec:recursion}~and~\ref{sec:key-based-alignment}).
 
 %In an instance~\citep{Anjorin-BenchmarX-reloaded}, the \BiGUL\ program skipping all the dynamic checks runs about 20 times faster.
 
@@ -416,7 +416,7 @@ The host language is total and can be thought of as \Agda\ imperfectly disguised
 We start from a brief recap of some general facts about asymmetric lenses, and state these facts directly in terms of \BiGUL.
 %These facts are true for \BiGUL\ programs in general and can be stated without referring to specific \BiGUL\ constructs, which we will introduce in \autoref{sec:putback-proof-rules}.%
 %\todo{omit proof details related to semantics}
-\autoref{def:put-and-get} and \autoref{thm:well-behavedness} below are provided by \citet{Ko-BiGUL} for the original \BiGUL, whereas this paper uses a revised version of \BiGUL; accordingly, we have revised the internals of the definition and theorem, whose statements remain the same though.
+\autoref{def:put-and-get} and \autoref{thm:well-behavedness} below are provided by \citet{Ko-BiGUL} for the original \BiGUL, whereas this paper uses a revised version of the language; accordingly, we have revised the internals of the definition and theorem, whose statements remain the same though.
 
 \begin{definition} \label{def:put-and-get}
 A \BiGUL\ program~|b| operating on source type~|S| and view type~|V| is assigned the type |S <~ V|, and has two semantics:
@@ -431,7 +431,7 @@ As noted by \citeauthor{Ko-BiGUL}, the two semantics in \autoref{def:put-and-get
 That is, |put b| and |get b| may fail to compute a result, in which case they produce |Nothing|; otherwise they return their result wrapped within the |Just| constructor.
 
 \begin{theorem}[well-behavedness] \label{thm:well-behavedness}
-Any \BiGUL\ program~|b| satisfies the following two \emph{well-behavedness} properties, \emph{\ref{prop:PutGet}} and \emph{\ref{prop:GetPut}}:
+Any \BiGUL\ program~|b| satisfies the following two \emph{well-behavedness} laws:
 \begin{align}
 & |all(s, v, s')| \quad |put b s v = Just s'| \quad|=>|\quad \awa{|put|}{|get|}\;|b|\;\awa{|s v|}{|s'|}\;|= Just v| \tag{\PutGet}\label{prop:PutGet} \\
 & \awa{|all(s', s, v)|}{|all(s, v)|} \quad \awa{|put|}{|get|}\;\awa{|b s v|}{|b s|}\;|= Just|\;\awa{|s'|}{|v|} \quad|=>|\quad |put b s v = Just s| \tag{\GetPut} \label{prop:GetPut}
@@ -439,7 +439,7 @@ Any \BiGUL\ program~|b| satisfies the following two \emph{well-behavedness} prop
 \end{theorem}
 
 As noted by \citeauthor{Ko-BiGUL}, \autoref{thm:well-behavedness} gives a stronger well-behavedness guarantee~\citep{Macedo-composing-least-change-lenses, Pacheco-putlenses} than \citet{Foster-lenses}'s original definition.
-Even so, this theorem is not as strong as it seems because non-well-behavedness is merely swept under the partiality carpet: both |put b| and |get b| perform various checks at runtime to detect non-well-behavedness, and if the programmer does not pay enough attention to well-behavedness requirements, the execution of |put b| or |get b| can unexpectedly fail one of these runtime checks (thereby satisfying \ref{prop:PutGet} or \ref{prop:GetPut} vacuously).
+Even so, this theorem is not as practically useful as it seems because non-well-behavedness is merely swept under the partiality carpet: both |put b| and |get b| perform various checks at runtime to detect non-well-behavedness, and if the programmer does not pay enough attention to well-behavedness requirements, the execution of |put b| or |get b| can unexpectedly fail one of these runtime checks (thereby satisfying \ref{prop:PutGet} or \ref{prop:GetPut} vacuously).
 On the other hand, theoretically we no longer need to worry about well-behavedness and can concentrate on totality, i.e., making sure that \BiGUL\ programs can compute successfully on the inputs that we care about.
 This is part of the motivation for developing the Hoare-style logic.
 
@@ -457,10 +457,10 @@ We will see more precisely how this works in practice with the Hoare-style logic
 \label{sec:putback-triples}
 
 Programming a putback transformation in \BiGUL\ is comparable to programming with states:
-the \BiGUL\ programmer is given a source state and a view state, and manipulates the two states with the aim of transferring all information in the view to the source; in the end, the updated source is returned as the result of the putback transformation.
+the \BiGUL\ programmer is given a source state and a view state, and manipulates the two states with the aim of transferring all information in the view to the source; in the end, the updated source state is returned as the result of the putback transformation.
 Reasoning about \BiGUL\ programs thus consists of tracking the properties satisfied by the states at each step, and it should not come as a surprise that a Hoare-style logic is well suited for performing this kind of reasoning about states.
-On top of \BiGUL's semantics (\autoref{def:put-and-get}), we will introduce an axiomatic system of Hoare-style triples for saying when \BiGUL\ programs (as putback transformations) can compute successfully and return results satisfying the specified properties.
-Before doing so, let us first fix our notation of relations (for specifying preconditions and postconditions).
+Based on \BiGUL's semantics (\autoref{def:put-and-get}), we will introduce an axiomatic system of Hoare-style triples for saying when \BiGUL\ programs (as putback transformations) can compute successfully and return results satisfying some specified properties.
+Before doing so, however, we should first fix our notation of relations (for specifying preconditions and postconditions).
 
 \begin{notation}
 Relations on types |A_1|\,, |A_2|\,, $\ldots,$ |A_n| are considered inhabitants of the type |POWER(A_1 TIMES A_2 TIMES {-"\cdots\;"-} TIMES A_n)|.
@@ -483,11 +483,11 @@ Let |b : S <~ V|, |R : (POWER(S TIMES V))|, and |R' : (POWER(S TIMES S TIMES V))
 \[ \IF |(ASSERT R) ~ b ~ (ASSERT R')| \THEN |(all(s, v)) ~ R s v ~ => ~ (some(s')) ~ put b s v = Just s' ~ && ~ R' s' s v| \PERIOD \]
 \end{theorem}
 
-In prose: a valid putback triple |(ASSERT R) b (ASSERT R')| guarantees that if the original source and the view satisfies the precondition~|R|, then |put b| will successfully produce an updated source satisfying the postcondition~|R'|, which can relate the updated source to the original source and the view.
-We omit the proof of this theorem, which is by induction on the proof rules as usual.
+In prose: a valid putback triple |(ASSERT R) b (ASSERT R')| means that if the original source and the view satisfies the precondition~|R|, then |put b| will successfully produce an updated source satisfying the postcondition~|R'|, which can relate the updated source to the original source and the view.
+The proof of this theorem (which is by induction on the proof rules in \autoref{fig:putback-proof-rules} as usual) has been checked in the accompanying \Agda\ formalisation, and will be omitted from the presentation.
 
-\autoref{thm:dominance} tells us that putback behaviour completely determines get behaviour.
-On the other hand, putback triples are about putback behaviour --- shouldn't they tell us something about get behaviour as well?
+\autoref{thm:dominance} tells us that putback behaviour completely determines forward behaviour.
+On the other hand, putback triples are about putback behaviour --- shouldn't they tell us something about forward behaviour as well?
 This is indeed the case, as will be shown by \autoref{thm:partial-forward-consistency}.
 Its statement will make use of some important definitions and notational conventions that will also be used throughout the rest of this paper.
 
@@ -519,8 +519,8 @@ Let |b : S <~ V|, |R : (POWER(S TIMES V))|, and |C : (POWER(S TIMES V))|.
 \end{theorem}
 \begin{proof}
 Suppose |get b s = Just v| and |R s v|.
-The latter triggers \autoref{thm:putback-soundness}, so we know that |put b s v = Just s'| for some~|s'| and that |C s' v| holds.
-On the other hand, by \ref{prop:GetPut}, we can turn |get b s = Just v| into |put b s v = Just s|.
+The latter assumption triggers \autoref{thm:putback-soundness}, so we know that |put b s v = Just s'| for some~|s'| and that |C s' v| holds.
+On the other hand, by \ref{prop:GetPut}, we can turn the first assumption |get b s = Just v| into |put b s v = Just s|.
 Seeing that |put b s v| computes to both |s'|~and~|s|, we can deduce |s' = s|, and thus having |C s' v| is the same as having |C s v|.
 \end{proof}
 
@@ -598,24 +598,25 @@ $\begin{array}[t]{ll}
 
 \end{figure}
 
-In this section we will introduce the putback proof rules for \BiGUL\ shown in \autoref{fig:putback-proof-rules}, taking for granted that the theory in \autoref{sec:putback-triples} (in particular \autoref{thm:putback-soundness}) has been fully established (which is done by the accompanying \Agda\ formalisation).
+In this section we will introduce \BiGUL's constructs and their putback proof rules shown in \autoref{fig:putback-proof-rules}.
 Except for the consequence rule (the right one in the second row), every rule corresponds to a \BiGUL\ construct and gives an axiomatic encapsulation of its semantics.
 For each \BiGUL\ construct, we will introduce its type, which is essential for inferring the types of entities in assertions, and  explain the corresponding proof rule with the help of the operational meaning of the construct.
 We will not, however, go into the rationale behind the design of the constructs, for which the interested reader is referred to \citet[Section~5]{Hu-BiGUL-tutorial}.
-We emphasise that the assertions in the proof rules are intended to be semantic rather than syntactic --- for example, if the precondition stated in a rule is |COM(_ _)|, we will consider the rule directly applicable when the required precondition is, say, |COM(s v || s = s && v = v)|, which is different from |COM(_ _)| syntactically but still denotes the always true binary relation semantically.
+We emphasise again that the assertions in the proof rules are intended to be semantic rather than syntactic --- for example, if the precondition stated in a rule is |COM(_ _)|, we will regard the rule as directly applicable when the actual precondition is, say, |COM(s v || s = s && v = v)|, which is different from |COM(_ _)| syntactically but still denotes the always true binary relation semantically.
 
 \subsection{Atomic constructs}
 
 \BiGUL\ has three atomic constructs, whose corresponding rules are in the first row of \autoref{fig:putback-proof-rules}.
-\begin{itemize}
-\item The |fail| construct has type |S <~ V| for any |S|~and~|V|.
-The precondition of the |fail| rule is the empty relation~|EMPTY|, saying that no input can make |fail| compute successfully. (On the other hand, the postcondition can be any relation because of the consequence rule.)
-\item The |replace| construct has type |S <~ S| for any~|S|, and replaces the source with the view regardless of what they are; correspondingly, the precondition of the |replace| rule is the always true relation, and the postcondition states that the updated source~|s'| will be equal to the view~|v|.
-\item The |skip| construct takes a function |f : S -> V| as an argument and has type |S <~ V|.
-It ignores the view and leaves the source as it is; correspondingly, the postcondition states that the updated source~|s'| will be equal to the original source~|s|.
+
+The |fail| construct has type |S <~ V| for any types |S|~and~|V|.
+The precondition of the |fail| rule is the empty relation~|EMPTY|, saying that no input can make |fail| compute successfully. (On the other hand, the postcondition can be any relation because of the consequence rule, which we will discuss in \autoref{sec:putback-consequence-rule}.)
+
+The |replace| construct has type |S <~ S| for any type~|S|, and replaces the source with the view regardless of what they are; correspondingly, the precondition of the |replace| rule is the always true relation, and the postcondition states that the updated source~|s'| will be equal to the view~|v|.
+
+The |skip| construct takes a function |f : S -> V| in the host language as an argument and has type |S <~ V|.
+It ignores the view and leaves the source as it is; correspondingly, the postcondition says that the updated source~|s'| will be equal to the original source~|s|.
 Unlike |replace|, we cannot |skip| under all circumstances --- before throwing the view away, we must ensure that it can be recovered from the source, or otherwise there is no hope to establish \ref{prop:PutGet}.
 The precondition thus requires that the view can be computed from the source by~|f|.
-\end{itemize}
 
 \subsection{Product}
 \label{sec:product}
@@ -638,13 +639,14 @@ We can now construct simple derivations like the following one for |replace * re
 ^  (ASSERT(t' _ w | t' = w))
 (ASSERT((s', t') (_ , _) (v , w) | s' = v && t' = w))
 \end{code}
-First, note that the syntax tree structure of |replace * replace| is reflected in indentation: the top-level node is~`|*|', whose two sub-nodes --- both being |replace| --- are indented to the next level.
+First note that the syntax tree structure of |replace * replace| is reflected in indentation: the top-level node is~`|*|', whose two sub-nodes --- both being |replace| --- are indented to the next level.
 Then, following the indentation structure, the assertions are added: the assertions about a node are put on the same indentation level as the node, with the precondition and postcondition appearing respectively before and after the node.
 This format is compact and yet retains the tree structure of the derivation, making it easier to check the correctness of the derivation.
 (Auxiliary dotted lines are also added to make indentation levels clearer, especially when derivations spread across pages.)
 \end{example}
 
 \subsection{The consequence rule}
+\label{sec:putback-consequence-rule}
 
 The consequence rule we present in \autoref{fig:putback-proof-rules} may seem unusual:
 \[ \begin{array}{l}
@@ -653,7 +655,7 @@ The consequence rule we present in \autoref{fig:putback-proof-rules} may seem un
 |R' CAP (COM(_ s v || T s v)) ~ SUBSETEQ ~ T'| \\ \hline
 \phantom{|T ~ SUBSETEQ ~ R| \rulepsep}|{-"\assert{T}\;"-} ~ b ~ {-"\;\assert{T^\prime}"-}|
 \end{array} \]
-but first note that it is a stronger version of the usual one:
+but first observe that it is a stronger version of the usual one, so at least there is nothing to lose:
 \begin{equation}
 \begin{array}{l}
 |T ~ SUBSETEQ ~ R| \rulepsep
@@ -676,15 +678,15 @@ VDOTS
 (ASSERT((s', t') _ _ | s' = t'))
 \end{code}
 Adjacent assertions on the same indentation level indicate an invocation of the consequence rule, with the one above implying the one below.
-In this derivation, there is one such invocation, which turns |(COM(_ (v , w) || v = w))| into |(COM((_ , _) (_ , _)))| so that the product rule can apply.
+In the first two lines of this derivation, there is one such invocation, which turns |(COM(_ (v , w) || v = w))| into |(COM((_ , _) (_ , _)))| so that the product rule can apply.
 On the other hand, the postcondition that we can establish, i.e., |(COM((s', t') (_ , _) (v, w) || s' = v && t' = w))|, does not imply the postcondition we want to establish, i.e., |(COM((s', t') _ _ || s' = t'))|.
 %(hence the vertical dots separating the two postconditions in the derivation, to avoid suggesting that the consequence rule is invoked)
-The usual consequence rule~(\ref{eq:usual-consequence-rule}) can help us to get rid of the entanglement |v = w|, but that entanglement is needed for establishing the final implication (since |s' = v = w = t'|).
+The usual consequence rule~(\ref{eq:usual-consequence-rule}) can help us to get rid of the entanglement |v = w|, but that entanglement is needed to establish the final implication (since |s' = v = w = t'|).
 We thus need the stronger consequence rule to be able to carry over whatever we know about the original source and the view from the precondition to the postcondition.
 When working in our derivation format, the stronger consequence rule allows us to prove an implication between adjacent postconditions using whichever preconditions for the same node (on the same indentation level) as additional premises about the original source and the view.
 
 The stronger consequence rule also simplifies other rules.
-For example, with only the usual consequence rule~(\ref{eq:usual-consequence-rule}), we would have to enrich the |skip| rule to:
+For example, if we only had the usual consequence rule~(\ref{eq:usual-consequence-rule}), we would have to enrich the |skip| rule to:
 \[ \begin{array}[t]{c} \hline
 |(ASSERT(s v || f s = v && P s)) ~ skip f ~ (ASSERT(s' s _ || s' = s && P s'))|
 \end{array} \]
@@ -706,7 +708,7 @@ keepHeight  =  rearrV v -> (v, ())
 \end{code}
 Initially, the view is a single number, whereas the source is a pair.
 To make their structures match, we use the view rearrangement operation |rearrV v -> (v, ())| to apply the $\lambda$-expression |\ v -> (v, ())| to the view and make the result the new view.
-Inside |rearrV|, the source and view are both pairs now, so we can use |replace * skip const ()| to update the width and keep the height as it is.
+Inside the |rearrV|, the source and view are both pairs, so we can use |replace * skip const ()| to update the width and keep the height as it is.
 Below we will mainly discuss view rearrangement; source rearrangement is largely analogous, and will only be briefly discussed towards the end of this subsection.
 
 \paragraph{View rearrangement.}
@@ -736,7 +738,7 @@ This change-of-perspective interpretation works for the postconditions as well.
 
 \begin{example}[rectangle width updating --- keeping the height]
 \label{ex:keepHeight}
-We can now verify the |keepHeight| program as follows, where the precondition (assertion~1) is always true and the postcondition (assertion~2) says that consistency will be established (|w' = v|) and the height will be retained (|h' = h|):
+We can now verify the |keepHeight| program as follows, where the precondition (assertion~1) is always true and the postcondition (assertion~2) says that the consistency will be established (|w' = v|) and the height will be retained (|h' = h|):
 \begin{code}
 (ASSERT(_ _))(ASSERTNUMBER *1)
 rearrV v -> (v, ())
@@ -796,7 +798,7 @@ Roughly speaking, this program checks whether the width of the source is equal t
 
 In general, a case analysis in \BiGUL\ has the form |case branches : S <~ V| where |branches| is an arbitrary number of |normal| or |adaptive| branches.
 For normal branches, the general form is |normal M exit E INNER b| where |M : (POWER(S TIMES V))| is called the \emph{main condition}, |E : (POWER(S))| is called the \emph{exit condition}, and |b : S <~ V| is the branch body.
-For adaptive branches, the general form is |adaptive M INNER f| where |M : (POWER(S TIMES V))| is again the main condition, and |f : S -> V -> S| is the \emph{adaptation function}.
+For adaptive branches, the general form is |adaptive M INNER f| where |M : (POWER(S TIMES V))| is again the main condition, and |f : S -> V -> S| is a function in the host language.
 The syntactic conventions described by \autoref{notation:trivially-true-proposition} and \autoref{notation:angle-brackets} are also adopted for comprehension relations used as main or exit conditions.
 We make |M|~and~|E| comprehension relations only to simplify the presentation --- in reality, where programs should be executable, |M|~and~|E| should be ``comprehension expressions'' that compute to boolean values instead of propositions, but that would mess up the assertions where we would have to write propositions like |M s v = true| instead of just |M s v|.
 We are careful not to sacrifice computability, though: the comprehension relations we use as conditions in this paper can all be straightforwardly converted to ``comprehension expressions'' in real programs.
@@ -814,10 +816,10 @@ The rest of the job is to verify each branch.
 If a normal branch |normal M exit E INNER b| is entered, its body~|b| is executed; the |case| rule thus requires us to verify the behaviour  of~|b| by deriving the following triple:
 \[ |(ASSERT(R CAP (NORM M))) ~ b ~ (ASSERT(R' CAP (COM(s' _ v || (NORM M) s' v && (NORM E) s'))))| \]
 The precondition is strengthened with the main condition since we know that the source and view must satisfy the main condition if the branch is entered.
-However, the precise condition satisfied is not~|M| --- since the branches are tried in order and a branch is entered only when the main conditions of all the previous branches are not satisfied, we should regard the actual main condition of a branch as |M|~intersected with the negation of the main conditions of all the previous branches.
+However, the precise condition satisfied is not~|M| --- since the branches are tried in order and a branch is entered only when the main conditions of all the previous branches are not satisfied, we should regard the actual main condition of a branch as |M|~intersected with the negations of the main conditions of all the previous branches.
 We denote this actual main condition by~|NORM M|, and the precondition for~|b| is strengthened to |R CAP (NORM M)|.
 (The programmer can avoid distinguishing actual and ``superficial'' main conditions by writing programs where the main conditions are all disjoint, in which case |NORM M = M|.)
-As for the postcondition, in addition to~|R'|, we also require \,(i)~that the updated source and the view satisfy the actual main condition~|NORM M| and \,(ii)~that the updated source satisfy the actual exit condition |NORM E|, which is |E|~intersected with the negation of the exit conditions of all the previous normal branches.
+As for the postcondition, in addition to~|R'|, we also require \,(i)~that the updated source and the view satisfy the actual main condition~|NORM M| and \,(ii)~that the updated source satisfy the actual exit condition |NORM E|, which is |E|~intersected with the negations of the exit conditions of all the previous normal branches.
 Requirement~(i) is for guaranteeing well-behavedness, while requirement~(ii) makes exit conditions comparable with ``assertions'' (not to be confused with Hoare-style assertions) in reversible conditionals~\citep{Yokoyama-Janus}.
 
 \paragraph{Adaptative branches.}
@@ -892,7 +894,7 @@ Let us emphasise that assertions in adaptive branches do not really constitute t
 
 \begin{example}[rectangle width updating --- resetting the height]
 \label{ex:resetHeight}
-Now we can verify the |resetHeight| program as follows, where the precondition is always true and the postcondition says that consistency is established and the height is retained or reset depending on whether the view is consistent or not:
+Now we can verify the |resetHeight| program as follows, where the precondition is always true and the postcondition says that the consistency will be established and the height will be retained or reset depending on whether the view is consistent or not:
 \begin{code}
 (ASSERT(_ _))
 (ASSERT(COM(_ _) CAP ((COM((w, _) v | w = v)) CUP (COM(_ _))) ))(ASSERTNUMBER *1)
@@ -942,7 +944,7 @@ What we proved for |resetHeight| in \autoref{ex:resetHeight} can be generalised 
 \begin{code}
 (ASSERT(_ _)) ~ emb g p ~ (ASSERT(s' s v | g s' = v && (g s = v => s' = s) && (g s /= v => s' = p s v)))
 \end{code}
-Interestingly, to prove this triple, we only require |g|~and~|p| to satisfy \PutGet\ (|(all(s, v)) g (p s v) = v|); \GetPut\ of |emb g p| arises from the logic of |emb| itself and does not depend on |g|~and~|p|.
+Interestingly, to prove this triple, we only require |g|~and~|p| to satisfy \PutGet\ (|(all(s, v)) g (p s v) = v|, which is \autoref{thm:well-behavedness}'s \ref{prop:PutGet} specialised for total functions); \GetPut\ of |emb g p| arises from the logic of |emb| itself and does not depend on |g|~and~|p|.
 Indeed, in the case of |resetHeight|, the pair of transformations being embedded only satisfy \PutGet.
 
 On the other hand, if we have both \PutGet\ and \GetPut\ (|all(s) p s (g s) = s|), then we can derive a stronger triple saying that the putback behaviour of |emb g p| completely coincides with~|p|:
@@ -971,7 +973,7 @@ which is known to follow from \PutGet\ and \GetPut.
 \section{Range triples}
 \label{sec:range-triples}
 
-We have seen in \autoref{ex:emb} that any pair of transformations satisfying only \PutGet\ can be embedded into \BiGUL\ and become well-behaved by using the |emb| program to wrap extra logic around the transformations to achieve \GetPut, though at the expense of not having exactly the same putback behaviour as the backward transformation being embedded.
+We have seen in \autoref{ex:emb} that any pair of transformations satisfying only \PutGet\ can be embedded into \BiGUL\ and become well-behaved by using the |emb| program to wrap extra logic around the transformations to achieve \GetPut, although the putback behaviour is not exactly the same as the backward transformation being embedded.
 For example, |resetHeight| in \autoref{ex:resetHeight} can be seen as |emb fst reset| where |reset = \ _ v -> (v, 0)|.
 There is, however, a way to embed |reset| precisely, which is to express it directly in terms of \BiGUL's constructs:
 \begin{code}
@@ -986,7 +988,7 @@ Let us compare |alwaysResetHeight| and |emb fst reset|:
 \item With |emb fst reset|, apart from providing |reset|, we also need to provide a forward transformation to pair with |reset| and prove \PutGet\ for them. In the end we obtain well-behavedness but not precise embedding of |reset|'s behaviour.
 \item With |alwaysResetHeight|, we simply express |reset| in \BiGUL, and obtain the corresponding forward transformation, well-behavedness, and precise embedding.
 \end{itemize}
-It would seem that |alwaysResetHeight| is clearly the better solution, but that is only because we have been concentrating on the putback direction.
+It might seem that |alwaysResetHeight| is clearly the better solution, but that is only because we have been looking in the putback direction exclusively.
 In the forward direction, \autoref{thm:partial-forward-consistency} tells us that
 \[ |(GRAPH(get (emb fst reset)) ~ SUBSETEQ ~ (COM((w, _) v || w = v))| \AND |(GRAPH(get alwaysResetHeight)) ~ SUBSETEQ ~ (COM((w, 0) v || w = v))| \]
 so both |get (emb fst reset)| and |get alwaysResetHeight| necessarily behave like |fst|.
@@ -1019,17 +1021,17 @@ Let |b : S <~ V|, |R : (POWER(S TIMES V))|, and |P' : (POWER S)|.
 We can recover the intended interpretation of range triples by showing that the conclusion of \autoref{thm:range-soundness} is equivalent to a statement primarily about |put|:
 
 \begin{lemma} \label{lem:range-interpretation}
-The conclusion of \autoref{thm:range-soundness} is equivalent to
+The conclusion of \autoref{thm:range-soundness} is equivalent to:
 \[ (|(all(s')) ~ P' s' ~ => ~ (some(s, v)) ~ R s v ~ && ~ put b s v = Just s'|) \quad|&&|\quad |(GRAPH(get b)) CAP (COM(s _ || P' s)) ~ SUBSETEQ ~ R| \]
 \end{lemma}
 
 The left conjunct in \autoref{lem:range-interpretation} is the primary way in which we think about the range triples: if |(ASSERTRANGE R) b (ASSERTRANGE P')| can be derived, then the range of updated sources produced by applying |put b| to those inputs satisfying~|R| will be at least~|P'|.
-The right conjunct in \autoref{lem:range-interpretation} says that there is a ``side effect'' when we think about these triples in the putback direction: the input range considered will be forced to include those related by |get| with its domain restricted to~|P'|.
+The right conjunct in \autoref{lem:range-interpretation} says that there is an unintended ``side effect'' when we think about these triples in the putback direction: the input range considered will be forced to include those related by |get| with its domain restricted to~|P'|.
 So, for example, we will not be able to deduce |(ASSERTRANGE(m n || m = n + 1)) replace (ASSERTRANGE(_))| even though the left conjunct in \autoref{lem:range-interpretation} is true for this pair of |R|~and~|P'|.
-This ``side effect'' normally does not prevent us from deriving range triples, though, since preconditions are normally larger than consistency relations, which in turn contain the graphs of |get| functions.
+This ``side effect'' normally does not prevent us from deriving range triples, though, since preconditions are normally larger than consistency relations, which in turn contain the graphs of |get| transformations.
 
 Back in \autoref{sec:putback-triples}, where we only had putback triples, \autoref{thm:partial-forward-consistency} only enabled us to understand the forward behaviour of \BiGUL\ programs to a limited extent.
-Now, with range triples, we can prove a stronger and satisfactory result.
+Now supplemented with range triples, we can prove a stronger and satisfactory result.
 
 \begin{theorem}[total forward consistency] \label{thm:total-forward-consistency}
 Let |b : S <~ V|, |R : (POWER(S TIMES V))|, |C : (POWER(S TIMES V))|, and |P' : (POWER S)|.
@@ -1128,13 +1130,14 @@ But, interestingly, the consequence rule can also be understood in the putback d
 If |(ASSERTRANGE R) b (ASSERTRANGE P')| has been established, meaning that the inputs in~|R| can induce everything in~|P'| through the execution of~|b|, then a larger input range~|T| can still induce everything in~|P'|, or indeed everything in any output range~|Q'| smaller than~|P'|.
 In fact, |T|~is not necessarily larger than~|R|: if what we eventually target is a smaller output range, then we will be allowed to also shrink the input range.
 The consequence rule makes it clear what kind of shrinking is valid: we are allowed to use~|Q'| to constrain the sources in the input range.
-Since the direction of the range consequence rule is the opposite of the putback one, when deriving a range triple using the consequence rule in our derivation format, logical implications go upwards, and we can use the postconditions for a node as additional premises when proving implications between preconditions for the same node, opposite to what we are familiar with in putback derivations.
+Since the direction of the range consequence rule is the opposite of the putback one, when deriving a range triple using the consequence rule in our derivation format, logical implications go upwards, and we can use the postconditions for a node as additional premises when proving implications between preconditions for the same node, opposite to what we do in putback derivations.
 
 Other rules should be largely intuitive.
 The |fail| rule has the empty predicate as its output range since |fail| can never produce anything (and its input range can be any relation because of the consequence rule).
-Both |replace| and |skip| can produce everything as long as the input range is large enough --- because of the ``side effect'' explained below \autoref{lem:range-interpretation}, their input ranges have to be large enough to include the graphs of their forward semantics.
+The |replace| rule says that |replace| can produce everything as long as the input range is large enough --- because of the ``side effect'' explained below \autoref{lem:range-interpretation}, the input range has to be large enough to include the graphs of the forward semantics of |replace|, which is the identity transformation.
+The |skip| rule has the same precondition as its putback counterpart and says that |skip| can produce everything.
 The product and rearrangement rules are analogous to their putback counterparts.
-For |case|, only the normal branches matter since the execution of |case| always ends in a normal branch.
+For |case|, only the normal branches matter since execution of |case| always ends in a normal branch.
 We estimate an output range~|P'_n| for the body of every normal branch~|n|, and the estimated output range for that branch is |P'_n|~intersected with the actual exit condition, since only outputs satisfying the actual exit condition can be produced.
 The estimated output range for the entire |case| is then the union of the estimated output ranges for all the normal branches.
 
@@ -1211,9 +1214,9 @@ The basic idea is to prove something about~|f| like:
 \label{prop:basic-proof-idea}
 \end{equation}
 which can then be iterated to produce |(ASSERT R) expand n f (ASSERT R')| for any~|n| --- the base case is |(ASSERT R) fail (ASSERT R')|, which implies |(ASSERT R) f fail (ASSERT R')|, and then |(ASSERT R) f (f fail) (ASSERT R')|, etc.
-However, executing a finite expansion of~|f| can be thought of as executing~|b| but allowing recursive invocations only to a certain depth, and it follows that, in general, only a subset of~|R| can be successfully processed by a finite expansion, so the above idea cannot be directly valid.
+This idea cannot be directly valid, however, since in general only a subset of~|R| can be successfully processed by a finite expansion of~|f| (whose execution can be thought of as executing~|b| but allowing recursive invocations only to a certain depth).
 %or otherwise we would be able to prove that any finite expansion can successfully process the entire~|R|.
-We thus introduce a function of type |S -> V -> Nat| that measures the size of the input, and include size restrictions in the preconditions for the finite expansions, leading to the following theorem.
+We thus introduce a function of type |S -> V -> Nat| that measures the size of the input in assertions, and include size restrictions in the preconditions for the finite expansions, leading to the following theorem.
 
 \begin{theorem}[finite expansion of putback triples] \label{thm:putback-finite-expansion}
 Let |f : (S <~ V) -> (S <~ V)|, |R : (POWER(S TIMES V))|, |R' : (POWER(S TIMES S TIMES V))|, and |measure : S -> V -> Nat|.
@@ -1227,9 +1230,9 @@ then:
 \end{theorem}
 
 \ref{prop:PutbackRecursion} will be the proof rule we use for reasoning about the putback behaviour of recursive programs.
-It combines the basic proof idea~(\ref{prop:basic-proof-idea}) with the sized-based termination argument given in the beginning of this section: in the outermost precondition, the size of the input source and view is bound to a ghost variable~|n|, and we can make recursive invocations wherever the size~|m| of the current source and view is strictly less than~|n|.
+It combines the basic proof idea~(\ref{prop:basic-proof-idea}) with the sized-based termination argument given in the beginning of this section: in the precondition for |f rec|, the size of the input source and view is bound to a ghost variable~|n|, and we can make recursive invocations wherever the size~|m| of the current source and view is strictly less than~|n|.
 The soundness of \ref{prop:PutbackRecursion} is justified by \autoref{thm:putback-finite-expansion}, whose conclusion implies that any input in~|R| can be successfully turned into an output in~|R'| as long as |f|~is expanded enough times.
-The theorem is proved by nested induction on |l|~and~|n|.
+We again omit the proof of the theorem (which is by nested induction on |l|~and~|n|) from the presentation.
 
 Analogously, we have a \ref{prop:RangeRecursion} rule for estimating the output ranges of recursive programs.
 
@@ -1296,7 +1299,7 @@ In this paper we choose to verify a variant that is non-trivial and yet not over
 \citet[Section~6.2]{Hu-BiGUL-tutorial}.
 Their program |keyAlign| is shown in \autoref{fig:keyAlign}.
 The types of source and view elements are |S|~and~|V| respectively.
-The program takes two functions |ks : S -> K| and |kv : V -> K| as arguments, which can be used to extract a key value of type~|K| from every source or view element.
+The program takes two functions |ks : S -> K| and |kv : V -> K| as arguments, which can be used to extract a key value of type~|K| from every source or view element, where the type~|K| should support decidable equality.
 Two more arguments |b|~and~|c| are needed to deal with two of the three possible situations that can occur during alignment:
 \begin{itemize}
 \item A view element~|v| is deemed to correspond to a source element~|s| only if their keys match, i.e., |ks s = kv v|; an element-level synchroniser |b : S <~ V| will then be invoked on this pair of source and view elements.
@@ -1307,7 +1310,7 @@ Due to space restrictions, we will not be able to go through the program and its
 The first branch is the base case.
 The second branch deals with ``happy coincidences'': the head elements in the source and view lists match, so we can simply synchronise the heads and recursively process the tails.
 The third branch deletes everything in the source when the view is empty.
-The fourth branch is the most interesting: the head view element~|v| has a corresponding source element (which is not at the head position), so we |extract| the first source element with the same key as~|v| and put it at the head (intending to reenter the second branch after adaptation).
+The fourth branch is the most interesting: the head view element~|v| has a corresponding source element (which is not at the head position), so we |extract| the first source element with the same key as~|v| and put it at the head (intending to re-enter the second branch after adaptation).
 When there is no source element corresponding to the head view element, the fifth and last branch uses~|c| to create a temporary corresponding source element.
 Note that the program uses some partial functions, which are fine in \Haskell\ but not in \Agda: |extract|, for example, misses two cases for empty source lists, and these cases have to be added for verification in \Agda. These missing cases are irrelevant, however, since |keyAlign| does not invoke |extract| on empty source lists.
 
@@ -1331,9 +1334,9 @@ In the postcondition, the relation |(STAR T') : (POWER([S] TIMES [S] TIMES [V]))
 \end{code}
 The postcondition thus guarantees that the updated source list |ss'| will have the same length as |vs|, and for each pair of source element~|s'| in~|ss'| and view element~|v| in~|vs| at the same position, |T'| will be established for |s'|,~some source element~|s''|, and~|v|.
 The elements~|s''| are collected into a list~|ss''|, and |Retentive ss vs ss''| says that |ss''|~contains those source elements in~|ss| that correspond to some view element in~|vs|.
-This |Retentive| relation turns out to be slightly tricky to define, especially when we do not require that keys in a list are all unique; the definition we adopt says that if a key appears |n|~times in the view list, then the first |n|~elements with that key in the original source list will be retained.
+This |Retentive| relation turns out to be slightly tricky to define, especially when we do not require that keys in a list are all unique; our definition of |Retentive| says that if a key appears |n|~times in the view list, then the first |n|~elements with that key in the original source list will be retained.
 
-We will only sketch the verification of the second normal branch and the second adaptive branch.
+We only sketch the verification of the second normal branch and the second adaptive branch.
 The assertions for the second normal branch are as follows, where we omit the invocations of the |rearrS|, |rearrV|, and product rules since they are straightforward in this case:
 \begin{code}
 normal (s :: _) (v :: _) | ks s = kv v exit (_ :: _)
@@ -1351,8 +1354,8 @@ normal (s :: _) (v :: _) | ks s = kv v exit (_ :: _)
 ^  (ASSERT((s' :: ss') ss (v :: vs) | (some(~ ss'')) (STAR T') (s' :: ss') ss'' (v :: vs) && Retentive ss (v :: vs) ss'' && ks s' = kv v)) (ASSERTNUMBER *5)
 \end{code}
 We first look at how the \ref{prop:PutbackRecursion} rule is applied.
-Assertion~1 is the actual precondition for the recursive invocation of |keyAlign ks kv b c|, and we rewrite it into assertion~2, saying that the length of the view list at this point is |pred n|, which is strictly less than~|n| since assertion~1 says that |n|~is a successor.
-(The predecessor function is defined by |pred zero = zero| and |pred (suc n) = n|.)
+Assertion~1 is the actual precondition for the recursive invocation, and we rewrite it into assertion~2, saying that the length of the view list at this point is |pred n|, which is strictly less than~|n| since assertion~1 says that |n|~is a successor.
+(The predecessor function is defined by |pred zero = zero| and |pred (suc n) = n|, so |pred n| is not necessarily less than~|n|.)
 The recursive invocation will thus succeed and establish assertion~3.
 For the postcondition, the |rearrS|, |rearrV|, and product rules give us assertion~4, while we need to prove assertion~5.
 The last conjunct |ks s' = kv v| in assertion~5 is part of |T' s' s v| in assertion~4 by definition.
@@ -1368,7 +1371,7 @@ adaptive ss (v :: _) | kv v `elem` map ks ss
 ^  (ASSERT(ss' ss (v :: vs) | (COM(ss' ss vs | (some(~ ss'')) (STAR T') ss' ss'' vs && Retentive ss vs ss'')) ss' (extract ks kv v ss) (v :: vs))) (ASSERTNUMBER *3)
 ^  (ASSERT(ss' ss vs | (some(~ ss'')) (STAR T') ss' ss'' vs && Retentive ss vs ss'')) (ASSERTNUMBER *4)
 \end{code}
-Assertion~1 (where we omit the negations of the previous main conditions) is sufficient to guarantee the reentry condition stated in assertion~2: the source list~|ss| must be nonempty so that |extract ks kv v ss| will successfully produce a nonempty list, whose head will then be guaranteed to have the same key as the head view element~|v|.
+Assertion~1 (where we omit the negations of the previous main conditions) implies assertion~2, which is the condition for re-entry into the second normal branch: the source list~|ss| must be nonempty so that |extract ks kv v ss| will successfully produce a nonempty list, whose head will then have the same key as the head view element~|v|.
 After adaptation, the rerunning of the |case| establishes assertion~3, which should be shown to imply assertion~4, the final postcondition.
 Assertion~3 says that |STAR T'| holds for the updated source list |ss'|, some list |ss''| of source elements, and the view list, and we can directly use |ss''| as the witness and establish the first conjunct in assertion~4.
 Assertion~3 also says that |ss''| retains certain elements from the adapted source list, which is just the original source list with its first source element having key |kv v| moved to the head position, so we know that |ss''| retains the same elements in the original source list as well.
@@ -1503,12 +1506,12 @@ More specifically, we have demonstrated how an adequate understanding of a \BiGU
 
 Bidirectional programming has been highly declarative, in the sense that the programmer writes down only a consistency specification (perhaps with some behavioural annotations) and relies on the system to produce a well-behaved but otherwise arbitrary implementation.
 However, it has long been realised that declarative approaches are hardly enough for practical bidirectional applications \citep[see, e.g.,][Section~4.1]{Stevens-QVT}.
-The bidirectional transformations community currently concentrates on the exploration of more forms of well-behavedness properties \citep[see, e.g.,][]{Cheney-least-surprise}, but we should not be satisfied with only well-behavedness guarantees.
+The bidirectional transformations community currently concentrates on the exploration of more forms of well-behavedness laws \citep[see, e.g.,][]{Cheney-least-surprise}, but we should not be satisfied with only well-behavedness guarantees.
 Instead, we should also start aiming to precisely characterise the behaviour of bidirectional programs like what the \BiGUL\ programmer can now do with the Hoare-style logic, treating bidirectional programming seriously as we treat general-purpose programming.
 
 More broadly, we believe that programming languages should be shipped with reasoning principles --- even domain-specific languages deserve domain-specific reasoning principles!
 In the case of \BiGUL, we have shown how the precision of the Hoare-style proof rules can complement the informal description of \BiGUL's semantics, and explained how and in what format semi-formal domain-specific reasoning can be performed naturally for \BiGUL\ programs.
-In fact, the evolution of \BiGUL\ is partly prompted by the development of the Hoare-style logic, whose eventual simplicity justifies \BiGUL's current design.
+Moreover, the evolution of \BiGUL\ is partly prompted by the development of the Hoare-style logic, whose eventual simplicity justifies \BiGUL's current design.
 If, as \citet{Dijkstra-EWD361} argued, programs and their correctness proofs should grow hand in hand, then programming languages and their reasoning principles ought to be developed together as well.
 \BiGUL\ and its Hoare-style logic make a nice example of this statement.
 
