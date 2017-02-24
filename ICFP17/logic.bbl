@@ -183,14 +183,28 @@
 \url{http://dx.doi.org/10.1145/1232420.1232424}}
 
 
+\bibitem[\protect\citeauthoryear{Gibbons}{Gibbons}{2007}]%
+        {Gibbons-DGP}
+\bibfield{author}{\bibinfo{person}{Jeremy Gibbons}.}
+  \bibinfo{year}{2007}\natexlab{}.
+\newblock \showarticletitle{Datatype-Generic Programming}. In
+  \bibinfo{booktitle}{{\em Spring School on Datatype-Generic Programming}} {\em
+  (\bibinfo{series}{Lecture Notes in Computer Science})},
+  Vol.~\bibinfo{volume}{4719}. \bibinfo{publisher}{Springer},
+  \bibinfo{pages}{1--71}.
+\newblock
+\showDOI{%
+\url{http://dx.doi.org/10.1007/978-3-540-76786-2_1}}
+
+
 \bibitem[\protect\citeauthoryear{Hu and Ko}{Hu and Ko}{2017}]%
         {Hu-BiGUL-tutorial}
 \bibfield{author}{\bibinfo{person}{Zhenjiang Hu} {and}
   \bibinfo{person}{Hsiang-Shang Ko}.} \bibinfo{year}{2017}\natexlab{}.
 \newblock \bibinfo{title}{Principle and Practice of Bidirectional Programming
   in {BiGUL}}.
-\newblock \bibinfo{howpublished}{Draft manuscript for the \textit{Oxford Summer
-  School on Bidirectional Transformations}}.   (\bibinfo{year}{2017}).
+\newblock \bibinfo{howpublished}{Draft lecture notes for the \textit{Oxford
+  Summer School on Bidirectional Transformations}}.   (\bibinfo{year}{2017}).
 \newblock
 \showURL{%
 \url{https://bitbucket.org/prl_tokyo/bigul/raw/master/SummerSchool16/paper/BiGUL_tutorial.pdf}}
