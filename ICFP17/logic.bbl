@@ -142,11 +142,27 @@
 
 
 \bibitem[\protect\citeauthoryear{Fischer, Hu, and Pacheco}{Fischer
-  et~al\mbox{.}}{2015}]%
+  et~al\mbox{.}}{2015a}]%
+        {Fischer-lens-laws}
+\bibfield{author}{\bibinfo{person}{Sebastian Fischer},
+  \bibinfo{person}{Zhenjiang Hu}, {and} \bibinfo{person}{Hugo Pacheco}.}
+  \bibinfo{year}{2015}\natexlab{a}.
+\newblock \showarticletitle{A Clear Picture of Lens Laws}. In
+  \bibinfo{booktitle}{{\em Mathematics of Program Construction}} {\em
+  (\bibinfo{series}{Lecture Notes in Computer Science})},
+  Vol.~\bibinfo{volume}{9129}. \bibinfo{publisher}{Springer},
+  \bibinfo{pages}{215--223}.
+\newblock
+\showDOI{%
+\url{http://dx.doi.org/10.1007/978-3-319-19797-5 10}}
+
+
+\bibitem[\protect\citeauthoryear{Fischer, Hu, and Pacheco}{Fischer
+  et~al\mbox{.}}{2015b}]%
         {Fischer-essence-of-BX}
 \bibfield{author}{\bibinfo{person}{Sebastian Fischer},
   \bibinfo{person}{Zhenjiang Hu}, {and} \bibinfo{person}{Hugo Pacheco}.}
-  \bibinfo{year}{2015}\natexlab{}.
+  \bibinfo{year}{2015}\natexlab{b}.
 \newblock \showarticletitle{The Essence of Bidirectional Programming}.
 \newblock \bibinfo{journal}{{\em SCIENCE CHINA Information Sciences\/}}
   \bibinfo{volume}{58}, \bibinfo{number}{5} (\bibinfo{year}{2015}),
@@ -195,6 +211,18 @@
 \newblock
 \showDOI{%
 \url{http://dx.doi.org/10.1007/978-3-540-76786-2_1}}
+
+
+\bibitem[\protect\citeauthoryear{Hoare}{Hoare}{1969}]%
+        {Hoare-logic}
+\bibfield{author}{\bibinfo{person}{C.~A.~R. Hoare}.}
+  \bibinfo{year}{1969}\natexlab{}.
+\newblock \showarticletitle{An Axiomatic Basis for Computer Programming}.
+\newblock \bibinfo{journal}{{\it Commun. ACM}} \bibinfo{volume}{12},
+  \bibinfo{number}{10} (\bibinfo{year}{1969}), \bibinfo{pages}{576--580}.
+\newblock
+\showDOI{%
+\url{http://dx.doi.org/10.1145/363235.363259}}
 
 
 \bibitem[\protect\citeauthoryear{Hu and Ko}{Hu and Ko}{2017}]%
