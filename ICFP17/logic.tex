@@ -467,7 +467,7 @@ We will see more precisely how this works in practice with the Hoare-style logic
 Programming a putback transformation in \BiGUL\ is comparable to programming with states:
 the \BiGUL\ programmer is given a source state and a view state, and manipulates the two states with the aim of transferring all information in the view to the source; in the end, the updated source state is returned as the result of the putback transformation.
 Reasoning about \BiGUL\ programs thus consists of tracking the properties satisfied by the states at each step, and it should not come as a surprise that a Hoare-style logic is well suited for performing this kind of reasoning about states.
-Based on \BiGUL's semantics (\autoref{def:put-and-get}), we will introduce an axiomatic system of Hoare-style triples for saying when \BiGUL\ programs (as putback transformations) can compute successfully and return results satisfying some specified properties.
+We will introduce a set of Hoare-style triples for saying when \BiGUL\ programs (as putback transformations) can compute successfully and return results satisfying some specified properties.
 Before doing so, however, we should first fix our notation of relations (for specifying preconditions and postconditions).
 
 \begin{notation}
@@ -476,6 +476,7 @@ When a relation~|R| of this type relates elements |a_1 : A_1|\,, |a_2 : A_2|\,, 
 \end{notation}
 
 \begin{definition}
+\label{def:putback-triples}
 A \emph{putback triple} is a \BiGUL\ program |b : S <~ V| surrounded by two \emph{putback assertions}:
 \[ |(ASSERT R) ~ b ~ (ASSERT R')| \]
 where |R : (POWER(S TIMES V))| is the \emph{precondition} (on the original source and the view) and |R' : (POWER(S TIMES S TIMES V))| is the \emph{postcondition} (on the updated source, the original source, and the view).
@@ -484,7 +485,7 @@ Valid putback triples are inductively defined by the proof rules in \autoref{fig
 
 Instead of requiring preconditions and postconditions to be syntactic entities drawn from a particular logic, we treat them semantically and will freely use whatever relations that are expressible mathematically (or, if that sounds too lax, in Type Theory~\citep{ML-TT84}).
 
-The meaning of putback triples is given by the following soundness theorem.
+As usual, the proof rules in \autoref{fig:putback-proof-rules} are designed such that valid putback triples have the intended meaning; this is made precise and proved with respect to \BiGUL's semantics (\autoref{def:put-and-get}) as follows.
 
 \begin{theorem}[soundness of putback triples] \label{thm:putback-soundness}
 Let |b : S <~ V|, |R : (POWER(S TIMES V))|, and |R' : (POWER(S TIMES S TIMES V))|.
@@ -492,7 +493,8 @@ Let |b : S <~ V|, |R : (POWER(S TIMES V))|, and |R' : (POWER(S TIMES S TIMES V))
 \end{theorem}
 
 In prose: a valid putback triple |(ASSERT R) b (ASSERT R')| means that if the original source and the view satisfies the precondition~|R|, then |put b| will successfully produce an updated source satisfying the postcondition~|R'|, which can relate the updated source to the original source and the view.
-The proof of this theorem (which is by induction on the proof rules in \autoref{fig:putback-proof-rules} as usual) has been checked in the accompanying \Agda\ formalisation, and is omitted from the presentation.
+The proof of this theorem (which is by induction on the rules in \autoref{fig:putback-proof-rules} as usual) has been checked in the accompanying \Agda\ formalisation, and is omitted from the presentation due to space restrictions.
+(The reader is thus asked to trust the soundness of the rules in \autoref{fig:putback-proof-rules}.)
 
 \autoref{thm:dominance} tells us that putback behaviour completely determines forward behaviour.
 On the other hand, putback triples are about putback behaviour --- shouldn't they tell us something about forward behaviour as well?
@@ -607,6 +609,7 @@ $\begin{array}[t]{ll}
 \end{figure}
 
 In this section we will introduce \BiGUL's constructs and their putback proof rules shown in \autoref{fig:putback-proof-rules}.
+Instead of presenting the axiomatic system as if we are still constructing it and justifying its soundness, we will regard the system as already completed and use it as a basis for introducing \BiGUL.
 Except for the consequence rule (the right one in the second row), every rule corresponds to a \BiGUL\ construct and gives an axiomatic encapsulation of its semantics.
 For each \BiGUL\ construct, we will introduce its type, which is essential for inferring the types of entities in assertions, and  explain the corresponding proof rule with the help of the operational meaning of the construct.
 We will not, however, go into the rationale behind the design of the constructs, for which the interested reader is referred to \citet[Section~5]{Hu-BiGUL-tutorial}.
