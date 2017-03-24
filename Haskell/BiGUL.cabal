@@ -1,5 +1,5 @@
 name:                BiGUL
-version:             1.0.2.3
+version:             1.1.0.0
 synopsis:            The Bidirectional Generic Update Language
 description:
   Putback-based bidirectional programming allows the programmer to

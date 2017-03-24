@@ -87,7 +87,7 @@ putWithTrace (l `Compose` r)    s       v       = do
   m  <- modifyTrace (BTNextS "computing intermediate source" s) (getWithTrace l s)
   m' <- modifyTrace (BTNextSV "on the right of Compose" m v) (putWithTrace r m v)
   modifyTrace (BTNextSV "on the left of Compose" s m') (putWithTrace l s m')
-putWithTrace (Checkpoint str b) s    v          =
+putWithTrace (Checkpoint str b) s       v       =
   modifyTrace (BTNextSV ("checkpoint: " ++ str) s v) (putWithTrace b s v)
 
 getCaseBranch :: (s -> v -> Bool, CaseBranch s v) -> s -> BiGULResult v

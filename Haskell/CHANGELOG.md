@@ -1,4 +1,4 @@
-1.0.2 Changes
+1.1.0 Changes
 =============
 
 * `Generics.BiGUL.Lib.List.align` changed to a prettier version
@@ -8,19 +8,28 @@
 * `Generics.BiGUL.TH.deriveBiGULGeneric` no longer inserts `M1`
   (meta-information) into the generic representation.
 
+* The types of `put` and `get` in `Generics.BiGUL.Interpreter.Unsafe` is
+  changed to match their counterparts from `Generics.BiGUL.Interpreter`
+  for easily switiching between safe and unsafe interpreters. The original
+  pure (but partial) versions are still provided as `plainPut` and
+  `plainGet`.
+
+* [Not Yet Implemented] The source-rearranging lambda-expressions are now
+  required to be invertible (like the view-rearranging ones).
+
 1.0.1 Changes
 =============
 
 * GHC 8.0.1 compatibility
 
-  `Generics.BiGUL.TH` now works with template-haskell-2.11 (which is used by
-  GHC 8.0.1). Also, explanations of the GADT constructors in `Generics.BiGUL`
-  have been included in the haddock documentation.
+  `Generics.BiGUL.TH` now works with template-haskell-2.11 (which is used
+  by GHC 8.0.1). Also, explanations of the GADT constructors in
+  `Generics.BiGUL` have been included in the haddock documentation.
 
 * `Generics.BiGUL.Checkpoint` added
 
-  This new `BiGUL` constructor lets the programmer display a customised message
-  in error traces.
+  This new `BiGUL` constructor lets the programmer display a customised
+  message in error traces.
 
 * Error fixes
 
@@ -30,7 +39,8 @@
   - Eliminated a “Pattern match(es) are overlapped” warning reported when
     using patterns as conditions.
 
-  - Fixed a panic produced by `Generics.BiGUL.Interpreter.addCurrentBranchTrace`.
+  - Fixed a panic produced by
+    `Generics.BiGUL.Interpreter.addCurrentBranchTrace`.
 
 1.0.0 Changes
 =============
@@ -43,11 +53,11 @@ non–backward compatible revisions to Template Haskell.
 
 * Module restructuring
 
-    The module structure is refined and simplified, with `Generics.BiGUL.AST`
-    changed to `Generics.BiGUL`, pattern matching functions extracted to
-    `Generics.BiGUL.PatternMatching`, and `Generics.BiGUL.Lib` created to
-    serve as a prelude. More specific library modules are placed under
-    `Generics.BiGUL.Lib.`:
+    The module structure is refined and simplified, with
+    `Generics.BiGUL.AST` changed to `Generics.BiGUL`, pattern matching
+    functions extracted to `Generics.BiGUL.PatternMatching`, and
+    `Generics.BiGUL.Lib` created to serve as a prelude. More specific
+    library modules are placed under `Generics.BiGUL.Lib.`:
 
     - `Generics.BiGUL.Lib.List` is the place for list-processing library
       programs. For now the only inhabitant is the “BiFluX alignment”.
@@ -61,8 +71,8 @@ non–backward compatible revisions to Template Haskell.
       skipping, the view should be determined by the source as specified by
       the new functional argument to `Skip` — we can perform `Skip f` on a
       source `s` if and only if the view is `f s`. The old `Skip` can be
-      defined in terms of the new one as `Skip (const ())`. There is a helper
-      function `skip = Skip . const` defined in `Generics.BiGUL.Lib`.
+      defined in terms of the new one as `Skip (const ())`. There is a
+      helper function `skip = Skip . const` defined in `Generics.BiGUL.Lib`.
 
     - `Dep` has been reverted to the original version, used to ignore the
       second component of the view when it depends on the first (but not
@@ -77,21 +87,23 @@ non–backward compatible revisions to Template Haskell.
       pattern comes first.)
 
     - `rearrV` and `update` now check at compile time whether all view
-      information is used (forbidding wildcard in view patterns and requiring
-      all view variables are used); also `rearrS` and `rearrV` check whether
-      their first argument is a one-argument lambda-expression.
+      information is used (forbidding wildcard in view patterns and
+      requiring all view variables are used); also `rearrS` and `rearrV`
+      check whether their first argument is a one-argument
+      lambda-expression.
 
     - The branch construction syntax has been slimmed down to just four
       functions: `normal`, `normalSV`, `adaptive`, and `adaptiveSV`.
 
     - Normal branch constructing functions now take an additional argument
-      specifying on the source an “exit condition”, which should be satisfied
-      by the updated source after the branch body is executed. All the exit
-      conditions in a `Case` statement should (ideally) be disjoint.
-      Overlapping exit conditions are still allowed for fast prototyping,
-      though — the putback semantics of 'Case' will compute successfully as
-      long as the ranges of the branches are disjoint (regardless of whether
-      the exit conditions are specified precisely enough).
+      specifying on the source an “exit condition”, which should
+      be satisfied by the updated source after the branch body is executed.
+      All the exit conditions in a `Case` statement should (ideally) be
+      disjoint. Overlapping exit conditions are still allowed for fast
+      prototyping, though — the putback semantics of 'Case' will compute
+      successfully as long as the ranges of the branches are disjoint
+      (regardless of whether the exit conditions are specified precisely
+      enough).
 
 * Error-reporting mechanism overhauled
 
@@ -105,6 +117,6 @@ non–backward compatible revisions to Template Haskell.
 
 * Show instances for BiGUL programs removed
 
-    There are two reasons: Functions, which are everywhere in BiGUL programs,
-    cannot be shown; and worse, printing of recursive BiGUL programs will not
-    terminate.
+    There are two reasons: Functions, which are everywhere in BiGUL
+    programs, cannot be shown; and worse, printing of recursive BiGUL
+    programs will not terminate.
