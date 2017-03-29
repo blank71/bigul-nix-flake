@@ -45,7 +45,7 @@ can be automatically derived.
 
 In this tutorial, we will focus on |align|. As will be seen in Section
 \ref{sec:policy}, it can describe more flexible update strategies
-(related to selection/projection queries) than the relational lenses. 
+(related to selection/projection queries) than relational lenses. 
 
 \subsection{Relational database representation}
 \label{sec:table}
@@ -138,7 +138,7 @@ s  =  [[RString "Lullaby",  RInt 1989, RInt 3, RString "Galore", RInt 1]
       , [RString "Lullaby",  RInt 1989, RInt 3, RString "Show"  , RInt 3]
       , [RString "Lovesong", RInt 1989, RInt 5, RString "Galore", RInt 1]
       , [RString "Lovesong", RInt 1989  , RInt 5
-                                        , RString "Disintegration", RInt 4]
+                                        , RString "Paris", RInt 4]
       , [RString "Trust",    RInt 1992, RInt 4, RString "Wish"  , RInt 5]
       ]
 \end{code}
@@ -227,11 +227,11 @@ as that of |keyAlign|, except that we refine the third case of |keyAlign|
 into two cases (the third and the fourth cases of |pAlign|): the third case
 says that if the view |v| is empty but the first record in the source satisfies |p|,
 we should hide this record using |h|, and the fourth case says that
-if the first record of the source dies not satisfies |p|, we simply ignore it and
-continue with the rest records.
+if the first record of the source does not satisfy |p|, we simply ignore it and
+continue with the remaining records.
 
 \begin{code}
-pAlign :: forall s v k. (Show s, Show v, Eq k)
+pAlign :: (Show s, Show v, Eq k)
          => (s -> Bool) {- predicate -}
             -> (s -> k) -> (v -> k) -> BiGUL s v -> (v -> s) 
             -> (s -> Maybe s) {- conceal function -}
@@ -334,10 +334,10 @@ consider the following selection/projection query:
 < select Track, Rating, Album, Quantity as v
 < from s
 < where Quantity > 2
-which extract the track, rating, album and quality information from
-those music tracks in the source |s| whose quality is greater than |2|.
+which extracts the track, rating, album and quality information from
+those music tracks in the source |s| whose quantity is greater than |2|.
 Let us see how to write a single BiGUL program so that its |get|
-does the above query and its |put| describes an intended update policy.
+does the above query and its |put| describes a specific update policy.
 
 The first \textsc{BiGUL} program is |u0| below.
 \begin{code}
@@ -360,7 +360,7 @@ There are three cases:
 \item A source record is matched with a view record: we first use a
 rearrangement function to rearrange the view from a
 four-element list |[t,r,a,q]| to a five-element list |[t,_,r,a,q]|
-with the second element marked as underscore.  This rearrangement
+with the second element matched against a widecard.  This rearrangement
 function reshapes the view to match the shape of the source.  Then,
 the element in the source is |Replace|d by the corresponding element
 in the view.
@@ -370,11 +370,11 @@ record is created with a default value $d$ filled into the
 Date.
 
 \item A source record that has no matching view record: we simply
-delete this record by return |Nothing|.
+delete this record by returning |Nothing|.
 
 \end{itemize}
 
-Now if we wish to hide the source record by setting its Quantity to |0|
+Now if we wish to hide the source record by setting its |Quantity| to |0|
 rather than deleting it if it has no marching view record,
 we could simply change the last line of |u0| and get |u1| as follows.
 
@@ -392,14 +392,14 @@ u1 =  relAlign
 \end{code}
 
 To test, let us see some concrete running examples of using |u0|.
-Recall |s| defined in Section \ref{sec:table}. We can confirm that |get| does
+Recall |s| defined in Section \ref{sec:table}. We can confirm that |get| performs
 the query given at the start of this subsection.
 {\small
 \begin{verbatim}
 *Brul> get u0 s
 Just
 [[RString "Lullaby",RInt 3,RString "Show",RInt 3],
-[RString "Lovesong",RInt 5,RString "Disintegration",RInt 4],
+[RString "Lovesong",RInt 5,RString "Paris",RInt 4],
 [RString "Trust",RInt 4,RString "Wish",RInt 5]]
 \end{verbatim}
 }
@@ -407,7 +407,7 @@ Now suppose that we change the above result (view) to the following
 by raising the rating of |Lullaby| from |3| to |4|, raising the quality of |lovesong| from |4| to |7|, and deleting |Trust|:
 \begin{code}
 v =  [ [RString "Lullaby" , RInt 4, RString "Show"  , RInt 3]
-     , [RString "Lovesong", RInt 5, RString "Disintegration" , RInt 7]
+     , [RString "Lovesong", RInt 5, RString "Paris" , RInt 7]
      ]
 \end{code}
 We can reflect these changes to the source by performing |put|.
@@ -418,7 +418,7 @@ Just
 [[RString "Lullaby",RInt 1989,RInt 4,RString "Galore",RInt 1],
 [RString "Lullaby",RInt 1989,RInt 4,RString "Show",RInt 3],
 [RString "Lovesong",RInt 1989,RInt 5,RString "Galore",RInt 1],
-[RString "Lovesong",RInt 1989,RInt 5,RString "Disintegration",RInt 7]]
+[RString "Lovesong",RInt 1989,RInt 5,RString "Paris",RInt 7]]
 \end{verbatim}
 }
 In the updated source, the changes of rating and quality are correctly reflected,

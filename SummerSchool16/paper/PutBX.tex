@@ -351,8 +351,8 @@ round-tripping laws:
 \label{PutGet}
 \ensuremath{\Varid{get}\;(\Varid{put}\;\Varid{s}\;\Varid{v})\mathrel{=}\Varid{v}}
 \end{align*}
-The \ref{GetPut} property requires that no changing on the view should
-be reflected as no changing on the source, while the \ref{PutGet}
+The \ref{GetPut} property requires that no change to the view should
+be reflected as no change to the source, while the \ref{PutGet}
 property requires that all changes in the view should be completely reflected
 to the source so that the changed view can be successfully recovered by
 applying the forward transformation to the updated source.
@@ -375,7 +375,7 @@ Lots of work \cite{Lenses,Bohannon:06,Bohannon:08,Hofmann:2011,XLHZ07,MHNHT07,Vo
 approach, allowing the programmer to write the forward
 transformation \ensuremath{\Varid{get}} and deriving a suitable putback transformation.
 While the get-based approach is friendly, 
-a \ensuremath{\Varid{get}} function may not be injective, so there may exist
+a \ensuremath{\Varid{get}} function will typically not be injective, so there may exist
 many possible \ensuremath{\Varid{put}} functions that can be combined with it to form a
 valid BX, and there is no way to control the choice of \ensuremath{\Varid{put}} through
 the definition of \ensuremath{\Varid{get}}. 
@@ -393,12 +393,12 @@ when putting back from the view to the source, according to the
 \ref{PutGet} property.
 
 Before explaining how to program \ensuremath{\Varid{put}} in practice, let us briefly review
-the foundation~\cite{Foster:09,FiHP15,FiHP15b}, showing that ``putback''
+the foundations~\cite{Foster:09,FiHP15,FiHP15b}, showing that ``putback''
 is the essence of bidirectional programming.
 We start by defining validity of \ensuremath{\Varid{put}} as follows:
 
 \begin{definition}[Validity of \ensuremath{\Varid{put}}]
-We say that a \ensuremath{\Varid{put}} is {\em valid} if there exists a \ensuremath{\Varid{get}}
+We say that a \ensuremath{\Varid{put}} function is {\em valid} if there exists a \ensuremath{\Varid{get}} function
 such that both \ref{GetPut} and \ref{PutGet} are satisfied. 
 \end{definition}
 
@@ -415,7 +415,7 @@ one \ensuremath{\Varid{get}} function that forms a well-behaved BX.
 
 The second interesting fact is that it is possible to
 check validity of \ensuremath{\Varid{put}} without mentioning \ensuremath{\Varid{get}}.
-The following are two important properties on \ensuremath{\Varid{put}}.
+The following are two important properties of \ensuremath{\Varid{put}}.
 \begin{itemize}
 \item 
  The first, which we call \emph{view determination}, says that equivalence 
@@ -435,7 +435,7 @@ Note that view determination implies that \ensuremath{\Varid{put}\;\Varid{s}} is
 \end{align*}
 \end{itemize}
 Actually, these two properties together provide an equivalent characterization of 
-the validity of \ensuremath{\Varid{put}}. 
+the validity of \ensuremath{\Varid{put}} \cite{FiHP15b}. 
 \begin{theorem}
 \label{th:put2}
 A \ensuremath{\Varid{put}} function is valid if and only if it satisfies \ref{PutDet} and \ref{PutStable}. 
@@ -447,7 +447,7 @@ it is more difficult to construct a
 framework that can directly support putback-based bidirectional
 programming.
 
-In the rest of this tutorial, we will introduce BiGUL~\cite{KoZH16} (which we pronounce as ``beagle''),
+In the rest of this tutorial, we will introduce BiGUL~\cite{KoZH16} (pronounced ``beagle''),
 a simple yet powerful putback-based bidirectional language,
 which grew out of some prior putback-based languages~\cite{PaHF14,PaZH14}.
 BiGUL is implemented as an embedded language in Haskell, and we will assume that the reader is reasonably familiar with Haskell.

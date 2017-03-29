@@ -28,7 +28,7 @@ In this section, we demonstrate that
 many list functions can be bidirectionalized
 using BiGUL. To show the correspondence with the original list functions,
 we prefix
-the original forward function names with "lens". Note that in our context,
+the original forward function names with \emph{lens}. Note that in our context,
 the original forward
 functions can be automatically derived from the new putback transformations
 by calling |get|.
@@ -36,7 +36,8 @@ by calling |get|.
 We shall focus on bidirectionalizing |foldr|, a simple but useful higher-order function on lists:
 < foldr f e []      = e
 < foldr f e (x:xs)  = f x (foldr f e xs)
-where many interesting functions can be defined in terms of |foldr|: 
+
+Many interesting functions can be defined in terms of |foldr|: 
 < sum        = foldr (+) 0
 < map f      = foldr (\a r -> f a : r) []
 where |sum| sums up all the elements in a list, and |map f| applies |f| to
@@ -53,7 +54,7 @@ lensFoldr  ::  (Show a, Show v)
 where we hope to define a putback function of type |BiGUL ([a], v) v|
 that is to use the view to update the source, 
 a list together with a value, by recursively applying
-a simpler putback function of type BiGUL (a, v) v 
+a simpler putback function of type |BiGUL (a, v) v|
 (until a condition is satisfied or all the list elements have been visited).
 We can define it as follows.
 \begin{code}
@@ -85,7 +86,7 @@ through the following picture (where | r = Replace `Prod` lensFoldr bx pv|).
 With |lensFoldr|, we can redefine many list functions from the putback point
 of view. As the first example, consider |mapAppend|:
 < mapAppend f (xs,ys) = map f xs ++ ys
-we can define its putback function as follows.
+We can define its putback function as follows.
 
 \begin{code}
 lensMapAppend :: (Show a, Show b) => BiGUL a b -> BiGUL ([a],[b]) [b]
@@ -167,7 +168,7 @@ Just [10,9,8,7,6,5,4,3,2,1]
 }
 
 As the second example, consider the function |sum (xs,e)|, which is to sum up
-all elements of the list |xs| starting from the seed |e|. If the summation is changed,
+all elements of the list |xs| starting from the seed |e|. If the sum is changed,
 there are many ways to reflect this change to the input |(xs,e)|. The following
 describes one way in BiGUL:
 > lensSum :: BiGUL (Int, Int) Int -> BiGUL ([Int], Int) Int
@@ -184,7 +185,9 @@ the seed by the following definition.
 >    where pSum2Av = emb  (\(x,y) -> x+y)
 >                         (\(x,y) v ->  let av = (v-x-y)/2
 >                                       in (x + av, y+av)
-
+For instance, although |get lensSum' ([1,2,3],0) = get lensSum'' ([1,2,3],0) = Just 6|, there putback behaviors are different:
+> put lensSum' ([1,2,3],0) 16 = Just ([11,2,3],0)
+> put lensSum'' ([1,2,3],0) 16 = Just ([6,4.5,4.25],1.25)
 
 It is worth noting that our definition of |lensFoldr| is just one
 putback function for |foldr|, and there are many others.

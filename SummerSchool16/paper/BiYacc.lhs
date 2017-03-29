@@ -24,7 +24,7 @@ import Text.ParserCombinators.Parsec.Pos
 When we mention the \emph{front-end} of a compiler, we usually think of a \emph{parser} that turns \emph{concrete syntax}, which is designed to be programmer-friendly and provides convenient syntactic sugar, into \emph{abstract syntax}, which is concise, structured, and easily manipulable by the compiler back-end.
 There is another direction, though, in which a \emph{printer} turns abstract syntax back into concrete syntax.
 This is useful, for example, for reporting the result of compiler optimizations done on abstract syntax to the programmer, who knows only concrete syntax.
-In this case, though, we would want to print the optimized program in a form that is as close to the original program as possible, so the programmer can spot what are changed --- and not changed --- correctly and more easily.
+In this case, though, we would want to print the optimized program in a form that is as close to the original program as possible, so the programmer can spot what has changed --- and not changed --- correctly and more easily.
 This is where the notion of \emph{reflective printing} comes in: By taking both the original concrete program and the optimized abstract program as input, we can try to retain the look of the original program as much as possible.
 Below we will use a simplified arithmetic expression language to explain how reflective printing can be implemented in BiGUL.
 
@@ -34,14 +34,14 @@ It is probably obvious that the idea of reflective printing comes from |put| tra
 Before we proceed to implement parsing and reflective printing in BiGUL, a natural question to ask is:
 Is well-behavedness meaningful in the context of parsing of reflective printing?
 The answer is yes, especially for \ref{eq:PutGet}: An abstract syntax tree (AST) may be thought of as a concise and canonical representation of a concrete program, so it would be strange if a concrete program printed from an AST could not be parsed back to the same AST.
-\ref{eq:GetPut}, on the other hand, is in fact not strong enough for our purpose, as it only says that, when an AST is unmodified, printing it reflectively to the original program does not change anything, whereas we would have liked to also say that ``small'' changes to the AST leads to only ``small'' changes to the concrete program.
+\ref{eq:GetPut}, on the other hand, is in fact not strong enough for our purpose, as it only says that, when an AST is unmodified, printing it reflectively to the original program does not change anything, whereas we would have liked to also say that ``small'' changes to the AST lead to only ``small'' changes to the concrete program.
 It is at least a good start to have \ref{eq:GetPut}, though.
 We thus conclude that BiGUL is indeed a suitable language for implementing reflective printers and corresponding parsers.
 
 \subsection{Additive expressions}
 
 Here we use a minimal example which is simple and yet can demonstrate what reflective printing is capable of.
-Consider the following abstract syntax of arithmetic expressions consisting of integer constant, addition, and subtraction:
+Consider the following abstract syntax of arithmetic expressions consisting of integer constants, addition, and subtraction:
 \begin{code}
 data Arith  =  Num Int
             |  Add  Arith Arith
@@ -295,7 +295,7 @@ For example:
 *Main> put pExpArith ENull (Sub (Num 0) (Add (Num 1) (Num 1)))
 Just 0-(1+1)
 \end{verbatim}
-You have probably noticed that the subtraction is reflected as a binary minus instead of a unary one, despite that the left operand is zero.
+Note that the subtraction is reflected as a binary minus instead of a unary one, despite that the left operand is zero.
 This behavior is easily customizable:
 By adding an adaptive branch before the one dealing generically with |Sub| in |pExpArith|:
 \begin{spec}

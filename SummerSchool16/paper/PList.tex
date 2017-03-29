@@ -371,7 +371,7 @@ In this section, we demonstrate that
 many list functions can be bidirectionalized
 using BiGUL. To show the correspondence with the original list functions,
 we prefix
-the original forward function names with "lens". Note that in our context,
+the original forward function names with \emph{lens}. Note that in our context,
 the original forward
 functions can be automatically derived from the new putback transformations
 by calling \ensuremath{\Varid{get}}.
@@ -388,7 +388,7 @@ We shall focus on bidirectionalizing \ensuremath{\Varid{foldr}}, a simple but us
 \>[21]{}\mathrel{=}\Varid{f}\;\Varid{x}\;(\Varid{foldr}\;\Varid{f}\;\Varid{e}\;\Varid{xs}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-where many interesting functions can be defined in terms of \ensuremath{\Varid{foldr}}: \begin{hscode}\SaveRestoreHook
+Many interesting functions can be defined in terms of \ensuremath{\Varid{foldr}}: \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{14}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -424,7 +424,7 @@ We start by developing a simple putback function for \ensuremath{\Varid{foldr}} 
 where we hope to define a putback function of type \ensuremath{\Conid{BiGUL}\;([\mskip1.5mu \Varid{a}\mskip1.5mu],\Varid{v})\;\Varid{v}}
 that is to use the view to update the source, 
 a list together with a value, by recursively applying
-a simpler putback function of type BiGUL (a, v) v 
+a simpler putback function of type \ensuremath{\Conid{BiGUL}\;(\Varid{a},\Varid{v})\;\Varid{v}}
 (until a condition is satisfied or all the list elements have been visited).
 We can define it as follows.
 \begin{hscode}\SaveRestoreHook
@@ -490,7 +490,7 @@ of view. As the first example, consider \ensuremath{\Varid{mapAppend}}:\begin{hs
 \>[3]{}\Varid{mapAppend}\;\Varid{f}\;(\Varid{xs},\Varid{ys})\mathrel{=}\Varid{map}\;\Varid{f}\;\Varid{xs}\plus \Varid{ys}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-we can define its putback function as follows.
+We can define its putback function as follows.
 
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -656,7 +656,7 @@ Below are some testing examples.
 }
 
 As the second example, consider the function \ensuremath{\Varid{sum}\;(\Varid{xs},\Varid{e})}, which is to sum up
-all elements of the list \ensuremath{\Varid{xs}} starting from the seed \ensuremath{\Varid{e}}. If the summation is changed,
+all elements of the list \ensuremath{\Varid{xs}} starting from the seed \ensuremath{\Varid{e}}. If the sum is changed,
 there are many ways to reflect this change to the input \ensuremath{(\Varid{xs},\Varid{e})}. The following
 describes one way in BiGUL:\begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
@@ -700,7 +700,15 @@ the seed by the following definition.\begin{hscode}\SaveRestoreHook
 \>[41]{}\mathbf{in}\;(\Varid{x}\mathbin{+}\Varid{av},\Varid{y}\mathbin{+}\Varid{av}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-
+For instance, although \ensuremath{\Varid{get}\;\Varid{lensSum'}\;([\mskip1.5mu \mathrm{1},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0})\mathrel{=}\Varid{get}\;\Varid{lensSum''}\;([\mskip1.5mu \mathrm{1},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0})\mathrel{=}\Conid{Just}\;\mathrm{6}}, there putback behaviors are different:\begin{hscode}\SaveRestoreHook
+\column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Varid{put}\;\Varid{lensSum'}\;([\mskip1.5mu \mathrm{1},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0})\;\mathrm{16}\mathrel{=}\Conid{Just}\;([\mskip1.5mu \mathrm{11},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0}){}\<[E]%
+\\
+\>[3]{}\Varid{put}\;\Varid{lensSum''}\;([\mskip1.5mu \mathrm{1},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0})\;\mathrm{16}\mathrel{=}\Conid{Just}\;([\mskip1.5mu \mathrm{6},\mathrm{4.5},\mathrm{4.25}\mskip1.5mu],\mathrm{1.25}){}\<[E]%
+\ColumnHook
+\end{hscode}\resethooks
 It is worth noting that our definition of \ensuremath{\Varid{lensFoldr}} is just one
 putback function for \ensuremath{\Varid{foldr}}, and there are many others.
 This reflects the fact

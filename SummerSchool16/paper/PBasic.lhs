@@ -37,7 +37,7 @@ and backwards by calling |put|:
 < get  bx :: s       -> Maybe v
 < put  bx :: s -> v  -> Maybe s
 
-Here, |get bx| is a function mapping a source to a view, but can possibly fail:
+Here, |get bx| is a function mapping a source to a view, which can possibly fail:
 it either returns a successfully computed view wrapped in the |Just| constructor of |Maybe|,
 or signifies failure by producing the |Nothing| constructor.
 On the other hand, |put bx| accepts an original source and uses a view to update it to get an updated source (and might fail as well).
@@ -149,7 +149,7 @@ rearranging either the source or view through a ``simple'' $\lambda$-expression~
 < $(rearrV  (Q( e :: v1  -> v2  ))) :: BiGUL s   v2  -> BiGUL s   v1 
 
 The ``simple'' $\lambda$-expression~$e$ should be wrapped inside Template Haskell quasi-quotes |(Q(...))| (written as \texttt{[||} \ldots \texttt{||]} in plain text Haskell).
-By ``simple'' we mean that there should be no wildcards~`|_|' in the argument pattern, and that the body can only contain the argument variables and constructors, and must mention all the argument variables.
+By ``simple'' we mean that there should be no wildcards~`|_|' in the argument pattern, and that the body can only contain the argument variables and constructors, and must mention all the argument variables. We will discuss the details later in Section \ref{sec:rearrangement}.
 Returning to the problem of putting a pair into a triple, we may define the following
 putback transformation
 \begin{code}
@@ -161,7 +161,9 @@ putPairOverNPair  =   $(rearrV (Q( \(v1,v2) -> (((),v1),v2) ))) $
 by first rearranging the view |(v1,v2)| to a triple |(((),v1),v2)|
 with same structure as the source, and then using
 |(skip1 `Prod` Replace) `Prod` Replace| to
-put the arranged view |(((),v1),v2)| to the source |((s0,s1),s2)|.
+put the arranged view |(((),v1),v2)| into the source |((s0,s1),s2)|.
+Note that the type context |(Show s0, Show s1, Show s2)| above is
+for printing debugging messages by BiGUL.
 
 The mechanism of source/view rearrangement enables us to
 process algebraic data structures such as
@@ -174,7 +176,7 @@ pHead  =   $(rearrS (Q( \(s:ss) -> (s, ss) )))$
              $(rearrV (Q( \v -> (v, ()) )))$
                Replace `Prod` skip1
 \end{code}
-It rearranges the source (an nonempty list) to a pair
+It rearranges the source (a nonempty list) to a pair
 with its head element |s| and its tail |ss|, and the view
 |v| to a pair |(v,())|, so that we can use |v| to replace |s|
 and |()| to keep |ss|. 
@@ -209,7 +211,7 @@ As we know, any putback function in BiGUL is equipped with
 a |get| function.
 For |pNth|, we can test its |get| behavior
 as follows; its corresponding |get| function is actually
-the familiar |take| function.
+the familiar index function |(!!)|.
 \begin{verbatim}
 *PBasic> get (pNth 3) [1..10]
 Just 4
@@ -259,13 +261,12 @@ predicate for the main condition is very general, and we can use any
 function of type |(s -> v -> Bool)| to examine the source and view.
 The predicate for the exit condition checks the source only.
 If the main and the exit conditions are satisfied,
-then the BiGUL program after the arrow "|==>|" is executed. 
-Note that the
-exit conditions in different branches are expected to be disjoint for efficient
+then the BiGUL program after the arrow (|==>|) is executed. 
+The exit conditions in different branches are expected to be disjoint for efficient
 execution of the forward transformation.
 
 \item For an adaptive
-case, if the main condition is satisfied, a function of type |(s -> v -> Bool)|
+case, if the main condition is satisfied, a function of type |(s -> v -> s)|
 is used to produce
 an adapted source from the current source and view before the whole |Case| is rerun,
 with the expectation that one of the normal cases will be applicable this time.
@@ -292,13 +293,13 @@ replaceAll  =
 \end{code}
 It consists of two normal cases and one adaptive case.
 The first normal case says that if the source is of length |1| (containing a single element),
-we rearrange the source list by extracting the single element out, and replace this element
+we rearrange the source list by extracting the single element, and replace this element
 with the view.
-The second normal case says that if the source has more than |1| elements, we 
+The second normal case says that if the source has more than |1| element, we 
 rearrange the source list to a pair of its head element and its tail, rearrange
 the view by duplicating it to a pair, and use one copy of the view to replace the head element, and the other copy to recursively replace each element in the tail of the source.
 The last adaptive case says that if the source is empty, we adapt the source
-to a singleton list with the "don't-care" element (defined by |undefined|), and rerun the whole
+to a singleton list with the \emph{don't-care} element (defined by |undefined|), and rerun the whole
 |Case| executing the first normal case. 
 
 \begin{verbatim}
@@ -308,7 +309,7 @@ Right [100]
 Right [100,100,100,100,100,100,100,100,100,100]
 \end{verbatim}
 Note that in the first running example, the source |[]| is first adapted to |[undefined]|,
-and the "don't care" element |undefined| is replaced by |100| at the rerun of
+and the \emph{don't care} element |undefined| is replaced by |100| at the rerun of
 the whole |Case|.
 
 As another interesting example, we define |emb|, which can safely embed any pair of well-behaved
@@ -322,10 +323,10 @@ As another interesting example, we define |emb|, which can safely embed any pair
 <      ==> p
 <   ]
 
-where, given a pair of well-behaved |get| |g| and |put| |p|,
-if the view is the same as that produced by applying |g| to the source, we do no change
-on the source with |Skip g| (hinting that the view can be produced using $g$), otherwise we adapte the source using |p| to
-reflect the change on the view to the source. Note that if |p| and |g| forms a well-behaved bidirectional transformation, in the rerun of the whole |Case| after the adaptation, the first normal case will always be applicable. To see a use of |emb|, we may define the following putback function
+where, given a pair |(g,p)| of well-behaved |get| and |put| functions,
+if the view is the same as that produced by applying |g| to the source, we make no change
+on the source with |Skip g| (hinting that the view can be produced using $g$), otherwise we adapt the source using |p| to
+reflect the change on the view to the source. Note that if |p| and |g| form a well-behaved bidirectional transformation, in the rerun of the whole |Case| after the adaptation, the first normal case will always be applicable. To see a use of |emb|, we may define the following putback function
 to update a pair with its sum.
 \begin{code}
 pSum2 :: BiGUL (Int, Int) Int
@@ -355,10 +356,10 @@ which fails to compute when the pattern is not matched.
 For example,
 in general the lambda-expression |\[x] v -> True| will fail
 to compute if the first input is not a singleton list; when used in branch
-construction, however, the lambda-expression will compute to False
+construction, however, the lambda-expression will compute to |False|
 upon encountering an empty list.
 
-Finally, for conveniences, we prepare 
+Finally, for convenience, we prepare 
 a special form for the |normal| case where the main condition is specified as the conjunction of two unary predicates on the source and view respectively:
 < $(normalSV   (Q( sourceCond :: s -> Bool ))
 <              (Q( viewCond :: v -> Bool ))
@@ -386,9 +387,9 @@ repHead = Case [
 \subsection{View dependency}
 
 Sometimes, a view may contain derived values that are computed from
-other part of the view, and the view should be consistently changed.
+other parts of the view, and the view should be consistently changed.
 For instance, for the view |(x, even(x))|, the second
-component is an indicator showing the first component is an even number or not.
+component is an indicator showing whether or not the first component is an even number.
 To capture this, BiGUL provides
 
 < Dep :: Eq v' => (v->v') -> BiGUL a v -> BiGUL a (v, v')
@@ -410,11 +411,11 @@ Nothing
 second view component not determined by the first
 \end{verbatim}
 As seen in the last running of |put|, it reports an error because the view |(100,False)|
-is inconsistent. This is because |100| is an even number, so the second component should be |True|.
+is inconsistent: |100| is an even number, so the second component should be |True|.
 
 \subsection{Composition}
 
-Like in the get-based bidirectional progarmming,
+As in the get-based bidirectional programming,
 putback-based bidirectional transformations
 can be composed similarly:
 
@@ -424,7 +425,7 @@ where we can put the view |b| to the source |a| through the intermediate data |u
 composing the putback function from |b| to |u| and that from |u| to |a|.
 
 As a simple example, consider that we wish to use the view to update
-the heard element of the head element of a list.
+the head element of the head element of a list of lists.
 We can define such putback function as the following |pHead2|
 by composing |pHead| with |pHead|.
 \begin{code}

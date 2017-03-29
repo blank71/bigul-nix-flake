@@ -21,7 +21,7 @@ import Data.List
 \end{code}
 }
 
-In the next three sections, we will talk about some applications in BiGUL, starting from the list alignment problem.
+In the next three sections, we will talk about some applications in BiGUL, starting with the list alignment problem.
 List alignment is one of the tasks that frequently show up when developing bidirectional applications.
 When the source and view are both lists, and the |get| direction (i.e., the consistency relation) is a |map|, how do we put an updated view --- the updates on which might involve insertions, deletions, in-place modifications, and reordering --- into the source?
 
@@ -63,7 +63,7 @@ The problem is then how the correspondences between sources and views in the two
 \subsection{Position-based alignment}
 
 As a first exercise, we consider the simplest strategy, which matches source and view elements by their positions in the lists.
-If the source list has more elements than the view list, the extra elements at the tail are simply dropped; if the source list has less elements, then new source elements have to be created, which we can specify as a function:
+If the source list has more elements than the view list, the extra elements at the tail are simply dropped; if the source list has fewer elements, then new source elements have to be created, which we can specify as a function:
 \begin{code}
 cr :: View -> Source
 cr (i, n) = (i, (n, 0))
@@ -109,7 +109,7 @@ Even if we do not remove any employee, we may still want to reorder them:
 updatedEmployees1  ::  [View]
 updatedEmployees1  =   [(2, "Jeremy"), (0, "Zhenjiang"), (1, "Josh")]
 \end{code}
-and now everyone gets a wrong salary:
+and now everyone gets the wrong salary:
 \begin{verbatim}
 *> put (posAlign bx cr) employees updatedEmployees1
 Just [(2,("Jeremy",1000)),(0,("Zhenjiang",400)),(1,("Josh",2000))]
@@ -138,7 +138,7 @@ As for the second normal branch, we should revise the main condition to also req
 The first adaptive branch, again, works well.
 The second adaptive branch, on the other hand, is no longer applicable:
 Since the main condition of the second normal branch has been tightened, it is no longer the case that this adaptive branch will receive only empty source lists.
-In fact, whether the source list is empty or not is not relevant here --- what matters now is whether the key of the first view is in the source list.
+In fact, whether the source list is empty or not is irrelevant here --- what matters now is whether the key of the first view is in the source list.
 If it is, then we bring the (first) source element with the same key value to the head position, and the second normal branch can take over; otherwise, we create a new source element.
 This gives us key-based alignment:
 \begin{code}
@@ -189,13 +189,13 @@ If, for example, we decide to assign a different id to Josh:
 updatedEmployees2  ::  [View]
 updatedEmployees2  =   [(0, "Zhenjiang"), (100, "Josh"), (1, "Jeremy")]
 \end{code}
-Then the effect is the same as sacking Josh and then hiring him again, whose salary is thus reset:
+Then the effect is the same as sacking Josh and then hiring him again, and his salary is thus reset:
 \begin{verbatim}
 *> put (keyAlign fst fst bx cr) employees updatedEmployees2
 Just [(0,("Zhenjiang",1000)),(100,("Josh",0)),(1,("Jeremy",400))]
 \end{verbatim}
 The problem is that we cannot distinguish modification from deletion and insertion pairs.
-To be able to have such distinction, we introduce the notion of \emph{deltas}, with which the links between source and view elements can be kept track of.
+To be able to have such distinction, we introduce the notion of \emph{deltas}, which allow us to kep track of the links between source and view elements.
 
 \subsection{Delta-based alignment}
 

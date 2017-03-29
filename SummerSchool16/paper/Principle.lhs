@@ -2,15 +2,15 @@
 
 %include lhs2TeX-macros.lhs
 
-\section{BiGUL's Bidirectionality}
+\section{BiGUL's bidirectionality}
 \label{sec:bidirectionality}
 
 We have been writing |put| programs, usually having a corresponding |get| in mind but not explicitly describing it, and yet BiGUL is capable of finding the right |get| behaviour as if it could read our mind. How?
 We will see that, when writing a BiGUL program, we are always simultaneously describing both a |put| function and a |get| function, which are guaranteed to be a well-behaved pair.
 And the ``mind-reading'' ability is far from magic:
-It is the consequence of the fact that well-behavedness directly implies that |get| is uniquely determined by |put|, which is the main motivation for designing a putback-based language.
+It is the consequence of the fact that well-behavedness directly implies that |get| is uniquely determined by |put|, which is the main motivation for taking a putback-based approach.
 In this section, we will first review the theory, this time explicitly taking \emph{partiality} into account, and then we will dive into BiGUL's internals to get a taste of putback-based design.
-This is a fairly long section, which is not a prerequisite for subsequent sections though; readers who are more interested in practical BiGUL applications can safely skip this section and proceed to \autoref{sec:alignment}.
+This is a fairly long section, but it is not a prerequisite for subsequent sections; readers who are more interested in practical BiGUL applications can safely skip this section and proceed to \autoref{sec:alignment}.
 
 \subsection{Lenses, well-behavedness, and the fundamental theorem}
 
@@ -29,7 +29,7 @@ satisfying two well-behavedness laws:
 \end{definition}
 In the original formulation~\cite{Lenses}, a lens refers to just a pair of functions having the right types, and one needs to explicitly say ``well-behaved lens'' to mean a well-behaved pair; we will, however, discuss well-behaved lenses only, so we build well-behavedness into our definition of lenses by default.
 Also note that this definition models partial transformations explicitly as |Maybe|-valued functions: |put| and |get| are \emph{total} functions that can nevertheless produce |Nothing| to indicate failure.
-From now on, this definition replaces the one in \autoref{sec:PutBX}, where only total lenses are discussed.
+From now on, this definition replaces the one in \autoref{sec:PutBX}, where only total lenses were discussed.
 
 From this revised definition of well-behavedness, we can immediately prove a reformulation of \autoref{lemma:injective}:
 \begin{theorem}[uniqueness of {\itshape get}] \label{thm:uniqueness}
@@ -49,15 +49,15 @@ Then for any $s$~and~$v$,
 \end{align*}
 (This also entails that $|get l s| = |Nothing|$ if and only if $|get r s| = |Nothing|$.) \qed
 \end{proof}
-This might be called the ``fundamental theorem'' of putback-based bidirectional programming, as the theorem guarantees that the BiGUL programmer is in full control of the bidirectional behavior --- programming the |put| behavior is sufficient to determine the |get| behavior.
-Also, to the language designer, the theorem gives a kind of reassurance that, once the |put| behavior of a construct is determined, there is no need to worry about which |get| behavior should be adopted --- there is at most one possibility.
+This might be called the ``fundamental theorem'' of putback-based bidirectional programming, as the theorem guarantees that the BiGUL programmer is in full control of the bidirectional behaviour --- programming the |put| behavior is sufficient to determine the |get| behaviour.
+Also, to the language designer, the theorem gives a kind of reassurance that, once the |put| behaviour of a construct is determined, there is no need to worry about which |get| behaviour should be adopted --- there is at most one possibility.
 This is in contrast to |get|-based design, in which there are usually more than one viable |put| semantics that can be assigned to a |get|-based construct, and the designer needs to justify the choice or provide several versions.
 
 For the rest of this section, we will look at several constructs of BiGUL in detail to get a taste of putback-based design.
 Each BiGUL construct is conceived, at the design stage, as a lens (like |Skip| and |Replace|) or a lens \emph{combinator} (like |Case|), which constructs a more complex lens from simpler ones.
-The |put| and |get| components of these lenses usually have to be developed together, but for each lens we will employ a more ``|put|-oriented'' design process: We start from an intended |put| behavior, and then add restrictions so that we can find a corresponding |get|.
-This does not guarantee that the lenses we arrive at will have a ``strong |put| flavor'' --- that is, some of the lenses will be as (or even more) suitable for |get|-based programming as for putback-based programming.
-But we will also see that some other lenses are more naturally understood in terms of their |put| behavior.
+The |put| and |get| components of these lenses usually have to be developed together, but for each lens we will employ a more ``|put|-oriented'' design process: We start from an intended |put| behaviour, and then add restrictions so that we can find a corresponding |get|.
+This does not guarantee that the lenses we arrive at will have a ``strong |put| flavour'' --- that is, some of the lenses will be as (or even more) suitable for |get|-based programming as for putback-based programming.
+But we will also see that some other lenses are more naturally understood in terms of their |put| behaviour.
 
 \subsection{Replacement}
 
@@ -73,11 +73,11 @@ We still need to verify \ref{eq:GetPut}, which can be easily checked to be true.
 
 \subsection{Skipping}
 
-Coming up next is |Skip|, whose natural behavior is
+Coming up next is |Skip|, whose natural behaviour is
 \begin{spec}
 put Skip s v = Just s
 \end{spec}
-Considering \ref{eq:PutGet}, though, we immediately see that this behavior is too liberal:
+Considering \ref{eq:PutGet}, though, we immediately see that this behaviour is too liberal:
 If the view is simply thrown away, how can |get Skip| possibly recover it?
 One way out is to require that the view is trivial enough such that it can be thrown away and still be recovered, by setting the view type of |Skip| to the unit type~|()|.
 Then it is easy for |get Skip| to recover the view, for which there is only one choice:
@@ -145,8 +145,8 @@ Case analysis on |mx|. \qed
 This lemma can be nicely applied to |Maybe|-programs written in the |do|-notation, transforming such programs into \emph{predicates} saying that a program computes to some given value.
 To do it more formally: Define a translation $\mathcal{S}$ from |do|-blocks of type |Maybe a| to predicates on~|a| by
 \begin{align*}
-\mathcal S\;(|do { x <- mx; B }|)\;y &~=~ \exists x.\ |mx = Just x| \wedge \mathcal S\;(|do B|)\;y \\
-\mathcal S\;(|do { my }|)\;y &~=~ |my = Just y|
+\mathcal S\;(|do { x <- mx; B }|)\;y &~=~ (\exists x.\ |mx = Just x| \wedge \mathcal S\;(|do B|)\;y) \\
+\mathcal S\;(|do { my }|)\;y &~=~ (|my = Just y)|
 \end{align*}
 Then we can extend Lemma~\ref{lem:bind-success} to the following:
 \begin{lemma} \label{lem:do-success}
@@ -185,23 +185,23 @@ and consider the following variant of |Case|:
 \begin{spec}
 Case :: CaseBranch s v -> CaseBranch s v -> BiGUL s v
 \end{spec}
-The straightforward behavior is
+The straightforward behaviour is
 \begin{spec}
 put (Case (pl, l) (pr, r)) s v =  if       pl  s v  then  put l  s v
                                   else if  pr  s v  then  put r  s v
                                   else Nothing
 \end{spec}
 That is, depending on which condition is satisfied (with |pl| having higher priority), we execute either |put l| or |put r|, or fail the computation if neither of the conditions is satisfied.
-Now, again, we ask the question: Can we find a |get| behavior to pair with this |put|?
+Now, again, we ask the question: Can we find a |get| behaviour to pair with this |put|?
 
 \subsubsection{Ruling out branch switching for \ref{eq:PutGet}.} An important working assumption here is that we want lens combinators to be \emph{compositional}:
 When we looked at |Prod|, for example, we defined its |put| and |get| in terms of those of the smaller lenses, and derived the overall well-behavedness from that of the smaller lenses.
 For |Case|, this implies that, when establishing well-behavedness, we want a |get| following a |put| (or a |put| following a |get|) to use the same branch taken by the |put| (or the |get|), so we can make use of \ref{eq:PutGet} (or \ref{eq:GetPut}) of the branch.
-The current |put| behavior of |Case| does not leave any clue in the updated source about which branch is used to produce it, though, so it is impossible for |get| to always choose the right branch.
+The current |put| behaviour of |Case| does not leave any clue in the updated source about which branch is used to produce it, though, so it is impossible for |get| to always choose the correct branch.
 
 One solution, which does not require changing the syntax of |Case|, is to check that the ranges of the branches are \emph{disjoint}.
 In general, for a lens, the range of a |put| can be shown to coincide with the domain of the corresponding |get|.
-So the |get| behavior of |Case| can simply try to execute both branches on the input source, and there will be at most one branch that computes successfully.
+So the |get| behaviour of |Case| can simply try to execute both branches on the input source, and there will be at most one branch that computes successfully.
 We can put (expensive) disjointness checks into |put| such that if |put| succeeds, the subsequent |get| will have at most one branch to choose:
 \begin{spec}
 put (Case (pl, l) (pr, r)) s v =
@@ -211,10 +211,10 @@ put (Case (pl, l) (pr, r)) s v =
                               maybe (return s') (const Nothing) (get l  s')
   else Nothing
 \end{spec}
-The |maybe| function is from Haskell's prelude and has type |b -> (a -> b) -> Maybe a -> b|; depending on whether the third |Maybe|-typed argument is |Nothing| or a |Just|-value, the result is either the first argument or the second argument applied to the value wrapped inside |Just|.
+The |maybe| function is from Haskell's prelude and has type |b -> (a -> b) -> Maybe a -> b|; depending on whether the third, |Maybe|-typed, argument is |Nothing| or a |Just|-value, the result is either the first argument or the second argument applied to the value wrapped inside |Just|.
 In the first branch of the code above, if |put l s v| successfully produces an updated source~|s'|, we will ensure that |get r s'| does not succeed: If |get r s'| is |Nothing| as we want, we will |return s'|; otherwise we emit |Nothing|.
 
-If |get| favors the first branch, meaning that it declares success as soon as the first branch succeeds (without requiring that the second branch fails),
+If |get| favours the first branch, meaning that it declares success as soon as the first branch succeeds (without requiring that the second branch fails),
 \begin{spec}
 get (Case (pl, l) (pr, r)) s = maybe (get r s) return (get l s)
 \end{spec}
@@ -242,8 +242,8 @@ getBranch (p, b) s = do  v <- get b s
                          if p s v  then  return v
                                    else  Nothing
 \end{spec}
-The definition of |put| should also be revised to use |getBranch| for disjointness check.
-This fixes \ref{eq:GetPut}, but breaks \ref{eq:PutGet}! Since |put| does not guarantee that the \emph{updated} (not the original) source and the view satisfy the condition of the branch executed, even though |get| will be able to choose the right branch, the subsequent, newly added check is not guaranteed to succeed.
+The definition of |put| should also be revised to use |getBranch| for the disjointness check.
+This fixes \ref{eq:GetPut}, but breaks \ref{eq:PutGet}! Since |put| does not guarantee that the \emph{updated} (not the original) source and the view satisfy the condition of the branch executed, even though |get| will be able to choose the correct branch, the subsequent, newly added check is not guaranteed to succeed.
 We thus also need to add similar checks to |put|:
 \begin{spec}
 put (Case (pl, l) (pr, r)) s v =
@@ -261,7 +261,7 @@ Now this pair of |put| and |get| can be verified to be well-behaved.
 
 \subsubsection{Improving the efficiency of |get|.}
 
-The efficiency of the current |get| does not look very good, especially when, in general, an arbitrary number of branches are allowed, and |get| has to try to execute each branch, possibly with a high cost, until it reaches a successful one; also, inefficient |get| affects the efficiency of |put|, which calls |get| to check range disjointness.
+The efficiency of the current |get| does not look very good, especially when, in general, more than two branches are allowed, and |get| has to try to execute each branch, possibly with a high cost, until it reaches a successful one; also, inefficient |get| affects the efficiency of |put|, since this calls |get| to check range disjointness.
 An idea is to ask the programmer to make a rough ``prediction'' of the range of each branch:
 We enrich |CaseBranch| with a third component, which is a source predicate:
 \begin{spec}
@@ -293,7 +293,7 @@ getBranch (pl, l, ql) s = if ql s  then  do  v <- get l s
                                                         else  Nothing
                                    else  Nothing
 \end{spec}
-If we do not care about efficiency, we can simply use |const True| as exit conditions, and the behavior will be exactly the same as the previous version.
+If we do not care about efficiency, we can simply use |const True| as exit conditions, and the behaviour will be exactly the same as the previous version.
 But if we supply disjoint exit conditions, then |get| will try at most one branch.
 Incidentally (but actually no less importantly), making exit conditions explicit also encourages the programmer to think about range disjointness, which is essential to guaranteeing the totality of |Case|.
 
@@ -301,7 +301,7 @@ Incidentally (but actually no less importantly), making exit conditions explicit
 
 We have seen that, to make |Case| total, one thing we need to ensure is that the main condition of a branch should be satisfied again after the update.
 In practice, the main condition is usually closely related to the consistency relation, and we will only be able to deal with sources and views that are already more or less consistent; this is a rather severe restriction.
-As we have seen in \autoref{sec:PBasic.Case}, the solution is to introduce a different kind of branches called \emph{adaptive branches}, which can deal with sources and views that are too inconsistent by adapting the source to establish enough consistency such that a normal branch becomes applicable.
+As we have seen in \autoref{sec:PBasic.Case}, the solution is to introduce a different kind of branch called \emph{adaptive branches}, which can deal with sources and views that are too inconsistent by adapting the source to establish enough consistency such that a normal branch becomes applicable.
 Again, for simplicity, we consider only a variant of |Case| which has just one adaptive branch at the end:
 \begin{spec}
 type CaseAdaptiveBranch s v = (s -> v -> Bool, s -> v -> s)
@@ -309,7 +309,7 @@ type CaseAdaptiveBranch s v = (s -> v -> Bool, s -> v -> s)
 Case ::  CaseBranch s v -> CaseBranch s v ->
          CaseAdaptiveBranch s v -> BiGUL s v
 \end{spec}
-The execution structure of |put| becomes slightly more complicated, as the whole thing has to be run again after adaptation; to ensure termination, we require that the second run do not match an adaptive branch again.
+The execution structure of |put| becomes slightly more complicated, as the whole thing has to be run again after adaptation; to ensure termination, we require that the second run does not match an adaptive branch again.
 This is realized in BiGUL in continuation-passing style:
 \begin{spec}
 put (Case bl br ba) s v =
@@ -339,7 +339,7 @@ The requirement of not doing adaptation twice is met by setting |putWithAdaptati
 
 What about |get|?
 It turns out that |get| can simply ignore the adaptive branch!
-If you have doubt about this ``choice,'' just invoke the fundamental theorem (Theorem~\ref{thm:uniqueness}): The |put| behavior is exactly what we want, and we can verify that the pair of |put| and |get| is well-behaved, so we are reassured that our ``choice'' is ``correct,'' simply because there is no other choice of |get|.
+If you have doubt about this ``choice,'' just invoke the fundamental theorem (Theorem~\ref{thm:uniqueness}): The |put| behaviour is exactly what we want, and we can verify that the pair of |put| and |get| is well-behaved, so we are reassured that our ``choice'' is ``correct,'' simply because there is no other choice of |get|.
 
 To sum up, we have arrived at a simpler variant of |Case| which nevertheless has all the features of the multi-branch |Case| in BiGUL.
 We have inserted various dynamic checks into the |put| semantics, and the BiGUL programmer needs to be aware of these constraints to make execution of |Case| succeed:
@@ -350,11 +350,12 @@ Also the ranges of all the normal branches should be disjoint; the programmer is
 Finally, for each adaptive branch, the adapted source and the view should match the main condition of a normal branch.
 
 \subsection{Rearrangement}
+\label{sec:rearrangement}
 
 Source and view rearrangements are also among the more complex constructs of BiGUL.
 Their complexity lies in the strongly and generically typed treatment of pattern matching, though, rather than their bidirectional behavior.
 The two kinds of rearrangement are similar, and we will discuss view rearrangement only.
-We will start from formalizing pattern matching as a bidirectional operation --- in fact an isomorphism. Based on pattern matching, evaluation and inverse evaluation of rearranging $\lambda$-expressions can be defined, again forming an isomorphism.
+We will start by formalizing pattern matching as a bidirectional operation --- in fact an isomorphism. Based on pattern matching, evaluation and inverse evaluation of rearranging $\lambda$-expressions can be defined, again forming an isomorphism.
 The semantics of a view rearrangement is then the composition of this latter isomorphism with the lens obtained by interpreting the inner BiGUL program.
 
 \subsubsection{Strongly typed pattern matching, bidirectionally.}
@@ -371,12 +372,12 @@ BiGUL's patterns are strongly typed: The programmer has to declare a target type
 This can be achieved by defining the datatype of patterns as a generalised algebraic datatype:
 \begin{spec}
 data Pat a where
-  PVar    ::  Eq a => Pat a
-  PConst  ::  Eq a => a -> Pat a
-  PProd   ::  Pat a -> Pat b -> Pat (a, b)
-  PLeft   ::  Pat a -> Pat (Either a b)
-  PRight  ::  Pat b -> Pat (Either a b)
-  PIn     ::  InOut a => Pat (F a) -> Pat a
+  PVar    ::  Eq a =>                  Pat a
+  PConst  ::  Eq a => a ->             Pat a
+  PProd   ::  Pat a -> Pat b ->        Pat (a, b)
+  PLeft   ::  Pat a ->                 Pat (Either a b)
+  PRight  ::  Pat b ->                 Pat (Either a b)
+  PIn     ::  InOut a => Pat (F a) ->  Pat a
 \end{spec}
 A pattern can be a (nameless) variable, a constant, a product, a |Left| or |Right| injection (for the |Either| type), or a generic constructor, and its target type is given as the index in its type.
 For example, the pattern |PLeft (PConst ())| has type |Pat (Either () b)|, and can only be used to match those values of type |Either () b| (and matching succeeds only for the value |Left ()|).
@@ -406,12 +407,12 @@ Here we want a safe (but not necessarily efficient) representation of the enviro
 In other words, this environment type depends on the pattern, and a way to compute this type is to encode it as a second index of the |Pat| datatype:
 \begin{spec}
 data Pat a env where
-  PVar    ::  Eq a => Pat a (Var a)
-  PConst  ::  Eq a => a -> Pat a ()
-  PProd   ::  Pat a  a'  -> Pat b b' b'' -> Pat (a, b) (a', b')
-  PLeft   ::  Pat a  a'  -> Pat (Either a b) a'
-  PRight  ::  Pat b  b'  -> Pat (Either a b) b'
-  PIn     ::  InOut a => Pat (F a) b -> Pat a b
+  PVar    ::  Eq a =>                        Pat a (Var a)
+  PConst  ::  Eq a => a ->                   Pat a ()
+  PProd   ::  Pat a  a'  -> Pat b b' b'' ->  Pat (a, b) (a', b')
+  PLeft   ::  Pat a  a'  ->                  Pat (Either a b) a'
+  PRight  ::  Pat b  b'  ->                  Pat (Either a b) b'
+  PIn     ::  InOut a => Pat (F a) b ->      Pat a b
 \end{spec}
 Notice that an environment type is just a product of |Var| types --- for example, the environment type computed for the cons pattern~(\ref{eq:cons-pattern}) is
 \begin{equation}
@@ -457,9 +458,9 @@ We have seen that an environment type is a product, i.e., a binary tree; to refe
 In BiGUL, these paths are called \emph{directions}:
 \begin{spec}
 data Direction env a where
-  DVar    ::  Direction (Var a) a
-  DLeft   ::  Direction a  t -> Direction (a, b) t
-  DRight  ::  Direction b  t -> Direction (a, b) t
+  DVar    ::                     Direction (Var a) a
+  DLeft   ::  Direction a  t ->  Direction (a, b) t
+  DRight  ::  Direction b  t ->  Direction (a, b) t
 \end{spec}
 The type of a direction is indexed by the environment type it points into and the component type it points to.
 Note that the type of |DVar| is specified to work with only environment types marked with |Var|; this is for ensuring that a direction goes all the way down to an actual component at a variable position of the pattern, rather than stopping half-way and pointing to a sub-tree which include more than one component.
@@ -475,11 +476,11 @@ Now we can define \emph{expressions}, which are similar to patterns but include 
 \begin{spec}
 data Expr env a where
   EDir    ::  Direction env a -> Expr env a
-  EConst  ::  (Eq a) => a -> Expr env a
-  EProd   ::  Expr env a  -> Expr env b -> Expr env (a, b)
-  ELeft   ::  Expr env a  -> Expr env (Either a b)
-  ERight  ::  Expr env b  -> Expr env (Either a b)
-  EIn     ::  (InOut a) => Expr env (F a) -> Expr env a
+  EConst  ::  (Eq a) => a ->                  Expr env a
+  EProd   ::  Expr env a  -> Expr env b ->    Expr env (a, b)
+  ELeft   ::  Expr env a  ->                  Expr env (Either a b)
+  ERight  ::  Expr env b  ->                  Expr env (Either a b)
+  EIn     ::  (InOut a) => Expr env (F a) ->  Expr env a
 \end{spec}
 For example, the rearranging $\lambda$-expression
 \begin{equation}
@@ -506,7 +507,7 @@ The type of |RearrV| is then:
 RearrV :: Pat v env -> Expr env v' -> BiGUL s v' -> BiGUL s v
 \end{spec}
 Note that in the type of |RearrV|, the types of the pattern and expression share the same environment type index, ensuring that the directions in the expression can only refer to the variable positions in the pattern.
-And the |put| behavior of |RearrV| is simply:
+And the |put| behaviour of |RearrV| is simply:
 \begin{spec}
 put (RearrV p e b) s v = do  env <- deconstruct p v
                              put b s (eval e env)
@@ -520,17 +521,17 @@ From such associations we can reconstruct an environment of type~(\ref{eq:cons-e
 
 In general, the intermediate view will be decomposed according to the body expression, and eventually each of its components will be paired with a direction indicating which variable position the component should go into in the reconstructed environment.
 To do the reconstruction, we can prepare a ``container'' which is similar to an environment except that the variable positions are initially empty.
-For each pair of a component and a direction, we try to put that component into the place in the container pointed to by the direction; if two components are put into the same position twice (indicating that the $\lambda$-expression uses a variable more than once), then they must be equal.
+For each pair of a component and a direction, we try to put that component into the place in the container pointed to by the direction; if two components are put into the same position (indicating that the $\lambda$-expression uses a variable more than once), then they must be equal.
 In the end, we check that all places in the container are filled, and then use it as an environment to evaluate the pattern.
 Again, to compute the type of containers from a pattern, we add a third index to |Pat|:
 \begin{spec}
 data Pat a env con where
   PVar    ::  Eq a => Pat a (Var a) (Maybe a)
-  PConst  ::  Eq a => a -> Pat a () ()
-  PProd   ::  Pat a  a'  a''  -> Pat b b' b'' -> Pat (a, b) (a', b') (a'', b'')
-  PLeft   ::  Pat a  a'  a''  -> Pat (Either a b) a'  a''
-  PRight  ::  Pat b  b'  b''  -> Pat (Either a b) b'  b''
-  PIn     ::  InOut a => Pat (F a) b c -> Pat a b c
+  PConst  ::  Eq a => a ->                        Pat a () ()
+  PProd   ::  Pat a  a'  a''  -> Pat b b' b'' ->  Pat (a, b) (a', b') (a'', b'')
+  PLeft   ::  Pat a  a'  a''  ->                  Pat (Either a b) a'  a''
+  PRight  ::  Pat b  b'  b''  ->                  Pat (Either a b) b'  b''
+  PIn     ::  InOut a => Pat (F a) b c ->         Pat a b c
 \end{spec}
 A container type is just like an environment type except that the variable positions give rise to |Maybe| instead of |Var|.
 For the cons example, the computed container type is
@@ -597,7 +598,7 @@ get (RearrV p e b)  s = do  v'   <- get b s
                             return (construct p env)
 \end{spec}
 To be concrete, let us go through the steps of inverse rearranging in the cons example.
-Starting from an intermediate view |(x, xs)| and an empty container |(Nothing, Nothing)| of type~(\ref{eq:cons-container}), |uneval| will invoke |unevalD| twice, the first time updating the container to |(Just x, Nothing)| and the second time to |(Just x,| |Just xs)|.
+Starting with an intermediate view |(x, xs)| and an empty container |(Nothing, Nothing)| of type~(\ref{eq:cons-container}), |uneval| will invoke |unevalD| twice, the first time updating the container to |(Just x, Nothing)| and the second time to |(Just x,| |Just xs)|.
 The resulting container is full, and thus |fromContainerV| will successfully turn it into an environment |(Var x, Var xs)| of type~(\ref{eq:cons-environment}), in which we evaluate the cons pattern~(\ref{eq:cons-pattern}) and obtain |x:xs|.
 
 Conceptually, this is just reversing pattern matching and expression evaluation. To actually prove the well-behavedness, though, we need to reason about stateful computation (which is what |uneval| essentially is), which involves coming up with suitable invariants and proving that they are maintained throughout the computation.
@@ -606,7 +607,7 @@ Conceptually, this is just reversing pattern matching and expression evaluation.
 It is interesting to mention that there would be a catch if we designed this combinator from the |get| direction: It is tempting to think that, since a rearranging $\lambda$-expression gives rise to a partial isomorphism, which can be lifted to a lens, we can simply compose the lens lifted from the isomorphism with the inner lens to give a lens semantics to |RearrV|.
 This would result in a redundant computation of an intermediate source which is immediately discarded, and now the success of the whole computation would unnecessarily depend on that of the intermediate source.
 To eliminate the redundant computation, we would need to use a special composition which composes a lens directly with an isomorphism on the right.
-Such a need would be hard to notice since the |get| behavior of the two compositions are the same; that is, we really have to think in terms of |put| to see that the special composition is needed.
+Such a need would be hard to notice since the |get| behaviour of the two compositions are the same; that is, we really have to think in terms of |put| to see that the special composition is needed.
 
 
 
