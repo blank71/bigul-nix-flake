@@ -88,10 +88,10 @@ posAlign b c = Case
 The normal branches deal with the situations where both lists are empty or non-empty, and the adaptive branches remove or create elements when the lengths of the two lists differ.
 
 The |get| direction of |posAlign| does exactly what we want it to do:
-\begin{verbatim}
-*> get (posAlign bx cr) employees
-Just [(0,"Zhenjiang"),(1,"Josh"),(2,"Jeremy")]
-\end{verbatim}
+\begin{alltt}
+*Alignment> get (posAlign bx cr) employees
+\eval*{get (posAlign bx cr) employees}
+\end{alltt}
 It should be quite obvious, though, that the |put| direction is not so useful for our purpose.
 If we sack Josh:
 \begin{code}
@@ -99,10 +99,10 @@ updatedEmployees0  ::  [View]
 updatedEmployees0  =   [(0, "Zhenjiang"), (2, "Jeremy")]
 \end{code}
 then the database will updated to:
-\begin{verbatim}
-*> put (posAlign bx cr) employees updatedEmployees0
-Just [(0,("Zhenjiang",1000)),(2,("Jeremy",400))]
-\end{verbatim}
+\begin{alltt}
+*Alignment> put (posAlign bx cr) employees updatedEmployees0
+\eval*{put (posAlign bx cr) employees updatedEmployees0}
+\end{alltt}
 where Jeremy inadvertently gets Josh's original salary.
 Even if we do not remove any employee, we may still want to reorder them:
 \begin{code}
@@ -110,10 +110,10 @@ updatedEmployees1  ::  [View]
 updatedEmployees1  =   [(2, "Jeremy"), (0, "Zhenjiang"), (1, "Josh")]
 \end{code}
 and now everyone gets the wrong salary:
-\begin{verbatim}
-*> put (posAlign bx cr) employees updatedEmployees1
-Just [(2,("Jeremy",1000)),(0,("Zhenjiang",400)),(1,("Josh",2000))]
-\end{verbatim}
+\begin{alltt}
+*Alignment> put (posAlign bx cr) employees updatedEmployees1
+\eval*{put (posAlign bx cr) employees updatedEmployees1}
+\end{alltt}
 This first exercise shows that the alignment problem is inherently one that should be solved from the |put| direction.
 It is easy to implement the |get| direction correctly, but what matters is the |put| behavior.
 
@@ -142,7 +142,7 @@ In fact, whether the source list is empty or not is irrelevant here --- what mat
 If it is, then we bring the (first) source element with the same key value to the head position, and the second normal branch can take over; otherwise, we create a new source element.
 This gives us key-based alignment:
 \begin{code}
-keyAlign  ::  forall s v k {-".\;"-} (Show s, Show v, Eq k)
+keyAlign  ::  forall s v k . (Show s, Show v, Eq k)
           =>  (s -> k) -> (v -> k) -> BiGUL s v -> (v -> s) -> BiGUL [s] [v]
 keyAlign ks kv b c = Case
   [ $(normalSV (P( [] )) (P( [] )) (P( [] )))
@@ -166,20 +166,20 @@ keyAlign ks kv b c = Case
 
 Back to our payroll database example.
 The |get| direction behaves the same:
-\begin{verbatim}
-*> get (keyAlign fst fst bx cr) employees
-Just [(0,"Zhenjiang"),(1,"Josh"),(2,"Jeremy")]
-\end{verbatim}
+\begin{alltt}
+*Alignment> get (keyAlign fst fst bx cr) employees
+\eval*{get (keyAlign fst fst bx cr) employees}
+\end{alltt}
 Unlike position-based alignment, view element deletion can now be reflected correctly:
-\begin{verbatim}
-*> put (keyAlign fst fst bx cr) employees updatedEmployees0
-Just [(0,("Zhenjiang",1000)),(2,("Jeremy",2000))]
-\end{verbatim}
+\begin{alltt}
+*Alignment> put (keyAlign fst fst bx cr) employees updatedEmployees0
+\eval*{put (keyAlign fst fst bx cr) employees updatedEmployees0}
+\end{alltt}
 And reordering as well:
-\begin{verbatim}
-*> put (keyAlign fst fst bx cr) employees updatedEmployees1
-Just [(2,("Jeremy",2000)),(0,("Zhenjiang",1000)),(1,("Josh",400))]
-\end{verbatim}
+\begin{alltt}
+*Alignment> put (keyAlign fst fst bx cr) employees updatedEmployees1
+\eval*{put (keyAlign fst fst bx cr) employees updatedEmployees1}
+\end{alltt}
 
 So it seems that key-based alignment is just what we need.
 Indeed, key-based alignment usually works well, but there is an important assumption:
@@ -190,10 +190,10 @@ updatedEmployees2  ::  [View]
 updatedEmployees2  =   [(0, "Zhenjiang"), (100, "Josh"), (1, "Jeremy")]
 \end{code}
 Then the effect is the same as sacking Josh and then hiring him again, and his salary is thus reset:
-\begin{verbatim}
-*> put (keyAlign fst fst bx cr) employees updatedEmployees2
-Just [(0,("Zhenjiang",1000)),(100,("Josh",0)),(1,("Jeremy",400))]
-\end{verbatim}
+\begin{alltt}
+*Alignment> put (keyAlign fst fst bx cr) employees updatedEmployees2
+\eval*{put (keyAlign fst fst bx cr) employees updatedEmployees2}
+\end{alltt}
 The problem is that we cannot distinguish modification from deletion and insertion pairs.
 To be able to have such distinction, we introduce the notion of \emph{deltas}, which allow us to kep track of the links between source and view elements.
 
@@ -259,18 +259,18 @@ It is easy to prove that, given the same |b|~and~|c|, these two functions do for
 The key observation is that the delta produced by |put (deltaAlign b c)| is necessarily one computed by |idDelta|, so, for example, in \ref{eq:PutGet}, throwing away the delta in the |put| direction is fine because it can be recomputed by |idDelta|, and the |get| direction can resume from exactly the same source pair.
 
 Back to our example. We can now update Josh's id without resetting his salary by providing a full delta indicating that there are only in-place updates:
-\begin{verbatim}
-*> putDeltaAlign bx cr employees
+\begin{alltt}
+*Alignment> putDeltaAlign bx cr employees
      [(0,0), (1,1), (2,2)] updatedEmployees2
-Just [(0,("Zhenjiang",1000)),(100,("Josh",400)),(1,("Jeremy",2000))]
-\end{verbatim}
+\eval*{putDeltaAlign bx cr employees [(0,0), (1,1), (2,2)] updatedEmployees2}
+\end{alltt}
 Besides obvious modifications like reordering, we can also do some fairly subtle modifications now:
 If we actually sack Josh and replace him with a new Josh (inheriting the original Josh's id) whose salary should be reset (to be re-considered by the accounting department), we can say so by providing a partial delta:
-\begin{verbatim}
-*> putDeltaAlign bx cr employees [(0,0), (2,2)]
+\begin{alltt}
+*Alignment> putDeltaAlign bx cr employees [(0,0), (2,2)]
      =<< getDeltaAlign bx cr employees
-Just [(0,("Zhenjiang",1000)),(1,("Josh",0)),(2,("Jeremy",2000))]
-\end{verbatim}
+\eval*{putDeltaAlign bx cr employees [(0,0), (2,2)] =<< getDeltaAlign bx cr employees}
+\end{alltt}
 
 \subsubsection{One alignment to rule them all.}
 Where do deltas come from?
@@ -301,10 +301,9 @@ byKey ks kv ss vs =
                   |  (v, j) <- zip vs [0..] ]
 \end{code}
 We can check that these strategies indeed give us position-based and key-based alignment:
-\begin{verbatim}
-*> putDeltaAlignS byPosition bx cr employees updatedEmployees0
-Just [(0,("Zhenjiang",1000)),(2,("Jeremy",400))]
-
-*> putDeltaAlignS (byKey fst fst) bx cr employees updatedEmployees1
-Just [(2,("Jeremy",2000)),(0,("Zhenjiang",1000)),(1,("Josh",400))]
-\end{verbatim}
+\begin{alltt}
+*Alignment> putDeltaAlignS byPosition bx cr employees updatedEmployees0
+\eval*{putDeltaAlignS byPosition bx cr employees updatedEmployees0}
+*Alignment> putDeltaAlignS (byKey fst fst) bx cr employees updatedEmployees1
+\eval*{putDeltaAlignS (byKey fst fst) bx cr employees updatedEmployees1}
+\end{alltt}

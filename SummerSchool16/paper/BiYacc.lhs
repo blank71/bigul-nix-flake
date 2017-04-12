@@ -251,50 +251,50 @@ pFactorArith  =   Case
 
 The BiGUL programs, being bidirectional, can be executed in the |put| direction as a reflective printer, or in the |get| direction as a parser.
 Let us look at parsing first. For example:
-\begin{verbatim}
-*Main> get pExpArith (parseExp "(-(3+0))")
-Just (Sub (Num 0) (Add (Num 3) (Num 0)))
-\end{verbatim}
+\begin{alltt}
+*BiYacc> get pExpArith (parseExp "(-(3+0))")
+\eval*{get pExpArith (parseExp "(-(3+0))")}
+\end{alltt}
 Note that a unary minus is regarded as syntactic sugar, and is desugared into a subtraction whose left operand is zero.
 Also note that parentheses are turned into correct structure of the abstract syntax tree, and nothing more --- excessive parentheses are cleanly discarded.
 
 For reflective printing, as we mentioned, one application is reporting what compiler optimizations do.
 We can optimize the sub-expression $3+0$ by getting rid of the superfluous $+0$, for example, and the reflective printer will be able to retain the excessive parentheses:
-\begin{verbatim}
-*Main> put pExpArith (parseExp "(-(3+0))")
+\begin{alltt}
+*BiYacc> put pExpArith (parseExp "(-(3+0))")
                      (Sub (Num 0) (Num 3))
 Just (-(3))
-\end{verbatim}
+\end{alltt}
 Notice also that the unary minus is preserved.
 If the original concrete expression uses a binary minus instead, it will be preserved as well:
-\begin{verbatim}
-*Main> put pExpArith (parseExp "(0-(3+0))")
+\begin{alltt}
+*BiYacc> put pExpArith (parseExp "(0-(3+0))")
                      (Sub (Num 0) (Num 3))
-Just (0-(3))
-\end{verbatim}
+\eval*{put pExpArith (parseExp "(0-(3+0))") (Sub (Num 0) (Num 3))}
+\end{alltt}
 
 Another thing we can do is reflecting the steps in an evaluation sequence of an abstract syntax tree to concrete syntax.
 For example, starting from:
-\begin{verbatim}
-*Main> get pExpArith (parseExp "1+(2+3)")
-Just (Add (Num 1) (Add (Num 2) (Num 3)))
-\end{verbatim}
+\begin{alltt}
+*BiYacc> get pExpArith (parseExp "1+(2+3)")
+\eval*{get pExpArith (parseExp "1+(2+3)")}
+\end{alltt}
 it takes two steps to evaluate this expression:
-\begin{verbatim}
-*Main> put pExpArith (parseExp "1+(2+3)")
+\begin{alltt}
+*BiYacc> put pExpArith (parseExp "1+(2+3)")
                      (Add (Num 1) (Num 5))
-Just 1+(5)
-*Main> put pExpArith (parseExp "1+(5)") (Num 6)
-Just 6
-\end{verbatim}
+\eval*{put pExpArith (parseExp "1+(2+3)") (Add (Num 1) (Num 5))}
+*BiYacc> put pExpArith (parseExp "1+(5)") (Num 6)
+\eval*{put pExpArith (parseExp "1+(5)") (Num 6)}
+\end{alltt}
 This means that if we have an evaluator on the abstract syntax, we will automatically get an evaluator on the concrete syntax!
 
 A reflective printer can also be used as an ordinary printer by setting the original source to an empty one.
 For example:
-\begin{verbatim}
-*Main> put pExpArith ENull (Sub (Num 0) (Add (Num 1) (Num 1)))
-Just 0-(1+1)
-\end{verbatim}
+\begin{alltt}
+*BiYacc> put pExpArith ENull (Sub (Num 0) (Add (Num 1) (Num 1)))
+\eval*{put pExpArith ENull (Sub (Num 0) (Add (Num 1) (Num 1)))}
+\end{alltt}
 Note that the subtraction is reflected as a binary minus instead of a unary one, despite that the left operand is zero.
 This behavior is easily customizable:
 By adding an adaptive branch before the one dealing generically with |Sub| in |pExpArith|:
@@ -303,10 +303,10 @@ $(adaptiveSV (P( _ )) (P( Sub (Num 0) _ )))
   ==> \ _ _ -> EF FNull
 \end{spec}
 the above abstract syntax tree can be printed as:
-\begin{verbatim}
-*Main> put pExpArith ENull (Sub (Num 0) (Add (Num 1) (Num 1)))
-Just -(1+1)
-\end{verbatim}
+\begin{alltt}
+*BiYacc> put pExpArith ENull (Sub (Num 0) (Add (Num 1) (Num 1)))
+\eval*{put pExpArith ENull (Sub (Num 0) (Add (Num 1) (Num 1)))}
+\end{alltt}
 
 \subsection{A domain-specific language}
 
@@ -314,7 +314,7 @@ As a final remark, the above programs may look long, but at the core of them are
 We can design a domain-specific language (DSL) that expresses such correspondences concisely, and then expand programs in this DSL into BiGUL.
 In fact, we have already done so, and the DSL is called \emph{BiYacc}.
 For example, all the programs we have written can be generated from the following eight-line BiYacc program:
-\begin{verbatim}
+\begin{alltt}
   Arith +> Exp
   Add l r +> (l +> Exp) '+' (r +> Factor);
   Sub l r +> (l +> Exp) '-' (r +> Factor);
@@ -324,5 +324,5 @@ For example, all the programs we have written can be generated from the followin
   Num n         +> (n +> Int);
   Sub (Num 0) r +> '-' (r +> Factor);
   f             +> '(' (f +> Exp) ')';
-\end{verbatim}
+\end{alltt}
 See our SLE 2016 paper~\cite{Zhu-BiYacc} for more interesting experiments about reflective printing, done on a more realistic imperative language.

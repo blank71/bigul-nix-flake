@@ -97,19 +97,19 @@ lensMapAppend pf =  lensFoldr bx null
 Here |bx| has the type of |BiGUL (a,[b]) [b]| and
 is defined on |pf| that has the type of |BiGUL a b|.
 
-\begin{verbatim}
+\begin{alltt}
 *PList> put (lensMapAppend dec1) ([0..10],[]) [100..110]
-Just ([99,100,101,102,103,104,105,106,107,108,109],[])
+\eval*{put (lensMapAppend dec1) ([0..10],[]) [100..110]}
 *PList> get (lensMapAppend dec1) ([1..10],[])
-Just [2,3,4,5,6,7,8,9,10,11]
-\end{verbatim}
+\eval*{get (lensMapAppend dec1) ([1..10],[])}
+\end{alltt}
 Note that, for testing, we embed into our framework
 the bijective functions for increasing and decreasing an integer by |1|.
 \begin{code}
 dec1 :: BiGUL Int Int
 dec1 = emb g p
-  where  g s = s+1
-         p s v = v-1
+  where  g s    = s+1
+         p s v  = v-1
 \end{code}
 
 \ignore{
@@ -147,23 +147,23 @@ lensSwap  =   $(rearrS (Q( \(x,y) -> (y,x) ))) Replace
 \end{code}
 
 Below are some testing examples.
-\begin{verbatim}
+\begin{alltt}
 *PList> put lensSnoc ([2,3,4],1) [10,11,12,13]
-Just ([10,11,12],13)
+\eval*{put lensSnoc ([2,3,4],1) [10,11,12,13]}
 *PList> put lensSnoc ([2,3,4],1) [10,11,12,13,14]
-Just ([10,11,12,13],14)
+\eval*{put lensSnoc ([2,3,4],1) [10,11,12,13,14]}
 *PList> put lensSnoc ([2,3,4],1) [10,11]
-Just ([10],11)
+\eval*{put lensSnoc ([2,3,4],1) [10,11]}
 *PList> get lensSnoc ([1..10], 100)
-Just [1,2,3,4,5,6,7,8,9,10,100]
+\eval*{get lensSnoc ([1..10], 100)}
 
 *PList> put lensReverse [1..10] [100..105]
-Just [105,104,103,102,101,100]
+\eval*{put lensReverse [1..10] [100..105]}
 *PList> put lensReverse [1..10] [100..115]
-Just [115,114,113,112,111,110,109,108,107,106,105,104,103,102,101,100]
+\eval*{put lensReverse [1..10] [100..115]}
 *PList> get lensReverse [1..10]
-Just [10,9,8,7,6,5,4,3,2,1]
-\end{verbatim}
+\eval*{get lensReverse [1..10]}
+\end{alltt}
 
 }
 
@@ -171,23 +171,32 @@ As the second example, consider the function |sum (xs,e)|, which is to sum up
 all elements of the list |xs| starting from the seed |e|. If the sum is changed,
 there are many ways to reflect this change to the input |(xs,e)|. The following
 describes one way in BiGUL:
-> lensSum :: BiGUL (Int, Int) Int -> BiGUL ([Int], Int) Int
-> lensSum = lensFoldr pSum2 otherwise
+\begin{code}
+lensSum  ::  BiGUL ([Int], Int) Int
+lensSum  =   lensFoldr pSum2 (const True)
+\end{code}
 which will reflect the change difference on the view to the head element of |xs|
 if |xs| is not empty, or to the seed |e| otherwise. We may choose other ways, say to 
 reflect the change difference on the view only to the seed by defining
-> lensSum' :: BiGUL (Int, Int) Int -> BiGUL ([Int], Int) Int
-> lensSum' = lensFoldr ($(rearrS (Q( \(x,y) -> (y,x) ))) pSum2) otherwise
+\begin{code}
+lensSum'  ::  BiGUL ([Int], Int) Int
+lensSum'  =   lensFoldr ($(rearrS (Q( \(x,y) -> (y,x) ))) pSum2) (const True)
+\end{code}
 or to reflect the change difference among all the list elements and
 the seed by the following definition.
-> lensSum'' :: BiGUL (Float, Float) Float -> BiGUL ([Float], Float) Float
-> lensSum'' = lensFoldr pSum2Av otherwise
->    where pSum2Av = emb  (\(x,y) -> x+y)
->                         (\(x,y) v ->  let av = (v-x-y)/2
->                                       in (x + av, y+av)
-For instance, although |get lensSum' ([1,2,3],0) = get lensSum'' ([1,2,3],0) = Just 6|, there putback behaviors are different:
-> put lensSum' ([1,2,3],0) 16 = Just ([11,2,3],0)
-> put lensSum'' ([1,2,3],0) 16 = Just ([6,4.5,4.25],1.25)
+\begin{code}
+lensSum''  ::  BiGUL ([Float], Float) Float
+lensSum''  =   lensFoldr pSum2Av (const True)
+   where pSum2Av = emb  (\(x,y) -> x+y)
+                        (\(x,y) v ->  let  av = (v-x-y)/2
+                                      in   (x + av, y+av))
+\end{code}
+For instance, although |get lensSum' ([1,2,3],0) = get lensSum'' ([1,2,3],0) = Just 6|, their putback behaviors are different:
+\begin{spec}
+put lensSum' ([1,2,3],0) 16 = Just ([11,2,3],0)
+put lensSum'' ([1,2,3],0) 16 = Just ([6,4.5,4.25],1.25)
+\end{spec}
+
 
 It is worth noting that our definition of |lensFoldr| is just one
 putback function for |foldr|, and there are many others.

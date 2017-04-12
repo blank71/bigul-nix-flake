@@ -1,3 +1,5 @@
+% !TEX root = paper.tex
+
 %include lhs2TeX-macros.lhs
 
 \section{Bidirectionalizing relational queries with BiGUL}
@@ -272,13 +274,12 @@ pSelProj = pAlign (\(k,(n,s)) -> s > 1000) fst fst bx cr' (const Nothing)
   where cr' (k,n) = (k,(n, 2000))
 \end{code}
 We have:
-\begin{verbatim}
+\begin{alltt}
 *Brul> get pSelProj employees
-Just [(2,"Jeremy")]
+eval*{get pSelProj employees}
 *Brul> put pSelProj employees updatedEmployees0
-Just [(0,("Zhenjiang",1000)),(1,("Josh",400)),(0,("Zhenjiang",2000)),
-(2,("Jeremy",2000))]
-\end{verbatim}
+eval*{put pSelProj employees updatedEmployees0}
+\end{alltt}
 
 \ignore{
 Second, we extend |pAlign| to deal with functional dependency consistency
@@ -395,13 +396,10 @@ To test, let us see some concrete running examples of using |u0|.
 Recall |s| defined in Section \ref{sec:table}. We can confirm that |get| performs
 the query given at the start of this subsection.
 {\small
-\begin{verbatim}
+\begin{alltt}
 *Brul> get u0 s
-Just
-[[RString "Lullaby",RInt 3,RString "Show",RInt 3],
-[RString "Lovesong",RInt 5,RString "Paris",RInt 4],
-[RString "Trust",RInt 4,RString "Wish",RInt 5]]
-\end{verbatim}
+eval*{get u0 s}
+\end{alltt}
 }
 Now suppose that we change the above result (view) to the following
 by raising the rating of |Lullaby| from |3| to |4|, raising the quality of |lovesong| from |4| to |7|, and deleting |Trust|:
@@ -412,14 +410,10 @@ v =  [ [RString "Lullaby" , RInt 4, RString "Show"  , RInt 3]
 \end{code}
 We can reflect these changes to the source by performing |put|.
 {\small
-\begin{verbatim}
+\begin{alltt}
 *Brul> put u0 s v
-Just
-[[RString "Lullaby",RInt 1989,RInt 4,RString "Galore",RInt 1],
-[RString "Lullaby",RInt 1989,RInt 4,RString "Show",RInt 3],
-[RString "Lovesong",RInt 1989,RInt 5,RString "Galore",RInt 1],
-[RString "Lovesong",RInt 1989,RInt 5,RString "Paris",RInt 7]]
-\end{verbatim}
+eval*{put u0 s v}
+\end{alltt}
 }
 In the updated source, the changes of rating and quality are correctly reflected,
 and the music track |Trust| is removed.

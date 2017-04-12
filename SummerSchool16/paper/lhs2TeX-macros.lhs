@@ -1,9 +1,20 @@
 %include polycode.fmt
 
+%options ghci -pgmL lhs2TeX -optL --pre
+
+%if style == newcode
+
+%format (Q(x)) = [| x |]
+%format (P(x)) = [p| x |]
+%format (D(x)) = [d| x |]
+
+%else
+
 %format $ = "{^\$}"
 %format (Q(x)) = "[\kern-1.5pt[\," x "\,]\kern-1.5pt]"
 %format (P(x)) = "\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\," x "\,]\kern-1.5pt]"
 %format (D(x)) = "{^\mathbb{D}}[\kern-1.5pt[\," x "\,]\kern-1.5pt]"
+
 %format ... = "\ldots"
 
 %format <=> = "\Leftrightarrow"
@@ -307,3 +318,5 @@
 
 %format ==> = "\Longrightarrow"
 %format Int = "\mathit{Int}"
+
+%endif

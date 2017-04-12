@@ -65,32 +65,32 @@ applying function |f| to the source). Consider a simple |put| defined by
 square x = x*x
 \end{code}
 We can test its put behavior as follows:
-\begin{verbatim}
+\begin{alltt}
 *PBasic> put (Skip square) 10 100
-Just 10
-\end{verbatim}
+\eval*{put (Skip square) 10 100}
+\end{alltt}
 It first checks if the view |100| is the square of the source |10|.
 If that is the case, the original source is returned.
 But if the view is changed, say to |250|,
 it should produce |Nothing|:
-\begin{verbatim}
+\begin{alltt}
 *PBasic> put (Skip square) 10 250
-Nothing
-\end{verbatim}
+\eval*{put (Skip square) 10 250}
+\end{alltt}
 To see why |put| produces |Nothing|, we may use
 |putTrace| instead of |put| to get more information:
-\begin{verbatim}
+\begin{alltt}
 *PBasic> putTrace (Skip square) 10 250
-view not determined by the source
-\end{verbatim}
+\eval*{putTrace (Skip square) 10 250}
+\end{alltt}
 
 Each putback transformation in BiGUL
 is equipped with a unique |get| for doing forward transformation.
 We can test the |get| behavior as follows:
-\begin{verbatim}
+\begin{alltt}
 *PBasic> get (Skip square) 5
-Just 25
-\end{verbatim}
+\eval*{get (Skip square) 5}
+\end{alltt}
 In prose: doing the forward transformation of |Skip square| on the
 source~|5| gives the view~|25|. If |get| fails,
 we can also use |getTrace| to see more information about the failure, analogous to |putTrace|.
@@ -108,10 +108,10 @@ The second primitive is
 < Replace  :: BiGUL s s
 
 which completely replaces the source with the view. For instance,
-\begin{verbatim}
+\begin{alltt}
 *PBasic> put Replace 1 100
-Just 100
-\end{verbatim}
+\eval*{put Replace 1 100}
+\end{alltt}
 uses the view |100| to replace the source |1| and gets a new source |100|.
 
 \subsection{Product}
@@ -126,16 +126,16 @@ to use |v1| to update |s1| with |bx1| and |v2| to |s2| with |bx2|.
 
 For instance, we can use |Prod| to combine |Skip| and |Replace| to put a view pair
 into a source pair.
-\begin{verbatim}
+\begin{alltt}
 *PBasic> put (skip1 `Prod` Replace) (5,1) ((),100)
-Just (5,100)
-\end{verbatim}
+\eval*{put (skip1 `Prod` Replace) (5,1) ((),100)}
+\end{alltt}
 Generally, we can use nested |Prod|s to describe a complicated structural mapping:
-\begin{verbatim}
+\begin{alltt}
 *PBasic> put ((skip1 `Prod` Replace) `Prod` Replace)
              ((5,1),2) (((),100),200)
-Just ((5,100),200)
-\end{verbatim}
+\eval*{put ((skip1 `Prod` Replace) `Prod` Replace) ((5,1),2) (((),100),200)}
+\end{alltt}
 
 \subsection{Source/view rearrangement}
 
@@ -181,10 +181,10 @@ with its head element |s| and its tail |ss|, and the view
 |v| to a pair |(v,())|, so that we can use |v| to replace |s|
 and |()| to keep |ss|. 
 
-\begin{verbatim}
+\begin{alltt}
 *PBasic> put pHead [1,2,3,4] 100
-Just [100,2,3,4]
-\end{verbatim}
+\eval*{put pHead [1,2,3,4] 100}
+\end{alltt}
 
 What if we wish to define a general putback transformation 
 that uses the view to replace the |i|th element of the source list?
@@ -202,20 +202,20 @@ on the view and the source as we did for |pHead|,
 but then keep the head element unchanged and replace 
 the |(i-1)|th element of the tail of the source by the view.
 
-\begin{verbatim}
+\begin{alltt}
 *PBasic> put (pNth 3) [1..10] 100
-Just [1,2,3,100,5,6,7,8,9,10]
-\end{verbatim}
+\eval*{put (pNth 3) [1..10] 100}
+\end{alltt}
 
 As we know, any putback function in BiGUL is equipped with
 a |get| function.
 For |pNth|, we can test its |get| behavior
 as follows; its corresponding |get| function is actually
 the familiar index function |(!!)|.
-\begin{verbatim}
+\begin{alltt}
 *PBasic> get (pNth 3) [1..10]
-Just 4
-\end{verbatim}
+\eval*{get (pNth 3) [1..10]}
+\end{alltt}
 
 Both |pHead| and |pNth| contain the programming pattern in which both the source and view are rearranged into a product and then further updates are performed on corresponding components.
 This is a ubiquitous pattern in BiGUL, for which we provide a more compact syntax:
@@ -286,8 +286,8 @@ replaceAll  =
         ,  $(normal (Q( \s v -> length s > 1 )) (Q( \s -> length s > 1 )))
            ==>  $(rearrS (Q( \(x:xs) -> (x,xs) )))$
                   $(rearrV (Q( \v -> (v, v) )))$
-                    Replace `Prod` replaceAll,
-        ,  $(adaptive (Q( \s v -> length s == 0 ))) 
+                    Replace `Prod` replaceAll
+        ,  $(adaptive (Q( \s v -> length s == 0 )))
            ==> \s v -> [undefined]
         ]
 \end{code}
@@ -302,12 +302,12 @@ The last adaptive case says that if the source is empty, we adapt the source
 to a singleton list with the \emph{don't-care} element (defined by |undefined|), and rerun the whole
 |Case| executing the first normal case. 
 
-\begin{verbatim}
+\begin{alltt}
 *PBasic> put replaceAll [] 100
-Right [100]
+\eval*{put replaceAll [] 100}
 *PBasic> put replaceAll [1..10] 100
-Right [100,100,100,100,100,100,100,100,100,100]
-\end{verbatim}
+\eval*{put replaceAll [1..10] 100}
+\end{alltt}
 Note that in the first running example, the source |[]| is first adapted to |[undefined]|,
 and the \emph{don't care} element |undefined| is replaced by |100| at the rerun of
 the whole |Case|.
@@ -334,32 +334,38 @@ pSum2 = emb g p
   where  g (x,y) = x+y
          p (x,y) v = (v-y,y)
 \end{code}
-%\begin{verbatim}
+%\begin{alltt}
 %*PBasic> put pSum2 (1,2) 100
-%Right (98,2)
+%\eval{put pSum2 (1,2) 100}
 %*PBasic> get pSum2 (1,2)
-%Right 3
-%\end{verbatim}
+%\eval{get pSum2 (1,2)}
+%\end{alltt}
 
 
 
 While we allow a general function to describe
 the main condition or the exit condition, 
 it is usually more concise to use patterns to describe these conditions.
-For instance, we may replace the condition |(Q( \s v -> length s == 1 ))| by
-> (P( \[x] v -> True))
+For instance, we may replace the condition |(Q( \s -> length s == 1 ))| by
+\begin{spec}
+(Q( \[x] -> True ))
+\end{spec}
 Here, the meaning of a boolean-valued pattern-matching
 lambda-expression is redefined as a total function which computes to
 |False| when an input does not match the pattern; this meaning is
 different from that of a general pattern-matching lambda-expression,
 which fails to compute when the pattern is not matched.
 For example,
-in general the lambda-expression |\[x] v -> True| will fail
+in general the lambda-expression |\[x] -> True| will fail
 to compute if the first input is not a singleton list; when used in branch
 construction, however, the lambda-expression will compute to |False|
 upon encountering an empty list.
-
-Finally, for convenience, we prepare 
+A unary condition like |(Q( \[x] -> True ))| where only the pattern part matters can be abbreviated to
+\begin{spec}
+(P( [x] ))
+\end{spec}
+to further reduce syntactic noise.
+Finally, to also allow this kind of abbreviation in main conditions, BiGUL provides 
 a special form for the |normal| case where the main condition is specified as the conjunction of two unary predicates on the source and view respectively:
 < $(normalSV   (Q( sourceCond :: s -> Bool ))
 <              (Q( viewCond :: v -> Bool ))
@@ -402,14 +408,14 @@ replaceAll2 = Dep even replaceAll
 to replace all elements of the source by the
 first component of the view, while checking whether
 the second component is consistent with the first component.
-\begin{verbatim}
+\begin{alltt}
 *PBasic> put replaceAll2 [1..10] (100,True)
-Just [100,100,100,100,100,100,100,100,100,100]
+\eval*{put replaceAll2 [1..10] (100,True)}
 *PBasic> put replaceAll2 [1..10] (100,False)
-Nothing
+\eval*{put replaceAll2 [1..10] (100,False)}
 *PBasic> putTrace replaceAll2 [1..10] (100,False)
-second view component not determined by the first
-\end{verbatim}
+\eval*{putTrace replaceAll2 [1..10] (100,False)}
+\end{alltt}
 As seen in the last running of |put|, it reports an error because the view |(100,False)|
 is inconsistent: |100| is an even number, so the second component should be |True|.
 
@@ -433,10 +439,10 @@ pHead2 :: Show a => BiGUL [[a]] a
 pHead2 = pHead `Compose` pHead
 \end{code}
 The following is a running example.
-\begin{verbatim}
+\begin{alltt}
 *PBasic> put pHead2 [[1,2],[3,4,5],[]] 100
-Just [[100,2],[3,4,5],[]]
-\end{verbatim}
+\eval*{put pHead2 [[1,2],[3,4,5],[]] 100}
+\end{alltt}
 
 %\subsection{Utilities}
 

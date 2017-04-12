@@ -261,6 +261,9 @@
 %
 
 
+
+
+
 % format { = "\lbag"
 % format } = "\rbag"
 
@@ -320,6 +323,7 @@
 
 
 %formap phiX = "\Phi"
+
 
 
 
@@ -516,18 +520,19 @@ We can define its putback function as follows.
 Here \ensuremath{\Varid{bx}} has the type of \ensuremath{\Conid{BiGUL}\;(\Varid{a},[\mskip1.5mu \Varid{b}\mskip1.5mu])\;[\mskip1.5mu \Varid{b}\mskip1.5mu]} and
 is defined on \ensuremath{\Varid{pf}} that has the type of \ensuremath{\Conid{BiGUL}\;\Varid{a}\;\Varid{b}}.
 
-\begin{tabbing}\tt
-~\char42{}PList\char62{}~put~\char40{}lensMapAppend~dec1\char41{}~\char40{}\char91{}0\char46{}\char46{}10\char93{}\char44{}\char91{}\char93{}\char41{}~\char91{}100\char46{}\char46{}110\char93{}\\
-\tt ~Just~\char40{}\char91{}99\char44{}100\char44{}101\char44{}102\char44{}103\char44{}104\char44{}105\char44{}106\char44{}107\char44{}108\char44{}109\char93{}\char44{}\char91{}\char93{}\char41{}\\
-\tt ~\char42{}PList\char62{}~get~\char40{}lensMapAppend~dec1\char41{}~\char40{}\char91{}1\char46{}\char46{}10\char93{}\char44{}\char91{}\char93{}\char41{}\\
-\tt ~Just~\char91{}2\char44{}3\char44{}4\char44{}5\char44{}6\char44{}7\char44{}8\char44{}9\char44{}10\char44{}11\char93{}
-\end{tabbing}
+\begin{alltt}
+*PList> put (lensMapAppend dec1) ([0..10],[]) [100..110]
+Just ([99,100,101,102,103,104,105,106,107,108,109],[])
+*PList> get (lensMapAppend dec1) ([1..10],[])
+Just [2,3,4,5,6,7,8,9,10,11]
+\end{alltt}
 Note that, for testing, we embed into our framework
 the bijective functions for increasing and decreasing an integer by \ensuremath{\mathrm{1}}.
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{10}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{17}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[B]{}\Varid{dec1}\mathbin{::}\Conid{BiGUL}\;\mathit{Int}\;\mathit{Int}{}\<[E]%
 \\
@@ -535,9 +540,11 @@ the bijective functions for increasing and decreasing an integer by \ensuremath{
 \\
 \>[B]{}\hsindent{3}{}\<[3]%
 \>[3]{}\mathbf{where}\;{}\<[10]%
-\>[10]{}\Varid{g}\;\Varid{s}\mathrel{=}\Varid{s}\mathbin{+}\mathrm{1}{}\<[E]%
+\>[10]{}\Varid{g}\;\Varid{s}{}\<[17]%
+\>[17]{}\mathrel{=}\Varid{s}\mathbin{+}\mathrm{1}{}\<[E]%
 \\
-\>[10]{}\Varid{p}\;\Varid{s}\;\Varid{v}\mathrel{=}\Varid{v}\mathbin{-}\mathrm{1}{}\<[E]%
+\>[10]{}\Varid{p}\;\Varid{s}\;\Varid{v}{}\<[17]%
+\>[17]{}\mathrel{=}\Varid{v}\mathbin{-}\mathrm{1}{}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 
@@ -635,80 +642,106 @@ to update the cons-list of the source.
 \end{hscode}\resethooks
 
 Below are some testing examples.
-\begin{tabbing}\tt
-~\char42{}PList\char62{}~put~lensSnoc~\char40{}\char91{}2\char44{}3\char44{}4\char93{}\char44{}1\char41{}~\char91{}10\char44{}11\char44{}12\char44{}13\char93{}\\
-\tt ~Just~\char40{}\char91{}10\char44{}11\char44{}12\char93{}\char44{}13\char41{}\\
-\tt ~\char42{}PList\char62{}~put~lensSnoc~\char40{}\char91{}2\char44{}3\char44{}4\char93{}\char44{}1\char41{}~\char91{}10\char44{}11\char44{}12\char44{}13\char44{}14\char93{}\\
-\tt ~Just~\char40{}\char91{}10\char44{}11\char44{}12\char44{}13\char93{}\char44{}14\char41{}\\
-\tt ~\char42{}PList\char62{}~put~lensSnoc~\char40{}\char91{}2\char44{}3\char44{}4\char93{}\char44{}1\char41{}~\char91{}10\char44{}11\char93{}\\
-\tt ~Just~\char40{}\char91{}10\char93{}\char44{}11\char41{}\\
-\tt ~\char42{}PList\char62{}~get~lensSnoc~\char40{}\char91{}1\char46{}\char46{}10\char93{}\char44{}~100\char41{}\\
-\tt ~Just~\char91{}1\char44{}2\char44{}3\char44{}4\char44{}5\char44{}6\char44{}7\char44{}8\char44{}9\char44{}10\char44{}100\char93{}\\
-\tt ~\\
-\tt ~\char42{}PList\char62{}~put~lensReverse~\char91{}1\char46{}\char46{}10\char93{}~\char91{}100\char46{}\char46{}105\char93{}\\
-\tt ~Just~\char91{}105\char44{}104\char44{}103\char44{}102\char44{}101\char44{}100\char93{}\\
-\tt ~\char42{}PList\char62{}~put~lensReverse~\char91{}1\char46{}\char46{}10\char93{}~\char91{}100\char46{}\char46{}115\char93{}\\
-\tt ~Just~\char91{}115\char44{}114\char44{}113\char44{}112\char44{}111\char44{}110\char44{}109\char44{}108\char44{}107\char44{}106\char44{}105\char44{}104\char44{}103\char44{}102\char44{}101\char44{}100\char93{}\\
-\tt ~\char42{}PList\char62{}~get~lensReverse~\char91{}1\char46{}\char46{}10\char93{}\\
-\tt ~Just~\char91{}10\char44{}9\char44{}8\char44{}7\char44{}6\char44{}5\char44{}4\char44{}3\char44{}2\char44{}1\char93{}
-\end{tabbing}
+\begin{alltt}
+*PList> put lensSnoc ([2,3,4],1) [10,11,12,13]
+Just ([10,11,12],13)
+*PList> put lensSnoc ([2,3,4],1) [10,11,12,13,14]
+Just ([10,11,12,13],14)
+*PList> put lensSnoc ([2,3,4],1) [10,11]
+Just ([10],11)
+*PList> get lensSnoc ([1..10], 100)
+Just [1,2,3,4,5,6,7,8,9,10,100]
+
+*PList> put lensReverse [1..10] [100..105]
+Just [105,104,103,102,101,100]
+*PList> put lensReverse [1..10] [100..115]
+Just [115,114,113,112,111,110,109,108,107,106,105,104,103,102,101,100]
+*PList> get lensReverse [1..10]
+Just [10,9,8,7,6,5,4,3,2,1]
+\end{alltt}
 
 }
 
 As the second example, consider the function \ensuremath{\Varid{sum}\;(\Varid{xs},\Varid{e})}, which is to sum up
 all elements of the list \ensuremath{\Varid{xs}} starting from the seed \ensuremath{\Varid{e}}. If the sum is changed,
 there are many ways to reflect this change to the input \ensuremath{(\Varid{xs},\Varid{e})}. The following
-describes one way in BiGUL:\begin{hscode}\SaveRestoreHook
+describes one way in BiGUL:
+\begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{10}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{10E}{@{}l@{}}%
+\column{14}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{lensSum}\mathbin{::}\Conid{BiGUL}\;(\mathit{Int},\mathit{Int})\;\mathit{Int}\to \Conid{BiGUL}\;([\mskip1.5mu \mathit{Int}\mskip1.5mu],\mathit{Int})\;\mathit{Int}{}\<[E]%
+\>[B]{}\Varid{lensSum}{}\<[10]%
+\>[10]{}\mathbin{::}{}\<[10E]%
+\>[14]{}\Conid{BiGUL}\;([\mskip1.5mu \mathit{Int}\mskip1.5mu],\mathit{Int})\;\mathit{Int}{}\<[E]%
 \\
-\>[3]{}\Varid{lensSum}\mathrel{=}\Varid{lensFoldr}\;\Varid{pSum2}\;\Varid{otherwise}{}\<[E]%
+\>[B]{}\Varid{lensSum}{}\<[10]%
+\>[10]{}\mathrel{=}{}\<[10E]%
+\>[14]{}\Varid{lensFoldr}\;\Varid{pSum2}\;(\Varid{const}\;\Conid{True}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 which will reflect the change difference on the view to the head element of \ensuremath{\Varid{xs}}
 if \ensuremath{\Varid{xs}} is not empty, or to the seed \ensuremath{\Varid{e}} otherwise. We may choose other ways, say to 
-reflect the change difference on the view only to the seed by defining\begin{hscode}\SaveRestoreHook
+reflect the change difference on the view only to the seed by defining
+\begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{11}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{11E}{@{}l@{}}%
+\column{15}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{lensSum'}\mathbin{::}\Conid{BiGUL}\;(\mathit{Int},\mathit{Int})\;\mathit{Int}\to \Conid{BiGUL}\;([\mskip1.5mu \mathit{Int}\mskip1.5mu],\mathit{Int})\;\mathit{Int}{}\<[E]%
+\>[B]{}\Varid{lensSum'}{}\<[11]%
+\>[11]{}\mathbin{::}{}\<[11E]%
+\>[15]{}\Conid{BiGUL}\;([\mskip1.5mu \mathit{Int}\mskip1.5mu],\mathit{Int})\;\mathit{Int}{}\<[E]%
 \\
-\>[3]{}\Varid{lensSum'}\mathrel{=}\Varid{lensFoldr}\;({^\$}(\Varid{rearrS}\;[\kern-1.5pt[\,\lambda (\Varid{x},\Varid{y})\to (\Varid{y},\Varid{x})\,]\kern-1.5pt])\;\Varid{pSum2})\;\Varid{otherwise}{}\<[E]%
+\>[B]{}\Varid{lensSum'}{}\<[11]%
+\>[11]{}\mathrel{=}{}\<[11E]%
+\>[15]{}\Varid{lensFoldr}\;({^\$}(\Varid{rearrS}\;[\kern-1.5pt[\,\lambda (\Varid{x},\Varid{y})\to (\Varid{y},\Varid{x})\,]\kern-1.5pt])\;\Varid{pSum2})\;(\Varid{const}\;\Conid{True}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 or to reflect the change difference among all the list elements and
-the seed by the following definition.\begin{hscode}\SaveRestoreHook
+the seed by the following definition.
+\begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{6}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{27}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{41}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{4}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{12}{@{}>{\hspre}c<{\hspost}@{}}%
+\column{12E}{@{}l@{}}%
+\column{16}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{25}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{39}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{44}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{lensSum''}\mathbin{::}\Conid{BiGUL}\;(\Conid{Float},\Conid{Float})\;\Conid{Float}\to \Conid{BiGUL}\;([\mskip1.5mu \Conid{Float}\mskip1.5mu],\Conid{Float})\;\Conid{Float}{}\<[E]%
+\>[B]{}\Varid{lensSum''}{}\<[12]%
+\>[12]{}\mathbin{::}{}\<[12E]%
+\>[16]{}\Conid{BiGUL}\;([\mskip1.5mu \Conid{Float}\mskip1.5mu],\Conid{Float})\;\Conid{Float}{}\<[E]%
 \\
-\>[3]{}\Varid{lensSum''}\mathrel{=}\Varid{lensFoldr}\;\Varid{pSum2Av}\;\Varid{otherwise}{}\<[E]%
+\>[B]{}\Varid{lensSum''}{}\<[12]%
+\>[12]{}\mathrel{=}{}\<[12E]%
+\>[16]{}\Varid{lensFoldr}\;\Varid{pSum2Av}\;(\Varid{const}\;\Conid{True}){}\<[E]%
 \\
-\>[3]{}\hsindent{3}{}\<[6]%
-\>[6]{}\mathbf{where}\;\Varid{pSum2Av}\mathrel{=}\Varid{emb}\;{}\<[27]%
-\>[27]{}(\lambda (\Varid{x},\Varid{y})\to \Varid{x}\mathbin{+}\Varid{y})\;{}\<[E]%
+\>[B]{}\hsindent{4}{}\<[4]%
+\>[4]{}\mathbf{where}\;\Varid{pSum2Av}\mathrel{=}\Varid{emb}\;{}\<[25]%
+\>[25]{}(\lambda (\Varid{x},\Varid{y})\to \Varid{x}\mathbin{+}\Varid{y})\;{}\<[E]%
 \\
-\>[27]{}(\lambda (\Varid{x},\Varid{y})\;\Varid{v}\to {}\<[41]%
-\>[41]{}\mathbf{let}\;\Varid{av}\mathrel{=}(\Varid{v}\mathbin{-}\Varid{x}\mathbin{-}\Varid{y})\mathbin{/}\mathrm{2}{}\<[E]%
+\>[25]{}(\lambda (\Varid{x},\Varid{y})\;\Varid{v}\to {}\<[39]%
+\>[39]{}\mathbf{let}\;{}\<[44]%
+\>[44]{}\Varid{av}\mathrel{=}(\Varid{v}\mathbin{-}\Varid{x}\mathbin{-}\Varid{y})\mathbin{/}\mathrm{2}{}\<[E]%
 \\
-\>[41]{}\mathbf{in}\;(\Varid{x}\mathbin{+}\Varid{av},\Varid{y}\mathbin{+}\Varid{av}){}\<[E]%
+\>[39]{}\mathbf{in}\;{}\<[44]%
+\>[44]{}(\Varid{x}\mathbin{+}\Varid{av},\Varid{y}\mathbin{+}\Varid{av})){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-For instance, although \ensuremath{\Varid{get}\;\Varid{lensSum'}\;([\mskip1.5mu \mathrm{1},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0})\mathrel{=}\Varid{get}\;\Varid{lensSum''}\;([\mskip1.5mu \mathrm{1},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0})\mathrel{=}\Conid{Just}\;\mathrm{6}}, there putback behaviors are different:\begin{hscode}\SaveRestoreHook
+For instance, although \ensuremath{\Varid{get}\;\Varid{lensSum'}\;([\mskip1.5mu \mathrm{1},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0})\mathrel{=}\Varid{get}\;\Varid{lensSum''}\;([\mskip1.5mu \mathrm{1},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0})\mathrel{=}\Conid{Just}\;\mathrm{6}}, their putback behaviors are different:
+\begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
-\column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[3]{}\Varid{put}\;\Varid{lensSum'}\;([\mskip1.5mu \mathrm{1},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0})\;\mathrm{16}\mathrel{=}\Conid{Just}\;([\mskip1.5mu \mathrm{11},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0}){}\<[E]%
+\>[B]{}\Varid{put}\;\Varid{lensSum'}\;([\mskip1.5mu \mathrm{1},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0})\;\mathrm{16}\mathrel{=}\Conid{Just}\;([\mskip1.5mu \mathrm{11},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0}){}\<[E]%
 \\
-\>[3]{}\Varid{put}\;\Varid{lensSum''}\;([\mskip1.5mu \mathrm{1},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0})\;\mathrm{16}\mathrel{=}\Conid{Just}\;([\mskip1.5mu \mathrm{6},\mathrm{4.5},\mathrm{4.25}\mskip1.5mu],\mathrm{1.25}){}\<[E]%
+\>[B]{}\Varid{put}\;\Varid{lensSum''}\;([\mskip1.5mu \mathrm{1},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0})\;\mathrm{16}\mathrel{=}\Conid{Just}\;([\mskip1.5mu \mathrm{6},\mathrm{4.5},\mathrm{4.25}\mskip1.5mu],\mathrm{1.25}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
+
+
 It is worth noting that our definition of \ensuremath{\Varid{lensFoldr}} is just one
 putback function for \ensuremath{\Varid{foldr}}, and there are many others.
 This reflects the fact

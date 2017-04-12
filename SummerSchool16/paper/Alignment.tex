@@ -261,6 +261,9 @@
 %
 
 
+
+
+
 % format { = "\lbag"
 % format } = "\rbag"
 
@@ -320,6 +323,7 @@
 
 
 %formap phiX = "\Phi"
+
 
 
 
@@ -514,10 +518,10 @@ Here is how we implement position-based alignment, which is fairly standard:
 The normal branches deal with the situations where both lists are empty or non-empty, and the adaptive branches remove or create elements when the lengths of the two lists differ.
 
 The \ensuremath{\Varid{get}} direction of \ensuremath{\Varid{posAlign}} does exactly what we want it to do:
-\begin{tabbing}\tt
-~\char42{}\char62{}~get~\char40{}posAlign~bx~cr\char41{}~employees\\
-\tt ~Just~\char91{}\char40{}0\char44{}\char34{}Zhenjiang\char34{}\char41{}\char44{}\char40{}1\char44{}\char34{}Josh\char34{}\char41{}\char44{}\char40{}2\char44{}\char34{}Jeremy\char34{}\char41{}\char93{}
-\end{tabbing}
+\begin{alltt}
+*Alignment> get (posAlign bx cr) employees
+Just [(0,"Zhenjiang"),(1,"Josh"),(2,"Jeremy")]
+\end{alltt}
 It should be quite obvious, though, that the \ensuremath{\Varid{put}} direction is not so useful for our purpose.
 If we sack Josh:
 \begin{hscode}\SaveRestoreHook
@@ -536,10 +540,10 @@ If we sack Josh:
 \ColumnHook
 \end{hscode}\resethooks
 then the database will updated to:
-\begin{tabbing}\tt
-~\char42{}\char62{}~put~\char40{}posAlign~bx~cr\char41{}~employees~updatedEmployees0\\
-\tt ~Just~\char91{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}2\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}400\char41{}\char41{}\char93{}
-\end{tabbing}
+\begin{alltt}
+*Alignment> put (posAlign bx cr) employees updatedEmployees0
+Just [(0,("Zhenjiang",1000)),(2,("Jeremy",400))]
+\end{alltt}
 where Jeremy inadvertently gets Josh's original salary.
 Even if we do not remove any employee, we may still want to reorder them:
 \begin{hscode}\SaveRestoreHook
@@ -558,10 +562,10 @@ Even if we do not remove any employee, we may still want to reorder them:
 \ColumnHook
 \end{hscode}\resethooks
 and now everyone gets the wrong salary:
-\begin{tabbing}\tt
-~\char42{}\char62{}~put~\char40{}posAlign~bx~cr\char41{}~employees~updatedEmployees1\\
-\tt ~Just~\char91{}\char40{}2\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}400\char41{}\char41{}\char44{}\char40{}1\char44{}\char40{}\char34{}Josh\char34{}\char44{}2000\char41{}\char41{}\char93{}
-\end{tabbing}
+\begin{alltt}
+*Alignment> put (posAlign bx cr) employees updatedEmployees1
+Just [(2,("Jeremy",1000)),(0,("Zhenjiang",400)),(1,("Josh",2000))]
+\end{alltt}
 This first exercise shows that the alignment problem is inherently one that should be solved from the \ensuremath{\Varid{put}} direction.
 It is easy to implement the \ensuremath{\Varid{get}} direction correctly, but what matters is the \ensuremath{\Varid{put}} behavior.
 
@@ -618,7 +622,7 @@ This gives us key-based alignment:
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
 \>[B]{}\Varid{keyAlign}{}\<[11]%
 \>[11]{}\mathbin{::}{}\<[11E]%
-\>[15]{}\Varid{forall}\;\Varid{s}\;\Varid{v}\;\Varid{k}\;.\;(\Conid{Show}\;\Varid{s},\Conid{Show}\;\Varid{v},\Conid{Eq}\;\Varid{k}){}\<[E]%
+\>[15]{}\Varid{forall}\;\Varid{s}\;\Varid{v}\;\Varid{k}\mathbin{\circ}(\Conid{Show}\;\Varid{s},\Conid{Show}\;\Varid{v},\Conid{Eq}\;\Varid{k}){}\<[E]%
 \\
 \>[11]{}\Rightarrow {}\<[11E]%
 \>[15]{}(\Varid{s}\to \Varid{k})\to (\Varid{v}\to \Varid{k})\to \Conid{BiGUL}\;\Varid{s}\;\Varid{v}\to (\Varid{v}\to \Varid{s})\to \Conid{BiGUL}\;[\mskip1.5mu \Varid{s}\mskip1.5mu]\;[\mskip1.5mu \Varid{v}\mskip1.5mu]{}\<[E]%
@@ -685,20 +689,20 @@ This gives us key-based alignment:
 
 Back to our payroll database example.
 The \ensuremath{\Varid{get}} direction behaves the same:
-\begin{tabbing}\tt
-~\char42{}\char62{}~get~\char40{}keyAlign~fst~fst~bx~cr\char41{}~employees\\
-\tt ~Just~\char91{}\char40{}0\char44{}\char34{}Zhenjiang\char34{}\char41{}\char44{}\char40{}1\char44{}\char34{}Josh\char34{}\char41{}\char44{}\char40{}2\char44{}\char34{}Jeremy\char34{}\char41{}\char93{}
-\end{tabbing}
+\begin{alltt}
+*Alignment> get (keyAlign fst fst bx cr) employees
+Just [(0,"Zhenjiang"),(1,"Josh"),(2,"Jeremy")]
+\end{alltt}
 Unlike position-based alignment, view element deletion can now be reflected correctly:
-\begin{tabbing}\tt
-~\char42{}\char62{}~put~\char40{}keyAlign~fst~fst~bx~cr\char41{}~employees~updatedEmployees0\\
-\tt ~Just~\char91{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}2\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}2000\char41{}\char41{}\char93{}
-\end{tabbing}
+\begin{alltt}
+*Alignment> put (keyAlign fst fst bx cr) employees updatedEmployees0
+Just [(0,("Zhenjiang",1000)),(2,("Jeremy",2000))]
+\end{alltt}
 And reordering as well:
-\begin{tabbing}\tt
-~\char42{}\char62{}~put~\char40{}keyAlign~fst~fst~bx~cr\char41{}~employees~updatedEmployees1\\
-\tt ~Just~\char91{}\char40{}2\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}2000\char41{}\char41{}\char44{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}1\char44{}\char40{}\char34{}Josh\char34{}\char44{}400\char41{}\char41{}\char93{}
-\end{tabbing}
+\begin{alltt}
+*Alignment> put (keyAlign fst fst bx cr) employees updatedEmployees1
+Just [(2,("Jeremy",2000)),(0,("Zhenjiang",1000)),(1,("Josh",400))]
+\end{alltt}
 
 So it seems that key-based alignment is just what we need.
 Indeed, key-based alignment usually works well, but there is an important assumption:
@@ -720,10 +724,10 @@ If, for example, we decide to assign a different id to Josh:
 \ColumnHook
 \end{hscode}\resethooks
 Then the effect is the same as sacking Josh and then hiring him again, and his salary is thus reset:
-\begin{tabbing}\tt
-~\char42{}\char62{}~put~\char40{}keyAlign~fst~fst~bx~cr\char41{}~employees~updatedEmployees2\\
-\tt ~Just~\char91{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}100\char44{}\char40{}\char34{}Josh\char34{}\char44{}0\char41{}\char41{}\char44{}\char40{}1\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}400\char41{}\char41{}\char93{}
-\end{tabbing}
+\begin{alltt}
+*Alignment> put (keyAlign fst fst bx cr) employees updatedEmployees2
+Just [(0,("Zhenjiang",1000)),(100,("Josh",0)),(1,("Jeremy",400))]
+\end{alltt}
 The problem is that we cannot distinguish modification from deletion and insertion pairs.
 To be able to have such distinction, we introduce the notion of \emph{deltas}, which allow us to kep track of the links between source and view elements.
 
@@ -863,18 +867,18 @@ It is easy to prove that, given the same \ensuremath{\Varid{b}}~and~\ensuremath{
 The key observation is that the delta produced by \ensuremath{\Varid{put}\;(\Varid{deltaAlign}\;\Varid{b}\;\Varid{c})} is necessarily one computed by \ensuremath{\Varid{idDelta}}, so, for example, in \ref{eq:PutGet}, throwing away the delta in the \ensuremath{\Varid{put}} direction is fine because it can be recomputed by \ensuremath{\Varid{idDelta}}, and the \ensuremath{\Varid{get}} direction can resume from exactly the same source pair.
 
 Back to our example. We can now update Josh's id without resetting his salary by providing a full delta indicating that there are only in-place updates:
-\begin{tabbing}\tt
-~\char42{}\char62{}~putDeltaAlign~bx~cr~employees\\
-\tt ~~~~~~\char91{}\char40{}0\char44{}0\char41{}\char44{}~\char40{}1\char44{}1\char41{}\char44{}~\char40{}2\char44{}2\char41{}\char93{}~updatedEmployees2\\
-\tt ~Just~\char91{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}100\char44{}\char40{}\char34{}Josh\char34{}\char44{}400\char41{}\char41{}\char44{}\char40{}1\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}2000\char41{}\char41{}\char93{}
-\end{tabbing}
+\begin{alltt}
+*Alignment> putDeltaAlign bx cr employees
+     [(0,0), (1,1), (2,2)] updatedEmployees2
+Just [(0,("Zhenjiang",1000)),(100,("Josh",400)),(1,("Jeremy",2000))]
+\end{alltt}
 Besides obvious modifications like reordering, we can also do some fairly subtle modifications now:
 If we actually sack Josh and replace him with a new Josh (inheriting the original Josh's id) whose salary should be reset (to be re-considered by the accounting department), we can say so by providing a partial delta:
-\begin{tabbing}\tt
-~\char42{}\char62{}~putDeltaAlign~bx~cr~employees~\char91{}\char40{}0\char44{}0\char41{}\char44{}~\char40{}2\char44{}2\char41{}\char93{}\\
-\tt ~~~~~~\char61{}\char60{}\char60{}~getDeltaAlign~bx~cr~employees\\
-\tt ~Just~\char91{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}1\char44{}\char40{}\char34{}Josh\char34{}\char44{}0\char41{}\char41{}\char44{}\char40{}2\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}2000\char41{}\char41{}\char93{}
-\end{tabbing}
+\begin{alltt}
+*Alignment> putDeltaAlign bx cr employees [(0,0), (2,2)]
+     =<< getDeltaAlign bx cr employees
+Just [(0,("Zhenjiang",1000)),(1,("Josh",0)),(2,("Jeremy",2000))]
+\end{alltt}
 
 \subsubsection{One alignment to rule them all.}
 Where do deltas come from?
@@ -942,10 +946,9 @@ And for key-based alignment, we compute a delta associating source and view elem
 \ColumnHook
 \end{hscode}\resethooks
 We can check that these strategies indeed give us position-based and key-based alignment:
-\begin{tabbing}\tt
-~\char42{}\char62{}~putDeltaAlignS~byPosition~bx~cr~employees~updatedEmployees0\\
-\tt ~Just~\char91{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}2\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}400\char41{}\char41{}\char93{}\\
-\tt ~\\
-\tt ~\char42{}\char62{}~putDeltaAlignS~\char40{}byKey~fst~fst\char41{}~bx~cr~employees~updatedEmployees1\\
-\tt ~Just~\char91{}\char40{}2\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}2000\char41{}\char41{}\char44{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}1\char44{}\char40{}\char34{}Josh\char34{}\char44{}400\char41{}\char41{}\char93{}
-\end{tabbing}
+\begin{alltt}
+*Alignment> putDeltaAlignS byPosition bx cr employees updatedEmployees0
+Just [(0,("Zhenjiang",1000)),(2,("Jeremy",400))]
+*Alignment> putDeltaAlignS (byKey fst fst) bx cr employees updatedEmployees1
+Just [(2,("Jeremy",2000)),(0,("Zhenjiang",1000)),(1,("Josh",400))]
+\end{alltt}

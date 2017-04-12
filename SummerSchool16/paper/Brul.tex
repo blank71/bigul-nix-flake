@@ -1,3 +1,5 @@
+% !TEX root = paper.tex
+
 %% ODER: format ==         = "\mathrel{==}"
 %% ODER: format /=         = "\neq "
 %
@@ -259,6 +261,9 @@
 %
 
 
+
+
+
 % format { = "\lbag"
 % format } = "\rbag"
 
@@ -318,6 +323,7 @@
 
 
 %formap phiX = "\Phi"
+
 
 
 
@@ -789,13 +795,12 @@ if a view record is removed, the corresponding record in the source will be remo
 \ColumnHook
 \end{hscode}\resethooks
 We have:
-\begin{tabbing}\tt
-~\char42{}Brul\char62{}~get~pSelProj~employees\\
-\tt ~Just~\char91{}\char40{}2\char44{}\char34{}Jeremy\char34{}\char41{}\char93{}\\
-\tt ~\char42{}Brul\char62{}~put~pSelProj~employees~updatedEmployees0\\
-\tt ~Just~\char91{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}1000\char41{}\char41{}\char44{}\char40{}1\char44{}\char40{}\char34{}Josh\char34{}\char44{}400\char41{}\char41{}\char44{}\char40{}0\char44{}\char40{}\char34{}Zhenjiang\char34{}\char44{}2000\char41{}\char41{}\char44{}\\
-\tt ~\char40{}2\char44{}\char40{}\char34{}Jeremy\char34{}\char44{}2000\char41{}\char41{}\char93{}
-\end{tabbing}
+\begin{alltt}
+*Brul> get pSelProj employees
+eval*{get pSelProj employees}
+*Brul> put pSelProj employees updatedEmployees0
+eval*{put pSelProj employees updatedEmployees0}
+\end{alltt}
 
 \ignore{
 Second, we extend \ensuremath{\Varid{pAlign}} to deal with functional dependency consistency
@@ -1036,13 +1041,10 @@ To test, let us see some concrete running examples of using \ensuremath{\Varid{u
 Recall \ensuremath{\Varid{s}} defined in Section \ref{sec:table}. We can confirm that \ensuremath{\Varid{get}} performs
 the query given at the start of this subsection.
 {\small
-\begin{tabbing}\tt
-~\char42{}Brul\char62{}~get~u0~s\\
-\tt ~Just\\
-\tt ~\char91{}\char91{}RString~\char34{}Lullaby\char34{}\char44{}RInt~3\char44{}RString~\char34{}Show\char34{}\char44{}RInt~3\char93{}\char44{}\\
-\tt ~\char91{}RString~\char34{}Lovesong\char34{}\char44{}RInt~5\char44{}RString~\char34{}Paris\char34{}\char44{}RInt~4\char93{}\char44{}\\
-\tt ~\char91{}RString~\char34{}Trust\char34{}\char44{}RInt~4\char44{}RString~\char34{}Wish\char34{}\char44{}RInt~5\char93{}\char93{}
-\end{tabbing}
+\begin{alltt}
+*Brul> get u0 s
+eval*{get u0 s}
+\end{alltt}
 }
 Now suppose that we change the above result (view) to the following
 by raising the rating of \ensuremath{\Conid{Lullaby}} from \ensuremath{\mathrm{3}} to \ensuremath{\mathrm{4}}, raising the quality of \ensuremath{\Varid{lovesong}} from \ensuremath{\mathrm{4}} to \ensuremath{\mathrm{7}}, and deleting \ensuremath{\Conid{Trust}}:
@@ -1062,14 +1064,10 @@ by raising the rating of \ensuremath{\Conid{Lullaby}} from \ensuremath{\mathrm{3
 \end{hscode}\resethooks
 We can reflect these changes to the source by performing \ensuremath{\Varid{put}}.
 {\small
-\begin{tabbing}\tt
-~\char42{}Brul\char62{}~put~u0~s~v\\
-\tt ~Just\\
-\tt ~\char91{}\char91{}RString~\char34{}Lullaby\char34{}\char44{}RInt~1989\char44{}RInt~4\char44{}RString~\char34{}Galore\char34{}\char44{}RInt~1\char93{}\char44{}\\
-\tt ~\char91{}RString~\char34{}Lullaby\char34{}\char44{}RInt~1989\char44{}RInt~4\char44{}RString~\char34{}Show\char34{}\char44{}RInt~3\char93{}\char44{}\\
-\tt ~\char91{}RString~\char34{}Lovesong\char34{}\char44{}RInt~1989\char44{}RInt~5\char44{}RString~\char34{}Galore\char34{}\char44{}RInt~1\char93{}\char44{}\\
-\tt ~\char91{}RString~\char34{}Lovesong\char34{}\char44{}RInt~1989\char44{}RInt~5\char44{}RString~\char34{}Paris\char34{}\char44{}RInt~7\char93{}\char93{}
-\end{tabbing}
+\begin{alltt}
+*Brul> put u0 s v
+eval*{put u0 s v}
+\end{alltt}
 }
 In the updated source, the changes of rating and quality are correctly reflected,
 and the music track \ensuremath{\Conid{Trust}} is removed.
