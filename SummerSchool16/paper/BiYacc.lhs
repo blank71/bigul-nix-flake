@@ -35,8 +35,11 @@ Before we proceed to implement parsing and reflective printing in BiGUL, a natur
 Is well-behavedness meaningful in the context of parsing of reflective printing?
 The answer is yes, especially for \ref{eq:PutGet}: An abstract syntax tree (AST) may be thought of as a concise and canonical representation of a concrete program, so it would be strange if a concrete program printed from an AST could not be parsed back to the same AST.
 \ref{eq:GetPut}, on the other hand, is in fact not strong enough for our purpose, as it only says that, when an AST is unmodified, printing it reflectively to the original program does not change anything, whereas we would have liked to also say that ``small'' changes to the AST lead to only ``small'' changes to the concrete program.
+That is, we would like reflective printing to conform to some sort of least-change principle, a topic which is still unsettled and actively investigated by the BX community.
 It is at least a good start to have \ref{eq:GetPut}, though.
 We thus conclude that BiGUL is indeed a suitable language for implementing reflective printers and corresponding parsers.
+
+\todo{BiYacc may not produce the least change}
 
 \subsection{Additive expressions}
 
@@ -156,7 +159,7 @@ parseExp    ::  String -> Exp
 parseExp s  =   let (Right e) = safeParseExp s in e
 \end{code}
 }%
-The rest of the job is then write a BiGUL program between |Exp| and |Arith|.
+The rest of the job is then to write a BiGUL program between |Exp| and |Arith|.
 
 \subsection{Reflective printing in BiGUL}
 

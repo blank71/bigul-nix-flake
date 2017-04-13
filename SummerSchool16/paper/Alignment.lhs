@@ -98,7 +98,7 @@ If we sack Josh:
 updatedEmployees0  ::  [View]
 updatedEmployees0  =   [(0, "Zhenjiang"), (2, "Jeremy")]
 \end{code}
-then the database will updated to:
+then the database will be updated to:
 \begin{alltt}
 *Alignment> put (posAlign bx cr) employees updatedEmployees0
 \eval*{put (posAlign bx cr) employees updatedEmployees0}
@@ -163,6 +163,9 @@ keyAlign ks kv b c = Case
                       | otherwise  =  let  (y, ys) = extract k xs
                                       in   (y, x:ys)
 \end{code}
+Note that the program does not assume that keys are unique --- if there are $n$~view elements having the same key, then the first $n$~source elements with that key will be retained and synchronised with those view elements in order.
+This strategy is a somewhat arbitrary choice, but can be changed by, for example, using a different |extract|.
+(On the other hand, in practice it is probably wiser to enforce uniqueness of keys, so that we can be sure which source element will be used to match a view element, and do not need to rely on the choices made by the implementation.)
 
 Back to our payroll database example.
 The |get| direction behaves the same:
@@ -195,17 +198,20 @@ Then the effect is the same as sacking Josh and then hiring him again, and his s
 \eval*{put (keyAlign fst fst bx cr) employees updatedEmployees2}
 \end{alltt}
 The problem is that we cannot distinguish modification from deletion and insertion pairs.
-To be able to have such distinction, we introduce the notion of \emph{deltas}, which allow us to kep track of the links between source and view elements.
+To be able to have such distinction, we introduce the notion of \emph{deltas}, which allow us to explicitly represent and keep track of the correspondences between source and view elements.
+
 
 \subsection{Delta-based alignment}
 
-A (horizontal) \emph{delta} between a source list and a view list is a list of pairs of associated positions:
+A (horizontal) \emph{delta} between a source list and a view list is a list of pairs of corresponding positions:
 \begin{code}
 type Delta = [(Int, Int)]
 \end{code}
-For example, the delta we have in mind between the source list |employees| and the view list |updatedEmployees2| is |[(0,0), (1,1), (2,2)]|, which, in particular, associates the source and view entries for Josh since |(1,1)| is included, instead of |[(0,0), (2,2)]|, which indicates that Josh's source entry is not associated with any view entry and should be deleted, and that Josh's view entry is not associated with any source entry and is thus new.
+For example, the delta we have in mind between the source list |employees| and the view list |updatedEmployees2| is |[(0,0), (1,1), (2,2)]|, which, in particular, associates the source and view entries for Josh since |(1,1)| is included, instead of |[(0,0), (2,2)]|, which indicates that Josh's source entry does not correspond to any view entry and should be deleted, and that Josh's view entry does not correspond to any source entry and is thus new.
 Deltas can easily represent reordering as well.
 For example, we would supply the delta between |employees| and |updatedEmployees1| as |[(0,1), (1,2), (2,0)]|, associating the 0th element in the source --- namely the one for Zhenjiang --- with the 1st element in the view, and so on.
+Comparing this treatment with the key-based one, we might say that keys are ``poor man's correspondences'', which are not as explicit and unambiguous as |Delta|.
+A |Delta| between source and view lists directly describes the accurate correspondences between them, whereas with keys the correspondences can only be inferred, sometimes inaccurately.
 
 So the input now includes not only source and view lists but also a delta between them.
 Recall key-based alignment: What it does overall is to bring the first matching source element to the front for each view element, so the source list is updated throughout execution, with the links between the source and view elements gradually and implicitly restored.
@@ -240,7 +246,7 @@ deltaAlign b c = Case
 The source and view lists are in full correspondence if and only if they have the same length and the delta associates all their elements positionally.
 This full positional delta can be computed by |idDelta|.
 When this is the case, it suffices to call |posAlign| to carry out element-wise synchronization, since no rearrangement is required.
-Otherwise, we enter the adaptive branch, which constructs a new source list in full correspondence with the view list, drawing elements from the original source list or create new ones as the delta dictates.
+Otherwise, we enter the adaptive branch, which constructs a new source list in full correspondence with the view list, drawing elements from the original source list or creating new ones as the delta dictates.
 The new source list is in full correspondence with the view list, so the delta we pair with it is the one computed by |idDelta|.
 
 Only when performing |put| does a delta make sense.

@@ -34,6 +34,8 @@ functions can be automatically derived from the new putback transformations
 by calling |get|.
 
 We shall focus on bidirectionalizing |foldr|, a simple but useful higher-order function on lists:
+
+< foldr :: (a -> b -> b) -> b -> [a] -> b
 < foldr f e []      = e
 < foldr f e (x:xs)  = f x (foldr f e xs)
 
@@ -70,11 +72,11 @@ lensFoldr bx pv =
         ]
 \end{code}
 Simply speaking, |lensFoldr| accepts a putback function |bx| and a
-view condition |pv|, and performs the case analysis to put the view |v|
+view condition |pv|, and performs a case analysis to put the view |v|
 to the source |(xs,e)|. If the view |v| satisfies |pv|
 but the list |xs| in the source is not empty, then it adapts the list to be empty.
 If the list |xs| in the source
-is empty, we do nothing but using the view to replace the second component of the source.
+is empty, we do nothing but use the view to replace the second component of the source.
 Otherwise, we rearrange the source from the form of |(x:xs,e)| to that of |(x,(xs,e))|, and
 apply |lensFoldr| recursively with a composition with |bx|. One may understand the composition
 through the following picture (where | r = Replace `Prod` lensFoldr bx pv|).
@@ -173,30 +175,30 @@ there are many ways to reflect this change to the input |(xs,e)|. The following
 describes one way in BiGUL:
 \begin{code}
 lensSum  ::  BiGUL ([Int], Int) Int
-lensSum  =   lensFoldr pSum2 (const True)
+lensSum  =   lensFoldr pSum2 (const False)
 \end{code}
 which will reflect the change difference on the view to the head element of |xs|
 if |xs| is not empty, or to the seed |e| otherwise. We may choose other ways, say to 
 reflect the change difference on the view only to the seed by defining
 \begin{code}
 lensSum'  ::  BiGUL ([Int], Int) Int
-lensSum'  =   lensFoldr ($(rearrS (Q( \(x,y) -> (y,x) ))) pSum2) (const True)
+lensSum'  =   lensFoldr ($(rearrS (Q( \(x,y) -> (y,x) ))) pSum2) (const False)
 \end{code}
 or to reflect the change difference among all the list elements and
 the seed by the following definition.
 \begin{code}
 lensSum''  ::  BiGUL ([Float], Float) Float
-lensSum''  =   lensFoldr pSum2Av (const True)
+lensSum''  =   lensFoldr pSum2Av (const False)
    where pSum2Av = emb  (\(x,y) -> x+y)
                         (\(x,y) v ->  let  av = (v-x-y)/2
                                       in   (x + av, y+av))
 \end{code}
 For instance, although |get lensSum' ([1,2,3],0) = get lensSum'' ([1,2,3],0) = Just 6|, their putback behaviors are different:
 \begin{spec}
-put lensSum' ([1,2,3],0) 16 = Just ([11,2,3],0)
-put lensSum'' ([1,2,3],0) 16 = Just ([6,4.5,4.25],1.25)
+put lensSum'   ([1,2,3],0) 16 = Just ([11,2,3],0)
+put lensSum''  ([1,2,3],0) 16 = Just ([6.0,4.5,4.25],1.25)
 \end{spec}
-
+\todo{Josh: Technically, |get lensSum' ([1,2,3],0)| produces |Just 6| whereas |get lensSum'' ([1,2,3],0)| produces |Just 6.0|. Also I'm getting $|put lensSum' ([1,2,3],0) 16| = \eval{put lensSum' ([1,2,3],0) 16}$ instead of the result given above.}
 
 It is worth noting that our definition of |lensFoldr| is just one
 putback function for |foldr|, and there are many others.

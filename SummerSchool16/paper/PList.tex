@@ -380,11 +380,14 @@ the original forward
 functions can be automatically derived from the new putback transformations
 by calling \ensuremath{\Varid{get}}.
 
-We shall focus on bidirectionalizing \ensuremath{\Varid{foldr}}, a simple but useful higher-order function on lists:\begin{hscode}\SaveRestoreHook
+We shall focus on bidirectionalizing \ensuremath{\Varid{foldr}}, a simple but useful higher-order function on lists:
+\begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{3}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{21}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
+\>[3]{}\Varid{foldr}\mathbin{::}(\Varid{a}\to \Varid{b}\to \Varid{b})\to \Varid{b}\to [\mskip1.5mu \Varid{a}\mskip1.5mu]\to \Varid{b}{}\<[E]%
+\\
 \>[3]{}\Varid{foldr}\;\Varid{f}\;\Varid{e}\;[\mskip1.5mu \mskip1.5mu]{}\<[21]%
 \>[21]{}\mathrel{=}\Varid{e}{}\<[E]%
 \\
@@ -473,11 +476,11 @@ We can define it as follows.
 \ColumnHook
 \end{hscode}\resethooks
 Simply speaking, \ensuremath{\Varid{lensFoldr}} accepts a putback function \ensuremath{\Varid{bx}} and a
-view condition \ensuremath{\Varid{pv}}, and performs the case analysis to put the view \ensuremath{\Varid{v}}
+view condition \ensuremath{\Varid{pv}}, and performs a case analysis to put the view \ensuremath{\Varid{v}}
 to the source \ensuremath{(\Varid{xs},\Varid{e})}. If the view \ensuremath{\Varid{v}} satisfies \ensuremath{\Varid{pv}}
 but the list \ensuremath{\Varid{xs}} in the source is not empty, then it adapts the list to be empty.
 If the list \ensuremath{\Varid{xs}} in the source
-is empty, we do nothing but using the view to replace the second component of the source.
+is empty, we do nothing but use the view to replace the second component of the source.
 Otherwise, we rearrange the source from the form of \ensuremath{(\Varid{x}\mathbin{:}\Varid{xs},\Varid{e})} to that of \ensuremath{(\Varid{x},(\Varid{xs},\Varid{e}))}, and
 apply \ensuremath{\Varid{lensFoldr}} recursively with a composition with \ensuremath{\Varid{bx}}. One may understand the composition
 through the following picture (where \ensuremath{\Varid{r}\mathrel{=}\Conid{Replace}\mathbin{`\Conid{Prod}`}\Varid{lensFoldr}\;\Varid{bx}\;\Varid{pv}}).
@@ -678,7 +681,7 @@ describes one way in BiGUL:
 \\
 \>[B]{}\Varid{lensSum}{}\<[10]%
 \>[10]{}\mathrel{=}{}\<[10E]%
-\>[14]{}\Varid{lensFoldr}\;\Varid{pSum2}\;(\Varid{const}\;\Conid{True}){}\<[E]%
+\>[14]{}\Varid{lensFoldr}\;\Varid{pSum2}\;(\Varid{const}\;\Conid{False}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 which will reflect the change difference on the view to the head element of \ensuremath{\Varid{xs}}
@@ -696,7 +699,7 @@ reflect the change difference on the view only to the seed by defining
 \\
 \>[B]{}\Varid{lensSum'}{}\<[11]%
 \>[11]{}\mathrel{=}{}\<[11E]%
-\>[15]{}\Varid{lensFoldr}\;({^\$}(\Varid{rearrS}\;[\kern-1.5pt[\,\lambda (\Varid{x},\Varid{y})\to (\Varid{y},\Varid{x})\,]\kern-1.5pt])\;\Varid{pSum2})\;(\Varid{const}\;\Conid{True}){}\<[E]%
+\>[15]{}\Varid{lensFoldr}\;({^\$}(\Varid{rearrS}\;[\kern-1.5pt[\,\lambda (\Varid{x},\Varid{y})\to (\Varid{y},\Varid{x})\,]\kern-1.5pt])\;\Varid{pSum2})\;(\Varid{const}\;\Conid{False}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
 or to reflect the change difference among all the list elements and
@@ -717,7 +720,7 @@ the seed by the following definition.
 \\
 \>[B]{}\Varid{lensSum''}{}\<[12]%
 \>[12]{}\mathrel{=}{}\<[12E]%
-\>[16]{}\Varid{lensFoldr}\;\Varid{pSum2Av}\;(\Varid{const}\;\Conid{True}){}\<[E]%
+\>[16]{}\Varid{lensFoldr}\;\Varid{pSum2Av}\;(\Varid{const}\;\Conid{False}){}\<[E]%
 \\
 \>[B]{}\hsindent{4}{}\<[4]%
 \>[4]{}\mathbf{where}\;\Varid{pSum2Av}\mathrel{=}\Varid{emb}\;{}\<[25]%
@@ -734,13 +737,16 @@ the seed by the following definition.
 For instance, although \ensuremath{\Varid{get}\;\Varid{lensSum'}\;([\mskip1.5mu \mathrm{1},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0})\mathrel{=}\Varid{get}\;\Varid{lensSum''}\;([\mskip1.5mu \mathrm{1},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0})\mathrel{=}\Conid{Just}\;\mathrm{6}}, their putback behaviors are different:
 \begin{hscode}\SaveRestoreHook
 \column{B}{@{}>{\hspre}l<{\hspost}@{}}%
+\column{16}{@{}>{\hspre}l<{\hspost}@{}}%
 \column{E}{@{}>{\hspre}l<{\hspost}@{}}%
-\>[B]{}\Varid{put}\;\Varid{lensSum'}\;([\mskip1.5mu \mathrm{1},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0})\;\mathrm{16}\mathrel{=}\Conid{Just}\;([\mskip1.5mu \mathrm{11},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0}){}\<[E]%
+\>[B]{}\Varid{put}\;\Varid{lensSum'}\;{}\<[16]%
+\>[16]{}([\mskip1.5mu \mathrm{1},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0})\;\mathrm{16}\mathrel{=}\Conid{Just}\;([\mskip1.5mu \mathrm{11},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0}){}\<[E]%
 \\
-\>[B]{}\Varid{put}\;\Varid{lensSum''}\;([\mskip1.5mu \mathrm{1},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0})\;\mathrm{16}\mathrel{=}\Conid{Just}\;([\mskip1.5mu \mathrm{6},\mathrm{4.5},\mathrm{4.25}\mskip1.5mu],\mathrm{1.25}){}\<[E]%
+\>[B]{}\Varid{put}\;\Varid{lensSum''}\;{}\<[16]%
+\>[16]{}([\mskip1.5mu \mathrm{1},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0})\;\mathrm{16}\mathrel{=}\Conid{Just}\;([\mskip1.5mu \mathrm{6.0},\mathrm{4.5},\mathrm{4.25}\mskip1.5mu],\mathrm{1.25}){}\<[E]%
 \ColumnHook
 \end{hscode}\resethooks
-
+\todo{Josh: Technically, \ensuremath{\Varid{get}\;\Varid{lensSum'}\;([\mskip1.5mu \mathrm{1},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0})} produces \ensuremath{\Conid{Just}\;\mathrm{6}} whereas \ensuremath{\Varid{get}\;\Varid{lensSum''}\;([\mskip1.5mu \mathrm{1},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0})} produces \ensuremath{\Conid{Just}\;\mathrm{6.0}}. Also I'm getting $\ensuremath{\Varid{put}\;\Varid{lensSum'}\;([\mskip1.5mu \mathrm{1},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{0})\;\mathrm{16}} = \ensuremath{\Conid{Just}\;([\mskip1.5mu \mathrm{1},\mathrm{2},\mathrm{3}\mskip1.5mu],\mathrm{10})}$ instead of the result given above.}
 
 It is worth noting that our definition of \ensuremath{\Varid{lensFoldr}} is just one
 putback function for \ensuremath{\Varid{foldr}}, and there are many others.

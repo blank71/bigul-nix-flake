@@ -43,7 +43,7 @@ transformations.
 Lots of work \cite{Lenses,Bohannon:06,Bohannon:08,Hofmann:2011,XLHZ07,MHNHT07,Voigt09,Hidaka:10} has been devoted to the {\em get-based}
 approach, allowing the programmer to write the forward
 transformation |get| and deriving a suitable putback transformation.
-While the get-based approach is friendly, 
+While the get-based approach is friendly\todo{Tony: What is meant by friendly? Why?}, 
 a |get| function will typically not be injective, so there may exist
 many possible |put| functions that can be combined with it to form a
 valid BX, and there is no way to control the choice of |put| through
@@ -51,12 +51,14 @@ the definition of |get|.
 This ambiguity of |put| is what makes bidirectional
 programming challenging and unpredictable in practice.
 
+\todo{Tony: Just wondering...  if get-based approaches are called "get-based", why is the put-based approach called "putback-based"?  If there is a good reason for this then it would certainly be interesting for the (novice) reader such as myself.}
+
 The main topic of this tutorial is the {\em putback-based} approach
 to bidirectional programming.
 In contrast to the get-based approach, it allows the programmer to write a backward 
 transformation |put| and derives a suitable |get| that can be
 paired with this |put| to form a bidirectional transformation.
-Interestingly, while |get| usually loses information
+Interestingly\todo{Tony I'm not sure I understand why this is particularly "interesting".}, while |get| usually loses information
 when mapping from a source to a view, |put| must preserve information
 when putting back from the view to the source, according to the
 \ref{PutGet} property.
@@ -82,12 +84,14 @@ Given a |put| function, there exists at most
 one |get| function that forms a well-behaved BX.
 \end{lemma}
 
+\todo{Tony: How about the proof?  To hard? To obvious?  I wouldn't have minded having it here.}
+
 The second interesting fact is that it is possible to
-check validity of |put| without mentioning |get|.
+check the validity of |put| without mentioning |get|.
 The following are two important properties of |put|.
 \begin{itemize}
 \item 
- The first, which we call \emph{view determination}, says that equivalence 
+ The first, which we call \emph{view determination}, says that the equivalence 
 of updated sources produced by a |put| implies equivalence of views that are put back.
 \begin{align*}
 	\label{PutDet}
@@ -103,18 +107,20 @@ Note that view determination implies that |put s| is injective (with |s=s'|).
 	\forall~s.~\exists~v.~put~s~v~=~s
 \end{align*}
 \end{itemize}
-Actually, these two properties together provide an equivalent characterization of 
+These two properties together provide an equivalent characterization of 
 the validity of |put| \cite{FiHP15b}. 
 \begin{theorem}
 \label{th:put2}
 A |put| function is valid if and only if it satisfies \ref{PutDet} and \ref{PutStable}. 
 \end{theorem}
 
+\todo{Tony: Are the proofs for this coming later in the tutorial?  Or is the reader expected to work this out themselves (I didn't try).}
+
 Practically, there are few languages supporting putback-based
 bidirectional programming. This is not without reason: as argued by Foster~\cite{Foster:09},
 it is more difficult to construct a
 framework that can directly support putback-based bidirectional
-programming.
+programming.\todo{Tony: Why?}
 
 In the rest of this tutorial, we will introduce BiGUL~\cite{KoZH16} (pronounced ``beagle''),
 a simple yet powerful putback-based bidirectional language,

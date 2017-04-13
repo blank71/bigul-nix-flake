@@ -376,7 +376,7 @@ delete this record by returning |Nothing|.
 \end{itemize}
 
 Now if we wish to hide the source record by setting its |Quantity| to |0|
-rather than deleting it if it has no marching view record,
+rather than deleting it if it has no matching view record,
 we could simply change the last line of |u0| and get |u1| as follows.
 
 \begin{code}

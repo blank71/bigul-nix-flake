@@ -42,6 +42,10 @@ it either returns a successfully computed view wrapped in the |Just| constructor
 or signifies failure by producing the |Nothing| constructor.
 On the other hand, |put bx| accepts an original source and uses a view to update it to get an updated source (and might fail as well).
 
+\todo{Tony: Could you add some intuition explaining why the functions can fail?
+[some time later]
+Wow this is very interesting...  using Maybe here is basically rejecting some deltas as being "inconsistent" and not in the model space over which put and get are defined.  Comparable to an MDE setting, it is not possible to control the values for get/put one can enter in Haskell (the type system can't handle the conditions).}
+
 In BiGUL, it suffices for the programmer to write the |put| behavior (i.e.,
 how to use a view to update the original source to a new source),
 and the (unique) |get| behavior is obtained for free. 
@@ -95,11 +99,14 @@ In prose: doing the forward transformation of |Skip square| on the
 source~|5| gives the view~|25|. If |get| fails,
 we can also use |getTrace| to see more information about the failure, analogous to |putTrace|.
 
+\todo{Tony: Not sure if this can be helped but at this point i was wondering how Skip (or any of the other primitives) can be of any use\ldots}
+
 As a simple exercise, can you see what the following |skip1| does? 
 \begin{code}
 skip1  ::  BiGUL s ()
 skip1  =   Skip (const ())
 \end{code}
+% Tony: Great idea to give some exercises!
 
 \subsection{Replace}
 
@@ -137,9 +144,11 @@ Generally, we can use nested |Prod|s to describe a complicated structural mappin
 \eval*{put ((skip1 `Prod` Replace) `Prod` Replace) ((5,1),2) (((),100),200)}
 \end{alltt}
 
+\todo{Tony: The name skip1 is not very helpful.  How about ignore?  Or const\_view?}
+
 \subsection{Source/view rearrangement}
 
-So far, the source and view are of the same structure. What if we
+So far, the source and view have been of the same structure. What if we
 wish to put a view |(v1,v2)| into a source of a different structure,
 say |((s0,s1),s2)|, to replace |s1| by |v1| and
 |s2| by |v2|? To do that, we need to rearrange the source and view into the same structure, and BiGUL provides a way of 
@@ -421,7 +430,7 @@ is inconsistent: |100| is an even number, so the second component should be |Tru
 
 \subsection{Composition}
 
-As in the get-based bidirectional programming,
+As in get-based bidirectional programming,
 putback-based bidirectional transformations
 can be composed similarly:
 
@@ -432,13 +441,13 @@ composing the putback function from |b| to |u| and that from |u| to |a|.
 
 As a simple example, consider that we wish to use the view to update
 the head element of the head element of a list of lists.
-We can define such putback function as the following |pHead2|
+We can define such a putback function as the following |pHead2|
 by composing |pHead| with |pHead|.
 \begin{code}
 pHead2 :: Show a => BiGUL [[a]] a
 pHead2 = pHead `Compose` pHead
 \end{code}
-The following is a running example.
+The following is an example to demonstrate this:
 \begin{alltt}
 *PBasic> put pHead2 [[1,2],[3,4,5],[]] 100
 \eval*{put pHead2 [[1,2],[3,4,5],[]] 100}

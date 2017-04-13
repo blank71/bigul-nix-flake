@@ -6,7 +6,8 @@ We have given an introduction to BiGUL programming, explained the underlying des
 BiGUL in its current form is merely one step toward a versatile bidirectional programming language, though.
 We conclude this chapter by laying out some future directions.
 
-While BiGUL is designed for the programmers to be able to freely describe whatever consistency restoration strategies they have in mind and guarantees that the described strategies are well-behaved, that well-behavedness guarantee may be trivial if a described strategy is not actually well-behaved and consequently fails some dynamic checks at runtime.
+While BiGUL is designed to ensure that programmers are able to freely describe whatever consistency restoration strategies they have in mind and guarantees that the described strategies are well-behaved,
+well-behavedness guarantees may be trivial if a described strategy is not actually well-behaved and consequently fails some dynamic checks at runtime.
 Working with the current BiGUL can thus involve a lot of tedious testing to see if those dynamic checks can go through; also, since we must keep the dynamic checks in place to ensure well-behavedness, at runtime they can incur serious performance overheads.
 We need ways to precisely characterize the behavior of the dynamic checks, so that it is possible to know that they are redundant and can be safely skipped during execution.
 

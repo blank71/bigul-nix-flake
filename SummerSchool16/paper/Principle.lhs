@@ -10,7 +10,8 @@ We will see that, when writing a BiGUL program, we are always simultaneously des
 And the ``mind-reading'' ability is far from magic:
 It is the consequence of the fact that well-behavedness directly implies that |get| is uniquely determined by |put|, which is the main motivation for taking a putback-based approach.
 In this section, we will first review the theory, this time explicitly taking \emph{partiality} into account, and then we will dive into BiGUL's internals to get a taste of putback-based design.
-This is a fairly long section, but it is not a prerequisite for subsequent sections; readers who are more interested in practical BiGUL applications can safely skip this section and proceed to \autoref{sec:alignment}.
+
+This is a fairly long section, but it is not a prerequisite for subsequent sections; readers who wish to see more examples first or are more interested in practical BiGUL applications can safely skip this section and proceed to \autoref{sec:alignment}.
 
 \subsection{Lenses, well-behavedness, and the fundamental theorem}
 
@@ -28,8 +29,11 @@ satisfying two well-behavedness laws:
 \end{align}
 \end{definition}
 In the original formulation~\cite{Lenses}, a lens refers to just a pair of functions having the right types, and one needs to explicitly say ``well-behaved lens'' to mean a well-behaved pair; we will, however, discuss well-behaved lenses only, so we build well-behavedness into our definition of lenses by default.
-Also note that this definition models partial transformations explicitly as |Maybe|-valued functions: |put| and |get| are \emph{total} functions that can nevertheless produce |Nothing| to indicate failure.
+Note that this definition models partial transformations explicitly as |Maybe|-valued functions: |put| and |get| are \emph{total} functions that can nevertheless produce |Nothing| to indicate failure.
 From now on, this definition replaces the one in \autoref{sec:PutBX}, where only total lenses were discussed.
+Also note that these well-behavedness laws are actually easy to satisfy vacuously, by making the transformations produce |Nothing| all (or most of) the time.
+One important task of the BiGUL programmer is thus to meet certain side conditions for guaranteeing the totality of their BiGUL programs.
+These side conditions will be introduced below along with the relevant BiGUL constructs.
 
 From this revised definition of well-behavedness, we can immediately prove a reformulation of \autoref{lemma:injective}:
 \begin{theorem}[uniqueness of {\itshape get}] \label{thm:uniqueness}
@@ -93,7 +97,7 @@ The |get| direction is then
 get (Skip f) s = Just (f s)
 \end{spec}
 From the |put| direction, we may think of this function~|f| as specifying a consistency relation, saying that the view information is completely included in the source (since you can compute the view from the source) and can be safely discarded.
-|Skip f| can be used if and only if the source and view are consistent in that sense.
+|Skip f| can be used if and only if the source and view are consistent in that sense, and this is the side condition about |Skip| that the BiGUL programmers need to be aware of if they want their programs using |Skip| to be total.
 We thus arrive at:
 \begin{spec}
 put (Skip f) s v = if v == f s then return s else Nothing
@@ -118,8 +122,7 @@ get (l `Prod` r) (sl, sr) = do  vl  <- get l  sl
                                 return (vl, vr)
 \end{spec}
 Having constructed |put| and |get| from |l|~and~|r|, we also expect that their well-behavedness is a consequence of the well-behavedness of |l|~and~|r|.
-Intuitively, this pair of |put| and |get| does look well-behaved if |l|~and~|r| are.
-But how do we establish this formally?
+While this may look obvious, we take this opportunity to show how a well-behavedness proof for a lens combinator can be carried out formally and in detail.
 To prove \ref{eq:PutGet}, for example, we should prove that the assumption
 \begin{equation}
 |put (l `Prod` r) (sl, sr) (vl, vr) = Just (sl', sr')|
@@ -354,6 +357,8 @@ Finally, for each adaptive branch, the adapted source and the view should match 
 
 Source and view rearrangements are also among the more complex constructs of BiGUL.
 Their complexity lies in the strongly and generically typed treatment of pattern matching, though, rather than their bidirectional behavior.
+(We are referring to ``pattern matching'' in functional programming, where a pattern matching checks whether a value has a specific shape and decomposes it into components.
+For example, matching a list with a pattern |x:y:xs| checks whether the list has two or more elements, and then binds~|x| to the first element, |y|~to the second one, and |xs|~to the rest of the list.)
 The two kinds of rearrangement are similar, and we will discuss view rearrangement only.
 We will start by formalizing pattern matching as a bidirectional operation --- in fact an isomorphism. Based on pattern matching, evaluation and inverse evaluation of rearranging $\lambda$-expressions can be defined, again forming an isomorphism.
 The semantics of a view rearrangement is then the composition of this latter isomorphism with the lens obtained by interpreting the inner BiGUL program.
@@ -609,6 +614,7 @@ This would result in a redundant computation of an intermediate source which is 
 To eliminate the redundant computation, we would need to use a special composition which composes a lens directly with an isomorphism on the right.
 Such a need would be hard to notice since the |get| behaviour of the two compositions are the same; that is, we really have to think in terms of |put| to see that the special composition is needed.
 
+\todo{A summary of the entire \autoref{sec:bidirectionality}}
 
 
 
