@@ -2,7 +2,7 @@
 
 \title{Principles and Practice of Bidirectional~Programming in BiGUL}
 
-\author{Zhenjiang Hu,  Hsiang-Shang Ko}
+\author{Zhenjiang Hu and Hsiang-Shang Ko}
 \institute{
 National Institute of Informatics, Japan\\
 {\{hu,hsiang-shang\}@nii.ac.jp}
@@ -17,12 +17,16 @@ National Institute of Informatics, Japan\\
 \usepackage{comment}
 \usepackage{graphicx}
 \usepackage{amssymb}
-\usepackage{amsmath}
+\usepackage[fleqn]{amsmath}
 \usepackage{mathtools}
 %\usepackage{amsthm}
 \usepackage{enumerate}
 \usepackage{xspace}
-\usepackage{alltt}
+\usepackage{upquote}
+
+\usepackage{listings}
+%\newcommand{\lstnewline}{\raisebox{1.5pt}{\scalebox{.8}{\reflectbox{\rotatebox[origin=c]{180}{\ensuremath{\Lsh}}}}}}
+\lstset{basicstyle=\ttfamily, basewidth={.5em}, xleftmargin=.5\parindent, breaklines}
 
 \usepackage{hyperref}
 \renewcommand{\sectionautorefname}{Section}
@@ -36,17 +40,11 @@ National Institute of Informatics, Japan\\
 \newtheorem{maintheorem}[theorem]{Main Theorem}
 \newtheorem{algorithm}{\bf Algorithm}
 
-\setlength{\mathindent}{.5\parindent}
-
-%\newcommand\todo[1]{{\color{red} Todo: #1}}
-
-%\usepackage{natbib}
-
 \input{macros}
 
+\setlength{\mathindent}{.5\parindent}
+
 \begin{document}
-\frontmatter
-\mainmatter
 
 \maketitle
 
@@ -86,17 +84,14 @@ Schedule:
 
 \input{PutBX}
 \input{Install}
-\input{PBasic}
-\input{PList}
+\input{Basic}
+\input{List}
 %\input{PSet}
 \input{Principle}
 \input{Alignment}
 \input{Brul}
 \input{BiYacc}
 \input{Conclusion}
-
-\todo{reference.bib should be regenerated before correcting the mistakes in the reference database pointed by Jeremy.} 
-
 
 \bibliographystyle{splncs03}
 %\bibliographystyle{abbrvnat}

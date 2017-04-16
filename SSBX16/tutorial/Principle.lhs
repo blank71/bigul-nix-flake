@@ -1,4 +1,4 @@
-% !TEX root = paper.tex
+% !TEX root = tutorial.tex
 
 %include lhs2TeX-macros.lhs
 
@@ -614,8 +614,11 @@ This would result in a redundant computation of an intermediate source which is 
 To eliminate the redundant computation, we would need to use a special composition which composes a lens directly with an isomorphism on the right.
 Such a need would be hard to notice since the |get| behaviour of the two compositions are the same; that is, we really have to think in terms of |put| to see that the special composition is needed.
 
-\todo{A summary of the entire \autoref{sec:bidirectionality}}
+\subsection{Summary}
 
+In one (long) section, we have explained the internals of BiGUL.
+Starting from a definition of (well-behaved) lenses that takes partiality explicitly into account, we have gone through most of BiGUL's constructs and justified their well-behavedness --- in the case of |Prod|, we have even seen a more formal and detailed well-behavedness proof.
+The |Case| construct is the most interesting one in terms of its design for achieving bidirectionality, while the rearrangement operations showcase more advanced datatype-generic programming techniques in Haskell for guaranteeing type safety.
 
 
 

@@ -1,4 +1,4 @@
-% !TEX root = paper.tex
+% !TEX root = tutorial/tutorial.tex
 
 %include lhs2TeX-macros.lhs
 
@@ -31,7 +31,7 @@ import Alignment (employees,bx,updatedEmployees0,cr)
 In work on relational databases, the view-update problem is about how
 to translate update operations on the view table to corresponding
 update operations on the source table properly. Relational
-lenses \cite{Bohannon:2006:RLL:1142351.1142399} try to solve this
+lenses \cite{Bohannon:06} try to solve this
 problem by providing a list of combinators that let the user write get
 functions (queries) with specified updated policies for put functions
 (updates); however this can only provide limited control of update
@@ -136,12 +136,11 @@ stores five music track records, and each record contains its Track
 name, release Date, Rating, Album, and the Quantity of this Album.
 We can represent it as follows, where all the records have the same structure.
 \begin{code}
-s  =  [[RString "Lullaby",  RInt 1989, RInt 3, RString "Galore", RInt 1]
-      , [RString "Lullaby",  RInt 1989, RInt 3, RString "Show"  , RInt 3]
-      , [RString "Lovesong", RInt 1989, RInt 5, RString "Galore", RInt 1]
-      , [RString "Lovesong", RInt 1989  , RInt 5
-                                        , RString "Paris", RInt 4]
-      , [RString "Trust",    RInt 1992, RInt 4, RString "Wish"  , RInt 5]
+s  =  [ [RString "Lullaby"   , RInt 1989, RInt 3, RString "Galore"  , RInt 1]
+      , [RString "Lullaby"   , RInt 1989, RInt 3, RString "Show"    , RInt 3]
+      , [RString "Lovesong"  , RInt 1989, RInt 5, RString "Galore"  , RInt 1]
+      , [RString "Lovesong"  , RInt 1989, RInt 5, RString "Paris"   , RInt 4]
+      , [RString "Trust"     , RInt 1992, RInt 4, RString "Wish"    , RInt 5]
       ]
 \end{code}
 
@@ -233,11 +232,11 @@ if the first record of the source does not satisfy |p|, we simply ignore it and
 continue with the remaining records.
 
 \begin{code}
-pAlign :: (Show s, Show v, Eq k)
-         => (s -> Bool) {- predicate -}
-            -> (s -> k) -> (v -> k) -> BiGUL s v -> (v -> s) 
-            -> (s -> Maybe s) {- conceal function -}
-            -> BiGUL [s] [v]
+pAlign  ::  forall s v k . (Show s, Show v, Eq k)
+        =>  (s -> Bool) -- predicate
+        ->  (s -> k) -> (v -> k) -> BiGUL s v -> (v -> s) 
+        ->  (s -> Maybe s) -- conceal function
+        ->  BiGUL [s] [v]
 pAlign p ks kv b c h = Case
   [ $(normalSV (P( [] )) (P( [] )) (P( [] )))
     ==> $(update (P( [] )) (P( [] )) (D( )))
@@ -252,18 +251,14 @@ pAlign p ks kv b c h = Case
   , $(adaptiveSV (P( _ )) (P( _:_ )))
     ==> \ss (v:_) -> filterCheck p (c v) : ss
   ]
-\end{code}
-\ignore{
-\begin{code}
   where
     extract :: k -> [s] -> (s, [s])
-    extract k (x:xs)  | p x && ks x == k = (x, xs)
-                      | otherwise =  let (y, ys) = extract k xs
-                                     in  (y, x:ys)
-    filterCheck p v  | p v = v
-                     | otherwise = error "error in filter checking"
+    extract k (x:xs)  | p x && ks x == k  = (x, xs)
+                      | otherwise         =  let  (y, ys) = extract k xs
+                                             in   (y, x:ys)
+    filterCheck p v  | p v        = v
+                     | otherwise  = error "error in filter checking"
 \end{code}
-}
 
 To test, recall the example in Section \ref{sec:alignment}.
 Consider the following use of |pAlign|, denoting that the view is selected
@@ -274,12 +269,13 @@ pSelProj = pAlign (\(k,(n,s)) -> s > 1000) fst fst bx cr' (const Nothing)
   where cr' (k,n) = (k,(n, 2000))
 \end{code}
 We have:
-\begin{alltt}
+\begin{lstlisting}
 *Brul> get pSelProj employees
 eval*{get pSelProj employees}
 *Brul> put pSelProj employees updatedEmployees0
 eval*{put pSelProj employees updatedEmployees0}
-\end{alltt}
+\end{lstlisting}
+\todo{Josh: The \verb"eval*" commands in this file are temporarily disabled since the file does not typecheck.}
 
 \ignore{
 Second, we extend |pAlign| to deal with functional dependency consistency
@@ -396,10 +392,10 @@ To test, let us see some concrete running examples of using |u0|.
 Recall |s| defined in Section \ref{sec:table}. We can confirm that |get| performs
 the query given at the start of this subsection.
 {\small
-\begin{alltt}
+\begin{lstlisting}
 *Brul> get u0 s
 eval*{get u0 s}
-\end{alltt}
+\end{lstlisting}
 }
 Now suppose that we change the above result (view) to the following
 by raising the rating of |Lullaby| from |3| to |4|, raising the quality of |lovesong| from |4| to |7|, and deleting |Trust|:
@@ -410,10 +406,10 @@ v =  [ [RString "Lullaby" , RInt 4, RString "Show"  , RInt 3]
 \end{code}
 We can reflect these changes to the source by performing |put|.
 {\small
-\begin{alltt}
+\begin{lstlisting}
 *Brul> put u0 s v
 eval*{put u0 s v}
-\end{alltt}
+\end{lstlisting}
 }
 In the updated source, the changes of rating and quality are correctly reflected,
 and the music track |Trust| is removed.

@@ -1,4 +1,4 @@
-% !TEX root = paper.tex
+% !TEX root = tutorial/tutorial.tex
 
 %include lhs2TeX-macros.lhs
 
@@ -10,6 +10,7 @@
 {-# LANGUAGE TemplateHaskell, TypeFamilies, ScopedTypeVariables #-}
 
 module Alignment where
+
 import Generics.BiGUL
 import Generics.BiGUL.TH
 import Generics.BiGUL.Lib
@@ -24,6 +25,8 @@ import Data.List
 In the next three sections, we will talk about some applications in BiGUL, starting with the list alignment problem.
 List alignment is one of the tasks that frequently show up when developing bidirectional applications.
 When the source and view are both lists, and the |get| direction (i.e., the consistency relation) is a |map|, how do we put an updated view --- the updates on which might involve insertions, deletions, in-place modifications, and reordering --- into the source?
+This topic has be treated by Barbosa~et~al.'s matching lenses~\cite{Barbosa:2010}, which are special-purpose lenses into which several fixed alignment strategies are hard-coded.
+Below we will see how a number of alignment strategies can be programmed with BiGUL's general-purpose constructs, instead of having to extend the language with special-purpose alignment constructs.
 
 Throughout the section, we use a concrete example to introduce three variations of list alignment.
 Suppose that we represent a payroll database as a list.
@@ -88,10 +91,10 @@ posAlign b c = Case
 The normal branches deal with the situations where both lists are empty or non-empty, and the adaptive branches remove or create elements when the lengths of the two lists differ.
 
 The |get| direction of |posAlign| does exactly what we want it to do:
-\begin{alltt}
+\begin{lstlisting}
 *Alignment> get (posAlign bx cr) employees
 \eval*{get (posAlign bx cr) employees}
-\end{alltt}
+\end{lstlisting}
 It should be quite obvious, though, that the |put| direction is not so useful for our purpose.
 If we sack Josh:
 \begin{code}
@@ -99,10 +102,10 @@ updatedEmployees0  ::  [View]
 updatedEmployees0  =   [(0, "Zhenjiang"), (2, "Jeremy")]
 \end{code}
 then the database will be updated to:
-\begin{alltt}
+\begin{lstlisting}
 *Alignment> put (posAlign bx cr) employees updatedEmployees0
 \eval*{put (posAlign bx cr) employees updatedEmployees0}
-\end{alltt}
+\end{lstlisting}
 where Jeremy inadvertently gets Josh's original salary.
 Even if we do not remove any employee, we may still want to reorder them:
 \begin{code}
@@ -110,10 +113,10 @@ updatedEmployees1  ::  [View]
 updatedEmployees1  =   [(2, "Jeremy"), (0, "Zhenjiang"), (1, "Josh")]
 \end{code}
 and now everyone gets the wrong salary:
-\begin{alltt}
+\begin{lstlisting}
 *Alignment> put (posAlign bx cr) employees updatedEmployees1
 \eval*{put (posAlign bx cr) employees updatedEmployees1}
-\end{alltt}
+\end{lstlisting}
 This first exercise shows that the alignment problem is inherently one that should be solved from the |put| direction.
 It is easy to implement the |get| direction correctly, but what matters is the |put| behavior.
 
@@ -169,20 +172,20 @@ This strategy is a somewhat arbitrary choice, but can be changed by, for example
 
 Back to our payroll database example.
 The |get| direction behaves the same:
-\begin{alltt}
+\begin{lstlisting}
 *Alignment> get (keyAlign fst fst bx cr) employees
 \eval*{get (keyAlign fst fst bx cr) employees}
-\end{alltt}
+\end{lstlisting}
 Unlike position-based alignment, view element deletion can now be reflected correctly:
-\begin{alltt}
+\begin{lstlisting}
 *Alignment> put (keyAlign fst fst bx cr) employees updatedEmployees0
 \eval*{put (keyAlign fst fst bx cr) employees updatedEmployees0}
-\end{alltt}
+\end{lstlisting}
 And reordering as well:
-\begin{alltt}
+\begin{lstlisting}
 *Alignment> put (keyAlign fst fst bx cr) employees updatedEmployees1
 \eval*{put (keyAlign fst fst bx cr) employees updatedEmployees1}
-\end{alltt}
+\end{lstlisting}
 
 So it seems that key-based alignment is just what we need.
 Indeed, key-based alignment usually works well, but there is an important assumption:
@@ -193,12 +196,12 @@ updatedEmployees2  ::  [View]
 updatedEmployees2  =   [(0, "Zhenjiang"), (100, "Josh"), (1, "Jeremy")]
 \end{code}
 Then the effect is the same as sacking Josh and then hiring him again, and his salary is thus reset:
-\begin{alltt}
+\begin{lstlisting}
 *Alignment> put (keyAlign fst fst bx cr) employees updatedEmployees2
 \eval*{put (keyAlign fst fst bx cr) employees updatedEmployees2}
-\end{alltt}
+\end{lstlisting}
 The problem is that we cannot distinguish modification from deletion and insertion pairs.
-To be able to have such distinction, we introduce the notion of \emph{deltas}, which allow us to explicitly represent and keep track of the correspondences between source and view elements.
+To be able to have such distinction, we need the notion of \emph{deltas}~\cite{Diskin-delta-asymmetric}, which allows us to explicitly represent and keep track of the correspondences between source and view elements.
 
 
 \subsection{Delta-based alignment}
@@ -265,18 +268,16 @@ It is easy to prove that, given the same |b|~and~|c|, these two functions do for
 The key observation is that the delta produced by |put (deltaAlign b c)| is necessarily one computed by |idDelta|, so, for example, in \ref{eq:PutGet}, throwing away the delta in the |put| direction is fine because it can be recomputed by |idDelta|, and the |get| direction can resume from exactly the same source pair.
 
 Back to our example. We can now update Josh's id without resetting his salary by providing a full delta indicating that there are only in-place updates:
-\begin{alltt}
-*Alignment> putDeltaAlign bx cr employees
-     [(0,0), (1,1), (2,2)] updatedEmployees2
+\begin{lstlisting}
+*Alignment> putDeltaAlign bx cr employees [(0,0), (1,1), (2,2)] updatedEmployees2
 \eval*{putDeltaAlign bx cr employees [(0,0), (1,1), (2,2)] updatedEmployees2}
-\end{alltt}
+\end{lstlisting}
 Besides obvious modifications like reordering, we can also do some fairly subtle modifications now:
 If we actually sack Josh and replace him with a new Josh (inheriting the original Josh's id) whose salary should be reset (to be re-considered by the accounting department), we can say so by providing a partial delta:
-\begin{alltt}
-*Alignment> putDeltaAlign bx cr employees [(0,0), (2,2)]
-     =<< getDeltaAlign bx cr employees
+\begin{lstlisting}
+*Alignment> putDeltaAlign bx cr employees [(0,0), (2,2)] =<< getDeltaAlign bx cr employees
 \eval*{putDeltaAlign bx cr employees [(0,0), (2,2)] =<< getDeltaAlign bx cr employees}
-\end{alltt}
+\end{lstlisting}
 
 \subsubsection{One alignment to rule them all.}
 Where do deltas come from?
@@ -307,9 +308,9 @@ byKey ks kv ss vs =
                   |  (v, j) <- zip vs [0..] ]
 \end{code}
 We can check that these strategies indeed give us position-based and key-based alignment:
-\begin{alltt}
+\begin{lstlisting}
 *Alignment> putDeltaAlignS byPosition bx cr employees updatedEmployees0
 \eval*{putDeltaAlignS byPosition bx cr employees updatedEmployees0}
 *Alignment> putDeltaAlignS (byKey fst fst) bx cr employees updatedEmployees1
 \eval*{putDeltaAlignS (byKey fst fst) bx cr employees updatedEmployees1}
-\end{alltt}
+\end{lstlisting}

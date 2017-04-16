@@ -1,4 +1,4 @@
-% !TEX root = paper.tex
+% !TEX root = tutorial/tutorial.tex
 
 %include lhs2TeX-macros.lhs
 
@@ -8,6 +8,8 @@
 \ignore{
 \begin{code}
 {-# LANGUAGE TemplateHaskell, TypeFamilies #-}
+
+module BiYacc where
 
 import Generics.BiGUL
 import Generics.BiGUL.TH
@@ -32,14 +34,12 @@ Below we will use a simplified arithmetic expression language to explain how ref
 
 It is probably obvious that the idea of reflective printing comes from |put| transformations; parsing, then, is the |get| direction.
 Before we proceed to implement parsing and reflective printing in BiGUL, a natural question to ask is:
-Is well-behavedness meaningful in the context of parsing of reflective printing?
+is well-behavedness meaningful in the context of parsing of reflective printing?
 The answer is yes, especially for \ref{eq:PutGet}: An abstract syntax tree (AST) may be thought of as a concise and canonical representation of a concrete program, so it would be strange if a concrete program printed from an AST could not be parsed back to the same AST.
 \ref{eq:GetPut}, on the other hand, is in fact not strong enough for our purpose, as it only says that, when an AST is unmodified, printing it reflectively to the original program does not change anything, whereas we would have liked to also say that ``small'' changes to the AST lead to only ``small'' changes to the concrete program.
 That is, we would like reflective printing to conform to some sort of least-change principle, a topic which is still unsettled and actively investigated by the BX community.
 It is at least a good start to have \ref{eq:GetPut}, though.
 We thus conclude that BiGUL is indeed a suitable language for implementing reflective printers and corresponding parsers.
-
-\todo{BiYacc may not produce the least change}
 
 \subsection{Additive expressions}
 
@@ -54,13 +54,13 @@ data Arith  =  Num Int
 This is a nice representation for the compiler, but we cannot expect the programmer to write something like ``|Sub (Num 1) (Add (Num 2) (Num 3))|'', and should provide a concrete syntax so that they can write ``$1 - (2+3)$''.
 Such a concrete syntax is usually defined in terms of a BNF grammar:
 \begin{spec}
-Exp     ->  Exp '+' Factor
-        |   Exp '-' Factor
+Exp     ->  Exp {-"\texttt{\textquotesingle+\textquotesingle}\;"-} Factor
+        |   Exp {-"\texttt{\textquotesingle-\textquotesingle}\;"-} Factor
         |   Factor
 
 Factor  ->  Int
-        |   '-' Factor
-        |   '(' Exp ')'
+        |   {-"\texttt{\textquotesingle-\textquotesingle}\;"-} Factor
+        |   {-"\texttt{\textquotesingle(\textquotesingle}\;"-} Exp {-"\;\texttt{\textquotesingle)\textquotesingle}"-}
 \end{spec}
 The two-level structure of |Exp| and |Factor| ensures that plus and minus associate to the left by default; to change association, we should use parentheses.
 And, to spice up the problem a little, we allow minus to be used also as a negative sign, as specified by the second production rule for |Factor|.
@@ -174,8 +174,7 @@ pFactorArith  =   Case undefined
 \end{spec}
 The branch for plus and addition can then be written as:
 \begin{spec}
-$(update  (P( Plus l r )) (P( Add l r ))
-          (D( l = pExpArith; r = pFactorArith )))
+$(update  (P( Plus l r )) (P( Add l r )) (D( l = pExpArith; r = pFactorArith )))
 \end{spec}
 Following the same line of thought, we can fill in other branches to relate all abstract constructors with concrete production rules:
 \begin{spec}
@@ -192,8 +191,8 @@ pExpArith  =   Case
                   (D( t = pFactorArith )))
   ]
 
-pFactorArith  ::  BiGUL Factor Arith
-pFactorArith  =   Case
+pFactorArith  ::   BiGUL Factor Arith
+pFactorArith  =    Case
   [ $(normalSV (P( Lit _ )) (P( Num _ )) (P( Lit _ )))
     ==> $(update (P( Lit i )) (P( Num i )) (D( i = Replace )))
   , $(normalSV (P( Neg _ )) (P( Sub (Num 0) _ )) (P( Neg _ )))
@@ -254,50 +253,57 @@ pFactorArith  =   Case
 
 The BiGUL programs, being bidirectional, can be executed in the |put| direction as a reflective printer, or in the |get| direction as a parser.
 Let us look at parsing first. For example:
-\begin{alltt}
+\begin{lstlisting}
 *BiYacc> get pExpArith (parseExp "(-(3+0))")
 \eval*{get pExpArith (parseExp "(-(3+0))")}
-\end{alltt}
+\end{lstlisting}
 Note that a unary minus is regarded as syntactic sugar, and is desugared into a subtraction whose left operand is zero.
 Also note that parentheses are turned into correct structure of the abstract syntax tree, and nothing more --- excessive parentheses are cleanly discarded.
 
 For reflective printing, as we mentioned, one application is reporting what compiler optimizations do.
-We can optimize the sub-expression $3+0$ by getting rid of the superfluous $+0$, for example, and the reflective printer will be able to retain the excessive parentheses:
-\begin{alltt}
-*BiYacc> put pExpArith (parseExp "(-(3+0))")
-                     (Sub (Num 0) (Num 3))
-Just (-(3))
-\end{alltt}
+We can optimize the sub-expression $3+0$ by getting rid of the superfluous ${}+0$, for example, and the reflective printer will be able to retain the excessive parentheses:
+\begin{lstlisting}
+*BiYacc> put pExpArith (parseExp "(-(3+0))") (Sub (Num 0) (Num 3))
+\eval*{put pExpArith (parseExp "(-(3+0))") (Sub (Num 0) (Num 3))}
+\end{lstlisting}
 Notice also that the unary minus is preserved.
 If the original concrete expression uses a binary minus instead, it will be preserved as well:
-\begin{alltt}
-*BiYacc> put pExpArith (parseExp "(0-(3+0))")
-                     (Sub (Num 0) (Num 3))
+\begin{lstlisting}
+*BiYacc> put pExpArith (parseExp "(0-(3+0))") (Sub (Num 0) (Num 3))
 \eval*{put pExpArith (parseExp "(0-(3+0))") (Sub (Num 0) (Num 3))}
-\end{alltt}
+\end{lstlisting}
+
+In the above example, the pair of parentheses around~$3$ is also preserved.
+This is more a coincidence, though --- if we change |Sub| to |Add|, for example, the pair of parentheses will not be preserved:
+\begin{lstlisting}
+*BiYacc> put pExpArith (parseExp "(0-(3+0))") (Add (Num 0) (Num 3))
+\eval*{put pExpArith (parseExp "(0-(3+0))") (Add (Num 0) (Num 3))}
+\end{lstlisting}
+This behavior is indeed what we described with our BiGUL program: the concrete binary minus does not match the abstract |Add|, so the whole concrete expression \verb"0-(3+0)" in the outermost pair of parentheses is discarded, and a new concrete expression \verb"0+3" is generated by adaptation.
+This behavior does not give us ``least change'', however: the pair of parentheses around~$3$ could have been kept.
+This is one example showing that, while \ref{eq:GetPut} (no view change implies no source change) is guaranteed by BiGUL, least-change behavior (small view change implies small source change) is another matter completely, and requires extra care and effort to achieve.
 
 Another thing we can do is reflecting the steps in an evaluation sequence of an abstract syntax tree to concrete syntax.
 For example, starting from:
-\begin{alltt}
+\begin{lstlisting}
 *BiYacc> get pExpArith (parseExp "1+(2+3)")
 \eval*{get pExpArith (parseExp "1+(2+3)")}
-\end{alltt}
+\end{lstlisting}
 it takes two steps to evaluate this expression:
-\begin{alltt}
-*BiYacc> put pExpArith (parseExp "1+(2+3)")
-                     (Add (Num 1) (Num 5))
+\begin{lstlisting}
+*BiYacc> put pExpArith (parseExp "1+(2+3)") (Add (Num 1) (Num 5))
 \eval*{put pExpArith (parseExp "1+(2+3)") (Add (Num 1) (Num 5))}
 *BiYacc> put pExpArith (parseExp "1+(5)") (Num 6)
 \eval*{put pExpArith (parseExp "1+(5)") (Num 6)}
-\end{alltt}
+\end{lstlisting}
 This means that if we have an evaluator on the abstract syntax, we will automatically get an evaluator on the concrete syntax!
 
 A reflective printer can also be used as an ordinary printer by setting the original source to an empty one.
 For example:
-\begin{alltt}
+\begin{lstlisting}
 *BiYacc> put pExpArith ENull (Sub (Num 0) (Add (Num 1) (Num 1)))
 \eval*{put pExpArith ENull (Sub (Num 0) (Add (Num 1) (Num 1)))}
-\end{alltt}
+\end{lstlisting}
 Note that the subtraction is reflected as a binary minus instead of a unary one, despite that the left operand is zero.
 This behavior is easily customizable:
 By adding an adaptive branch before the one dealing generically with |Sub| in |pExpArith|:
@@ -306,10 +312,10 @@ $(adaptiveSV (P( _ )) (P( Sub (Num 0) _ )))
   ==> \ _ _ -> EF FNull
 \end{spec}
 the above abstract syntax tree can be printed as:
-\begin{alltt}
+\begin{lstlisting}
 *BiYacc> put pExpArith ENull (Sub (Num 0) (Add (Num 1) (Num 1)))
 \eval*{put pExpArith ENull (Sub (Num 0) (Add (Num 1) (Num 1)))}
-\end{alltt}
+\end{lstlisting}
 
 \subsection{A domain-specific language}
 
@@ -317,7 +323,7 @@ As a final remark, the above programs may look long, but at the core of them are
 We can design a domain-specific language (DSL) that expresses such correspondences concisely, and then expand programs in this DSL into BiGUL.
 In fact, we have already done so, and the DSL is called \emph{BiYacc}.
 For example, all the programs we have written can be generated from the following eight-line BiYacc program:
-\begin{alltt}
+\begin{lstlisting}
   Arith +> Exp
   Add l r +> (l +> Exp) '+' (r +> Factor);
   Sub l r +> (l +> Exp) '-' (r +> Factor);
@@ -327,5 +333,5 @@ For example, all the programs we have written can be generated from the followin
   Num n         +> (n +> Int);
   Sub (Num 0) r +> '-' (r +> Factor);
   f             +> '(' (f +> Exp) ')';
-\end{alltt}
+\end{lstlisting}
 See our SLE 2016 paper~\cite{Zhu-BiYacc} for more interesting experiments about reflective printing, done on a more realistic imperative language.

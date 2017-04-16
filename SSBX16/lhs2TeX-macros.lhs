@@ -1,6 +1,6 @@
 %include polycode.fmt
 
-%options ghci -pgmL lhs2TeX -optL --pre
+%options ghci -pgmL lhs2TeX -optL --pre -i..
 
 %if style == newcode
 

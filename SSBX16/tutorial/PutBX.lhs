@@ -1,4 +1,4 @@
-% !TEX root = paper.tex
+% !TEX root = tutorial.tex
 
 %include lhs2TeX-macros.lhs
 
@@ -43,7 +43,7 @@ transformations.
 Lots of work \cite{Lenses,Bohannon:06,Bohannon:08,Hofmann:2011,XLHZ07,MHNHT07,Voigt09,Hidaka:10} has been devoted to the {\em get-based}
 approach, allowing the programmer to write the forward
 transformation |get| and deriving a suitable putback transformation.
-While the get-based approach is friendly\todo{Tony: What is meant by friendly? Why?}, 
+While the get-based approach is friendly, 
 a |get| function will typically not be injective, so there may exist
 many possible |put| functions that can be combined with it to form a
 valid BX, and there is no way to control the choice of |put| through
@@ -51,14 +51,12 @@ the definition of |get|.
 This ambiguity of |put| is what makes bidirectional
 programming challenging and unpredictable in practice.
 
-\todo{Tony: Just wondering...  if get-based approaches are called "get-based", why is the put-based approach called "putback-based"?  If there is a good reason for this then it would certainly be interesting for the (novice) reader such as myself.}
-
 The main topic of this tutorial is the {\em putback-based} approach
 to bidirectional programming.
 In contrast to the get-based approach, it allows the programmer to write a backward 
 transformation |put| and derives a suitable |get| that can be
 paired with this |put| to form a bidirectional transformation.
-Interestingly\todo{Tony I'm not sure I understand why this is particularly "interesting".}, while |get| usually loses information
+Interestingly, while |get| usually loses information
 when mapping from a source to a view, |put| must preserve information
 when putting back from the view to the source, according to the
 \ref{PutGet} property.
@@ -83,8 +81,6 @@ to form a BX.
 Given a |put| function, there exists at most 
 one |get| function that forms a well-behaved BX.
 \end{lemma}
-
-\todo{Tony: How about the proof?  To hard? To obvious?  I wouldn't have minded having it here.}
 
 The second interesting fact is that it is possible to
 check the validity of |put| without mentioning |get|.
@@ -114,23 +110,19 @@ the validity of |put| \cite{FiHP15b}.
 A |put| function is valid if and only if it satisfies \ref{PutDet} and \ref{PutStable}. 
 \end{theorem}
 
-\todo{Tony: Are the proofs for this coming later in the tutorial?  Or is the reader expected to work this out themselves (I didn't try).}
-
 Practically, there are few languages supporting putback-based
 bidirectional programming. This is not without reason: as argued by Foster~\cite{Foster:09},
 it is more difficult to construct a
 framework that can directly support putback-based bidirectional
-programming.\todo{Tony: Why?}
+programming.
 
 In the rest of this tutorial, we will introduce BiGUL~\cite{KoZH16} (pronounced ``beagle''),
 a simple yet powerful putback-based bidirectional language,
 which grew out of some prior putback-based languages~\cite{PaHF14,PaZH14}.
 BiGUL is implemented as an embedded language in Haskell, and we will assume that the reader is reasonably familiar with Haskell.
-After briefly explaining how to install BiGUL in Section~\ref{sec:install}, we will introduce basic BiGUL programming in Section~\ref{sec:tour}, and see a few more examples about lists in Section~\ref{sec:lists}.
-We will then move on to the underlying principles in Section~\ref{sec:bidirectionality}, explaining the design and implementation of BiGUL in detail.
-The last three sections will show how various bidirectional applications can be developed, including list alignment in Section~\ref{sec:alignment}, relational database updating in Section~\ref{sec:Brul}, and parsing and ``reflective'' printing in Section~\ref{sec:BiYacc}.
-
-
+After briefly explaining how to install BiGUL in \autoref{sec:install}, we will introduce basic BiGUL programming in \autoref{sec:tour}, and see a few more examples about lists in \autoref{sec:lists}.
+We will then move on to the underlying principles in \autoref{sec:bidirectionality}, explaining the design and implementation of BiGUL in detail.
+Those readers who are more interested in practical applications or want to see more examples first may safely skip \autoref{sec:bidirectionality} (which is rather long) and proceed to the last three sections, which will show how various bidirectional applications can be developed, including list alignment in \autoref{sec:alignment}, relational database updating in \autoref{sec:Brul}, and parsing and ``reflective'' printing in \autoref{sec:BiYacc}.
 
 
 

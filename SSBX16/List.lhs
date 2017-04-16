@@ -1,4 +1,4 @@
-% !TEX root = paper.tex
+% !TEX root = tutorial/tutorial.tex
 
 %include lhs2TeX-macros.lhs
 
@@ -10,7 +10,8 @@
 \begin{code}
 {-# LANGUAGE FlexibleContexts, TemplateHaskell, TypeFamilies #-}
 
-module PList where
+module List where
+
 import Generics.BiGUL
 import Generics.BiGUL.Interpreter
 import Generics.BiGUL.TH
@@ -19,7 +20,8 @@ import Data.List
 import Data.Maybe
 import Control.Monad.Except
 import GHC.Generics
-import PBasic
+
+import Basic
 \end{code}
 
 }
@@ -99,14 +101,14 @@ lensMapAppend pf =  lensFoldr bx null
 Here |bx| has the type of |BiGUL (a,[b]) [b]| and
 is defined on |pf| that has the type of |BiGUL a b|.
 
-\begin{alltt}
-*PList> put (lensMapAppend dec1) ([0..10],[]) [100..110]
+\begin{lstlisting}
+*List> put (lensMapAppend dec1) ([0..10],[]) [100..110]
 \eval*{put (lensMapAppend dec1) ([0..10],[]) [100..110]}
-*PList> get (lensMapAppend dec1) ([1..10],[])
+*List> get (lensMapAppend dec1) ([1..10],[])
 \eval*{get (lensMapAppend dec1) ([1..10],[])}
-\end{alltt}
+\end{lstlisting}
 Note that, for testing, we embed into our framework
-the bijective functions for increasing and decreasing an integer by |1|.
+the bijective functions for increasing and decreasing an integer by~|1|.
 \begin{code}
 dec1 :: BiGUL Int Int
 dec1 = emb g p
@@ -149,23 +151,23 @@ lensSwap  =   $(rearrS (Q( \(x,y) -> (y,x) ))) Replace
 \end{code}
 
 Below are some testing examples.
-\begin{alltt}
-*PList> put lensSnoc ([2,3,4],1) [10,11,12,13]
+\begin{lstlisting}
+*List> put lensSnoc ([2,3,4],1) [10,11,12,13]
 \eval*{put lensSnoc ([2,3,4],1) [10,11,12,13]}
-*PList> put lensSnoc ([2,3,4],1) [10,11,12,13,14]
+*List> put lensSnoc ([2,3,4],1) [10,11,12,13,14]
 \eval*{put lensSnoc ([2,3,4],1) [10,11,12,13,14]}
-*PList> put lensSnoc ([2,3,4],1) [10,11]
+*List> put lensSnoc ([2,3,4],1) [10,11]
 \eval*{put lensSnoc ([2,3,4],1) [10,11]}
-*PList> get lensSnoc ([1..10], 100)
+*List> get lensSnoc ([1..10], 100)
 \eval*{get lensSnoc ([1..10], 100)}
 
-*PList> put lensReverse [1..10] [100..105]
+*List> put lensReverse [1..10] [100..105]
 \eval*{put lensReverse [1..10] [100..105]}
-*PList> put lensReverse [1..10] [100..115]
+*List> put lensReverse [1..10] [100..115]
 \eval*{put lensReverse [1..10] [100..115]}
-*PList> get lensReverse [1..10]
+*List> get lensReverse [1..10]
 \eval*{get lensReverse [1..10]}
-\end{alltt}
+\end{lstlisting}
 
 }
 
@@ -193,12 +195,12 @@ lensSum''  =   lensFoldr pSum2Av (const False)
                         (\(x,y) v ->  let  av = (v-x-y)/2
                                       in   (x + av, y+av))
 \end{code}
-For instance, although |get lensSum' ([1,2,3],0) = get lensSum'' ([1,2,3],0) = Just 6|, their putback behaviors are different:
-\begin{spec}
-put lensSum'   ([1,2,3],0) 16 = Just ([11,2,3],0)
-put lensSum''  ([1,2,3],0) 16 = Just ([6.0,4.5,4.25],1.25)
-\end{spec}
-\todo{Josh: Technically, |get lensSum' ([1,2,3],0)| produces |Just 6| whereas |get lensSum'' ([1,2,3],0)| produces |Just 6.0|. Also I'm getting $|put lensSum' ([1,2,3],0) 16| = \eval{put lensSum' ([1,2,3],0) 16}$ instead of the result given above.}
+For instance, although |get lensSum' ([1,2,3],0) = get lensSum'' ([1,2,3],0) =| \eval{get lensSum' ([1,2,3],0)}, their putback behaviors are different:
+\begin{align*}
+& |put|\;\mathrlap{|lensSum'|}\phantom{|lensSum''|}\;|([1,2,3],0) 16| = \eval{put lensSum' ([1,2,3],0) 16} \\
+& |put lensSum'' ([1,2,3],0) 16| = \eval{put lensSum''  ([1,2,3],0) 16}
+\end{align*}
+\todo{Josh: Technically, |get lensSum' ([1,2,3],0)| produces |Just 6| whereas |get lensSum'' ([1,2,3],0)| produces |Just 6.0|. Also having non-zero residuals doesn't look right.}
 
 It is worth noting that our definition of |lensFoldr| is just one
 putback function for |foldr|, and there are many others.

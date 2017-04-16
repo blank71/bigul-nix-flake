@@ -5,11 +5,11 @@ DVIPS=`if which dvipsk > /dev/null; then echo dvipsk; else echo dvips; fi` -Ppdf
 DVIPDF=dvipdfmx
 PS_PDF=ps2pdf14
 RM=rm -f
-MAIN=paper
+MAIN=tutorial
 
 BIB_FILE=references.bib
 
-FILES=$(MAIN).tex PutBX.lhs Install.tex PBasic.lhs PList.lhs PSet.lhs Principle.lhs Alignment.lhs BiYacc.lhs Brul.lhs Conclusion.tex
+FILES=$(MAIN).tex PutBX.lhs Install.tex ../Basic.lhs ../List.lhs Principle.lhs ../Alignment.lhs ../BiYacc.lhs ../Brul.lhs Conclusion.tex
 
 TEX_FILE=$(MAIN).tex
 DVI_FILE=$(MAIN).dvi
@@ -23,7 +23,7 @@ BBL_FILE=$(MAIN).bbl
 default : pdf
 
 clean :
-	$(RM) *.aux *.blg *.bbl *.dvi *.log *.toc *.pbm *~ $(MAIN).p* PutBX.tex PBasic.tex PList.tex PSet.tex Principle.tex Alignment.tex BiYacc.tex Brul.tex
+	$(RM) *.aux *.blg *.bbl *.dvi *.log *.toc *.out *.pbm *~ $(MAIN).p* lhs2TeX-polycode.sty PutBX.tex Basic.tex List.tex Principle.tex Alignment.tex BiYacc.tex Brul.tex
 
 all_clean : clean
 	$(RM) $(PS_FILE) $(PDF_FILE)
@@ -58,11 +58,11 @@ $(PS_FILE) : $(DVI_FILE)
 
 $(PDF_FILE) : $(FILES)
 	pdflatex $(TEX_FILE)
-	$(BIB) $(MAIN)
-	pdflatex $(TEX_FILE)
-	pdflatex $(TEX_FILE)
 
-$(MAIN).tex: lhs2TeX-polycode.sty lhs2TeX-macros.lhs PutBX.tex PBasic.tex PList.tex PSet.tex Principle.tex Alignment.tex BiYacc.tex Brul.tex Conclusion.tex
+$(MAIN).tex: lhs2TeX-polycode.sty ../lhs2TeX-macros.lhs PutBX.tex Basic.tex List.tex Principle.tex Alignment.tex BiYacc.tex Brul.tex Conclusion.tex
+
+../lhs2TeX-macros.lhs: lhs2TeX-macros.lhs
+	cp -f lhs2TeX-macros.lhs ..
 
 lhs2TeX-polycode.sty: lhs2TeX-polycode.lhs
 	lhs2TeX --output=$@ $<
@@ -70,8 +70,8 @@ lhs2TeX-polycode.sty: lhs2TeX-polycode.lhs
 %.tex: %.lhs lhs2TeX-macros.lhs
 	lhs2TeX --output=$@ $<
 
-inputtree.pdf: inputtree.dot
-	dot -Tpdf -o $@ $<
+%.tex: ../%.lhs lhs2TeX-macros.lhs
+	lhs2TeX --output=$@ $<
 
 SUBMITDIR=_submit
 submit: $(MAIN).tex
