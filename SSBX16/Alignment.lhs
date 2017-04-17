@@ -33,7 +33,7 @@ Suppose that we represent a payroll database as a list.
 (This is a slightly inadequate setting for explaining list alignment, because entries in a database are usually unordered. But let us assume that order matters.)
 Each entry is a triple --- more precisely, a pair whose second component is again a pair --- consisting of an identification number (``id'' henceforth), a name, and a salary number:
 \begin{code}
-type Source = (Id, (Name, Salary))
+type Source  =  (Id, (Name, Salary))
 
 type Id      =  Int
 type Name    =  String
@@ -57,9 +57,9 @@ For example, |employees| is presented to them as
 on which they can make modifications.
 It is easy to write a BiGUL program to synchronize the source and view elements:
 \begin{code}
-bx :: BiGUL Source View
-bx =  $(rearrV (Q( \(id, name) -> (id, (name, ())) )))$
-        Replace `Prod` (Replace `Prod` Skip (const ()))
+bx  ::  BiGUL Source View
+bx  =   $(rearrV (Q( \(id, name) -> (id, (name, ())) )))$
+          Replace `Prod` (Replace `Prod` Skip (const ()))
 \end{code}
 The problem is then how the correspondences between sources and views in the two lists can be determined, so that |bx| can be applied to the right pairs.
 
@@ -72,20 +72,19 @@ cr :: View -> Source
 cr (i, n) = (i, (n, 0))
 \end{code}
 The salary is set to zero, which could be taken care of by, say, the accounting department later.
-We will use |bx| and |cr| as the element synchronizer and creator respectively for our payroll database throughout this section, but our alignment programs will be very general and certainly not restricted to the payroll database.
-We will develop our alignment programs generically, setting the source and view types as polymorphic type parameters (|s|~and~|v| below) and also the element synchronizer and element creator as parameters (|b|~and~|c| below), so the alignment programs can be widely applicable.
+We will use |bx| and |cr| as the element synchronizer and creator respectively for our payroll database throughout this section, but our alignment programs will not be restricted to the payroll database setting --- we will develop our alignment programs generically, setting the source and view types as polymorphic type parameters (|s|~and~|v| below) and also the element synchronizer and element creator as parameters (|b|~and~|c| below), so the alignment programs can be widely applicable.
 Here is how we implement position-based alignment, which is fairly standard:
 \begin{code}
 posAlign :: (Show s, Show v) => BiGUL s v -> (v -> s) -> BiGUL [s] [v]
 posAlign b c = Case
-  [ $(normalSV (P( [] )) (P( [] )) (P( [] )))
-    ==> $(update (P( [] )) (P( [] )) (D( )))
-  , $(normalSV (P( _ : _ )) (P( _ : _ )) (P( _ : _ )))
-    ==> $(update (P( x:xs )) (P( x:xs )) (D( x = b; xs = posAlign b c )))
-  , $(adaptiveSV (P( _ : _ )) (P( [] )))
-    ==> \ _ _ -> []
-  , $(adaptiveSV (P( [] )) (P( _ : _ )))
-    ==> \ _ (v : _) -> [c v]
+  [  $(normalSV (P( [] )) (P( [] )) (P( [] )))
+     ==> $(update (P( [] )) (P( [] )) (D( )))
+  ,  $(normalSV (P( _ : _ )) (P( _ : _ )) (P( _ : _ )))
+     ==> $(update (P( x:xs )) (P( x:xs )) (D( x = b; xs = posAlign b c )))
+  ,  $(adaptiveSV (P( _ : _ )) (P( [] )))
+     ==> \ _ _ -> []
+  ,  $(adaptiveSV (P( [] )) (P( _ : _ )))
+     ==> \ _ (v : _) -> [c v]
   ]
 \end{code}
 The normal branches deal with the situations where both lists are empty or non-empty, and the adaptive branches remove or create elements when the lengths of the two lists differ.
@@ -140,19 +139,18 @@ As for the second normal branch, we should revise the main condition to also req
 \end{spec}
 The first adaptive branch, again, works well.
 The second adaptive branch, on the other hand, is no longer applicable:
-Since the main condition of the second normal branch has been tightened, it is no longer the case that this adaptive branch will receive only empty source lists.
+since the main condition of the second normal branch has been tightened, it is no longer the case that this adaptive branch will receive only empty source lists.
 In fact, whether the source list is empty or not is irrelevant here --- what matters now is whether the key of the first view is in the source list.
 If it is, then we bring the (first) source element with the same key value to the head position, and the second normal branch can take over; otherwise, we create a new source element.
 This gives us key-based alignment:
 \begin{code}
-keyAlign  ::  forall s v k . (Show s, Show v, Eq k)
+keyAlign  ::  forall s v k DOT (Show s, Show v, Eq k)
           =>  (s -> k) -> (v -> k) -> BiGUL s v -> (v -> s) -> BiGUL [s] [v]
 keyAlign ks kv b c = Case
   [ $(normalSV (P( [] )) (P( [] )) (P( [] )))
     ==> $(update (P( [] )) (P( [] )) (D( )))
   , $(normal (Q( \(s:ss) (v:vs) -> ks s == kv v )) (P( _ : _ )))
-    ==> $(update (P( x:xs ))  (P( x:xs ))
-                              (D( x = b; xs = keyAlign ks kv b c )))
+    ==> $(update (P( x:xs )) (P( x:xs )) (D( x = b; xs = keyAlign ks kv b c )))
   , $(adaptiveSV (P( _ : _ )) (P( [] )))
     ==> \ _ _ -> []
   , $(adaptive (Q( \ss (v:vs) -> kv v `elem` map ks ss )))
@@ -189,7 +187,7 @@ And reordering as well:
 
 So it seems that key-based alignment is just what we need.
 Indeed, key-based alignment usually works well, but there is an important assumption:
-The key values should not be changed.
+the key values should not be changed.
 If, for example, we decide to assign a different id to Josh:
 \begin{code}
 updatedEmployees2  ::  [View]
@@ -217,9 +215,9 @@ Comparing this treatment with the key-based one, we might say that keys are ``po
 A |Delta| between source and view lists directly describes the accurate correspondences between them, whereas with keys the correspondences can only be inferred, sometimes inaccurately.
 
 So the input now includes not only source and view lists but also a delta between them.
-Recall key-based alignment: What it does overall is to bring the first matching source element to the front for each view element, so the source list is updated throughout execution, with the links between the source and view elements gradually and implicitly restored.
+Recall key-based alignment: what it does overall is to bring the first matching source element to the front for each view element, so the source list is updated throughout execution, with the links between the source and view elements gradually and implicitly restored.
 If we are doing something similar with delta-based alignment, then when the source list is updated, the delta should also be updated to reflect the restored consistency.
-This suggests that the delta should be paired with the source list, so it can be updated.
+This suggests that the delta should be paired with the source list, so that it can be updated.
 The type we use for the delta-based alignment program is thus:
 \begin{spec}
 deltaAlign  ::  (Show s, Show v)
@@ -265,7 +263,7 @@ getDeltaAlign  ::  (Show s, Show v)
 getDeltaAlign b c ss = get (deltaAlign b c) (ss, idDelta ss)
 \end{code}
 It is easy to prove that, given the same |b|~and~|c|, these two functions do form a lens.
-The key observation is that the delta produced by |put (deltaAlign b c)| is necessarily one computed by |idDelta|, so, for example, in \ref{eq:PutGet}, throwing away the delta in the |put| direction is fine because it can be recomputed by |idDelta|, and the |get| direction can resume from exactly the same source pair.
+The key observation is that the delta produced by |put (deltaAlign b c)| is necessarily the one computed by |idDelta|, so, for example, in \ref{eq:PutGet}, throwing away the delta in the |put| direction is fine because it can be recomputed by |idDelta|, and the |get| direction can resume from exactly the same source pair.
 
 Back to our example. We can now update Josh's id without resetting his salary by providing a full delta indicating that there are only in-place updates:
 \begin{lstlisting}

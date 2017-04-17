@@ -7,6 +7,7 @@
 %format (Q(x)) = [| x |]
 %format (P(x)) = [p| x |]
 %format (D(x)) = [d| x |]
+%format DOT = .
 
 %else
 
@@ -15,7 +16,11 @@
 %format (P(x)) = "\mathrlap{^\mathbb{P}}\phantom{^\mathbb{D}}[\kern-1.5pt[\," x "\,]\kern-1.5pt]"
 %format (D(x)) = "{^\mathbb{D}}[\kern-1.5pt[\," x "\,]\kern-1.5pt]"
 
+%format DOT = "\kern-\smallskipamount."
+
 %format ... = "\ldots"
+
+%format == = "\mathop{\kern1pt\shorteq\kern1pt\shorteq\kern1pt}"
 
 %format <=> = "\Leftrightarrow"
 % format { = "\lbag"

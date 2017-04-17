@@ -74,3 +74,11 @@
 \newcommand\tdl{{\sc Tdl}\xspace}
 
 \newcommand{\reason}[1]{\quad\{\,\text{#1}\,\}}
+
+\makeatletter
+\newcommand{\shorteq}{%
+  \settowidth{\@tempdima}{-}%
+  \resizebox{\@tempdima}{\height}{=}%
+}
+\makeatother
+

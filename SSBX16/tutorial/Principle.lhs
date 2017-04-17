@@ -616,11 +616,10 @@ Such a need would be hard to notice since the |get| behaviour of the two composi
 
 \subsection{Summary}
 
-In one (long) section, we have explained the internals of BiGUL.
-Starting from a definition of (well-behaved) lenses that takes partiality explicitly into account, we have gone through most of BiGUL's constructs and justified their well-behavedness --- in the case of |Prod|, we have even seen a more formal and detailed well-behavedness proof.
+In one (long) section, we have examined the internals of BiGUL.
+After seeing the definition of (well-behaved) lenses that takes partiality explicitly into account, we have gone through the development of most of BiGUL's constructs and justified their well-behavedness --- in the case of |Prod|, we have even seen a more formal and detailed well-behavedness proof.
 The |Case| construct is the most interesting one in terms of its design for achieving bidirectionality, while the rearrangement operations showcase more advanced datatype-generic programming techniques in Haskell for guaranteeing type safety.
-
-
+We will now shift our focus back to BiGUL programming, this time looking at some larger examples.
 
 
 

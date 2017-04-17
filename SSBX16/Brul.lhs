@@ -232,7 +232,7 @@ if the first record of the source does not satisfy |p|, we simply ignore it and
 continue with the remaining records.
 
 \begin{code}
-pAlign  ::  forall s v k . (Show s, Show v, Eq k)
+pAlign  ::  forall s v k DOT (Show s, Show v, Eq k)
         =>  (s -> Bool) -- predicate
         ->  (s -> k) -> (v -> k) -> BiGUL s v -> (v -> s) 
         ->  (s -> Maybe s) -- conceal function
@@ -286,7 +286,7 @@ Surprisingly, this is simple. It is suffice to
 extend the fourth case of |pAlign| to apply |fd| when inconsistency happens.
 
 \begin{code}
-relAlign :: forall s v k. (Show s, Show v, Eq k, Eq s)
+relAlign :: forall s v k DOT (Show s, Show v, Eq k, Eq s)
          => (s -> Bool) -> (s -> k) -> (v -> k)
             -> BiGUL s v -> (v -> s) -> (s -> Maybe s)
             -> (s -> s) {- dependency maintaining function -}
