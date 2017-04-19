@@ -12,15 +12,18 @@ BIB_FILE=references.bib
 FILES=$(MAIN).tex PutBX.lhs Install.tex ../Basic.lhs ../List.lhs Principle.lhs ../Alignment.lhs ../BiYacc.lhs ../Brul.lhs Conclusion.tex
 
 TEX_FILE=$(MAIN).tex
-DVI_FILE=$(MAIN).dvi
-PS_FILE=$(MAIN).ps
 PDF_FILE=$(MAIN).pdf
 AUX_FILE=$(MAIN).aux
 BBL_FILE=$(MAIN).bbl
 
-.phony : clean clean_all dvi ps pdf all
+.phony : full clean clean_all pdf
 
 default : pdf
+
+full : $(PDF_FILE)
+	$(BIB) $(MAIN)
+	pdflatex $(TEX_FILE)
+	pdflatex $(TEX_FILE)
 
 clean :
 	$(RM) *.aux *.blg *.bbl *.dvi *.log *.toc *.out *.pbm *~ $(MAIN).p* lhs2TeX-polycode.sty PutBX.tex Basic.tex List.tex Principle.tex Alignment.tex BiYacc.tex Brul.tex
@@ -28,13 +31,7 @@ clean :
 all_clean : clean
 	$(RM) $(PS_FILE) $(PDF_FILE)
 
-dvi : $(DVI_FILE)
-
-ps : $(PS_FILE)
-
 pdf : $(PDF_FILE)
-
-all : $(DVI_FILE) $(PS_FILE) $(PDF_FILE)
 
 $(AUX_FILE) : $(FILES)
 	$(TEX) $(TEX_FILE)
@@ -42,19 +39,6 @@ $(AUX_FILE) : $(FILES)
 
 $(BBL_FILE) : $(AUX_FILE) $(BIB_FILE)
 	$(BIB) $(MAIN)
-
-$(DVI_FILE) : $(FILES) $(BBL_FILE)
-	$(TEX) $(TEX_FILE)
-	$(TEX) $(TEX_FILE)
-
-$(PS_FILE) : $(DVI_FILE)
-	$(DVIPS) $(DVI_FILE)
-
-#$(PDF_FILE) : $(PS_FILE)
-#	$(PS_PDF) $(PS_FILE)
-
-#$(PDF_FILE) : $(DVI_FILE)
-#	$(DVIPDF) $(DVI_FILE)
 
 $(PDF_FILE) : $(FILES)
 	pdflatex $(TEX_FILE)
