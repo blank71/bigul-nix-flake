@@ -10,7 +10,7 @@ For more detail, see the following tutorial:
 
 There is also an earlier paper describing the reification technique used in the Agda formalisation:
 
-* Hsiang-Shang Ko, Tao Zan, and Zhenjiang Hu. BiGUL: A formally verified core language for putback-based bidirectional programming. In [_Partial Evaluation and Program Manipulation_](http://conf.researchr.org/home/pepm-2016), PEPM’16, pages 61–72. ACM, 2016. https://doi.org/10.1145/2847538.2847544.
+* Hsiang-Shang Ko, Tao Zan, and Zhenjiang Hu. BiGUL: A formally verified core language for putback-based bidirectional programming. In [_Partial Evaluation and Program Manipulation_](http://conf.researchr.org/home/pepm-2016), PEPM’16, pages 61–72. ACM, 2016. https://doi.org/10.1145/2847538.2847544. ([The first author’s personal website](https://josh-hs-ko.github.io/#publication-c48b059c) contains an _ACM Author-Izer_ link for downloading the paper for free.)
 
 This paper uses an outdated version of BiGUL, but the reification technique still underlies the current formalisation.
 
