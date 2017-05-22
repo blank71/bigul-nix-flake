@@ -4,10 +4,15 @@ Putback-based bidirectional programming allows the programmer to write only one 
 
 The module `Generics.BiGUL.Lib.HuStudies` ([haddock documentation on Hackage](https://hackage.haskell.org/package/BiGUL/docs/Generics-BiGUL-Lib-HuStudies.html)) contains some small, illustrative examples of BiGUL programs, and is a good place for getting started quickly.
 
-For more detail, see the following:
+For more detail, see the following tutorial:
 
-* Hsiang-Shang Ko, Tao Zan, and Zhenjiang Hu. BiGUL: A formally verified core language for putback-based bidirectional programming. In [_Partial Evaluation and Program Manipulation_](http://conf.researchr.org/home/pepm-2016), PEPM’16, pages 61–72. ACM, 2016. http://dx.doi.org/10.1145/2847538.2847544.
-* Zhenjiang Hu and Hsiang-Shang Ko. Principle and Practice of Bidirectional Programming in BiGUL. (Draft manuscript for the [_Oxford Summer School on Bidirectional Transformations_](https://www.cs.ox.ac.uk/projects/tlcbx/ssbx/).) https://bitbucket.org/prl_tokyo/bigul/raw/master/SummerSchool16/paper/BiGUL_tutorial.pdf.
+* Zhenjiang Hu and Hsiang-Shang Ko. Principle and Practice of Bidirectional Programming in BiGUL. Draft manuscript for the [_Oxford Summer School on Bidirectional Transformations_](https://www.cs.ox.ac.uk/projects/tlcbx/ssbx/). https://bitbucket.org/prl_tokyo/bigul/raw/master/SSBX16/tutorial.pdf.
+
+There is also an earlier paper describing the reification technique used in the Agda formalisation:
+
+* Hsiang-Shang Ko, Tao Zan, and Zhenjiang Hu. BiGUL: A formally verified core language for putback-based bidirectional programming. In [_Partial Evaluation and Program Manipulation_](http://conf.researchr.org/home/pepm-2016), PEPM’16, pages 61–72. ACM, 2016. https://doi.org/10.1145/2847538.2847544.
+
+This paper uses an outdated version of BiGUL, but the reification technique still underlies the current formalisation.
 
 ## Installation ##
 
