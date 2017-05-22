@@ -1,4 +1,4 @@
-% !TEX root = paper.tex
+% !TEX root = tutorial/tutorial.tex
 
 %include lhs2TeX-macros.lhs
 
@@ -10,6 +10,7 @@
 {-# LANGUAGE TemplateHaskell, TypeFamilies, ScopedTypeVariables #-}
 
 module Alignment where
+
 import Generics.BiGUL
 import Generics.BiGUL.TH
 import Generics.BiGUL.Lib
@@ -21,16 +22,18 @@ import Data.List
 \end{code}
 }
 
-In the next three sections, we will talk about some applications in BiGUL, starting from the list alignment problem.
+In the next three sections, we will talk about some applications in BiGUL, starting with the list alignment problem.
 List alignment is one of the tasks that frequently show up when developing bidirectional applications.
 When the source and view are both lists, and the |get| direction (i.e., the consistency relation) is a |map|, how do we put an updated view --- the updates on which might involve insertions, deletions, in-place modifications, and reordering --- into the source?
+This topic has be treated by Barbosa~et~al.'s matching lenses~\cite{Barbosa:2010}, which are special-purpose lenses into which several fixed alignment strategies are hard-coded.
+Below we will see how a number of alignment strategies can be programmed with BiGUL's general-purpose constructs, instead of having to extend the language with special-purpose alignment constructs.
 
 Throughout the section, we use a concrete example to introduce three variations of list alignment.
 Suppose that we represent a payroll database as a list.
 (This is a slightly inadequate setting for explaining list alignment, because entries in a database are usually unordered. But let us assume that order matters.)
 Each entry is a triple --- more precisely, a pair whose second component is again a pair --- consisting of an identification number (``id'' henceforth), a name, and a salary number:
 \begin{code}
-type Source = (Id, (Name, Salary))
+type Source  =  (Id, (Name, Salary))
 
 type Id      =  Int
 type Name    =  String
@@ -54,66 +57,65 @@ For example, |employees| is presented to them as
 on which they can make modifications.
 It is easy to write a BiGUL program to synchronize the source and view elements:
 \begin{code}
-bx :: BiGUL Source View
-bx =  $(rearrV (Q( \(id, name) -> (id, (name, ())) )))$
-        Replace `Prod` (Replace `Prod` Skip (const ()))
+bx  ::  BiGUL Source View
+bx  =   $(rearrV (Q( \(id, name) -> (id, (name, ())) )))$
+          Replace `Prod` (Replace `Prod` Skip (const ()))
 \end{code}
 The problem is then how the correspondences between sources and views in the two lists can be determined, so that |bx| can be applied to the right pairs.
 
 \subsection{Position-based alignment}
 
 As a first exercise, we consider the simplest strategy, which matches source and view elements by their positions in the lists.
-If the source list has more elements than the view list, the extra elements at the tail are simply dropped; if the source list has less elements, then new source elements have to be created, which we can specify as a function:
+If the source list has more elements than the view list, the extra elements at the tail are simply dropped; if the source list has fewer elements, then new source elements have to be created, which we can specify as a function:
 \begin{code}
 cr :: View -> Source
 cr (i, n) = (i, (n, 0))
 \end{code}
 The salary is set to zero, which could be taken care of by, say, the accounting department later.
-We will use |bx| and |cr| as the element synchronizer and creator respectively for our payroll database throughout this section, but our alignment programs will be very general and certainly not restricted to the payroll database.
-We will develop our alignment programs generically, setting the source and view types as polymorphic type parameters (|s|~and~|v| below) and also the element synchronizer and element creator as parameters (|b|~and~|c| below), so the alignment programs can be widely applicable.
+We will use |bx| and |cr| as the element synchronizer and creator respectively for our payroll database throughout this section, but our alignment programs will not be restricted to the payroll database setting --- we will develop our alignment programs generically, setting the source and view types as polymorphic type parameters (|s|~and~|v| below) and also the element synchronizer and element creator as parameters (|b|~and~|c| below), so the alignment programs can be widely applicable.
 Here is how we implement position-based alignment, which is fairly standard:
 \begin{code}
 posAlign :: (Show s, Show v) => BiGUL s v -> (v -> s) -> BiGUL [s] [v]
 posAlign b c = Case
-  [ $(normalSV (P( [] )) (P( [] )) (P( [] )))
-    ==> $(update (P( [] )) (P( [] )) (D( )))
-  , $(normalSV (P( _ : _ )) (P( _ : _ )) (P( _ : _ )))
-    ==> $(update (P( x:xs )) (P( x:xs )) (D( x = b; xs = posAlign b c )))
-  , $(adaptiveSV (P( _ : _ )) (P( [] )))
-    ==> \ _ _ -> []
-  , $(adaptiveSV (P( [] )) (P( _ : _ )))
-    ==> \ _ (v : _) -> [c v]
+  [  $(normalSV (P( [] )) (P( [] )) (P( [] )))
+     ==> $(update (P( [] )) (P( [] )) (D( )))
+  ,  $(normalSV (P( _ : _ )) (P( _ : _ )) (P( _ : _ )))
+     ==> $(update (P( x:xs )) (P( x:xs )) (D( x = b; xs = posAlign b c )))
+  ,  $(adaptiveSV (P( _ : _ )) (P( [] )))
+     ==> \ _ _ -> []
+  ,  $(adaptiveSV (P( [] )) (P( _ : _ )))
+     ==> \ _ (v : _) -> [c v]
   ]
 \end{code}
 The normal branches deal with the situations where both lists are empty or non-empty, and the adaptive branches remove or create elements when the lengths of the two lists differ.
 
 The |get| direction of |posAlign| does exactly what we want it to do:
-\begin{verbatim}
-*> get (posAlign bx cr) employees
-Just [(0,"Zhenjiang"),(1,"Josh"),(2,"Jeremy")]
-\end{verbatim}
+\begin{lstlisting}
+*Alignment> get (posAlign bx cr) employees
+\eval*{get (posAlign bx cr) employees}
+\end{lstlisting}
 It should be quite obvious, though, that the |put| direction is not so useful for our purpose.
 If we sack Josh:
 \begin{code}
 updatedEmployees0  ::  [View]
 updatedEmployees0  =   [(0, "Zhenjiang"), (2, "Jeremy")]
 \end{code}
-then the database will updated to:
-\begin{verbatim}
-*> put (posAlign bx cr) employees updatedEmployees0
-Just [(0,("Zhenjiang",1000)),(2,("Jeremy",400))]
-\end{verbatim}
+then the database will be updated to:
+\begin{lstlisting}
+*Alignment> put (posAlign bx cr) employees updatedEmployees0
+\eval*{put (posAlign bx cr) employees updatedEmployees0}
+\end{lstlisting}
 where Jeremy inadvertently gets Josh's original salary.
 Even if we do not remove any employee, we may still want to reorder them:
 \begin{code}
 updatedEmployees1  ::  [View]
 updatedEmployees1  =   [(2, "Jeremy"), (0, "Zhenjiang"), (1, "Josh")]
 \end{code}
-and now everyone gets a wrong salary:
-\begin{verbatim}
-*> put (posAlign bx cr) employees updatedEmployees1
-Just [(2,("Jeremy",1000)),(0,("Zhenjiang",400)),(1,("Josh",2000))]
-\end{verbatim}
+and now everyone gets the wrong salary:
+\begin{lstlisting}
+*Alignment> put (posAlign bx cr) employees updatedEmployees1
+\eval*{put (posAlign bx cr) employees updatedEmployees1}
+\end{lstlisting}
 This first exercise shows that the alignment problem is inherently one that should be solved from the |put| direction.
 It is easy to implement the |get| direction correctly, but what matters is the |put| behavior.
 
@@ -137,19 +139,18 @@ As for the second normal branch, we should revise the main condition to also req
 \end{spec}
 The first adaptive branch, again, works well.
 The second adaptive branch, on the other hand, is no longer applicable:
-Since the main condition of the second normal branch has been tightened, it is no longer the case that this adaptive branch will receive only empty source lists.
-In fact, whether the source list is empty or not is not relevant here --- what matters now is whether the key of the first view is in the source list.
+since the main condition of the second normal branch has been tightened, it is no longer the case that this adaptive branch will receive only empty source lists.
+In fact, whether the source list is empty or not is irrelevant here --- what matters now is whether the key of the first view is in the source list.
 If it is, then we bring the (first) source element with the same key value to the head position, and the second normal branch can take over; otherwise, we create a new source element.
 This gives us key-based alignment:
 \begin{code}
-keyAlign  ::  forall s v k {-".\;"-} (Show s, Show v, Eq k)
+keyAlign  ::  forall s v k DOT (Show s, Show v, Eq k)
           =>  (s -> k) -> (v -> k) -> BiGUL s v -> (v -> s) -> BiGUL [s] [v]
 keyAlign ks kv b c = Case
   [ $(normalSV (P( [] )) (P( [] )) (P( [] )))
     ==> $(update (P( [] )) (P( [] )) (D( )))
   , $(normal (Q( \(s:ss) (v:vs) -> ks s == kv v )) (P( _ : _ )))
-    ==> $(update (P( x:xs ))  (P( x:xs ))
-                              (D( x = b; xs = keyAlign ks kv b c )))
+    ==> $(update (P( x:xs )) (P( x:xs )) (D( x = b; xs = keyAlign ks kv b c )))
   , $(adaptiveSV (P( _ : _ )) (P( [] )))
     ==> \ _ _ -> []
   , $(adaptive (Q( \ss (v:vs) -> kv v `elem` map ks ss )))
@@ -163,54 +164,60 @@ keyAlign ks kv b c = Case
                       | otherwise  =  let  (y, ys) = extract k xs
                                       in   (y, x:ys)
 \end{code}
+Note that the program does not assume that keys are unique --- if there are $n$~view elements having the same key, then the first $n$~source elements with that key will be retained and synchronised with those view elements in order.
+This strategy is a somewhat arbitrary choice, but can be changed by, for example, using a different |extract|.
+(On the other hand, in practice it is probably wiser to enforce uniqueness of keys, so that we can be sure which source element will be used to match a view element, and do not need to rely on the choices made by the implementation.)
 
 Back to our payroll database example.
 The |get| direction behaves the same:
-\begin{verbatim}
-*> get (keyAlign fst fst bx cr) employees
-Just [(0,"Zhenjiang"),(1,"Josh"),(2,"Jeremy")]
-\end{verbatim}
+\begin{lstlisting}
+*Alignment> get (keyAlign fst fst bx cr) employees
+\eval*{get (keyAlign fst fst bx cr) employees}
+\end{lstlisting}
 Unlike position-based alignment, view element deletion can now be reflected correctly:
-\begin{verbatim}
-*> put (keyAlign fst fst bx cr) employees updatedEmployees0
-Just [(0,("Zhenjiang",1000)),(2,("Jeremy",2000))]
-\end{verbatim}
+\begin{lstlisting}
+*Alignment> put (keyAlign fst fst bx cr) employees updatedEmployees0
+\eval*{put (keyAlign fst fst bx cr) employees updatedEmployees0}
+\end{lstlisting}
 And reordering as well:
-\begin{verbatim}
-*> put (keyAlign fst fst bx cr) employees updatedEmployees1
-Just [(2,("Jeremy",2000)),(0,("Zhenjiang",1000)),(1,("Josh",400))]
-\end{verbatim}
+\begin{lstlisting}
+*Alignment> put (keyAlign fst fst bx cr) employees updatedEmployees1
+\eval*{put (keyAlign fst fst bx cr) employees updatedEmployees1}
+\end{lstlisting}
 
 So it seems that key-based alignment is just what we need.
 Indeed, key-based alignment usually works well, but there is an important assumption:
-The key values should not be changed.
+the key values should not be changed.
 If, for example, we decide to assign a different id to Josh:
 \begin{code}
 updatedEmployees2  ::  [View]
 updatedEmployees2  =   [(0, "Zhenjiang"), (100, "Josh"), (1, "Jeremy")]
 \end{code}
-Then the effect is the same as sacking Josh and then hiring him again, whose salary is thus reset:
-\begin{verbatim}
-*> put (keyAlign fst fst bx cr) employees updatedEmployees2
-Just [(0,("Zhenjiang",1000)),(100,("Josh",0)),(1,("Jeremy",400))]
-\end{verbatim}
+Then the effect is the same as sacking Josh and then hiring him again, and his salary is thus reset:
+\begin{lstlisting}
+*Alignment> put (keyAlign fst fst bx cr) employees updatedEmployees2
+\eval*{put (keyAlign fst fst bx cr) employees updatedEmployees2}
+\end{lstlisting}
 The problem is that we cannot distinguish modification from deletion and insertion pairs.
-To be able to have such distinction, we introduce the notion of \emph{deltas}, with which the links between source and view elements can be kept track of.
+To be able to have such distinction, we need the notion of \emph{deltas}~\cite{Diskin-delta-asymmetric}, which allows us to explicitly represent and keep track of the correspondences between source and view elements.
+
 
 \subsection{Delta-based alignment}
 
-A (horizontal) \emph{delta} between a source list and a view list is a list of pairs of associated positions:
+A (horizontal) \emph{delta} between a source list and a view list is a list of pairs of corresponding positions:
 \begin{code}
 type Delta = [(Int, Int)]
 \end{code}
-For example, the delta we have in mind between the source list |employees| and the view list |updatedEmployees2| is |[(0,0), (1,1), (2,2)]|, which, in particular, associates the source and view entries for Josh since |(1,1)| is included, instead of |[(0,0), (2,2)]|, which indicates that Josh's source entry is not associated with any view entry and should be deleted, and that Josh's view entry is not associated with any source entry and is thus new.
+For example, the delta we have in mind between the source list |employees| and the view list |updatedEmployees2| is |[(0,0), (1,1), (2,2)]|, which, in particular, associates the source and view entries for Josh since |(1,1)| is included, instead of |[(0,0), (2,2)]|, which indicates that Josh's source entry does not correspond to any view entry and should be deleted, and that Josh's view entry does not correspond to any source entry and is thus new.
 Deltas can easily represent reordering as well.
 For example, we would supply the delta between |employees| and |updatedEmployees1| as |[(0,1), (1,2), (2,0)]|, associating the 0th element in the source --- namely the one for Zhenjiang --- with the 1st element in the view, and so on.
+Comparing this treatment with the key-based one, we might say that keys are ``poor man's correspondences'', which are not as explicit and unambiguous as |Delta|.
+A |Delta| between source and view lists directly describes the accurate correspondences between them, whereas with keys the correspondences can only be inferred, sometimes inaccurately.
 
 So the input now includes not only source and view lists but also a delta between them.
-Recall key-based alignment: What it does overall is to bring the first matching source element to the front for each view element, so the source list is updated throughout execution, with the links between the source and view elements gradually and implicitly restored.
+Recall key-based alignment: what it does overall is to bring the first matching source element to the front for each view element, so the source list is updated throughout execution, with the links between the source and view elements gradually and implicitly restored.
 If we are doing something similar with delta-based alignment, then when the source list is updated, the delta should also be updated to reflect the restored consistency.
-This suggests that the delta should be paired with the source list, so it can be updated.
+This suggests that the delta should be paired with the source list, so that it can be updated.
 The type we use for the delta-based alignment program is thus:
 \begin{spec}
 deltaAlign  ::  (Show s, Show v)
@@ -240,7 +247,7 @@ deltaAlign b c = Case
 The source and view lists are in full correspondence if and only if they have the same length and the delta associates all their elements positionally.
 This full positional delta can be computed by |idDelta|.
 When this is the case, it suffices to call |posAlign| to carry out element-wise synchronization, since no rearrangement is required.
-Otherwise, we enter the adaptive branch, which constructs a new source list in full correspondence with the view list, drawing elements from the original source list or create new ones as the delta dictates.
+Otherwise, we enter the adaptive branch, which constructs a new source list in full correspondence with the view list, drawing elements from the original source list or creating new ones as the delta dictates.
 The new source list is in full correspondence with the view list, so the delta we pair with it is the one computed by |idDelta|.
 
 Only when performing |put| does a delta make sense.
@@ -256,21 +263,19 @@ getDeltaAlign  ::  (Show s, Show v)
 getDeltaAlign b c ss = get (deltaAlign b c) (ss, idDelta ss)
 \end{code}
 It is easy to prove that, given the same |b|~and~|c|, these two functions do form a lens.
-The key observation is that the delta produced by |put (deltaAlign b c)| is necessarily one computed by |idDelta|, so, for example, in \ref{eq:PutGet}, throwing away the delta in the |put| direction is fine because it can be recomputed by |idDelta|, and the |get| direction can resume from exactly the same source pair.
+The key observation is that the delta produced by |put (deltaAlign b c)| is necessarily the one computed by |idDelta|, so, for example, in \ref{eq:PutGet}, throwing away the delta in the |put| direction is fine because it can be recomputed by |idDelta|, and the |get| direction can resume from exactly the same source pair.
 
 Back to our example. We can now update Josh's id without resetting his salary by providing a full delta indicating that there are only in-place updates:
-\begin{verbatim}
-*> putDeltaAlign bx cr employees
-     [(0,0), (1,1), (2,2)] updatedEmployees2
-Just [(0,("Zhenjiang",1000)),(100,("Josh",400)),(1,("Jeremy",2000))]
-\end{verbatim}
+\begin{lstlisting}
+*Alignment> putDeltaAlign bx cr employees [(0,0), (1,1), (2,2)] updatedEmployees2
+\eval*{putDeltaAlign bx cr employees [(0,0), (1,1), (2,2)] updatedEmployees2}
+\end{lstlisting}
 Besides obvious modifications like reordering, we can also do some fairly subtle modifications now:
 If we actually sack Josh and replace him with a new Josh (inheriting the original Josh's id) whose salary should be reset (to be re-considered by the accounting department), we can say so by providing a partial delta:
-\begin{verbatim}
-*> putDeltaAlign bx cr employees [(0,0), (2,2)]
-     =<< getDeltaAlign bx cr employees
-Just [(0,("Zhenjiang",1000)),(1,("Josh",0)),(2,("Jeremy",2000))]
-\end{verbatim}
+\begin{lstlisting}
+*Alignment> putDeltaAlign bx cr employees [(0,0), (2,2)] =<< getDeltaAlign bx cr employees
+\eval*{putDeltaAlign bx cr employees [(0,0), (2,2)] =<< getDeltaAlign bx cr employees}
+\end{lstlisting}
 
 \subsubsection{One alignment to rule them all.}
 Where do deltas come from?
@@ -301,10 +306,9 @@ byKey ks kv ss vs =
                   |  (v, j) <- zip vs [0..] ]
 \end{code}
 We can check that these strategies indeed give us position-based and key-based alignment:
-\begin{verbatim}
-*> putDeltaAlignS byPosition bx cr employees updatedEmployees0
-Just [(0,("Zhenjiang",1000)),(2,("Jeremy",400))]
-
-*> putDeltaAlignS (byKey fst fst) bx cr employees updatedEmployees1
-Just [(2,("Jeremy",2000)),(0,("Zhenjiang",1000)),(1,("Josh",400))]
-\end{verbatim}
+\begin{lstlisting}
+*Alignment> putDeltaAlignS byPosition bx cr employees updatedEmployees0
+\eval*{putDeltaAlignS byPosition bx cr employees updatedEmployees0}
+*Alignment> putDeltaAlignS (byKey fst fst) bx cr employees updatedEmployees1
+\eval*{putDeltaAlignS (byKey fst fst) bx cr employees updatedEmployees1}
+\end{lstlisting}

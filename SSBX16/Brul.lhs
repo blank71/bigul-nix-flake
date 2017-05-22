@@ -1,3 +1,5 @@
+% !TEX root = tutorial/tutorial.tex
+
 %include lhs2TeX-macros.lhs
 
 \section{Bidirectionalizing relational queries with BiGUL}
@@ -29,7 +31,7 @@ import Alignment (employees,bx,updatedEmployees0,cr)
 In work on relational databases, the view-update problem is about how
 to translate update operations on the view table to corresponding
 update operations on the source table properly. Relational
-lenses \cite{Bohannon:2006:RLL:1142351.1142399} try to solve this
+lenses \cite{Bohannon:06} try to solve this
 problem by providing a list of combinators that let the user write get
 functions (queries) with specified updated policies for put functions
 (updates); however this can only provide limited control of update
@@ -45,7 +47,7 @@ can be automatically derived.
 
 In this tutorial, we will focus on |align|. As will be seen in Section
 \ref{sec:policy}, it can describe more flexible update strategies
-(related to selection/projection queries) than the relational lenses. 
+(related to selection/projection queries) than relational lenses. 
 
 \subsection{Relational database representation}
 \label{sec:table}
@@ -134,12 +136,11 @@ stores five music track records, and each record contains its Track
 name, release Date, Rating, Album, and the Quantity of this Album.
 We can represent it as follows, where all the records have the same structure.
 \begin{code}
-s  =  [[RString "Lullaby",  RInt 1989, RInt 3, RString "Galore", RInt 1]
-      , [RString "Lullaby",  RInt 1989, RInt 3, RString "Show"  , RInt 3]
-      , [RString "Lovesong", RInt 1989, RInt 5, RString "Galore", RInt 1]
-      , [RString "Lovesong", RInt 1989  , RInt 5
-                                        , RString "Disintegration", RInt 4]
-      , [RString "Trust",    RInt 1992, RInt 4, RString "Wish"  , RInt 5]
+s  =  [ [RString "Lullaby"   , RInt 1989, RInt 3, RString "Galore"  , RInt 1]
+      , [RString "Lullaby"   , RInt 1989, RInt 3, RString "Show"    , RInt 3]
+      , [RString "Lovesong"  , RInt 1989, RInt 5, RString "Galore"  , RInt 1]
+      , [RString "Lovesong"  , RInt 1989, RInt 5, RString "Paris"   , RInt 4]
+      , [RString "Trust"     , RInt 1992, RInt 4, RString "Wish"    , RInt 5]
       ]
 \end{code}
 
@@ -227,15 +228,15 @@ as that of |keyAlign|, except that we refine the third case of |keyAlign|
 into two cases (the third and the fourth cases of |pAlign|): the third case
 says that if the view |v| is empty but the first record in the source satisfies |p|,
 we should hide this record using |h|, and the fourth case says that
-if the first record of the source dies not satisfies |p|, we simply ignore it and
-continue with the rest records.
+if the first record of the source does not satisfy |p|, we simply ignore it and
+continue with the remaining records.
 
 \begin{code}
-pAlign :: forall s v k. (Show s, Show v, Eq k)
-         => (s -> Bool) {- predicate -}
-            -> (s -> k) -> (v -> k) -> BiGUL s v -> (v -> s) 
-            -> (s -> Maybe s) {- conceal function -}
-            -> BiGUL [s] [v]
+pAlign  ::  forall s v k DOT (Show s, Show v, Eq k)
+        =>  (s -> Bool) -- predicate
+        ->  (s -> k) -> (v -> k) -> BiGUL s v -> (v -> s) 
+        ->  (s -> Maybe s) -- conceal function
+        ->  BiGUL [s] [v]
 pAlign p ks kv b c h = Case
   [ $(normalSV (P( [] )) (P( [] )) (P( [] )))
     ==> $(update (P( [] )) (P( [] )) (D( )))
@@ -250,18 +251,14 @@ pAlign p ks kv b c h = Case
   , $(adaptiveSV (P( _ )) (P( _:_ )))
     ==> \ss (v:_) -> filterCheck p (c v) : ss
   ]
-\end{code}
-\ignore{
-\begin{code}
   where
     extract :: k -> [s] -> (s, [s])
-    extract k (x:xs)  | p x && ks x == k = (x, xs)
-                      | otherwise =  let (y, ys) = extract k xs
-                                     in  (y, x:ys)
-    filterCheck p v  | p v = v
-                     | otherwise = error "error in filter checking"
+    extract k (x:xs)  | p x && ks x == k  = (x, xs)
+                      | otherwise         =  let  (y, ys) = extract k xs
+                                             in   (y, x:ys)
+    filterCheck p v  | p v        = v
+                     | otherwise  = error "error in filter checking"
 \end{code}
-}
 
 To test, recall the example in Section \ref{sec:alignment}.
 Consider the following use of |pAlign|, denoting that the view is selected
@@ -272,13 +269,13 @@ pSelProj = pAlign (\(k,(n,s)) -> s > 1000) fst fst bx cr' (const Nothing)
   where cr' (k,n) = (k,(n, 2000))
 \end{code}
 We have:
-\begin{verbatim}
+\begin{lstlisting}
 *Brul> get pSelProj employees
-Just [(2,"Jeremy")]
+eval*{get pSelProj employees}
 *Brul> put pSelProj employees updatedEmployees0
-Just [(0,("Zhenjiang",1000)),(1,("Josh",400)),(0,("Zhenjiang",2000)),
-(2,("Jeremy",2000))]
-\end{verbatim}
+eval*{put pSelProj employees updatedEmployees0}
+\end{lstlisting}
+\todo{Josh: The \verb"eval*" commands in this file are temporarily disabled since the file does not typecheck.}
 
 \ignore{
 Second, we extend |pAlign| to deal with functional dependency consistency
@@ -289,7 +286,7 @@ Surprisingly, this is simple. It is suffice to
 extend the fourth case of |pAlign| to apply |fd| when inconsistency happens.
 
 \begin{code}
-relAlign :: forall s v k. (Show s, Show v, Eq k, Eq s)
+relAlign :: forall s v k DOT (Show s, Show v, Eq k, Eq s)
          => (s -> Bool) -> (s -> k) -> (v -> k)
             -> BiGUL s v -> (v -> s) -> (s -> Maybe s)
             -> (s -> s) {- dependency maintaining function -}
@@ -334,10 +331,10 @@ consider the following selection/projection query:
 < select Track, Rating, Album, Quantity as v
 < from s
 < where Quantity > 2
-which extract the track, rating, album and quality information from
-those music tracks in the source |s| whose quality is greater than |2|.
+which extracts the track, rating, album and quality information from
+those music tracks in the source |s| whose quantity is greater than |2|.
 Let us see how to write a single BiGUL program so that its |get|
-does the above query and its |put| describes an intended update policy.
+does the above query and its |put| describes a specific update policy.
 
 The first \textsc{BiGUL} program is |u0| below.
 \begin{code}
@@ -360,7 +357,7 @@ There are three cases:
 \item A source record is matched with a view record: we first use a
 rearrangement function to rearrange the view from a
 four-element list |[t,r,a,q]| to a five-element list |[t,_,r,a,q]|
-with the second element marked as underscore.  This rearrangement
+with the second element matched against a widecard.  This rearrangement
 function reshapes the view to match the shape of the source.  Then,
 the element in the source is |Replace|d by the corresponding element
 in the view.
@@ -370,12 +367,12 @@ record is created with a default value $d$ filled into the
 Date.
 
 \item A source record that has no matching view record: we simply
-delete this record by return |Nothing|.
+delete this record by returning |Nothing|.
 
 \end{itemize}
 
-Now if we wish to hide the source record by setting its Quantity to |0|
-rather than deleting it if it has no marching view record,
+Now if we wish to hide the source record by setting its |Quantity| to |0|
+rather than deleting it if it has no matching view record,
 we could simply change the last line of |u0| and get |u1| as follows.
 
 \begin{code}
@@ -392,34 +389,27 @@ u1 =  relAlign
 \end{code}
 
 To test, let us see some concrete running examples of using |u0|.
-Recall |s| defined in Section \ref{sec:table}. We can confirm that |get| does
+Recall |s| defined in Section \ref{sec:table}. We can confirm that |get| performs
 the query given at the start of this subsection.
 {\small
-\begin{verbatim}
+\begin{lstlisting}
 *Brul> get u0 s
-Just
-[[RString "Lullaby",RInt 3,RString "Show",RInt 3],
-[RString "Lovesong",RInt 5,RString "Disintegration",RInt 4],
-[RString "Trust",RInt 4,RString "Wish",RInt 5]]
-\end{verbatim}
+eval*{get u0 s}
+\end{lstlisting}
 }
 Now suppose that we change the above result (view) to the following
 by raising the rating of |Lullaby| from |3| to |4|, raising the quality of |lovesong| from |4| to |7|, and deleting |Trust|:
 \begin{code}
 v =  [ [RString "Lullaby" , RInt 4, RString "Show"  , RInt 3]
-     , [RString "Lovesong", RInt 5, RString "Disintegration" , RInt 7]
+     , [RString "Lovesong", RInt 5, RString "Paris" , RInt 7]
      ]
 \end{code}
 We can reflect these changes to the source by performing |put|.
 {\small
-\begin{verbatim}
+\begin{lstlisting}
 *Brul> put u0 s v
-Just
-[[RString "Lullaby",RInt 1989,RInt 4,RString "Galore",RInt 1],
-[RString "Lullaby",RInt 1989,RInt 4,RString "Show",RInt 3],
-[RString "Lovesong",RInt 1989,RInt 5,RString "Galore",RInt 1],
-[RString "Lovesong",RInt 1989,RInt 5,RString "Disintegration",RInt 7]]
-\end{verbatim}
+eval*{put u0 s v}
+\end{lstlisting}
 }
 In the updated source, the changes of rating and quality are correctly reflected,
 and the music track |Trust| is removed.

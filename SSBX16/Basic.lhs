@@ -1,4 +1,4 @@
-% !TEX root = paper.tex
+% !TEX root = tutorial/tutorial.tex
 
 %include lhs2TeX-macros.lhs
 
@@ -11,7 +11,8 @@
 \begin{code}
 {-# LANGUAGE FlexibleContexts, TemplateHaskell, TypeFamilies #-}
 
-module PBasic where
+module Basic where
+
 import Generics.BiGUL
 import Generics.BiGUL.Interpreter
 import Generics.BiGUL.TH
@@ -37,7 +38,7 @@ and backwards by calling |put|:
 < get  bx :: s       -> Maybe v
 < put  bx :: s -> v  -> Maybe s
 
-Here, |get bx| is a function mapping a source to a view, but can possibly fail:
+Here, |get bx| is a function mapping a source to a view, which can possibly fail:
 it either returns a successfully computed view wrapped in the |Just| constructor of |Maybe|,
 or signifies failure by producing the |Nothing| constructor.
 On the other hand, |put bx| accepts an original source and uses a view to update it to get an updated source (and might fail as well).
@@ -65,32 +66,32 @@ applying function |f| to the source). Consider a simple |put| defined by
 square x = x*x
 \end{code}
 We can test its put behavior as follows:
-\begin{verbatim}
-*PBasic> put (Skip square) 10 100
-Just 10
-\end{verbatim}
+\begin{lstlisting}
+*Basic> put (Skip square) 10 100
+\eval*{put (Skip square) 10 100}
+\end{lstlisting}
 It first checks if the view |100| is the square of the source |10|.
 If that is the case, the original source is returned.
 But if the view is changed, say to |250|,
 it should produce |Nothing|:
-\begin{verbatim}
-*PBasic> put (Skip square) 10 250
-Nothing
-\end{verbatim}
+\begin{lstlisting}
+*Basic> put (Skip square) 10 250
+\eval*{put (Skip square) 10 250}
+\end{lstlisting}
 To see why |put| produces |Nothing|, we may use
 |putTrace| instead of |put| to get more information:
-\begin{verbatim}
-*PBasic> putTrace (Skip square) 10 250
-view not determined by the source
-\end{verbatim}
+\begin{lstlisting}
+*Basic> putTrace (Skip square) 10 250
+\eval*{putTrace (Skip square) 10 250}
+\end{lstlisting}
 
 Each putback transformation in BiGUL
 is equipped with a unique |get| for doing forward transformation.
 We can test the |get| behavior as follows:
-\begin{verbatim}
-*PBasic> get (Skip square) 5
-Just 25
-\end{verbatim}
+\begin{lstlisting}
+*Basic> get (Skip square) 5
+\eval*{get (Skip square) 5}
+\end{lstlisting}
 In prose: doing the forward transformation of |Skip square| on the
 source~|5| gives the view~|25|. If |get| fails,
 we can also use |getTrace| to see more information about the failure, analogous to |putTrace|.
@@ -108,10 +109,10 @@ The second primitive is
 < Replace  :: BiGUL s s
 
 which completely replaces the source with the view. For instance,
-\begin{verbatim}
-*PBasic> put Replace 1 100
-Just 100
-\end{verbatim}
+\begin{lstlisting}
+*Basic> put Replace 1 100
+\eval*{put Replace 1 100}
+\end{lstlisting}
 uses the view |100| to replace the source |1| and gets a new source |100|.
 
 \subsection{Product}
@@ -126,20 +127,19 @@ to use |v1| to update |s1| with |bx1| and |v2| to |s2| with |bx2|.
 
 For instance, we can use |Prod| to combine |Skip| and |Replace| to put a view pair
 into a source pair.
-\begin{verbatim}
-*PBasic> put (skip1 `Prod` Replace) (5,1) ((),100)
-Just (5,100)
-\end{verbatim}
+\begin{lstlisting}
+*Basic> put (skip1 `Prod` Replace) (5,1) ((),100)
+\eval*{put (skip1 `Prod` Replace) (5,1) ((),100)}
+\end{lstlisting}
 Generally, we can use nested |Prod|s to describe a complicated structural mapping:
-\begin{verbatim}
-*PBasic> put ((skip1 `Prod` Replace) `Prod` Replace)
-             ((5,1),2) (((),100),200)
-Just ((5,100),200)
-\end{verbatim}
+\begin{lstlisting}
+*Basic> put ((skip1 `Prod` Replace) `Prod` Replace) ((5,1),2) (((),100),200)
+\eval*{put ((skip1 `Prod` Replace) `Prod` Replace) ((5,1),2) (((),100),200)}
+\end{lstlisting}
 
 \subsection{Source/view rearrangement}
 
-So far, the source and view are of the same structure. What if we
+So far, the source and view have been of the same structure. What if we
 wish to put a view |(v1,v2)| into a source of a different structure,
 say |((s0,s1),s2)|, to replace |s1| by |v1| and
 |s2| by |v2|? To do that, we need to rearrange the source and view into the same structure, and BiGUL provides a way of 
@@ -148,8 +148,8 @@ rearranging either the source or view through a ``simple'' $\lambda$-expression~
 < $(rearrS  (Q( e :: s1  -> s2  ))) :: BiGUL s2  v   -> BiGUL s1  v
 < $(rearrV  (Q( e :: v1  -> v2  ))) :: BiGUL s   v2  -> BiGUL s   v1 
 
-The ``simple'' $\lambda$-expression~$e$ should be wrapped inside Template Haskell quasi-quotes |(Q(...))| (written as \texttt{[||} \ldots \texttt{||]} in plain text Haskell).
-By ``simple'' we mean that there should be no wildcards~`|_|' in the argument pattern, and that the body can only contain the argument variables and constructors, and must mention all the argument variables.
+The ``simple'' $\lambda$-expression~$e$ should be wrapped inside Template Haskell quasi-quotes |(Q(...))| (written as \texttt{[||} \ldots \texttt{||]} in plain text Haskell); it is then processed and expanded by |rearrS| or |rearrV| to ``core'' BiGUL code, which is spliced (pasted) into the invocation site by Template Haskell, as instructed by |$(...)|.
+By ``simple'' we mean that there should be no wildcards~`|_|' in the argument pattern, and that the body can only contain the argument variables and constructors, and must mention all the argument variables. We will discuss the details later in Section~\ref{sec:rearrangement}.
 Returning to the problem of putting a pair into a triple, we may define the following
 putback transformation
 \begin{code}
@@ -159,9 +159,12 @@ putPairOverNPair  =   $(rearrV (Q( \(v1,v2) -> (((),v1),v2) ))) $
                         (skip1 `Prod` Replace) `Prod` Replace
 \end{code}
 by first rearranging the view |(v1,v2)| to a triple |(((),v1),v2)|
-with same structure as the source, and then using
+with the same structure as the source, and then using
 |(skip1 `Prod` Replace) `Prod` Replace| to
-put the arranged view |(((),v1),v2)| to the source |((s0,s1),s2)|.
+put the arranged view |(((),v1),v2)| into the source |((s0,s1),s2)|.
+The type context |(Show s0, Show s1, Show s2)| above is
+required by BiGUL for printing debugging messages.
+And note that the two `\$' signs in the definition off |putPairOverNPair| have different meanings: the first one marks the beginning of a Template Haskell splice, while the second one is the low-precedence application operator.
 
 The mechanism of source/view rearrangement enables us to
 process algebraic data structures such as
@@ -174,15 +177,15 @@ pHead  =   $(rearrS (Q( \(s:ss) -> (s, ss) )))$
              $(rearrV (Q( \v -> (v, ()) )))$
                Replace `Prod` skip1
 \end{code}
-It rearranges the source (an nonempty list) to a pair
+It rearranges the source (a nonempty list) to a pair
 with its head element |s| and its tail |ss|, and the view
-|v| to a pair |(v,())|, so that we can use |v| to replace |s|
-and |()| to keep |ss|. 
+|v| to a pair |(v,())|, so that we can use~|v| to replace |s|~and~|()|
+to keep |ss|. 
 
-\begin{verbatim}
-*PBasic> put pHead [1,2,3,4] 100
-Just [100,2,3,4]
-\end{verbatim}
+\begin{lstlisting}
+*Basic> put pHead [1,2,3,4] 100
+\eval*{put pHead [1,2,3,4] 100}
+\end{lstlisting}
 
 What if we wish to define a general putback transformation 
 that uses the view to replace the |i|th element of the source list?
@@ -200,24 +203,24 @@ on the view and the source as we did for |pHead|,
 but then keep the head element unchanged and replace 
 the |(i-1)|th element of the tail of the source by the view.
 
-\begin{verbatim}
-*PBasic> put (pNth 3) [1..10] 100
-Just [1,2,3,100,5,6,7,8,9,10]
-\end{verbatim}
+\begin{lstlisting}
+*Basic> put (pNth 3) [1..10] 100
+\eval*{put (pNth 3) [1..10] 100}
+\end{lstlisting}
 
 As we know, any putback function in BiGUL is equipped with
 a |get| function.
 For |pNth|, we can test its |get| behavior
 as follows; its corresponding |get| function is actually
-the familiar |take| function.
-\begin{verbatim}
-*PBasic> get (pNth 3) [1..10]
-Just 4
-\end{verbatim}
+the familiar index function |(!!)|.
+\begin{lstlisting}
+*Basic> get (pNth 3) [1..10]
+\eval*{get (pNth 3) [1..10]}
+\end{lstlisting}
 
 Both |pHead| and |pNth| contain the programming pattern in which both the source and view are rearranged into a product and then further updates are performed on corresponding components.
 This is a ubiquitous pattern in BiGUL, for which we provide a more compact syntax:
-< $(update (P(sourcePattern)) (D(viewPattern)) (D(updates)))
+< $(update (P(sourcePattern)) (P(viewPattern)) (D(updates)))
 The source and view are respectively decomposed using |sourcePattern| and\break |viewPattern| inside the pattern quasi-quotes
 |(P(...))| (written as \texttt{[p||} \ldots \texttt{||]} in plain text Haskell), and corresponding elements are updated using the programs provided in the declaration quasi-quote |(D(...))| (\texttt{[d||} \ldots \texttt{||]} in plain text Haskell).
 For example, we may describe |(skip1 `Prod` Replace) `Prod` Replace| by
@@ -259,18 +262,18 @@ predicate for the main condition is very general, and we can use any
 function of type |(s -> v -> Bool)| to examine the source and view.
 The predicate for the exit condition checks the source only.
 If the main and the exit conditions are satisfied,
-then the BiGUL program after the arrow "|==>|" is executed. 
-Note that the
-exit conditions in different branches are expected to be disjoint for efficient
+then the BiGUL program after the arrow~`|==>|' (written `\verb"==>"' in plain text Haskell and defined in the module \texttt{Generics.BiGUL.Lib}) is executed. 
+The exit conditions in different branches are expected to be disjoint for efficient
 execution of the forward transformation.
 
 \item For an adaptive
-case, if the main condition is satisfied, a function of type |(s -> v -> Bool)|
+case, if the main condition is satisfied, a function of type |(s -> v -> s)|
 is used to produce
 an adapted source from the current source and view before the whole |Case| is rerun,
 with the expectation that one of the normal cases will be applicable this time.
-Note that if adaptation does not directly execute to a normal case,
-an error will be reported at runtime. 
+Note that if adaptation does not lead to a normal case,
+an error will be reported at runtime.
+This is to ensure that BiGUL does not stuck in adaptation and fail to terminate.
 
 
 \end{itemize}
@@ -285,30 +288,30 @@ replaceAll  =
         ,  $(normal (Q( \s v -> length s > 1 )) (Q( \s -> length s > 1 )))
            ==>  $(rearrS (Q( \(x:xs) -> (x,xs) )))$
                   $(rearrV (Q( \v -> (v, v) )))$
-                    Replace `Prod` replaceAll,
-        ,  $(adaptive (Q( \s v -> length s == 0 ))) 
+                    Replace `Prod` replaceAll
+        ,  $(adaptive (Q( \s v -> length s == 0 )))
            ==> \s v -> [undefined]
         ]
 \end{code}
 It consists of two normal cases and one adaptive case.
-The first normal case says that if the source is of length |1| (containing a single element),
-we rearrange the source list by extracting the single element out, and replace this element
+The first normal case says that if the source is of length~|1| (containing a single element),
+we rearrange the source list by extracting the single element, and replace this element
 with the view.
-The second normal case says that if the source has more than |1| elements, we 
+The second normal case says that if the source has more than |1| element, we 
 rearrange the source list to a pair of its head element and its tail, rearrange
 the view by duplicating it to a pair, and use one copy of the view to replace the head element, and the other copy to recursively replace each element in the tail of the source.
 The last adaptive case says that if the source is empty, we adapt the source
-to a singleton list with the "don't-care" element (defined by |undefined|), and rerun the whole
+to a singleton list with the \emph{don't-care} element~|undefined| (`\verb"undefined"' in plain text Haskell), and rerun the whole
 |Case| executing the first normal case. 
 
-\begin{verbatim}
-*PBasic> put replaceAll [] 100
-Right [100]
-*PBasic> put replaceAll [1..10] 100
-Right [100,100,100,100,100,100,100,100,100,100]
-\end{verbatim}
+\begin{lstlisting}
+*Basic> put replaceAll [] 100
+\eval*{put replaceAll [] 100}
+*Basic> put replaceAll [1..10] 100
+\eval*{put replaceAll [1..10] 100}
+\end{lstlisting}
 Note that in the first running example, the source |[]| is first adapted to |[undefined]|,
-and the "don't care" element |undefined| is replaced by |100| at the rerun of
+and the \emph{don't care} element |undefined| is replaced by |100| at the rerun of
 the whole |Case|.
 
 As another interesting example, we define |emb|, which can safely embed any pair of well-behaved
@@ -322,10 +325,10 @@ As another interesting example, we define |emb|, which can safely embed any pair
 <      ==> p
 <   ]
 
-where, given a pair of well-behaved |get| |g| and |put| |p|,
-if the view is the same as that produced by applying |g| to the source, we do no change
-on the source with |Skip g| (hinting that the view can be produced using $g$), otherwise we adapte the source using |p| to
-reflect the change on the view to the source. Note that if |p| and |g| forms a well-behaved bidirectional transformation, in the rerun of the whole |Case| after the adaptation, the first normal case will always be applicable. To see a use of |emb|, we may define the following putback function
+where, given a pair |(g,p)| of well-behaved |get| and |put| functions,
+if the view is the same as that produced by applying |g| to the source, we make no change
+on the source with |Skip g| (hinting that the view can be produced using $g$), otherwise we adapt the source using |p| to
+reflect the change on the view to the source. Note that if |p| and |g| form a well-behaved bidirectional transformation, in the rerun of the whole |Case| after the adaptation, the first normal case will always be applicable. To see a use of |emb|, we may define the following putback function
 to update a pair with its sum.
 \begin{code}
 pSum2 :: BiGUL (Int, Int) Int
@@ -333,32 +336,38 @@ pSum2 = emb g p
   where  g (x,y) = x+y
          p (x,y) v = (v-y,y)
 \end{code}
-%\begin{verbatim}
-%*PBasic> put pSum2 (1,2) 100
-%Right (98,2)
-%*PBasic> get pSum2 (1,2)
-%Right 3
-%\end{verbatim}
+%\begin{lstlisting}
+%*Basic> put pSum2 (1,2) 100
+%\eval{put pSum2 (1,2) 100}
+%*Basic> get pSum2 (1,2)
+%\eval{get pSum2 (1,2)}
+%\end{lstlisting}
 
 
 
 While we allow a general function to describe
 the main condition or the exit condition, 
 it is usually more concise to use patterns to describe these conditions.
-For instance, we may replace the condition |(Q( \s v -> length s == 1 ))| by
-> (P( \[x] v -> True))
+For instance, we may replace the condition |(Q( \s -> length s == 1 ))| by
+\begin{spec}
+(Q( \[x] -> True ))
+\end{spec}
 Here, the meaning of a boolean-valued pattern-matching
 lambda-expression is redefined as a total function which computes to
 |False| when an input does not match the pattern; this meaning is
 different from that of a general pattern-matching lambda-expression,
-which fails to compute when the pattern is not matched.
+which fails to compute (and throws an exception) when the pattern is not matched.
 For example,
-in general the lambda-expression |\[x] v -> True| will fail
+in general the lambda-expression |\[x] -> True| will fail
 to compute if the first input is not a singleton list; when used in branch
-construction, however, the lambda-expression will compute to False
+construction, however, the lambda-expression will compute to |False|
 upon encountering an empty list.
-
-Finally, for conveniences, we prepare 
+A unary condition like |(Q( \[x] -> True ))| where only the pattern part matters can be abbreviated to
+\begin{spec}
+(P( [x] ))
+\end{spec}
+to further reduce syntactic noise.
+Finally, to also allow this kind of abbreviation in main conditions, BiGUL provides 
 a special form for the |normal| case where the main condition is specified as the conjunction of two unary predicates on the source and view respectively:
 < $(normalSV   (Q( sourceCond :: s -> Bool ))
 <              (Q( viewCond :: v -> Bool ))
@@ -386,9 +395,9 @@ repHead = Case [
 \subsection{View dependency}
 
 Sometimes, a view may contain derived values that are computed from
-other part of the view, and the view should be consistently changed.
+other parts of the view, and the view should be consistently changed.
 For instance, for the view |(x, even(x))|, the second
-component is an indicator showing the first component is an even number or not.
+component is an indicator showing whether or not the first component is an even number.
 To capture this, BiGUL provides
 
 < Dep :: Eq v' => (v->v') -> BiGUL a v -> BiGUL a (v, v')
@@ -401,20 +410,20 @@ replaceAll2 = Dep even replaceAll
 to replace all elements of the source by the
 first component of the view, while checking whether
 the second component is consistent with the first component.
-\begin{verbatim}
-*PBasic> put replaceAll2 [1..10] (100,True)
-Just [100,100,100,100,100,100,100,100,100,100]
-*PBasic> put replaceAll2 [1..10] (100,False)
-Nothing
-*PBasic> putTrace replaceAll2 [1..10] (100,False)
-second view component not determined by the first
-\end{verbatim}
+\begin{lstlisting}
+*Basic> put replaceAll2 [1..10] (100,True)
+\eval*{put replaceAll2 [1..10] (100,True)}
+*Basic> put replaceAll2 [1..10] (100,False)
+\eval*{put replaceAll2 [1..10] (100,False)}
+*Basic> putTrace replaceAll2 [1..10] (100,False)
+\eval*{putTrace replaceAll2 [1..10] (100,False)}
+\end{lstlisting}
 As seen in the last running of |put|, it reports an error because the view |(100,False)|
-is inconsistent. This is because |100| is an even number, so the second component should be |True|.
+is inconsistent: |100| is an even number, so the second component should be |True|.
 
 \subsection{Composition}
 
-Like in the get-based bidirectional progarmming,
+As in get-based bidirectional programming,
 putback-based bidirectional transformations
 can be composed similarly:
 
@@ -424,18 +433,18 @@ where we can put the view |b| to the source |a| through the intermediate data |u
 composing the putback function from |b| to |u| and that from |u| to |a|.
 
 As a simple example, consider that we wish to use the view to update
-the heard element of the head element of a list.
-We can define such putback function as the following |pHead2|
+the head element of the head element of a list of lists.
+We can define such a putback function as the following |pHead2|
 by composing |pHead| with |pHead|.
 \begin{code}
 pHead2 :: Show a => BiGUL [[a]] a
 pHead2 = pHead `Compose` pHead
 \end{code}
-The following is a running example.
-\begin{verbatim}
-*PBasic> put pHead2 [[1,2],[3,4,5],[]] 100
-Just [[100,2],[3,4,5],[]]
-\end{verbatim}
+The following is an example to demonstrate this:
+\begin{lstlisting}
+*Basic> put pHead2 [[1,2],[3,4,5],[]] 100
+\eval*{put pHead2 [[1,2],[3,4,5],[]] 100}
+\end{lstlisting}
 
 %\subsection{Utilities}
 

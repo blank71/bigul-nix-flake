@@ -1,4 +1,4 @@
-% !TEX root = paper.tex
+% !TEX root = tutorial.tex
 
 \section{Conclusion}
 
@@ -6,7 +6,8 @@ We have given an introduction to BiGUL programming, explained the underlying des
 BiGUL in its current form is merely one step toward a versatile bidirectional programming language, though.
 We conclude this chapter by laying out some future directions.
 
-While BiGUL is designed for the programmers to be able to freely describe whatever consistency restoration strategies they have in mind and guarantees that the described strategies are well-behaved, that well-behavedness guarantee may be trivial if a described strategy is not actually well-behaved and consequently fails some dynamic checks at runtime.
+While BiGUL is designed to ensure that programmers are able to freely describe whatever consistency restoration strategies they have in mind and guarantees that the described strategies are well-behaved,
+well-behavedness guarantees may be trivial if a described strategy is not actually well-behaved and consequently fails some dynamic checks at runtime.
 Working with the current BiGUL can thus involve a lot of tedious testing to see if those dynamic checks can go through; also, since we must keep the dynamic checks in place to ensure well-behavedness, at runtime they can incur serious performance overheads.
 We need ways to precisely characterize the behavior of the dynamic checks, so that it is possible to know that they are redundant and can be safely skipped during execution.
 
@@ -17,13 +18,15 @@ A discussion of this problem is offered by, e.g., Diskin et~al.~\cite[Section~2.
 We need to design new language constructs that improve composability of BiGUL programs, discover programming patterns and architectures, and eventually build reusable libraries to facilitate program development.
 
 Apart from language-specific issues, there are also challenges faced by the functional programming approach to BXs in general.
-For one, graphs have always been a kind of data structure that is hard to deal with in functional programming, but the application domains of other BX sub-communities usually require the ability to work with graphs; this is an area where BiGUL and other functional programming--based languages/tools need to catch up with.
+For one, graphs have always been a kind of data structure that is hard to deal with in functional programming, but the application domains of other BX sub-communities usually require the ability to work with graphs; this is an area where BiGUL and other functional programming--based languages/tools need to catch up.
 More fundamentally, while programmable from one single direction, asymmetric lenses are a less expressive BX formalism, and we probably should not restrict the future version of BiGUL and new bidirectional languages to the framework of asymmetric lenses.
 We should recognize that the essence of BiGUL is its full programmability of bidirectional behavior, not the framework of asymmetric lenses which it currently supports, and we should strive to bring this programmability into other existing BX formalisms, or, if that is difficult, come up with new formalisms that are designed with such programmability in mind.
 
 \section*{Acknowledgements}
 
+We would like to thank James Cheney, Jeremy Gibbons, and, in particular, \hbox{Anthony} \hbox{Anjorin}
+for their meticulous and helpful comments on this paper. 
 This work is supported by JSPS Grant-in-Aid for Scientific Research
-(A) No. 25240009 of Japan, the Nation Basic Research Program (973
-Program) of China under Grant No. 2015CB352201, and the National
-Natural Science Foundation of China under Grant No. 61620106007.
+(A) No.~25240009 of Japan, the Nation Basic Research Program (973
+Program) of China under Grant No.~2015CB352201, and the National
+Natural Science Foundation of China under Grant No.~61620106007.

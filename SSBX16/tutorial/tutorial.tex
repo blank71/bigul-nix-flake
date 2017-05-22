@@ -1,13 +1,12 @@
 \documentclass{llncs}
 
-\title{Principle and Practice of Bidirectional Programming in BiGUL}
+\title{Principles and Practice of Bidirectional~Programming in BiGUL}
+\subtitle{Draft manuscript (19 April 2017)}
 
-\author{Zhenjiang Hu,  Hsiang-Shang Ko}
+\author{Zhenjiang Hu and Hsiang-Shang Ko}
 \institute{
 National Institute of Informatics, Japan\\
-{\{hu,hsiang-shang\}@nii.ac.jp}\\
-~\\
-Draft manuscript, 31 January 2017
+{\{hu,hsiang-shang\}@nii.ac.jp}
 }
 
 \usepackage{lhs2TeX-polycode}
@@ -19,11 +18,16 @@ Draft manuscript, 31 January 2017
 \usepackage{comment}
 \usepackage{graphicx}
 \usepackage{amssymb}
-\usepackage{amsmath}
+\usepackage[fleqn]{amsmath}
 \usepackage{mathtools}
 %\usepackage{amsthm}
 \usepackage{enumerate}
 \usepackage{xspace}
+\usepackage{upquote}
+
+\usepackage{listings}
+%\newcommand{\lstnewline}{\raisebox{1.5pt}{\scalebox{.8}{\reflectbox{\rotatebox[origin=c]{180}{\ensuremath{\Lsh}}}}}}
+\lstset{basicstyle=\ttfamily, basewidth={.5em}, xleftmargin=.5\parindent, breaklines}
 
 \usepackage{hyperref}
 \renewcommand{\sectionautorefname}{Section}
@@ -37,21 +41,17 @@ Draft manuscript, 31 January 2017
 \newtheorem{maintheorem}[theorem]{Main Theorem}
 \newtheorem{algorithm}{\bf Algorithm}
 
-%\newcommand\todo[1]{{\color{red} Todo: #1}}
-
-%\usepackage{natbib}
-
 \input{macros}
 
+\setlength{\mathindent}{.5\parindent}
+
 \begin{document}
-\frontmatter
-\mainmatter
 
 \maketitle
 
 \begin{abstract}
 Putback-based bidirectional programming allows the programmer to write
-only one putback transformation, from which the unique corresponding
+only one backward transformation, from which the unique corresponding
 forward transformation is derived for free. A key distinguishing
 feature of putback-based bidirectional programming is full control
 over the bidirectional behavior, which is important for specifying
@@ -59,7 +59,7 @@ intended bidirectional transformations without any ambiguity.
 In this tutorial, we will introduce BiGUL, a simple yet powerful
 putback-based bidirectional programming language, explaining the underlying
 principles and showing how various kinds of bidirectional
-applications can be developed in BiGUL.
+application can be developed in BiGUL.
 %and highlighting important issues and challenges for future work.
 
 \ignore{
@@ -85,8 +85,8 @@ Schedule:
 
 \input{PutBX}
 \input{Install}
-\input{PBasic}
-\input{PList}
+\input{Basic}
+\input{List}
 %\input{PSet}
 \input{Principle}
 \input{Alignment}
