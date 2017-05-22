@@ -9,7 +9,7 @@ open import HoareLogic.Semantics
 open import Level
 open import Function
 open import Data.Bool
-open import Data.Product as Product
+open import Data.Product as Product hiding (,_)
 open import Data.Sum
 open import Data.List as List
 open import Relation.Binary.PropositionalEquality
@@ -69,13 +69,42 @@ BranchSound R R' ((p , b) ∷ bs) bs' ReentryCond =
                      (R ∩ ReentryCond) (f s v , v) × ((s' : S) → R' (s' , f s v , v) → R' (s' , s , v)))) b ×
   BranchSound R R' bs ((p , b) ∷ bs') ReentryCond
 
+inCaseDomain : (bs bs' : List Branch) {s' s : S} {v : V} {cont : S → Par S} →
+               put-with-adaptation bs bs' s v cont ↦ s' → CaseDomain (List.map proj₁ bs) (s , v)
+inCaseDomain []             bs'             ()
+inCaseDomain ((p , b) ∷ bs) bs' {s = s} {v} c with p s v
+inCaseDomain ((p , b) ∷ bs) bs' {s = s} {v} c | false = inj₂ (inCaseDomain bs ((p , b) ∷ bs') c)
+inCaseDomain ((p , b) ∷ bs) bs' {s = s} {v} c | true  = inj₁ refl
+
+inNormalCaseDomain : (bs bs' : List Branch) {s' s : S} {v : V} →
+                     put-with-adaptation bs bs' s v (const fail) ↦ s' →
+                     NormalCaseDomain (List.map (Product.map id isNormal) bs) (s , v)
+inNormalCaseDomain []             bs'             ()
+inNormalCaseDomain ((p , b) ∷ bs) bs' {s = s} {v} c with p s v | inspect (p s) v
+inNormalCaseDomain ((p , normal l q) ∷ bs) bs' {s = s} {v} c
+  | false | [ p-s-v≡false ] = inj₂ (inNormalCaseDomain bs ((p , normal l q) ∷ bs') c)
+inNormalCaseDomain ((p , adaptive f) ∷ bs) bs' {s = s} {v} c
+  | false | [ p-s-v≡false ] = p-s-v≡false , inNormalCaseDomain bs ((p , adaptive f) ∷ bs') c
+inNormalCaseDomain ((p , normal l q) ∷ bs) bs' {s = s} {v} c
+  | true  | [ p-s-v≡true  ] = inj₁ p-s-v≡true
+inNormalCaseDomain ((p , adaptive f) ∷ bs) bs' {s = s} {v} ()
+  | true  | [ p-s-v≡true  ]
+
 check-diversion-success : (bs : List Branch) (s : S) (v : V) →
                           OutOfDomain (List.map proj₁ bs) (s , v) → OutOfRange bs s → check-diversion bs s v ↦ tt
 check-diversion-success []                      s v                outd               outr  = return refl
 check-diversion-success ((p , normal l q) ∷ bs) s v (p-s-v≡false , outd) (q-s≡false , outr) =
-  assert-not p-s-v≡false then catch-snd (assert-fst q-s≡false) (check-diversion-success bs s v outd outr)
+  assert-not p-s-v≡false then assert-not q-s≡false then (check-diversion-success bs s v outd outr)
 check-diversion-success ((p , adaptive f) ∷ bs) s v (p-s-v≡false , outd) outr =
-  assert-not p-s-v≡false then catch-snd fail (check-diversion-success bs s v outd outr)
+  assert-not p-s-v≡false then check-diversion-success bs s v outd outr
+
+check-diversion-inverse : (bs : List Branch) (s : S) (v : V) →
+                          check-diversion bs s v ↦ tt → OutOfDomain (List.map proj₁ bs) (s , v) × OutOfRange bs s
+check-diversion-inverse []                      s v c = tt , tt
+check-diversion-inverse ((p , normal l q) ∷ bs) s v (assert-not p-s-v≡false then assert-not q-s≡false then c) =
+  Product.map (p-s-v≡false ,_) (q-s≡false ,_) (check-diversion-inverse bs s v c)
+check-diversion-inverse ((p , adaptive f) ∷ bs) s v (assert-not p-s-v≡false then c) =
+  Product.map (p-s-v≡false ,_) id (check-diversion-inverse bs s v c)
 
 case-soundness-reentry :
   (bs bs' : List Branch) (R : ℙ (S × V)) (R' : ℙ (S × S × V)) (cont : S → Par S) (ReentryCond : ℙ (S × V)) →
@@ -164,17 +193,17 @@ case-soundnessG-main []                      bs' R soundG s ()
 case-soundnessG-main ((p , normal l q) ∷ bs) bs' R ((P , soundG) , soundGs) s (inj₁ (ps , q-s≡true))
   with soundG s ps
 case-soundnessG-main ((p , normal l q) ∷ bs) bs' R ((P , soundG) , soundGs) s (inj₁ (ps , q-s≡true))
-  | v , get↦ , Rsv , p-s-v≡true , out =
-  v , catch-fst (assert q-s≡true then get↦ >>= (assert p-s-v≡true then return refl)) (return refl) , Rsv , out
+  | v , get↦ , Rsv , p-s-v≡true , out rewrite q-s≡true =
+  v , (get↦ >>= assert p-s-v≡true then return refl) , Rsv , out
 case-soundnessG-main ((p , normal l q) ∷ bs) bs' R ((P , soundG) , soundGs) s (inj₂ (q-s≡false , range-s))
   with case-soundnessG-main bs ((p , normal l q) ∷ bs') R soundGs s range-s
 case-soundnessG-main ((p , normal l q) ∷ bs) bs' R ((P , soundG) , soundGs) s (inj₂ (q-s≡false , range-s))
-  | v , get↦ , Rsv , p-s-v≡false , out =
-  v , catch-snd (assert-fst q-s≡false) (get↦ >>= (assert-not p-s-v≡false then return refl)) , Rsv , out
+  | v , get↦ , Rsv , p-s-v≡false , out rewrite q-s≡false =
+  v , (get↦ >>= assert-not p-s-v≡false then return refl) , Rsv , out
 case-soundnessG-main ((p , adaptive f) ∷ bs) bs' R soundG s range-s
   with case-soundnessG-main bs ((p , adaptive f) ∷ bs') R soundG s range-s
 case-soundnessG-main ((p , adaptive f) ∷ bs) bs' R soundG s range-s | v , get↦ , Rsv , p-s-v≡false , out =
-  v , catch-snd fail (get↦ >>= assert-not p-s-v≡false then return refl) , Rsv , out
+  v , (get↦ >>= assert-not p-s-v≡false then return refl) , Rsv , out
 
 case-soundnessG : (bs : List Branch) (R : ℙ (S × V)) (soundG : BranchSoundG R bs []) →
                   (P : ℙ S) → P ⊆ Range R bs [] soundG → SoundG P (Lens.get (case-lens bs)) R

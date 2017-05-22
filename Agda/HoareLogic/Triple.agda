@@ -60,11 +60,6 @@ mutual
                      (λ { (s' , s , v) → ∃ λ r → R' (s' , s , r) × Eval vpat wpat expr (r , v) }) →
               Triple (R • (Match vpat ∘ swap)) (rearrV vpat wpat expr c b)
                      (λ { (s' , s , v) → ∃ λ r → R' (s' , s , r) × Match vpat (v , r) })
-    dep     : {S V V' : U n} {f : ⟦ V ⟧ (μ F) → ⟦ V' ⟧ (μ F)} {b : BiGUL F S V}
-              (R : ℙ (⟦ S ⟧ (μ F) × (⟦ V ⟧ (μ F) × ⟦ V' ⟧ (μ F))))
-              {R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × (⟦ V ⟧ (μ F) × ⟦ V' ⟧ (μ F)))} →
-              Triple (R ∘ Product.map id < id , f >) b (R' ∘ Product.map id (Product.map id < id , f >)) →
-              Triple ((uncurry _≡_ ∘ Product.map f id ∘ proj₂) ∩ R) (dep {S = S} {V} {V'} f b) R'
     case    : {S V : U n} {bs : List (CaseBranch F S V)}
               {R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} {R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} →
               CaseBranchTriple R R'
@@ -102,11 +97,25 @@ case-main-cond-lemma [] = refl
 case-main-cond-lemma ((p , normal _ _) ∷ bs) = cong (p ∷_) (case-main-cond-lemma bs)
 case-main-cond-lemma ((p , adaptive _) ∷ bs) = cong (p ∷_) (case-main-cond-lemma bs)
 
+case-branch-type-lemma : {n : ℕ} {F : Functor n} {S V : U n} (bs : List (CaseBranch F S V)) →
+                         List.map (Product.map id (elimCaseBranchType (λ _ _ → true) (λ _ → false))) bs ≡
+                         List.map (Product.map id (isNormal _ _)) (interp-CaseBranch bs)
+case-branch-type-lemma []                      = refl
+case-branch-type-lemma ((p , normal _ _) ∷ bs) = cong ((p , true ) ∷_) (case-branch-type-lemma bs)
+case-branch-type-lemma ((p , adaptive _) ∷ bs) = cong ((p , false) ∷_) (case-branch-type-lemma bs)
+
 case-out-of-range-lemma : {n : ℕ} {F : Functor n} {S V : U n} (bs : List (CaseBranch F S V)) →
                           OutOfRangeB bs ⊆ OutOfRange (interp-CaseBranch bs)
 case-out-of-range-lemma []                      = id
 case-out-of-range-lemma ((p , normal _ _) ∷ bs) = Product.map id (case-out-of-range-lemma bs)
 case-out-of-range-lemma ((p , adaptive _) ∷ bs) = case-out-of-range-lemma bs
+
+case-out-of-range-inverse-lemma :
+  {n : ℕ} {F : Functor n} {S V : U n} (bs : List (CaseBranch F S V)) →
+  OutOfRange (interp-CaseBranch bs) ⊆ OutOfRangeB bs
+case-out-of-range-inverse-lemma []                      = id
+case-out-of-range-inverse-lemma ((p , normal _ _) ∷ bs) = Product.map id (case-out-of-range-inverse-lemma bs)
+case-out-of-range-inverse-lemma ((p , adaptive _) ∷ bs) = case-out-of-range-inverse-lemma bs
 
 soundness : {n : ℕ} {F : Functor n} {S V : U n}
             {R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} {b : BiGUL F S V} {R' : ℙ (⟦ S ⟧ (μ F) × ⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} →
@@ -117,7 +126,6 @@ soundness replace = replace-soundness
 soundness (prod {l = l} tl {r = r} tr) = prod-soundness _ _ (interp l) (soundness tl) _ _ (interp r) (soundness tr)
 soundness (rearrS {tpat = tpat} {c = c} {b} R R' t) = rearrS-soundness _ tpat _ c (interp b) R R' (soundness t)
 soundness (rearrV {wpat = wpat} {c = c} {b} R R' t) = rearrV-soundness _ wpat _ c (interp b) R R' (soundness t)
-soundness (dep {V' = V'} {f} {b} R {R'} t) = dep-soundness f (U-dec V') (interp b) R R' (soundness t)
 soundness {n} {F} {S} {V} (case {bs = bs} {R} {R'} ts dom) =
   case-soundness (interp-CaseBranch bs) R R'
     (subst (BranchSound R R' (interp-CaseBranch bs) [] ∘ NormalCaseDomain)
@@ -133,13 +141,6 @@ soundness {n} {F} {S} {V} (case {bs = bs} {R} {R'} ts dom) =
       (λ sv pre → let (s' , put↦ , r' , (peq , outd) , qeq , outr) = sound sv pre
                   in   s' , put↦ , r' , (peq , outd) , qeq , case-out-of-range-lemma bs' outr) , case-soundness-lemma ts
     case-soundness-lemma {bs' = bs'} (p ∷ᴬ ts) rewrite case-main-cond-lemma bs' = lift p , case-soundness-lemma ts
-
-    case-branch-type-lemma : (bs : List (CaseBranch F S V)) →
-                             List.map (Product.map id (elimCaseBranchType (λ _ _ → true) (λ _ → false))) bs ≡
-                             List.map (Product.map id (isNormal _ _)) (interp-CaseBranch bs)
-    case-branch-type-lemma [] = refl
-    case-branch-type-lemma ((p , normal _ _) ∷ bs) = cong ((p , true ) ∷_) (case-branch-type-lemma bs)
-    case-branch-type-lemma ((p , adaptive _) ∷ bs) = cong ((p , false) ∷_) (case-branch-type-lemma bs)
 soundness (conseq q t q') = consequence _ _ _ (soundness t) _ q _ q'
 
 expand : ℕ → {n : ℕ} {F : Functor n} {S V : U n} → (BiGUL F S V → BiGUL F S V) → BiGUL F S V
@@ -200,10 +201,6 @@ mutual
               {b : BiGUL F S W} (R : ℙ (⟦ S ⟧ (μ F) × PatResult vpat)) {P : ℙ (⟦ S ⟧ (μ F))} →
               TripleR (R • Eval vpat wpat expr) b P →
               TripleR (R • (Match vpat ∘ swap)) (rearrV vpat wpat expr c b) P
-    dep     : {S V V' : U n} {f : ⟦ V ⟧ (μ F) → ⟦ V' ⟧ (μ F)} {b : BiGUL F S V}
-              (R : ℙ (⟦ S ⟧ (μ F) × (⟦ V ⟧ (μ F) × ⟦ V' ⟧ (μ F)))) {P : ℙ (⟦ S ⟧ (μ F))} →
-              TripleR (R ∘ Product.map id < id , f >) b P →
-              TripleR ((uncurry _≡_ ∘ Product.map f id ∘ proj₂) ∩ R) (dep {S = S} {V} {V'} f b) P
     case    : {S V : U n} {bs : List (CaseBranch F S V)} {R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} →
               (ts : CaseBranchTripleR R bs []) → TripleR R (case bs) (CaseRange ts)
     conseq  : {S V : U n} {b : BiGUL F S V} {R T : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} {P Q : ℙ (⟦ S ⟧ (μ F))} →
@@ -237,9 +234,8 @@ soundnessR replace = replace-soundnessG
 soundnessR (prod {l = l} tl {r = r} tr) = prod-soundnessG _ _ (interp l) (soundnessR tl) _ _ (interp r) (soundnessR tr)
 soundnessR (rearrS {tpat = tpat} {c = c} {b} R P t) = rearrS-soundnessG _ tpat _ c (interp b) P R (soundnessR t) 
 soundnessR (rearrV {wpat = wpat} {c = c} {b} R   t) = rearrV-soundnessG _ wpat _ c (interp b) _ R (soundnessR t)
-soundnessR (dep {V' = V'} {f} {b} R {P} t) = dep-soundnessG f (U-dec V') (interp b) P R (soundnessR t)
-soundnessR {n} {F} {S} {V} {R} (case ts) =
-  case-soundnessG _ _ (case-soundnessR-lemma ts) (CaseRange ts) (case-range-lemma ts)
+soundnessR {n} {F} {S} {V} {R} (case {bs = bs} ts) =
+  case-soundnessG (interp-CaseBranch bs) R (case-soundnessR-lemma ts) (CaseRange ts) (case-range-lemma ts)
   where
     case-soundnessR-lemma :
       {bs bs' : List (CaseBranch F S V)} → CaseBranchTripleR R bs bs' →

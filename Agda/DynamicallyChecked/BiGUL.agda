@@ -31,9 +31,7 @@ mutual
     rearrV  : {S V V' : U n}
               (vpat : Pattern F V) (vpat' : Pattern F V') (expr : Expr vpat vpat') (c : CompleteExpr vpat vpat' expr)
               (b : BiGUL F S V') → BiGUL F S V
-    dep     : {S V V' : U n} (f : ⟦ V ⟧ (μ F) → ⟦ V' ⟧ (μ F)) (b : BiGUL F S V) → BiGUL F S (V ⊗ V')
     case    : {S V : U n} (branches : List (CaseBranch F S V)) → BiGUL F S V
-    compose : {A B C : U n} (b : BiGUL F A B) (b' : BiGUL F B C) → BiGUL F A C
 
   data CaseBranchType {n : ℕ} (F : Functor n) (S V : U n) : Set₁ where
     normal   : (b : BiGUL F S V) (q : ⟦ S ⟧ (μ F) → Bool) → CaseBranchType F S V
@@ -57,9 +55,7 @@ mutual
   interp         (prod b b')                  = interp b ↕ interp b'
   interp         (rearrS spat spat' expr c b) = rearrangement-iso spat spat' expr c ▸ interp b
   interp         (rearrV vpat vpat' expr c b) = interp b ◂ sym-iso (rearrangement-iso vpat vpat' expr c)
-  interp         (dep {V' = V'} f b)          = interp b ◂ sym-iso (dependency-iso f (U-dec V'))
   interp {F = F} (case {S} {V} branches)      = case-lens (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)) (interp-CaseBranch branches)
-  interp         (compose b b')               = interp b ↔ interp b'
 
   interp-CaseBranch : {n : ℕ} {F : Functor n} {S V : U n} →
                       List (CaseBranch F S V) → List (Case.Branch (⟦ S ⟧ (μ F)) (⟦ V ⟧ (μ F)))

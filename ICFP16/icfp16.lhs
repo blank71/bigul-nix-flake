@@ -2,8 +2,8 @@
 
 \newif\ifanonymous
 
-\anonymoustrue
-%\anonymousfalse
+%\anonymoustrue
+\anonymousfalse
 
 %include polycode.fmt
 %
@@ -101,7 +101,7 @@
 %\preprintfooter{short description of paper}   % 'preprint' option specified.
 
 \title{The Under-Appreciated Put: Implementing Delta-Alignment in BiGUL}
-\subtitle{A POPL Pearl Submission}
+%\subtitle{A POPL Pearl Submission}
 
 \ifanonymous
 \authorinfo{}{}{}

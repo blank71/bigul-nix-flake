@@ -1,5 +1,5 @@
 %% For double-blind review submission
-\documentclass[acmlarge,fleqn,review,anonymous]{acmart}\settopmatter{printfolios=true}
+\documentclass[acmlarge,fleqn,anonymous]{acmart}\settopmatter{printfolios=true}
 %% For single-blind review submission
 %\documentclass[acmlarge,review]{acmart}\settopmatter{printfolios=true}
 %% For final camera-ready submission
@@ -309,7 +309,7 @@ Most of these languages are highly declarative, and only allow the programmer to
 However, synchronisation problems are diverse and require vastly different consistency restoration strategies, and to cope with the diversity, the programmer must be empowered to fully control and reason about the consistency restoration behaviour of their bidirectional programs.
 The putback-based approach to bidirectional programming was proposed to address this issue once and for all, and this paper takes the approach one step further by proposing a Hoare-style logic for \citeauthor{Ko-BiGUL}'s putback-based language \BiGUL.
 With this Hoare-style logic, the \BiGUL\ programmer can precisely characterise the bidirectional behaviour of their programs by reasoning solely in the putback direction.
-The theory underlying the Hoare-style logic has been formalised and checked in \Agda, but this paper presents the Hoare-style logic in a semi-formal way to make it easily understood and usable by the working \BiGUL\ programmer.
+The theory underlying the Hoare-style logic has been formalised and checked in \Agda, but this paper presents the Hoare-style logic in a semi-formal way to make it easily understood and usable by the working \BiGUL\ programmer.\todo{Rewrite the abstract?}
 
 \end{abstract}
 
@@ -382,8 +382,8 @@ The programmer must be empowered to fully control and reason about the retentive
 Given that there are a myriad possibilities of update strategies, what can be better than having languages for \emph{programming} such strategies, capturing the myriad possibilities once and for all?
 Following some previous work which took exactly this \emph{putback-based} programming approach~\citep{Pacheco-putlenses, Pacheco-BiFluX, Hu-putback-validity}, \citet{Ko-BiGUL} proposed a language \BiGUL, which is short for the \emph{Bidirectional Generic Update Language}.
 Like the original lenses, every \BiGUL\ program denotes a well-behaved pair of |put| and |get| transformations;
-in contrast to the original lenses, \BiGUL\ is designed for expressing |put| transformations, and gives the programmer unprecedented freedom to specify their intended update strategies directly.
-However, due to the more intricate nature of \BiGUL's bidirectional semantics, it is still hard to guarantee that a \BiGUL\ program will exhibit the intended behaviour.
+in contrast to the original lenses, \BiGUL\ is designed to express |put| transformations, and gives the programmer unprecedented freedom to specify their intended update strategies directly.
+However, due to the more intricate nature of \BiGUL's bidirectional semantics, it is still hard to guarantee that a \BiGUL\ program will exhibit the intended behaviour.\todo{No good to reason in terms of the underlying semantics}
 
 This paper takes the putback-based approach one step further: building on a revised version of \BiGUL, we propose a \emph{Hoare-style logic}~\citep{Hoare-logic} that empowers the programmer to precisely characterise both the |put| and |get| behaviour of \BiGUL\ programs by reasoning exclusively in the putback direction.
 For example, the programmer can express the height-keeping and height-resetting strategies as two \BiGUL\ programs |keepHeight| and |resetHeight|, and with our Hoare-style logic, the programmer can prove two Hoare-style triples to make sure that the two programs correctly restore the consistency and have the intended retentive behaviour:
@@ -424,7 +424,7 @@ the host functional language is total and may be thought of as \Agda\ imperfectl
 We start from a brief recap of some general facts about asymmetric lenses, and state these facts directly in terms of \BiGUL.
 %These facts are true for \BiGUL\ programs in general and can be stated without referring to specific \BiGUL\ constructs, which we will introduce in \autoref{sec:putback-proof-rules}.%
 %\todo{omit proof details related to semantics}
-\autoref{def:put-and-get} and \autoref{thm:well-behavedness} below are provided by \citet{Ko-BiGUL} for the original \BiGUL, whereas this paper uses a revised version of the language; accordingly, we have revised the internals of the definition and theorem, while keeping their statements the same.
+\autoref{def:put-and-get} and \autoref{thm:well-behavedness} below are provided by \citet{Ko-BiGUL} for the original \BiGUL, whereas this paper uses a revised version of the language; accordingly, we have revised the internals of the definition and theorem, while keeping their statements the same.\todo{Refrain from presenting the denotational semantics to avoid introducing to much notation; axiomatic \emph{semantics} suffices to define the meaning of BiGUL. Actual introduction to come in \autoref{sec:putback-proof-rules}; these two sections are about asymmetric lenses in general}
 
 \begin{definition} \label{def:put-and-get}
 A \BiGUL\ program~|b| operating on source type~|S| and view type~|V| is assigned the type |S <~ V|, and has two semantics:
@@ -1206,9 +1206,9 @@ We will need to incorporate this size-based termination argument into our proof 
 There is difficulty dealing with recursive programs in the \Agda\ formalisation underlying this paper, though.
 Observe that the program structure of |keyAlign| is infinite, which is fine in \Haskell; in the \Agda\ formalisation, however, \BiGUL\ programs are modelled inductively and are necessarily finite.
 One possible solution is to redefine \BiGUL\ programs coinductively and bring in the partiality monad~\citep{Capretta-general-recursion} to explicitly model non-termination in \Haskell, but this means abandoning most (if not all) of the previous formalisation effort.
-Another possible solution is to stay with inductive \BiGUL\ programs and introduce a ``constructive fixed-point'' which can decide, for every input, how many times the body of a fixed-point should be expanded, thereby circumventing the modelling of infinite program structures.
+Another possible solution is to stay with inductive \BiGUL\ programs and introduce a ``terminating fixed-point'' which can decide, for every input, how many times the body of a fixed-point should be expanded, thereby circumventing the modelling of infinite program structures.
 This approach will be relevant in a constructive setting, but we anticipate that there will be extra constructivity requirements that are not relevant for the \Haskell\ port of \BiGUL, in which most (recursive) \BiGUL\ programs are written.
-Since what we aim at in this paper is not thorough formalisation but a semi-formal reasoning framework for the working \BiGUL\ programmer, we will develop just enough theory to justify our rules for reasoning about recursive programs, and refrain from delving into coinductiveness or constructive domain theory.
+Since what we aim at in this paper is not thorough formalisation but a semi-formal reasoning framework for the working \BiGUL\ programmer, we will develop just enough theory to justify our rules for reasoning about recursive programs, and refrain from delving into coinductiveness or constructive termination.
 
 Let |b : S <~ V| be a recursive program of the form |b = f b| where |f : (S <~ V) -> (S <~ V)| is the usual non-recursive function defining the body of~|b|, and suppose that we want to verify that |b|~can successfully turn any input satisfying a precondition~|R| into an output satisfying a postcondition~|R'|.
 We cannot hope to establish |(ASSERT R) b (ASSERT R')| (although we will abuse this notation in \autoref{sec:key-based-alignment}) since putback triples are defined for finite programs, whereas |b|~is infinite.
@@ -1436,6 +1436,14 @@ Their union is the output range of the entire |case|, and is indeed |COM(ss || l
 %  (ASSERTRANGE(ss | length ss = n))
 %\end{code}
 
+\section{Completeness}
+\label{sec:completeness}
+
+\todo[inline]{Mention |replaceAll|?}
+
+
+
+
 \section{Discussion}
 \label{sec:discussion}
 
@@ -1456,7 +1464,7 @@ The majority of lens languages are |get|-based, as explained by \citet{Foster-th
 \end{quote}
 \citet{Matsuda-applicative-BX}, for example, explicitly state that their language adopts this design.
 \citet{Foster-lenses}'s Figure~8 also clearly shows that their lens programs are supposed to be constructed like writing |get|, and \citet{Bohannon-relational-lenses}'s relational lenses are written like database queries, which are |get| transformations.
-Inevitably they have to enrich their programs with putback information to gain more control, but that makes constructing and understanding such programs more awkward, having to break the abstraction and reason in both directions in terms of the underlying semantics.
+Inevitably they have to enrich their programs with putback information to gain more control, but that makes constructing and understanding such programs more awkward, having to break the abstraction and reason in both directions in terms of the underlying semantics.\todo{Emphasise this point}\
 In contrast, \BiGUL's putback-based design lets the programmer construct programs purely in the |put| direction.
 The Hoare-style logic makes the distinction between the two approaches absolutely clear for the first time --- it is possible to precisely reason about bidirectional behaviour purely in the putback direction, whereas it is unthinkable that the same effect can be achieved from the opposite direction, which is perhaps the reason that no similar reasoning principles have been proposed for |get|-based languages.
 
@@ -1523,23 +1531,23 @@ More broadly, we believe that programming languages should be shipped with reaso
 In the case of \BiGUL, we have demonstrated how the precision of the Hoare-style logic can complement the informal description of \BiGUL's semantics, and how the Hoare-style logic can be designed domain-specifically to work seamlessly for \BiGUL\ programs.
 Moreover, the evolution of \BiGUL\ is partly prompted by the development of the Hoare-style logic, whose eventual simplicity justifies \BiGUL's current design.
 If, as \citet{Dijkstra-EWD361} argued, programs and their correctness proofs should grow hand in hand, then programming languages and their reasoning principles ought to be developed together as well.
-\BiGUL\ and its Hoare-style logic make a nice example of this statement.
+\BiGUL\ and its Hoare-style logic make a nice example of this statement.\todo{Revise to emphasise difference from reasoning in terms of the underlying semantics}
 
 % Acknowledgements
-\begin{acks}                            %% acks environment is optional
-                                        %% contents suppressed with 'anonymous'
-  %% Commands \grantsponsor{<sponsorID>}{<name>}{<url>} and
-  %% \grantnum[<url>]{<sponsorID>}{<number>} should be used to
-  %% acknowledge financial support and will be used by metadata
-  %% extraction tools.
-  Jeremy Gibbons, Li Liu, Akimasa Morihata
-  
-  This material is based upon work supported by the
-  \grantsponsor{GS100000001}{National Science
-    Foundation}{http://dx.doi.org/10.13039/100000001} under Grant
-  No.~\grantnum{GS100000001}{nnnnnnn} and Grant
-  No.~\grantnum{GS100000001}{mmmmmmm}.
-\end{acks}
+%\begin{acks}                            %% acks environment is optional
+%                                        %% contents suppressed with 'anonymous'
+%  %% Commands \grantsponsor{<sponsorID>}{<name>}{<url>} and
+%  %% \grantnum[<url>]{<sponsorID>}{<number>} should be used to
+%  %% acknowledge financial support and will be used by metadata
+%  %% extraction tools.
+%  Jeremy Gibbons, Li Liu, Akimasa Morihata
+%  
+%  This material is based upon work supported by the
+%  \grantsponsor{GS100000001}{National Science
+%    Foundation}{http://dx.doi.org/10.13039/100000001} under Grant
+%  No.~\grantnum{GS100000001}{nnnnnnn} and Grant
+%  No.~\grantnum{GS100000001}{mmmmmmm}.
+%\end{acks}
 
 %% Bibliography
 \bibliography{../../../Documents/bib}
