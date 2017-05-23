@@ -6,7 +6,7 @@ module HoareLogic.Completeness {n : ℕ} {F : Functor n} where
 open import DynamicallyChecked.Utilities
 open import DynamicallyChecked.Partiality
 open import DynamicallyChecked.Lens
-open import DynamicallyChecked.Case
+open import DynamicallyChecked.Case as Case
 open import DynamicallyChecked.Rearrangement
 open import DynamicallyChecked.BiGUL
 open import HoareLogic.Semantics
@@ -16,6 +16,7 @@ open import HoareLogic.Triple
 
 open import Function
 open import Data.Product as Product
+open import Data.Sum
 open import Data.Bool
 open import Data.Maybe
 open import Data.List as List
@@ -203,5 +204,117 @@ completeness b {R'} sound =
          (λ { {s' , s , v} (put-s-v≡just-s' , R-s-v) →
               let (s'' , put-s-v↦s'' , R'-s''-s-v) = sound (s , v) R-s-v
               in  subst (λ x → R' (x , s , v))
-                        (cong-from-just (trans (sym (fromCompSeq put-s-v↦s'')) put-s-v≡just-s'))
+                        (CompSeq-deterministic put-s-v↦s'' (toCompSeq put-s-v≡just-s'))
                         R'-s''-s-v })
+
+interp-CaseBranch-revcat : {S V : U n} (bs bs' : List (CaseBranch F S V)) →
+                           interp-CaseBranch (revcat bs' bs) ≡ revcat (interp-CaseBranch bs') (interp-CaseBranch bs)
+interp-CaseBranch-revcat bs []                       = refl
+interp-CaseBranch-revcat bs ((p , normal b q) ∷ bs') = interp-CaseBranch-revcat ((p , normal b q) ∷ bs) bs'
+interp-CaseBranch-revcat bs ((p , adaptive f) ∷ bs') = interp-CaseBranch-revcat ((p , adaptive f) ∷ bs) bs'
+
+mutual
+
+  semantics-tripleR :
+    {S V : U n} (b : BiGUL F S V) →
+    TripleR (λ { (s , v) → runPar (Lens.get (interp b) s) ≡ just v })
+            b
+            (λ s → Σ[ v ∈ ⟦ V ⟧ (μ F) ] runPar (Lens.get (interp b) s) ≡ just v)
+  semantics-tripleR fail = conseq (λ { (() , _) }) fail (λ { (_ , ()) })
+  semantics-tripleR (skip f) = conseq (cong just ∘ proj₁) skip (λ _ → tt)
+  semantics-tripleR replace = conseq (cong just ∘ proj₁) replace (λ _ → tt)
+  semantics-tripleR (prod l r) =
+　　　conseq (λ { ((leq , req) , _) → fromCompSeq {mx = Lens.get (interp (prod l r)) _}
+                                       (toCompSeq leq >>= toCompSeq req >>= return refl) })
+            (prod (semantics-tripleR l) (semantics-tripleR r))
+            (λ { ((v , w) , eq) → case toCompSeq {mx = Lens.get (interp (prod l r)) _} eq of λ {
+                                    (l↦ >>= r↦ >>= return refl) → (v , fromCompSeq l↦) , (w , fromCompSeq r↦) } })
+  semantics-tripleR (rearrS spat tpat expr c b) =
+    conseq (λ { ((r , m , beq) , _) → fromCompSeq {mx = Lens.get (interp (rearrS spat tpat expr c b)) _}
+                                        ((fromMatch spat _ m >>= return refl) >>= toCompSeq beq) })
+           (rearrS (λ { (r , v) → runPar (Lens.get (interp b) (construct tpat (eval spat tpat expr r))) ≡ just v })
+                   (λ r → ∃ λ v → runPar (Lens.get (interp b) (construct tpat (eval spat tpat expr r))) ≡ just v)
+                   (conseq (λ { {_ , v} (beq , r , _ , e) →
+                                r , e , subst (λ t → runPar (Lens.get (interp b) t) ≡ just v)
+                                              (sym (fromEval spat tpat expr _ e)) beq })
+                           (semantics-tripleR b)
+                           (λ { (r , (v , beq) , e) →
+                                v , subst (λ t → runPar (Lens.get (interp b) t) ≡ just v)
+                                          (fromEval spat tpat expr _ e) beq })))
+           (λ { (v , eq) →
+                case toCompSeq {mx = Lens.get (interp (rearrS spat tpat expr c b)) _} eq of λ {
+                  ((deconstruct↦ >>= return refl) >>= b↦) → _ , (v , fromCompSeq b↦) , toMatch spat _ deconstruct↦ } })
+  semantics-tripleR (rearrV vpat wpat expr c b) =
+    conseq (λ { ((r , beq , m) , _) →
+                fromCompSeq {mx = Lens.get (interp (rearrV vpat wpat expr c b)) _}
+                  (toCompSeq beq >>=
+                   Iso.to-from-inverse (rearrangement-iso vpat wpat expr c) (fromMatch vpat _ m >>= return refl)) })
+           (rearrV (λ { (s , r) → runPar (Lens.get (interp b) s) ≡ just (construct wpat (eval vpat wpat expr r)) })
+                   {λ s → ∃ λ r → runPar (Lens.get (interp b) s) ≡ just (construct wpat (eval vpat wpat expr r))}
+                   (conseq (λ { (beq , (r , beq')) →
+                                r , beq' , subst (λ v → Eval vpat wpat expr (r , v))
+                                                 (CompSeq-deterministic (toCompSeq {mx = Lens.get (interp b) _} beq')
+                                                                        (toCompSeq beq))
+                                                 (toEval vpat wpat expr) })
+                           (semantics-tripleR b)
+                           (λ { (_ , beq) → _ , beq })))
+           (λ { {s} (v , eq) →
+                case toCompSeq {mx = Lens.get (interp (rearrV vpat wpat expr c b)) _} eq of λ {
+                  (b↦ >>= seq) →
+                    case Iso.from-to-inverse (rearrangement-iso vpat wpat expr c) seq of λ {
+                      (_ >>= return refl) → _ , fromCompSeq b↦ } } })
+  semantics-tripleR (case bs) = conseq proj₁
+                                       (case (semantics-tripleR-case bs []))
+                                       (λ { (_ , eq) → semantics-tripleR-CaseRange bs [] (toCompSeq eq) tt tt })
+
+  semantics-tripleR-case :
+    {S V : U n} (bs bs' : List (CaseBranch F S V)) →
+    CaseBranchTripleR (λ { (s , v) → runPar (Lens.get (interp (case (revcat bs' bs))) s) ≡ just v }) bs bs'
+  semantics-tripleR-case [] bs' = []
+  semantics-tripleR-case {S} {V} ((p , normal b q) ∷ bs) bs' =
+    _∷ᴺ_ {P = λ s → ∃ λ v → runPar (Lens.get (interp b) s) ≡ just v ×
+                            p s v ≡ true × OutOfDomain (List.map proj₁ bs') (s , v) × q s ≡ true × OutOfRangeB bs' s}
+         (conseq (λ { (beq , _ , beq' , peq , outd , qeq , outr) →
+                      Product.map fromCompSeq id (aux (toCompSeq beq) (toCompSeq beq') peq outd qeq outr) })
+                 (semantics-tripleR b)
+                 (Product.map id proj₁))
+         (semantics-tripleR-case bs ((p , normal b q) ∷ bs'))
+    where
+      aux : {s : ⟦ S ⟧ (μ F)} {v v' : ⟦ V ⟧ (μ F)} →
+            Lens.get (interp b) s ↦ v → Lens.get (interp b) s ↦ v' →
+            p s v' ≡ true → OutOfDomain (List.map proj₁ bs') (s , v') → q s ≡ true → OutOfRangeB bs' s →
+            Lens.get (interp (case (revcat bs' ((p , normal b q) ∷ bs)))) s ↦ v ×
+            p s v ≡ true × OutOfDomain (List.map proj₁ bs') (s , v)
+      aux c c' peq outd qeq outr
+        with get-revcat _ _ ((p , normal (interp b) q) ∷ interp-CaseBranch bs) (interp-CaseBranch bs')
+               (check-diversion-success (interp-CaseBranch bs') _ _
+                  (subst (λ ps → OutOfDomain ps _) (case-main-cond-lemma bs') outd) (case-out-of-range-lemma bs' outr))
+      aux c c' peq outd qeq outr | cont
+        rewrite CompSeq-deterministic c' c | interp-CaseBranch-revcat ((p , normal b q) ∷ bs) bs' | qeq =
+        cont (c >>= assert peq then return refl) , peq , outd
+  semantics-tripleR-case ((p , adaptive f) ∷ bs) bs' = •∷ᴬ semantics-tripleR-case bs ((p , adaptive f) ∷ bs')
+  
+  semantics-tripleR-CaseRange :
+    {S V : U n} (bs bs' : List (CaseBranch F S V)) →
+    {s : ⟦ S ⟧ (μ F)} {v : ⟦ V ⟧ (μ F)} →
+    Lens.get (interp (case bs)) s ↦ v → OutOfDomain (List.map proj₁ bs') (s , v) → OutOfRangeB bs' s →
+    CaseRange (semantics-tripleR-case bs bs') s
+  semantics-tripleR-CaseRange [] bs' ()
+  semantics-tripleR-CaseRange ((p , normal b q) ∷ bs) bs' {s} c outd outr with q s | inspect q s
+  semantics-tripleR-CaseRange ((p , normal b q) ∷ bs) bs' (c >>= assert-not p-s-v≡false then return refl) outd outr
+    | false | [ q-s≡false ] =
+    inj₂ (semantics-tripleR-CaseRange bs ((p , normal b q) ∷ bs') c (p-s-v≡false , outd) (q-s≡false , outr))
+  semantics-tripleR-CaseRange ((p , normal b q) ∷ bs) bs' (c >>= assert p-s-v≡true then return refl) outd outr
+    | true  | [ q-s≡true  ] = inj₁ ((_ , fromCompSeq c , p-s-v≡true , outd , refl , outr) , refl , outr)
+  semantics-tripleR-CaseRange ((p , adaptive f) ∷ bs) bs' (c >>= assert-not p-s-v≡false then return refl) outd outr =
+    semantics-tripleR-CaseRange bs ((p , adaptive f) ∷ bs') c (p-s-v≡false , outd) outr
+
+completenessR :
+  {S V : U n} {P : ℙ (⟦ S ⟧ (μ F))} (b : BiGUL F S V) {R : ℙ (⟦ S ⟧ (μ F) × ⟦ V ⟧ (μ F))} →
+  SoundG P (Lens.get (interp b)) R → TripleR R b P
+completenessR b {R} soundG =
+  conseq (λ { {s , v} (get-s≡just-v , p) →
+              let (v' , get-s↦v' , r) = soundG s p
+              in subst (λ w → R (s , w)) (CompSeq-deterministic get-s↦v' (toCompSeq get-s≡just-v)) r })
+         (semantics-tripleR b)
+         (λ {s} p → Product.map id (fromCompSeq ∘ proj₁) (soundG s p))

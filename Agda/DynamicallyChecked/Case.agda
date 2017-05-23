@@ -53,7 +53,8 @@ fail-continuation ((p , adaptive f) ∷ bs) bs'             () | true
 
 get : List Branch → S → Par V
 get []             s = fail
-get ((p , normal l q) ∷ bs) s = if q s then (Lens.get l s >>= λ v → assert p s v then return v) else get bs s >>= λ v → assert-not p s v then return v
+get ((p , normal l q) ∷ bs) s = if q s then (Lens.get l s >>= λ v → assert p s v then return v)
+                                       else (get bs s >>= λ v → assert-not p s v then return v)
 get ((p , adaptive f) ∷ bs) s = get bs s >>= λ v → assert-not p s v then return v
 
 get-revcat : (bs : List Branch) {s : S} {v : V} (bs' : List Branch) → check-diversion bs' s v ↦ tt →
