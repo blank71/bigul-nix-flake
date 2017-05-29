@@ -680,7 +680,7 @@ FUNCTION { output.doi } % UTAH
       %% the presence of the line wrapping, but \path|...| and
       %% \verb|...| do not.
       "\showDOI{%" writeln
-      "\url{http://dx.doi.org/" strip.doi * "}}" * writeln
+      "\url{https://doi.org/" strip.doi * "}}" * writeln
     }
   if$
 }
