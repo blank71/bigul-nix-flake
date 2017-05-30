@@ -1,4 +1,4 @@
-module DynamicallyChecked.Bookstore where
+module DynamicallyChecked.Examples.Bookstore where
 
 open import DynamicallyChecked.Utilities
 open import DynamicallyChecked.Partiality
