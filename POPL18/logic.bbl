@@ -22,15 +22,14 @@
 %%% ====================================================================
 
 \ifx \showCODEN    \undefined \def \showCODEN     #1{\unskip}     \fi
-\ifx \showDOI      \undefined \def \showDOI       #1{{\tt DOI:}\penalty0{#1}\ }
-  \fi
+\ifx \showDOI      \undefined \def \showDOI       #1{#1}\fi
 \ifx \showISBNx    \undefined \def \showISBNx     #1{\unskip}     \fi
 \ifx \showISBNxiii \undefined \def \showISBNxiii  #1{\unskip}     \fi
 \ifx \showISSN     \undefined \def \showISSN      #1{\unskip}     \fi
 \ifx \showLCCN     \undefined \def \showLCCN      #1{\unskip}     \fi
 \ifx \shownote     \undefined \def \shownote      #1{#1}          \fi
 \ifx \showarticletitle \undefined \def \showarticletitle #1{#1}   \fi
-\ifx \showURL      \undefined \def \showURL       #1{#1}          \fi
+\ifx \showURL      \undefined \def \showURL       {\relax}        \fi
 % The following commands are used for tagged output and should be
 % invisible to TeX
 \providecommand\bibfield[2]{#2}
