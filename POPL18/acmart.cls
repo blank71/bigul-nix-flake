@@ -2400,8 +2400,8 @@ Computing Machinery]
 }
 \specialcomment{acks}{%
   \begingroup
-  \section*{Acknowledgments}
-  \phantomsection\addcontentsline{toc}{section}{Acknowledgments}
+  \section*{Acknowledgements}
+  \phantomsection\addcontentsline{toc}{section}{Acknowledgements}
 }{%
   \endgroup
 }
