@@ -321,10 +321,10 @@
 
 Among the frameworks of bidirectional transformations proposed for addressing various synchronisation (consistency maintenance) problems, \citet{Foster-lenses}'s asymmetric lenses have influenced the design of a generation of bidirectional programming languages.
 Most of these languages are highly declarative, and only allow the programmer to specify a consistency relation with limited control over the behaviour of the automatically derived consistency restorer.
-However, synchronisation problems are diverse and require vastly different consistency restoration strategies, and to cope with the diversity, the programmer must be empowered to fully control and reason about the consistency restoration behaviour of their bidirectional programs.
-The putback-based approach to bidirectional programming was proposed to address this issue once and for all, and this paper takes the approach one step further by proposing a Hoare-style logic for \citet{Ko-BiGUL}'s putback-based language \BiGUL.
+However, synchronisation problems are diverse and require vastly different consistency restoration strategies, and to cope with the diversity, the programmer must have the ability to fully control and reason about the consistency restoration behaviour of their bidirectional programs.
+The putback-based approach to bidirectional programming aims to provide exactly this ability, and this paper strengthens the putback-based position by proposing the first fully fledged reasoning framework for a bidirectional language --- a Hoare-style logic for \citet{Ko-BiGUL}'s putback-based language \BiGUL.
 The Hoare-style logic lets the \BiGUL\ programmer precisely characterise the bidirectional behaviour of their programs by reasoning solely in the putback direction, thereby offering a unidirectional programming abstraction that is reasonably straightforward to work with and yet provides full control not achieved by previous approaches.
-The theory underlying the Hoare-style logic has been formalised and checked in \Agda, but this paper presents the Hoare-style logic in a semi-formal way to make it easily understood and usable by the working \BiGUL\ programmer.
+The theory has been formalised and checked in \Agda, but this paper presents the Hoare-style logic in a semi-formal way to make it easily understood and usable by the working \BiGUL\ programmer.
 
 \end{abstract}
 
@@ -396,12 +396,13 @@ All the above update strategies restore the same consistency but have different 
 The programmer must be empowered to fully control and reason about the retentive behaviour of their programs to be sure that it is suitable for the intended applications.
 
 Given that there are a myriad possibilities of update strategies, what can be better than having languages for \emph{programming} such strategies, capturing the myriad possibilities once and for all?
-Following some previous work which took exactly this \emph{putback-based} programming approach~\citep{Pacheco-putlenses, Pacheco-BiFluX, Hu-putback-validity}, \citet{Ko-BiGUL} proposed a language \BiGUL\ (short for the Bidirectional Generic Update Language).
+Following some previous work which took exactly this \emph{putback-based} programming approach~\citep{Pacheco-putlenses, Pacheco-BiFluX, Hu-putback-validity}, \citet{Ko-BiGUL} proposed a language \BiGUL\ (Bidirectional Generic Update Language).
 Like the original lenses, every \BiGUL\ program denotes a well-behaved pair of |put| and |get| transformations;
-in contrast to the original lenses, \BiGUL\ is designed to express |put| transformations, and gives the programmer unprecedented freedom to specify their intended update strategies directly.
-However, due to the more intricate nature of \BiGUL's bidirectional semantics, it is still hard to guarantee that a \BiGUL\ program will exhibit the intended behaviour.
+in contrast to the original lenses, \BiGUL\ is designed to express |put| transformations, and lets the programmer freely specify their intended update strategies.
+Moreover, since |put| uniquely determines |get| by well-behavedness (but not vice versa), the putback-based programmer is in full control of not only the putback direction but also the forward behaviour.
+%However, due to the more intricate nature of \BiGUL's bidirectional semantics, it is still hard to guarantee that a \BiGUL\ program will exhibit the intended behaviour.
 
-This paper takes the putback-based approach one step further: building on a revised version of \BiGUL, we propose a \emph{Hoare-style logic}~\citep{Hoare-logic} that empowers the programmer to precisely characterise both the |put| and |get| behaviour of \BiGUL\ programs by reasoning \emph{exclusively in the putback direction}, thereby offering a unidirectional programming abstraction that is reasonably straightforward to work with and yet provides full control not achieved by |get|-based approaches.
+This paper strengthens the putback-based position by proposing the first fully fledged reasoning framework for a bidirectional language: building on a revised version of \BiGUL, we propose a \emph{Hoare-style logic}~\citep{Hoare-logic} that empowers the programmer to precisely characterise both the |put| and |get| behaviour of \BiGUL\ programs by reasoning \emph{exclusively in the putback direction}, thereby offering a unidirectional programming abstraction that is reasonably straightforward to work with and yet provides full control not achieved by |get|-based approaches.
 For example, the programmer can express the height-keeping and height-resetting strategies as two \BiGUL\ programs |keepHeight| and |resetHeight|, and with our Hoare-style logic, the programmer can prove two Hoare-style triples to make sure that the two programs correctly restore the consistency and have the intended retentive behaviour:
 \begin{code}
 (ASSERT(True)) ~  keepHeight   ~ (ASSERT((w', h') (_  , h) v | w' = v && h' = h))
@@ -1511,8 +1512,9 @@ Their union is the output range of the entire |case|, and is indeed |COM(ss || l
 \section{Discussion}
 \label{sec:discussion}
 
-\varparagraph{How powerful is \BiGUL\ compared with previous bidirectional languages?}
-Regarding our revised version of \BiGUL, most of its expressive power stems from the |case| construct, which has gone beyond \citet{Foster-lenses}'s ``general conditional'' in terms of expressiveness, allowing, in particular, key-based list alignment to be implemented directly.
+\varparagraph{How powerful is \BiGUL?}
+Most of \BiGUL's expressive power stems from its |case| construct, which has gone beyond \citet{Foster-lenses}'s ``general conditional'' in terms of expressiveness, allowing, in particular, key-based list alignment to be implemented directly for the first time.
+\BiGUL\ has also been put to the test in practical scenarios~\citep{Colson-BiGUL-configuration, Zhao-BiGUL-feature-models-use-cases}.
 %Note that the case analysis constructs in \citet{Ko-BiGUL}'s original \BiGUL\ were essentially the same as \citeauthor{Foster-lenses}'s conditionals, and \citeauthor{Ko-BiGUL} had to provide list alignment as an extra and complex primitive.
 
 When it comes to alignment, \citet{Barbosa-matching-lenses}'s matching lenses offer a number of sophisticated matching strategies, some of which can be hard to implement nicely in \BiGUL\ so far.
@@ -1540,7 +1542,7 @@ In other words, it is hard to come up with easy-to-use reasoning principles for 
 
 \varparagraph{Doesn't \autoref{thm:total-forward-consistency} say that we need to reason in both directions anyway?}
 We have consistently explained how range triples can be derived by thinking in the putback direction, without having to introduce the |get| semantics (except for the precondition of |replace|, which is only a minor exception though).
-Even if the sceptical reader disagreed, they would still have to admit that it is much easier to prove that |get| is contained in the precondition for |put| (as required by \autoref{thm:total-forward-consistency}) than to prove that it is contained in the consistency relation, which is usually much smaller than the precondition for |put|.
+Even if a sceptical reader insisted on thinking about range triples in the |get| direction, it would still be much easier to prove that |get| is contained in the precondition for |put| (as required by \autoref{thm:total-forward-consistency}) than to prove that it is contained in the consistency relation, which is usually much smaller than the precondition for |put|.
 The indisputable fact is that the major work is done in derivations of putback triples, making the reasoning putback-based.
 
 %\varparagraph{What reasoning principles were there for bidirectional programming?}
@@ -1591,7 +1593,8 @@ With the Hoare-style logic for \BiGUL, we have demonstrated how a precise unders
 Bidirectional programming has been highly declarative, in the sense that the programmer writes down only a consistency specification (perhaps with some behavioural details) and relies on the system to produce a well-behaved but otherwise arbitrary implementation.
 However, it has long been realised that declarative approaches are hardly enough for practical bidirectional applications (see, e.g., \citet[Section~4.1]{Stevens-QVT}).
 The bidirectional transformations community currently concentrates on the exploration of more forms of well-behavedness laws (see, e.g., \citet{Cheney-least-surprise}), but we should not be satisfied with only well-behavedness guarantees.
-Instead, we should also start aiming to precisely characterise the behaviour of bidirectional programs like what the \BiGUL\ programmer can now do with the Hoare-style logic, treating bidirectional programming as seriously as we treat general-purpose programming.
+Instead, we should also start aiming to precisely characterise the behaviour of bidirectional programs like what the \BiGUL\ programmer can now do with the Hoare-style logic, and only then can we think about more complex bidirectional applications and the verification of their consistency restoration behaviour.
+%treating bidirectional programming as seriously as we treat general-purpose programming.\todo{verification tools}
 
 More broadly, we believe that programming languages should be shipped with reasoning principles --- even domain-specific languages deserve domain-specific reasoning principles, to justify that the languages offer adequate abstractions, and to help the programmer to work effectively and reliably with those abstractions.
 In the case of \BiGUL, the Hoare-style logic reflects the stateful nature of \BiGUL\ programming, and is designed domain-specifically such that the programmer can work out the precise behaviour of \BiGUL\ programs with reasonable effort (rather than breaking the abstraction and working with the messier underlying semantics).

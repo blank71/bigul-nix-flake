@@ -127,6 +127,23 @@
 \url{http://ceur-ws.org/Vol-1396/p66-cheney.pdf}}
 
 
+\bibitem[\protect\citeauthoryear{Colson, Dupuis, Montrieux, Hu, Uchitel, and
+  Schobbens}{Colson et~al\mbox{.}}{2016}]%
+        {Colson-BiGUL-configuration}
+\bibfield{author}{\bibinfo{person}{Kevin Colson}, \bibinfo{person}{Robin
+  Dupuis}, \bibinfo{person}{Lionel Montrieux}, \bibinfo{person}{Zhenjiang Hu},
+  \bibinfo{person}{Sebasti{\'a}n Uchitel}, {and} \bibinfo{person}{Pierre-Yves
+  Schobbens}.} \bibinfo{year}{2016}\natexlab{}.
+\newblock \showarticletitle{Reusable Self-Adaptation through Bidirectional
+  Programming}. In \bibinfo{booktitle}{{\em International Symposium on Software
+  Engineering for Adaptive and Self-Managing Systems}} {\em
+  (\bibinfo{series}{SEAMS'16})}. \bibinfo{publisher}{ACM},
+  \bibinfo{pages}{4--15}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1145/2897053.2897055}}
+
+
 \bibitem[\protect\citeauthoryear{Czarnecki, Foster, Hu, L{\"a}mmel, Sch{\"u}rr,
   and Terwilliger}{Czarnecki et~al\mbox{.}}{2009}]%
         {Czarnecki-BX}
@@ -458,6 +475,21 @@
 \newblock
 \showURL{%
 \url{http://ceur-ws.org/Vol-1571/paper_3.pdf}}
+
+
+\bibitem[\protect\citeauthoryear{Zhao, Zhao, and Hu}{Zhao
+  et~al\mbox{.}}{2016}]%
+        {Zhao-BiGUL-feature-models-use-cases}
+\bibfield{author}{\bibinfo{person}{Weize Zhao}, \bibinfo{person}{Haiyan Zhao},
+  {and} \bibinfo{person}{Zhenjiang Hu}.} \bibinfo{year}{2016}\natexlab{}.
+\newblock \showarticletitle{A Framework for Synchronization Between Feature
+  Configurations and Use Cases Based on Bidirectional Programming}. In
+  \bibinfo{booktitle}{{\em International Model-Driven Requirements Engineering
+  Workshop}} {\em (\bibinfo{series}{MoDRE'16})}. \bibinfo{publisher}{IEEE},
+  \bibinfo{pages}{170--179}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1109/REW.2016.45}}
 
 
 \end{thebibliography}
