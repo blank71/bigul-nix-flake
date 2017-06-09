@@ -1513,13 +1513,13 @@ Their union is the output range of the entire |case|, and is indeed |COM(ss || l
 \label{sec:discussion}
 
 \varparagraph{How powerful is \BiGUL?}
-Most of \BiGUL's expressive power stems from its |case| construct, which has gone beyond \citet{Foster-lenses}'s ``general conditional'' in terms of expressiveness, allowing, in particular, key-based list alignment to be implemented directly for the first time.
+Most of \BiGUL's expressive power stems from its |case| construct, which has gone beyond \citet{Foster-lenses}'s ``general conditional'' in terms of expressiveness, allowing, in particular, key-based list alignment to be implemented using simple primitives for the first time.
 \BiGUL\ has also been put to the test in practical scenarios~\citep{Colson-BiGUL-configuration, Zhao-BiGUL-feature-models-use-cases}.
 %Note that the case analysis constructs in \citet{Ko-BiGUL}'s original \BiGUL\ were essentially the same as \citeauthor{Foster-lenses}'s conditionals, and \citeauthor{Ko-BiGUL} had to provide list alignment as an extra and complex primitive.
 
 When it comes to alignment, \citet{Barbosa-matching-lenses}'s matching lenses offer a number of sophisticated matching strategies, some of which can be hard to implement nicely in \BiGUL\ so far.
-However, matching lenses are special-purpose and require the invention of a new framework in which everything is built from scratch, whereas \BiGUL\ is designed with the ultimate aim of expressing all lenses using just a fixed set of simple primitives, like what we can do in general-purpose languages.
-In particular, we can program alignment in \BiGUL\ without having to bake special-purpose concepts like \citeauthor{Barbosa-matching-lenses}'s ``chunks'', ``rigid complements'', and ``resources'' into the language.
+However, matching lenses are special-purpose and require the invention of dedicated laws, and the essential components are built from scratch, whereas \BiGUL\ is designed with the ultimate aim of expressing all lenses using just a fixed set of simple primitives, like what we can do in general-purpose languages.
+In particular, we can program alignment in \BiGUL\ without having to bake special-purpose concepts like \citeauthor{Barbosa-matching-lenses}'s ``chunks'', ``rigid complements'', ``resources'' etc into the language.
 
 \varparagraph{\BiGUL\ claims to be ``putback-based'' but is still a lens language. Is there really a fundamental difference between \BiGUL\ and previous ``|get|-based'' lens languages?}
 When it comes to language definition, \BiGUL\ programs denote lenses and have to be defined in both directions, exactly the same as other lens languages.
