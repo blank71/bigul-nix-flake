@@ -361,6 +361,18 @@
 \url{https://doi.org/10.1145/2858949.2784750}}
 
 
+\bibitem[\protect\citeauthoryear{McKinna}{McKinna}{2016}]%
+        {McKinna-proof-relevant-bisimulations}
+\bibfield{author}{\bibinfo{person}{James McKinna}.}
+  \bibinfo{year}{2016}\natexlab{}.
+\newblock \showarticletitle{Bidirectional Transformations are Proof-Relevant
+  Bisimulations (Extended Abstract)}. In \bibinfo{booktitle}{{\em International
+  Workshop on Type-Driven Development}} {\em (\bibinfo{series}{TyDe'16})}.
+\newblock
+\showURL{%
+\url{http://groups.inf.ed.ac.uk/bx/TyDe16.pdf}}
+
+
 \bibitem[\protect\citeauthoryear{Mendes, Ko, and Hu}{Mendes
   et~al\mbox{.}}{2016}]%
         {Mendes-delta-alignment}
@@ -373,6 +385,20 @@
 \newblock
 \showURL{%
 \url{http://grace-center.jp/wp-content/uploads/2016/04/GRACE-TR-2016-03.pdf}}
+
+
+\bibitem[\protect\citeauthoryear{Pacheco, Cunha, and Hu}{Pacheco
+  et~al\mbox{.}}{2012}]%
+        {Pacheco-delta-lenses}
+\bibfield{author}{\bibinfo{person}{Hugo Pacheco}, \bibinfo{person}{Alcino
+  Cunha}, {and} \bibinfo{person}{Zhenjiang Hu}.}
+  \bibinfo{year}{2012}\natexlab{}.
+\newblock \showarticletitle{Delta Lenses over Inductive Types}. In
+  \bibinfo{booktitle}{{\em International Workshop on Bidirectional
+  Transformations}}. \bibinfo{publisher}{EASST}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.14279/tuj.eceasst.49.713}}
 
 
 \bibitem[\protect\citeauthoryear{Pacheco, Hu, and Fischer}{Pacheco
@@ -437,8 +463,8 @@
 \bibfield{author}{\bibinfo{person}{Janis Voigtl{\"a}nder},
   \bibinfo{person}{Zhenjiang Hu}, \bibinfo{person}{Kazutaka Matsuda}, {and}
   \bibinfo{person}{Meng Wang}.} \bibinfo{year}{2013}\natexlab{}.
-\newblock \showarticletitle{Enhancing semantic bidirectionalization via shape
-  bidirectionalizer plug-ins}.
+\newblock \showarticletitle{Enhancing Semantic Bidirectionalization via Shape
+  Bidirectionalizer Plug-ins}.
 \newblock \bibinfo{journal}{{\em Journal of Functional Programming\/}}
   \bibinfo{volume}{23}, \bibinfo{number}{5} (\bibinfo{year}{2013}),
   \bibinfo{pages}{515--551}.
@@ -482,8 +508,8 @@
         {Zhao-BiGUL-feature-models-use-cases}
 \bibfield{author}{\bibinfo{person}{Weize Zhao}, \bibinfo{person}{Haiyan Zhao},
   {and} \bibinfo{person}{Zhenjiang Hu}.} \bibinfo{year}{2016}\natexlab{}.
-\newblock \showarticletitle{A Framework for Synchronization Between Feature
-  Configurations and Use Cases Based on Bidirectional Programming}. In
+\newblock \showarticletitle{A Framework for Synchronization between Feature
+  Configurations and Use Cases based on Bidirectional Programming}. In
   \bibinfo{booktitle}{{\em International Model-Driven Requirements Engineering
   Workshop}} {\em (\bibinfo{series}{MoDRE'16})}. \bibinfo{publisher}{IEEE},
   \bibinfo{pages}{170--179}.
