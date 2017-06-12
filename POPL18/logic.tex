@@ -1528,14 +1528,13 @@ While seemingly simple, \BiGUL\ has been successfully employed in several practi
 Regarding language definition, \BiGUL\ programs denote lenses and have to be defined in both directions, exactly the same as other lens languages.
 It is when it comes to \emph{using} the lenses that the distinction between the |get|- and |put|-based approaches becomes meaningful.
 The majority of lens languages are |get|-based, as explained by \citet{Foster-thesis} below his Lemma~2.2.6:
-\begin{quote}
-Lens programmers often feel like they are writing the forward transformation (because the names of primitives typically connote the forward transformation) and getting the backward transformation ``for free''[.]
-\end{quote}
+`Lens programmers often feel like they are writing the forward transformation (because the names of primitives typically connote the forward transformation) and getting the backward transformation ``for free''\,'.
 \citet{Matsuda-applicative-BX}, for example, explicitly state that their language adopts this design.
 \citet{Foster-lenses}'s Figure~8 also clearly shows that their lens programs are supposed to be constructed like writing |get|, and \citet{Bohannon-relational-lenses}'s relational lenses are written like database queries, which are |get| transformations.
 Their programs can be (and are usually) enriched with putback information to allow more control, but that makes constructing and understanding the programs more awkward (see the next paragraph).
 In contrast, \BiGUL's putback-based design lets the programmer construct programs purely in the |put| direction.
-The Hoare-style logic helps to clearly distinguish the two approaches for the first time: it is possible to precisely reason about bidirectional behaviour purely in the putback direction, whereas it is unthinkable that the same effect can be achieved from the opposite direction --- the only comparable but still much less powerful reasoning framework in the existing literature is \citet{Foster-lenses}'s totality lemmas, which can establish properties equivalent to triples of the form |(ASSERTRANGE(_ _)) b (ASSERTRANGE P)| and |(ASSERT(s v || P s && Q v)) b (ASSERT(_ _ _))| where |P : (POWER S)| and |Q : (POWER V)|.
+The Hoare-style logic helps to clearly distinguish the two approaches for the first time: it is possible to precisely reason about bidirectional behaviour purely in the |put| direction, whereas it is unthinkable that the same can be achieved in the |get| direction.
+This might explain that there is only one comparable (but still much less powerful) reasoning framework: \citet{Foster-lenses}'s totality lemmas, which can only establish properties equivalent to triples of the form |(ASSERTRANGE(_ _)) b (ASSERTRANGE P)| and |(ASSERT(s v || P s && Q v)) b (ASSERT(_ _ _))| where |P : (POWER S)| and |Q : (POWER V)|.
 
 \varparagraph{Didn't some |get|-based approaches also offer the ability to control putback behaviour? Why switch to the putback-based approach?}
 To name a few, the ``fixup functions'' in \citet{Foster-lenses}'s ``general conditionals'' (for branch switching), the parameters of \citet{Bohannon-relational-lenses-tech-report}'s $\mathtt{join\_template}$ (for resolving ambiguous deletions), and the alignment keywords like ``\texttt{key}'' and ``\texttt{best}'' in the \name{Boomerang} language~\citep{Bohannon-Boomerang,Barbosa-matching-lenses} (for specifying keys and matching strategies during alignment) are all constructs which appear in programs designed to look like forward transformations but are meaningful only in the putback direction.
@@ -1563,7 +1562,7 @@ We can formulate a rule like:
 |(ASSERTRANGE (a b' || (some(b, c)) R a c && R' a b && U' b' b c)) ~ l ~ (ASSERTRANGE P')| \\
 |{-"\phantom{\{\!}"-}(ASSERT (b c || (some(a)) R' a b && R a c)) ~ r ~ (ASSERT U')|
 \\ \hline
-|(ASSERT(R CAP (COM(a _ || P' a)))) ~ l . r ~ (ASSERT(a' a c || (some(b, b')) T' a' a b' && U' b' b c ))|
+|{-"\phantom{\{\!}"-}(ASSERT(R CAP (COM(a _ || P' a)))) ~ l . r ~ (ASSERT(a' a c || (some(b, b')) T' a' a b' && U' b' b c ))|
 \end{array} \]
 and we have actually proved that the rule is sound, but the form of the rule is too complex to be easily usable.
 We will need to find a sweet spot and design a composition rule that is perhaps not as general as the above one but can still say enough about the retentive behaviour; most importantly, this rule should give guidance on how composition can be used and reasoned about in practice.
