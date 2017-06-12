@@ -1,7 +1,7 @@
 %% For double-blind review submission
 %\documentclass[acmsmall,10pt,fleqn,review,anonymous]{acmart}\settopmatter{printfolios=true}
 %% For single-blind review submission
-\documentclass[acmsmall,10pt,fleqn,review]{acmart}\settopmatter{printfolios=true} % printacmref=false
+\documentclass[acmsmall,10pt,fleqn,review]{acmart}\settopmatter{printfolios=true, printacmref=false} % printacmref=false
 %% For final camera-ready submission
 %\documentclass[acmsmall,10pt,fleqn]{acmart}\settopmatter{}
 
@@ -408,6 +408,7 @@ For example, the programmer can express the height-keeping and height-resetting 
 \end{code}
 These two putback triples state that both |keepHeight| and |resetHeight| work on any input pairs of source and view (due to their always-true precondition) and will update the width with the view (|w' = v|), that |keepHeight| will retain the original height (|h' = h|), and that |resetHeight| will retain the height if the original width is equal to the view (|w = v => h' = h|) or reset the height otherwise (|w /= v => h' = 0|).
 With a bit more reasoning about \emph{output range}, the programmer can also prove that the |get| transformations denoted by these two programs work on any input rectangle and extract its width, conforming to the consistency relation (|w' = v|) stated in the above triples.
+(The other three rectangle width updating strategies can also be dealt with in the same way.)
 
 Here are our contributions in a nutshell:
 We define Hoare-style \emph{putback triples} for reasoning about the |put| behaviour of \BiGUL\ programs, prove that they are sound and complete, and show how they can also characterise the |get| behaviour to some extent~(\autoref{sec:putback-triples}).
@@ -1515,12 +1516,13 @@ Their union is the output range of the entire |case|, and is indeed |COM(ss || l
 
 \varparagraph{How expressive is \BiGUL, especially compared with existing languages?}
 Most of \BiGUL's expressive power stems from its |case| construct, which has gone beyond \citet{Foster-lenses}'s ``general conditional'' in terms of expressiveness, allowing, in particular, key-based list alignment to be implemented using only simple and general-purpose primitives for the first time.
-\BiGUL\ has also been put to the test in practical scenarios~\citep{Colson-BiGUL-configuration, Zhu-BiYacc, Zhao-BiGUL-feature-models-use-cases,Kinoshita-bidirectional-certified-programming}.
 %Note that the case analysis constructs in \citet{Ko-BiGUL}'s original \BiGUL\ were essentially the same as \citeauthor{Foster-lenses}'s conditionals, and \citeauthor{Ko-BiGUL} had to provide list alignment as an extra and complex primitive.
 
-When it comes to alignment, \citet{Barbosa-matching-lenses}'s ``matching lenses'' offer a number of sophisticated matching strategies, some of which can be hard to implement ``nicely'' in \BiGUL\ so far.
+Regarding alignment, \citet{Barbosa-matching-lenses}'s ``matching lenses'' offer several sophisticated matching strategies, some of which can be hard to implement ``nicely'' in \BiGUL\ so far.
 However, matching lenses are special-purpose and require the invention of dedicated laws, and the essential components are built from scratch, whereas \BiGUL\ is designed with the ultimate aim of expressing all lenses using just a fixed set of simple primitives, like what we can do in general-purpose languages.
 In particular, we can program alignment in \BiGUL\ without having to bake special-purpose concepts like \citeauthor{Barbosa-matching-lenses}'s ``chunks'', ``rigid complements'', ``resources'' etc into the language.
+
+While seemingly simple, \BiGUL\ has been successfully employed in several practical scenarios, including web server configuration adaptation~\citep{Colson-BiGUL-configuration}, parsing and reflective printing~\citep{Zhu-BiYacc}, synchronisation of feature configurations and use cases~\citep{Zhao-BiGUL-feature-models-use-cases}, and synchronisation of executable programs and proof scripts~\citep{Kinoshita-bidirectional-certified-programming}.
 
 \varparagraph{\BiGUL\ claims to be ``putback-based'' but is still a lens language. Is there really a fundamental difference between \BiGUL\ and previous ``|get|-based'' lens languages?}
 Regarding language definition, \BiGUL\ programs denote lenses and have to be defined in both directions, exactly the same as other lens languages.
@@ -1572,18 +1574,17 @@ It should be noted that while composition is included in other languages like \c
 In the supplementary \Agda\ code, there is one more program |replaceAll| which replaces all the elements in a source list with a view:
 \begin{code}
 replaceAll : Eq A => ~ [A] <~ A
-replaceAll =
-  case
-  ^  adaptive [] x
-  ^  ^  \ _ x -> [x]
-  ^  normal (_ :: []) _ exit (_ :: [])
-  ^  ^  rearrS (s :: []) -> s
-  ^  ^  ^  replace
-  ^  normal _ _ exit (_ :: _ :: _)
-  ^  ^  rearrS (s :: ss) -> (s, ss)
-  ^  ^  ^  rearrV v -> (v, v)
-  ^  ^  ^    ^  replace
-  ^  ^  ^    *  replaceAll
+replaceAll =  case
+              ^  adaptive [] _
+              ^  ^  \ _ x -> [x]
+              ^  normal (_ :: []) _ exit (_ :: [])
+              ^  ^  rearrS (s :: []) -> s
+              ^  ^  ^  replace
+              ^  normal _ _ exit (_ :: _ :: _)
+              ^  ^  rearrS (s :: ss) -> (s, ss)
+              ^  ^  ^  rearrV v -> (v, v)
+              ^  ^  ^  ^  replace
+              ^  ^  ^  *  replaceAll
 \end{code}
 The following triples are verified for |replaceAll|:
 \begin{code}
@@ -1592,11 +1593,11 @@ The following triples are verified for |replaceAll|:
 
 (all(n)){-"\hspace{.75em}"-}  (ASSERTRANGE(ss _ | length ss = n)) ~                 replaceAll ~ (ASSERTRANGE((s' :: ss') | 1 + length ss' = n && (all(t)) t `elem` ss' => s' = t))
 \end{code}
-The range triple is particularly interesting as it has a nontrivial output range.
+where the range triple is particularly interesting as it has a nontrivial output range.
 
 Rather than developing more examples at this stage, we plan to move forward and aim for the verification of practical bidirectional applications.
 This will require better tool support than the current \Agda\ formalisation, which is not intended to be easy to use (and is, in fact, exceedingly tedious to work with).
-Instead, we plan to adapt the Hoare-style logic for easier mechanisation, in particular automated theorem proving (perhaps in the style of \name{LiquidHaskell}~\citep{Vazou-LiquidHaskell}), so as to verify larger-scale bidirectional programs with reasonable effort.
+We plan to adapt the Hoare-style logic for easier mechanised verification, in particular automated theorem proving (perhaps in the style of \name{LiquidHaskell}~\citep{Vazou-LiquidHaskell}), so as to verify larger-scale bidirectional programs with reasonable effort.
 
 %\varparagraph{Why isn't the title of this paper ``An Axiomatic Basis for \emph{Putback-Based} Bidirectional Programming''?}
 %Within the realm of asymmetric lenses, the get-based approach is fundamentally just about \emph{programming consistency specifications}; only with the putback-based approach can we start talking about \emph{programming to meet functional specifications}, and only in this case does an axiomatic semantics make sense.
@@ -1641,7 +1642,7 @@ If, as \citet{Dijkstra-EWD361} argued, programs and their correctness proofs sho
   %% \grantnum[<url>]{<sponsorID>}{<number>} should be used to
   %% acknowledge financial support and will be used by metadata
   %% extraction tools.
-We would like to thank Jeremy Gibbons and Li Liu for commenting on an early draft of this paper, and Shin-Cheng Mu for the fruitful discussions during his visit at NII.
+We would like to thank Jeremy Gibbons, Li Liu, and Zirun Zhu for commenting on drafts of this paper, and Shin-Cheng Mu for the fruitful discussions during his visit at NII.
 This work is partially supported by the \grantsponsor{GS501100001691}{Japan Society for the Promotion of Science}{https://doi.org/10.13039/501100001691} (JSPS) Grant-in-Aid for Scientific Research~(A) No.~\grantnum{GS501100001691}{25240009}.
 \end{acks}
 
@@ -1748,4 +1749,3 @@ case
     (ASSERTRANGE((x :: y :: ss) | 2 + length ss = n && x = y && (all(s')) s' `elem` ss => x = s'))
 (ASSERTRANGE((s :: ss) | 1 + length ss = n && (all(s')) s' `elem` ss => s = s'))
 \end{code}
-
