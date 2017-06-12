@@ -202,7 +202,7 @@
   \bibinfo{pages}{215--223}.
 \newblock
 \showDOI{%
-\url{https://doi.org/10.1007/978-3-319-19797-5 10}}
+\url{https://doi.org/10.1007/978-3-319-19797-5_10}}
 
 
 \bibitem[\protect\citeauthoryear{Fischer, Hu, and Pacheco}{Fischer
@@ -228,6 +228,8 @@
 \newblock \bibinfo{thesistype}{Ph.D. Dissertation}. \bibinfo{school}{University
   of Pennsylvania}.
 \newblock
+\showURL{%
+\url{http://repository.upenn.edu/edissertations/56}}
 
 
 \bibitem[\protect\citeauthoryear{Foster, Greenwald, Moore, Pierce, and
@@ -317,6 +319,20 @@
 \newblock
 \showDOI{%
 \url{https://doi.org/10.1007/978-3-319-06410-9_1}}
+
+
+\bibitem[\protect\citeauthoryear{Kinoshita and Nakano}{Kinoshita and
+  Nakano}{2017}]%
+        {Kinoshita-bidirectional-certified-programming}
+\bibfield{author}{\bibinfo{person}{Daisuke Kinoshita} {and}
+  \bibinfo{person}{Keisuke Nakano}.} \bibinfo{year}{2017}\natexlab{}.
+\newblock \showarticletitle{Bidirectional Certified Programming}. In
+  \bibinfo{booktitle}{{\em International Workshop on Bidirectional
+  Transformations}} {\em (\bibinfo{series}{BX'17})}.
+  \bibinfo{publisher}{CEUR-WS.org}, \bibinfo{pages}{31--38}.
+\newblock
+\showURL{%
+\url{http://ceur-ws.org/Vol-1827/paper7.pdf}}
 
 
 \bibitem[\protect\citeauthoryear{Ko, Zan, and Hu}{Ko et~al\mbox{.}}{2016}]%
@@ -457,6 +473,22 @@
 \url{https://doi.org/10.1007/s10270-008-0109-9}}
 
 
+\bibitem[\protect\citeauthoryear{Vazou, Seidel, Jhala, Vytiniotis, and
+  Peyton~Jones}{Vazou et~al\mbox{.}}{2014}]%
+        {Vazou-LiquidHaskell}
+\bibfield{author}{\bibinfo{person}{Niki Vazou}, \bibinfo{person}{Eric~L.
+  Seidel}, \bibinfo{person}{Ranjit Jhala}, \bibinfo{person}{Dimitrios
+  Vytiniotis}, {and} \bibinfo{person}{Simon Peyton~Jones}.}
+  \bibinfo{year}{2014}\natexlab{}.
+\newblock \showarticletitle{Refinement Types for {Haskell}}. In
+  \bibinfo{booktitle}{{\em International Conference on Functional Programming}}
+  {\em (\bibinfo{series}{ICFP'14})}. \bibinfo{publisher}{ACM},
+  \bibinfo{pages}{269--282}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1145/2628136.2628161}}
+
+
 \bibitem[\protect\citeauthoryear{Voigtl{\"a}nder, Hu, Matsuda, and
   Wang}{Voigtl{\"a}nder et~al\mbox{.}}{2013}]%
         {Voigtlander-shape-plug-ins}
@@ -515,7 +547,23 @@
   \bibinfo{pages}{170--179}.
 \newblock
 \showDOI{%
-\url{https://doi.org/10.1109/REW.2016.45}}
+\url{https://doi.org/10.1109/REW.2016.040}}
+
+
+\bibitem[\protect\citeauthoryear{Zhu, Zhang, Ko, Martins, Saraiva, and Hu}{Zhu
+  et~al\mbox{.}}{2016}]%
+        {Zhu-BiYacc}
+\bibfield{author}{\bibinfo{person}{Zirun Zhu}, \bibinfo{person}{Yongzhe Zhang},
+  \bibinfo{person}{Hsiang-Shang Ko}, \bibinfo{person}{Pedro Martins},
+  \bibinfo{person}{Jo{\~a}o Saraiva}, {and} \bibinfo{person}{Zhenjiang Hu}.}
+  \bibinfo{year}{2016}\natexlab{}.
+\newblock \showarticletitle{Parsing and Reflective Printing, Bidirectionally}.
+  In \bibinfo{booktitle}{{\em International Conference on Software Language
+  Engineering}} {\em (\bibinfo{series}{SLE'16})}. \bibinfo{publisher}{ACM},
+  \bibinfo{pages}{2--14}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1145/2997364.2997369}}
 
 
 \end{thebibliography}
