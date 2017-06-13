@@ -1569,7 +1569,7 @@ We will need to find a sweet spot and design a composition rule that is perhaps 
 %and only with such a rule can composition be justified as a worthy construct.
 It should be noted that while composition is included in other languages like \citet{Foster-lenses}'s (and in fact the \Haskell\ port of \BiGUL), the problem with controlling the retentive behaviour of composition has always existed, as discussed by, e.g., \citet[Section~2.2]{Diskin-delta-asymmetric}.
 
-\varparagraph{Are there additional examples of verified \BiGUL\ programs?}
+\varparagraph{Are there more examples of verified \BiGUL\ programs?}
 In the supplementary \Agda\ code, there is one more program |replaceAll| which replaces all the elements in a source list with a view:
 \begin{code}
 replaceAll : Eq A => ~ [A] <~ A
@@ -1585,18 +1585,19 @@ replaceAll =  case
               ^  ^  ^  ^  replace
               ^  ^  ^  *  replaceAll
 \end{code}
-The following triples are verified for |replaceAll|:
+for which the following triples are verified:
 \begin{code}
 (all(n)){-"\hspace{.75em}"-}  {-"\phantom{\{}\!"-}(ASSERT(ss _ | length ss = n)) ~  replaceAll ~
                               {-"\phantom{\{}\!"-}(ASSERT(ss' ss v | ((all(t)) t `elem` ss' => t = v) && (ss /= [] => length ss' = length ss)))
 
 (all(n)){-"\hspace{.75em}"-}  (ASSERTRANGE(ss _ | length ss = n)) ~                 replaceAll ~ (ASSERTRANGE((s' :: ss') | 1 + length ss' = n && (all(t)) t `elem` ss' => s' = t))
 \end{code}
-where the range triple is particularly interesting as it has a nontrivial output range.
+This example clarifies the misconception that the programmer needs to have a |get| in mind when programming |put| --- rather, what the putback-based programmer has in mind is a consistency relation (|COM(ss' v || (all(t)) t `elem` ss' => t = v)| in this case), which may be functional but need not be executable.
+The range triple is also interesting as it has a nontrivial output range.
 
 Rather than developing more examples at this stage, we plan to move forward and aim for the verification of practical bidirectional applications.
-This will require better tool support than the current \Agda\ formalisation, which is not intended to be easy to use (and is, in fact, exceedingly tedious to work with).
-We plan to adapt the Hoare-style logic for easier mechanised verification, in particular automated theorem proving (perhaps in the style of \name{LiquidHaskell}~\citep{Vazou-LiquidHaskell}), so as to verify larger-scale bidirectional programs with reasonable effort.
+This will require better mechanised support than the current \Agda\ formalisation, which is exceedingly tedious to work with.
+We plan to adapt the Hoare-style logic for automated theorem proving (perhaps in the style of \name{LiquidHaskell}~\citep{Vazou-LiquidHaskell}), so as to verify larger-scale bidirectional programs with reasonable effort.
 
 %\varparagraph{Why isn't the title of this paper ``An Axiomatic Basis for \emph{Putback-Based} Bidirectional Programming''?}
 %Within the realm of asymmetric lenses, the get-based approach is fundamentally just about \emph{programming consistency specifications}; only with the putback-based approach can we start talking about \emph{programming to meet functional specifications}, and only in this case does an axiomatic semantics make sense.
@@ -1620,7 +1621,7 @@ We plan to adapt the Hoare-style logic for easier mechanised verification, in pa
 
 Based on \autoref{lem:dominance}, it has been argued that ``putback'' is the essence of bidirectional programming~\citep{Fischer-essence-of-BX}.
 We would like to amend this statement: putback-based \emph{reasoning} is the essence of bidirectional programming.
-With the Hoare-style logic for \BiGUL, we have demonstrated how a precise understanding of a \BiGUL\ program's bidirectional behaviour can be achieved by reasoning exclusively about its putback behaviour, reducing bidirectional programming to unidirectional programming.
+With the Hoare-style logic for \BiGUL, we have demonstrated how we can understand a \BiGUL\ program's bidirectional behaviour by reasoning exclusively about its putback behaviour, reducing bidirectional programming to unidirectional programming.
 
 Bidirectional programming has been highly declarative, in the sense that the programmer writes down only a consistency specification (perhaps with some behavioural details) and relies on the system to produce a well-behaved but otherwise arbitrary implementation.
 However, it has long been realised that declarative approaches are hardly enough for practical bidirectional applications (see, e.g., \citet[Section~4.1]{Stevens-QVT}).
