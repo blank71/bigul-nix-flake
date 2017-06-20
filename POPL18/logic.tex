@@ -1514,8 +1514,8 @@ Their union is the output range of the entire |case|, and is indeed |COM(ss || l
 \section{Discussion}
 \label{sec:discussion}
 
-\varparagraph{How expressive is \BiGUL, especially compared with existing languages?}
-Most of \BiGUL's expressive power stems from its |case| construct, which has gone beyond \citet{Foster-lenses}'s ``general conditional'' in terms of expressiveness, allowing, in particular, key-based list alignment to be implemented using only simple and general-purpose primitives for the first time.
+\varparagraph{How expressive is \BiGUL\ (especially compared with existing languages)?}
+The expressive power of the version of \BiGUL\ used in this paper mainly stems from its |case| construct, which has gone beyond \citet{Foster-lenses}'s ``general conditional'' and allows, in particular, key-based list alignment to be implemented using only simple and general-purpose primitives for the first time.
 %Note that the case analysis constructs in \citet{Ko-BiGUL}'s original \BiGUL\ were essentially the same as \citeauthor{Foster-lenses}'s conditionals, and \citeauthor{Ko-BiGUL} had to provide list alignment as an extra and complex primitive.
 
 Regarding alignment, \citet{Barbosa-matching-lenses}'s ``matching lenses'' offer several sophisticated matching strategies, some of which can be hard to implement ``nicely'' in \BiGUL\ so far.
@@ -1592,7 +1592,8 @@ for which the following triples are verified:
 
 (all(n)){-"\hspace{.75em}"-}  (ASSERTRANGE(ss _ | length ss = n)) ~                 replaceAll ~ (ASSERTRANGE((s' :: ss') | 1 + length ss' = n && (all(t)) t `elem` ss' => s' = t))
 \end{code}
-This example clarifies the misconception that the programmer needs to have a |get| in mind when programming |put| --- rather, what the putback-based programmer has in mind is a consistency relation (|COM(ss' v || (all(t)) t `elem` ss' => t = v)| in this case), which may be functional but need not be executable.
+This example helps to clarify the misconception that, when programming |put|, the programmer still needs to have a |get| in mind --- rather, what the programmer needs to have in mind is a consistency relation (|COM(ss' v || (all(t)) t `elem` ss' => t = v)| in this case), which may be functional but does not need to be executable.
+%whereas |get replaceAll| has additional and nontrivial computational content, which is derived from the |replaceAll| program
 The range triple is also interesting as it has a nontrivial output range.
 
 Rather than developing more examples at this stage, we plan to move forward and aim for the verification of practical bidirectional applications.
