@@ -386,7 +386,7 @@ With respect to this definition of consistency, there are a variety of consisten
 \item we can update the height to keep the height-to-width ratio of the rectangle --- in general this can be maintaining some kind of internal consistency on the source side;
 \item we can reset the height to zero if the view is different from the width --- although rather drastic, this would be useful when the view side does not know how the source side maintains its internal consistency, and thus simply chooses to invalidate associated data and leave them for the source side to update later;
 \item we can decide to keep or reset the height depending on whether the difference between the width and the view is small enough --- this is a flexible mixture of the above strategy and the ``least-change'' one;
-\item we can use the height as a counter that is incremented every time an inconsistency is repaired --- this is somewhat bizarre for rectangle width updating, but may well be appropriate for some other interpretations of the problem.
+\item we can use the height as a counter that is incremented every time an inconsistency is repaired --- in general this can be some form of logging of source changes.
 \end{itemize}
 As we can see, even for a simple problem like rectangle width updating, there are already many possible update strategies; this is even more the case in complex, real-world scenarios.
 All the above update strategies restore the same consistency but have different \emph{retentive} behaviour --- the way in which the information of the original source is retained --- to meet different requirements.
@@ -872,7 +872,7 @@ resetHeight =  case
 Roughly speaking, this program checks whether the width of the source is equal to the view, and skips if that is the case; otherwise, it creates a new rectangle whose width is the view and whose height is zero.
 
 \varparagraph{Syntax of\, |case|.}
-In general, a case analysis in \BiGUL\ has the form |case bs : S <~ V| where |bs|~is an arbitrary number of |normal| or |adaptive| branches.
+In general, a case analysis in \BiGUL\ has the form |case bs : S <~ V| where |bs|~is a sequence of |normal| or |adaptive| branches.
 For normal branches, the general form is |normal M exit E INNER b| where |M : (POWER(S TIMES V))| is called the \emph{main condition}, |E : (POWER S)| is called the \emph{exit condition}, and |b : S <~ V| is the branch body.
 For adaptive branches, the general form is |adaptive M INNER f| where |M : (POWER(S TIMES V))| is again the main condition, and |f : S -> V -> S| is a function in the host language.
 The syntactic conventions described by \autoref{notation:trivially-true-proposition} and \autoref{notation:angle-brackets} are also adopted for comprehension relations used as main or exit conditions.%
@@ -1575,7 +1575,7 @@ In the supplementary \Agda\ code, there is one more program |replaceAll| which r
 replaceAll : Eq A => ~ [A] <~ A
 replaceAll =  case
               ^  adaptive [] _
-              ^  ^  \ _ x -> [x]
+              ^  ^  \ _ x -> x :: []
               ^  normal (_ :: []) _ exit (_ :: [])
               ^  ^  rearrS (s :: []) -> s
               ^  ^  ^  replace

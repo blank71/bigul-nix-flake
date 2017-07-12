@@ -113,18 +113,19 @@
 
 
 \bibitem[\protect\citeauthoryear{Cheney, Gibbons, McKinna, and Stevens}{Cheney
-  et~al\mbox{.}}{2015}]%
+  et~al\mbox{.}}{2017}]%
         {Cheney-least-surprise}
 \bibfield{author}{\bibinfo{person}{James Cheney}, \bibinfo{person}{Jeremy
   Gibbons}, \bibinfo{person}{James McKinna}, {and} \bibinfo{person}{Perdita
-  Stevens}.} \bibinfo{year}{2015}\natexlab{}.
-\newblock \showarticletitle{Towards a {Principle of Least Surprise} for
-  Bidirectional Transformations}. In \bibinfo{booktitle}{{\em International
-  Workshop on Bidirectional Transformations}} {\em (\bibinfo{series}{BX'15})}.
-  \bibinfo{publisher}{CEUR-WS.org}, \bibinfo{pages}{66--80}.
+  Stevens}.} \bibinfo{year}{2017}\natexlab{}.
+\newblock \showarticletitle{On principles of {Least Change} and {Least
+  Surprise} for bidirectional transformations}.
+\newblock \bibinfo{journal}{{\em Journal of Object Technology\/}}
+  \bibinfo{volume}{16}, \bibinfo{number}{1} (\bibinfo{year}{2017}),
+  \bibinfo{pages}{3:1--31}.
 \newblock
-\showURL{%
-\url{http://ceur-ws.org/Vol-1396/p66-cheney.pdf}}
+\showDOI{%
+\url{https://doi.org/10.5381/jot.2017.16.1.a3}}
 
 
 \bibitem[\protect\citeauthoryear{Colson, Dupuis, Montrieux, Hu, Uchitel, and
