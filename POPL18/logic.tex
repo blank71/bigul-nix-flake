@@ -1311,7 +1311,7 @@ then:
 \end{theorem}
 
 \ref{prop:PutbackRecursion} will be the proof rule we use for reasoning about the putback behaviour of recursive programs.
-It combines the basic proof idea~(\ref{prop:basic-proof-idea}) with the sized-based termination argument given in the beginning of this section: in the precondition for |f rec|, the size of the input source and view is bound to a ghost variable~|n|, and we can make recursive invocations wherever the size~|m| of the current source and view is strictly less than~|n|.
+It combines the basic proof idea~(\ref{prop:basic-proof-idea}) with the sized-based termination argument given in the beginning of this section: in the precondition for |f rec|, the size of the input source and view is bound to a logic variable~|n|, and we can make recursive invocations wherever the size~|m| of the current source and view is strictly less than~|n|.
 The soundness of \ref{prop:PutbackRecursion} is justified by \autoref{thm:putback-finite-expansion}, whose conclusion implies that any input in~|R| can be successfully turned into an output in~|R'| as long as |f|~is expanded enough times.
 %We again omit the proof of the theorem (which is by nested induction on |l|~and~|n|) from the presentation.
 
