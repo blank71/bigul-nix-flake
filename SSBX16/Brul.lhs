@@ -286,11 +286,17 @@ v =  [ [RString "Lullaby" , RInt 4, RString "Show"  , RInt 3]
      , [RString "Lovesong", RInt 5, RString "Paris" , RInt 7]
      ]
 \end{code}
-We can reflect these changes to the source by performing |put|.
+We can reflect these changes to the source by performing |put| with |u0|.
 {\small
 \begin{lstlisting}
 *Brul> put (u0 (RInt 2000)) s v
 \eval*{put (u0 (RInt 2000)) s v}
 \end{lstlisting}
 }
-In the updated source, the changes of rating and quality are correctly reflected, and the music track |Trust| is removed.
+In the updated source, the changes of rating and quality are correctly reflected, and the music track |Trust| is removed. Note that we may reflect the changes to the source by performing |put| with |u1|, another update strategy, and we will keep the music track |Trust| while setting its quality to be |0|.
+{\small
+\begin{lstlisting}
+*Brul> put (u1 (RInt 2000)) s v
+\eval*{put (u1 (RInt 2000)) s v}
+\end{lstlisting}
+}
