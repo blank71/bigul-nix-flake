@@ -1,4 +1,4 @@
-% !TEX root = tutorial/tutorial.tex
+% !TEX root = tutorial.tex
 
 %include lhs2TeX-macros.lhs
 
@@ -49,7 +49,7 @@ Consider the following abstract syntax of arithmetic expressions consisting of i
 data Arith  =  Num Int
             |  Add  Arith Arith
             |  Sub  Arith Arith
-  deriving Show
+            deriving Show
 \end{code}
 This is a nice representation for the compiler, but we cannot expect the programmer to write something like ``|Sub (Num 1) (Add (Num 2) (Num 3))|'', and should provide a concrete syntax so that they can write ``$1 - (2+3)$''.
 Such a concrete syntax is usually defined in terms of a BNF grammar:
@@ -76,6 +76,12 @@ data Factor  =  Lit Int
              |  Paren Exp
              |  FNull
 \end{code}%
+Again, we need to provide one |deriveBiGULGeneric| statement for each of the above datatypes to allow BiGUL to operate on them:
+\begin{align*}
+& |deriveBiGULGeneric|\;\texttt{\char13\char13}|Arith| \\
+& |deriveBiGULGeneric|\;\texttt{\char13\char13}|Exp| \\
+& |deriveBiGULGeneric|\;\texttt{\char13\char13}|Factor|
+\end{align*}
 \ignore{%
 \begin{code}
 deriveBiGULGeneric ''Arith
@@ -232,8 +238,8 @@ pExpArith  =   Case
     ==> \ _ _ -> EF FNull
   ]
 
-pFactorArith  ::  BiGUL Factor Arith
-pFactorArith  =   Case
+pFactorArith  ::   BiGUL Factor Arith
+pFactorArith  =    Case
   [ $(normalSV (P( Lit _ )) (P( Num _ )) (P( Lit _ )))
     ==> $(update (P( Lit i )) (P( Num i )) (D( i = Replace )))
   , $(normalSV (P( Neg _ )) (P( Sub (Num 0) _ )) (P( Neg _ )))

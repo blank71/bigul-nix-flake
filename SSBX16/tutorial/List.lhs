@@ -1,4 +1,4 @@
-% !TEX root = tutorial/tutorial.tex
+% !TEX root = tutorial.tex
 
 %include lhs2TeX-macros.lhs
 
@@ -26,16 +26,18 @@ import Basic
 
 }
 
-In this section, we demonstrate that
+To give some more involved examples, in this section we demonstrate that
 many list functions can be bidirectionalized
-using BiGUL. To show the correspondence with the original list functions,
-we prefix
+using BiGUL.
+The putback behaviors of these functions are in fact non-trivial, and the reader might want to skip to later sections in which more examples are developed, starting from \autoref{sec:alignment}.
+
+To show the correspondence with the original list functions, we prefix
 the original forward function names with \emph{lens}. Note that in our context,
 the original forward
 functions can be automatically derived from the new putback transformations
 by calling |get|.
 
-We shall focus on bidirectionalizing |foldr|, a simple but useful higher-order function on lists:
+We shall focus on bidirectionalizing |foldr|, an important higher-order function on lists:
 
 < foldr :: (a -> b -> b) -> b -> [a] -> b
 < foldr f e []      = e
@@ -50,17 +52,17 @@ every element in a list.
 %< reverse p  = foldr (\a r -> r ++ [a]) []
 %< sort       = foldr insert []
 
-We start by developing a simple putback function for |foldr| in BiGUL:
+We start by developing a putback function for |foldr| in BiGUL:
 \begin{code}
 lensFoldr  ::  (Show a, Show v)
            =>  BiGUL (a, v) v -> (v->Bool) -> BiGUL ([a], v) v
 \end{code}
-where we hope to define a putback function of type |BiGUL ([a], v) v|
+where we hope to define a putback program of type |BiGUL ([a], v) v|
 that is to use the view to update the source,
 a list together with a value, by recursively applying
 a simpler putback function of type |BiGUL (a, v) v|
 (until a condition is satisfied or all the list elements have been visited).
-We can define it as follows.
+The program is somewhat tricky, and is probably not easy to understand since |Compose| is involved.
 \begin{code}
 lensFoldr bx pv =
   Case  [   $(adaptive (Q( \(x,y) v -> pv v && length x /= 0 )))
@@ -73,7 +75,7 @@ lensFoldr bx pv =
                    (Replace `Prod` lensFoldr bx pv) `Compose` bx
         ]
 \end{code}
-Simply speaking, |lensFoldr| accepts a putback function |bx| and a
+The |lensFoldr| program accepts a putback function |bx| and a
 view condition |pv|, and performs a case analysis to put the view |v|
 to the source |(xs,e)|. If the view |v| satisfies |pv|
 but the list |xs| in the source is not empty, then it adapts the list to be empty.
@@ -110,8 +112,8 @@ is defined on |pf| that has the type of |BiGUL a b|.
 Note that, for testing, we embed into our framework
 the bijective functions for increasing and decreasing a number by~|1|.
 \begin{code}
-dec1 :: (Eq a, Num a) => BiGUL a a
-dec1 = emb g p
+dec1  ::  (Eq a, Num a) => BiGUL a a
+dec1  =   emb g p
   where  g s    = s+1
          p s v  = v-1
 \end{code}
@@ -171,7 +173,7 @@ Below are some testing examples.
 
 }
 
-As the second example, consider the function |sum (xs,e)|, which is to sum up
+For a second example, consider the function |sum (xs,e)|, which is to sum up
 all elements of the list |xs| starting from the seed |e|. If the sum is changed,
 there are many ways to reflect this change to the input |(xs,e)|. The following
 describes one way in BiGUL:
@@ -188,7 +190,7 @@ lensSum'  =   lensFoldr ($(rearrS (Q( \(x,y) -> (y,x) ))) pSum2) (const False)
 \end{code}
 Note that although |get lensSum ([1,2,3],0) = get lensSum' ([1,2,3],0) =| \eval{get lensSum' ([1,2,3],0)}, their putback behaviors are different:
 \begin{align*}
-& |put lensSum  ([1,2,3],0) 16| = \eval{put lensSum ([1,2,3],0) 16} \\
+& |put|\;\mathrlap{|lensSum|}\phantom{|lensSum'|}\;|([1,2,3],0) 16| = \eval{put lensSum ([1,2,3],0) 16} \\
 & |put lensSum' ([1,2,3],0) 16| = \eval{put lensSum'  ([1,2,3],0) 16}
 \end{align*}
 

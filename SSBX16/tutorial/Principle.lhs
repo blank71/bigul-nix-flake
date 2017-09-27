@@ -342,7 +342,7 @@ The requirement of not doing adaptation twice is met by setting |putWithAdaptati
 
 What about |get|?
 It turns out that |get| can simply ignore the adaptive branch!
-If you have doubt about this ``choice,'' just invoke the fundamental theorem (Theorem~\ref{thm:uniqueness}): The |put| behaviour is exactly what we want, and we can verify that the pair of |put| and |get| is well-behaved, so we are reassured that our ``choice'' is ``correct,'' simply because there is no other choice of |get|.
+If you have doubt about this ``choice'', just invoke the fundamental theorem (Theorem~\ref{thm:uniqueness}): The |put| behaviour is exactly what we want, and we can verify that the pair of |put| and |get| is well-behaved, so we are reassured that our ``choice'' is ``correct'', simply because there is no other choice of |get|.
 
 To sum up, we have arrived at a simpler variant of |Case| which nevertheless has all the features of the multi-branch |Case| in BiGUL.
 We have inserted various dynamic checks into the |put| semantics, and the BiGUL programmer needs to be aware of these constraints to make execution of |Case| succeed:
@@ -548,8 +548,8 @@ The first step --- matching a value with an expression --- can then be implement
 \begin{spec}
 uneval :: Pat a env con -> Expr env b -> b -> con -> Maybe con
 uneval p (EDir d)     x          con = unevalD p d x con
-uneval p (EConst c)   x          con = if c == x  then return con
-                                                  else Nothing
+uneval p (EConst c)   x          con = if c == x  then   return con
+                                                  else   Nothing
 uneval p (EProd l r)  (x, y)     con = uneval p l x con >>= uneval p r y
 uneval p (ELeft e)    (Left  x)  con = uneval p e x con
 uneval p (ELeft _)    x          con = Nothing
@@ -559,8 +559,8 @@ uneval p (EIn e)      x          con = uneval p e (out x) con
 
 unevalD :: Pat a env con -> Direction env b -> b -> con -> Maybe con
 unevalD PVar           DVar         x  (Just y)      =  if x == y
-                                                        then return (Just x)
-                                                        else Nothing
+                                                        then  return (Just x)
+                                                        else  Nothing
 unevalD PVar           DVar         x  Nothing       =  return (Just x)
 unevalD (PConst c)     _            x  con           =  return con
 unevalD (l `PProd` r)  (DLeft   d)  x  (conl, conr)  =  liftM (, conr)

@@ -1,4 +1,4 @@
-% !TEX root = tutorial/tutorial.tex
+% !TEX root = tutorial.tex
 
 %include lhs2TeX-macros.lhs
 
@@ -45,7 +45,7 @@ can be automatically derived.
 \item |unjoin| is to decompose a join view to update two sources.
 \end{itemize}
 
-In this tutorial, we will focus on |align|. As will be seen in Section
+In this section, we will focus on |align|. As will be seen in Section
 \ref{sec:policy}, it can describe more flexible update strategies
 (related to selection/projection queries) than relational lenses,
 while the well-behavedness is guaranteed for free.
@@ -58,27 +58,30 @@ does not really matter),
 and each record (|Record|) is denoted by a list of attributes of type |RType|, which could
 be an integer, a string, a floating point number, or a double-precision floating point number.
 \begin{code}
-type RT = [Record]
-type Record = [RType]
-data RType  =  RInt Int
-            |  RString String
-            |  RFloat Float
-            |  RDouble Double
-      deriving (Show, Eq, Ord)
+type RT      =  [Record]
+type Record  =  [RType]
+data RType   =  RInt Int
+             |  RString String
+             |  RFloat Float
+             |  RDouble Double
+             deriving (Show, Eq, Ord)
 \end{code}
 To allow pattern matching on the newly defined algebraic data type |RType| in BiGUL, we need to add the following declaration.
-\begin{code}
+\begin{align*}
+& |deriveBiGULGeneric|\;\texttt{\char13\char13}|RType|
+\end{align*}
+\ignore{\begin{code}
 deriveBiGULGeneric  ''RType
-\end{code}
+\end{code}}
 
 \ignore{
 
 \begin{code}
 showRType :: RType -> String
-showRType (RInt i) = show i
-showRType (RString str) = str
-showRType (RFloat f) = show f
-showRType (RDouble d) = show d
+showRType (RInt i)       = show i
+showRType (RString str)  = str
+showRType (RFloat f)     = show f
+showRType (RDouble d)    = show d
 
 tshow :: [Record] -> String
 tshow [] = ""
@@ -210,9 +213,11 @@ We have:
 With |pAlign|, we can describe various update policies
 for the selection/projection queries. To be concrete,
 consider the following selection/projection query:
-< select Track, Rating, Album, Quantity as v
-< from s
-< where Quantity > 2
+\begin{align*}
+& \mathrlap{\textbf{select}}\phantom{\textbf{where}}\;\mathit{Track}, \mathit{Rating}, \mathit{Album}, \mathit{Quantity}\ \textbf{as}\ v \\
+& \mathrlap{\textbf{from}}\phantom{\textbf{where}}\;s \\
+& \textbf{where}\; |Quantity > 2|
+\end{align*}
 which extracts the track, rating, album and quality information from
 those music tracks in the source |s| whose quantity is greater than |2|.
 Let us see how to write a single BiGUL program so that its |get|
@@ -220,16 +225,16 @@ does the above query and its |put| describes a specific update policy.
 
 The first \textsc{BiGUL} program is |u0| below.
 \begin{code}
-u0 :: RType -> BiGUL [Record] [Record]
-u0 d =  pAlign
-        (\r -> (r !! 4) > RInt 2)
-        (\s -> (s !! 0, s!!3))
-        (\v -> (v !! 0, v !! 2))
-        $(update  (P( (t: _: r: a: q: [])))
-                  (P( (t: r: a: q: []) ))
-                  (D( t = Replace; r = Replace; a = Replace; q = Replace )))
-        (\(t: r: a: q: []) -> (t: d: r: a: q: []))
-        (const Nothing)
+u0    ::  RType -> BiGUL [Record] [Record]
+u0 d  =   pAlign
+            (\r -> (r !! 4) > RInt 2)
+            (\s -> (s !! 0, s!!3))
+            (\v -> (v !! 0, v !! 2))
+            $(update  (P( (t: _: r: a: q: [])))
+                      (P( (t: r: a: q: []) ))
+                      (D( t = Replace; r = Replace; a = Replace; q = Replace )))
+            (\(t: r: a: q: []) -> (t: d: r: a: q: []))
+            (const Nothing)
 \end{code}
 It tries to match the source records whose |Quantity| is greater than |2|
 with the view records by the key (|Track|, |Album|).
@@ -258,16 +263,16 @@ rather than deleting it if it has no matching view record,
 we could simply change the last line of |u0| and get |u1| as follows.
 
 \begin{code}
-u1 :: RType -> BiGUL [Record] [Record]
-u1 d =  pAlign
-        (\r -> (r !! 4) > RInt 2)
-        (\s -> (s !! 0, s !! 3))
-        (\v -> (v !! 0, v !! 2))
-        $(update  (P( (t: _: r: a: q: [])))
-                  (P( (t: r: a: q: []) ))
-                  (D( t = Replace; r = Replace; a = Replace; q = Replace )))
-        (\(t: r: a: q: []) -> (t: d: r: a: q: []))
-        (\(t: d: r: a: _: []) -> Just (t: d: r: a: RInt 0:[]))
+u1    ::  RType -> BiGUL [Record] [Record]
+u1 d  =   pAlign
+            (\r -> (r !! 4) > RInt 2)
+            (\s -> (s !! 0, s !! 3))
+            (\v -> (v !! 0, v !! 2))
+            $(update  (P( (t: _: r: a: q: [])))
+                      (P( (t: r: a: q: []) ))
+                      (D( t = Replace; r = Replace; a = Replace; q = Replace )))
+            (\(t: r: a: q: []) -> (t: d: r: a: q: []))
+            (\(t: d: r: a: _: []) -> Just (t: d: r: a: RInt 0:[]))
 \end{code}
 
 To test, let us see some concrete running examples of using |u0|.
