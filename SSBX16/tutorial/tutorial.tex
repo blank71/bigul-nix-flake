@@ -1,7 +1,7 @@
 \documentclass{llncs}
 
 \title{Principles and Practice of Bidirectional~Programming in BiGUL}
-\subtitle{Draft manuscript (19 April 2017)}
+%\subtitle{Draft manuscript (\today)}
 
 \author{Zhenjiang Hu and Hsiang-Shang Ko}
 \institute{
@@ -24,6 +24,8 @@ National Institute of Informatics, Japan\\
 \usepackage{enumerate}
 \usepackage{xspace}
 \usepackage{upquote}
+\usepackage{microtype}
+\usepackage[UKenglish]{isodate}
 
 \usepackage{listings}
 %\newcommand{\lstnewline}{\raisebox{1.5pt}{\scalebox{.8}{\reflectbox{\rotatebox[origin=c]{180}{\ensuremath{\Lsh}}}}}}
@@ -56,7 +58,7 @@ forward transformation is derived for free. A key distinguishing
 feature of putback-based bidirectional programming is full control
 over the bidirectional behavior, which is important for specifying
 intended bidirectional transformations without any ambiguity.
-In this tutorial, we will introduce BiGUL, a simple yet powerful
+In this chapter, we will introduce BiGUL, a simple yet powerful
 putback-based bidirectional programming language, explaining the underlying
 principles and showing how various kinds of bidirectional
 application can be developed in BiGUL.

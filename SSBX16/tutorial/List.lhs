@@ -1,4 +1,4 @@
-% !TEX root = tutorial/tutorial.tex
+% !TEX root = tutorial.tex
 
 %include lhs2TeX-macros.lhs
 
@@ -26,22 +26,24 @@ import Basic
 
 }
 
-In this section, we demonstrate that
+To give some more involved examples, in this section we demonstrate that
 many list functions can be bidirectionalized
-using BiGUL. To show the correspondence with the original list functions,
-we prefix
+using BiGUL.
+The putback behaviors of these functions are in fact non-trivial, and the reader might want to skip to later sections in which more examples are developed, starting from \autoref{sec:alignment}.
+
+To show the correspondence with the original list functions, we prefix
 the original forward function names with \emph{lens}. Note that in our context,
 the original forward
 functions can be automatically derived from the new putback transformations
 by calling |get|.
 
-We shall focus on bidirectionalizing |foldr|, a simple but useful higher-order function on lists:
+We shall focus on bidirectionalizing |foldr|, an important higher-order function on lists:
 
 < foldr :: (a -> b -> b) -> b -> [a] -> b
 < foldr f e []      = e
 < foldr f e (x:xs)  = f x (foldr f e xs)
 
-Many interesting functions can be defined in terms of |foldr|: 
+Many interesting functions can be defined in terms of |foldr|:
 < sum        = foldr (+) 0
 < map f      = foldr (\a r -> f a : r) []
 where |sum| sums up all the elements in a list, and |map f| applies |f| to
@@ -50,22 +52,22 @@ every element in a list.
 %< reverse p  = foldr (\a r -> r ++ [a]) []
 %< sort       = foldr insert []
 
-We start by developing a simple putback function for |foldr| in BiGUL:
+We start by developing a putback function for |foldr| in BiGUL:
 \begin{code}
 lensFoldr  ::  (Show a, Show v)
            =>  BiGUL (a, v) v -> (v->Bool) -> BiGUL ([a], v) v
 \end{code}
-where we hope to define a putback function of type |BiGUL ([a], v) v|
-that is to use the view to update the source, 
+where we hope to define a putback program of type |BiGUL ([a], v) v|
+that is to use the view to update the source,
 a list together with a value, by recursively applying
 a simpler putback function of type |BiGUL (a, v) v|
 (until a condition is satisfied or all the list elements have been visited).
-We can define it as follows.
+The program is somewhat tricky, and is probably not easy to understand since |Compose| is involved.
 \begin{code}
 lensFoldr bx pv =
-  Case  [   $(adaptive (Q( \(x,y) v -> pv v && length x /= 0 ))) 
+  Case  [   $(adaptive (Q( \(x,y) v -> pv v && length x /= 0 )))
             ==> \(x,y) v -> ([],y)
-        ,   $(normal (Q( \(xs,_) v -> null xs )) (Q( \(xs,_) -> null xs ))) 
+        ,   $(normal (Q( \(xs,_) v -> null xs )) (Q( \(xs,_) -> null xs )))
             ==>  $(rearrV (Q( \v -> ((),v) ))) $
                    $(update (P( (_, v) )) (P( ((),v ) )) (D( v = Replace )))
         ,   $(normalSV (P( _ )) (P( _ )) (Q( \(xs,_) -> not (null xs) )))
@@ -73,7 +75,7 @@ lensFoldr bx pv =
                    (Replace `Prod` lensFoldr bx pv) `Compose` bx
         ]
 \end{code}
-Simply speaking, |lensFoldr| accepts a putback function |bx| and a
+The |lensFoldr| program accepts a putback function |bx| and a
 view condition |pv|, and performs a case analysis to put the view |v|
 to the source |(xs,e)|. If the view |v| satisfies |pv|
 but the list |xs| in the source is not empty, then it adapts the list to be empty.
@@ -108,10 +110,10 @@ is defined on |pf| that has the type of |BiGUL a b|.
 \eval*{get (lensMapAppend dec1) ([1..10],[])}
 \end{lstlisting}
 Note that, for testing, we embed into our framework
-the bijective functions for increasing and decreasing an integer by~|1|.
+the bijective functions for increasing and decreasing a number by~|1|.
 \begin{code}
-dec1 :: BiGUL Int Int
-dec1 = emb g p
+dec1  ::  (Eq a, Num a) => BiGUL a a
+dec1  =   emb g p
   where  g s    = s+1
          p s v  = v-1
 \end{code}
@@ -142,7 +144,7 @@ lensSnoc  =
            ==> $(rearrS (Q( \(y:ys,x) -> (y,(ys,x)) ))) $
                  $(rearrV (Q( \(v:vs) -> (v,vs) ))) $
                    Replace `Prod` lensSnoc
-        ,  $(adaptive (Q( \(s,_) v -> null s ))) 
+        ,  $(adaptive (Q( \(s,_) v -> null s )))
            ==> \(s,x) _ -> ([undefined], x)
         ]
 
@@ -171,7 +173,7 @@ Below are some testing examples.
 
 }
 
-As the second example, consider the function |sum (xs,e)|, which is to sum up
+For a second example, consider the function |sum (xs,e)|, which is to sum up
 all elements of the list |xs| starting from the seed |e|. If the sum is changed,
 there are many ways to reflect this change to the input |(xs,e)|. The following
 describes one way in BiGUL:
@@ -180,48 +182,20 @@ lensSum  ::  BiGUL ([Int], Int) Int
 lensSum  =   lensFoldr pSum2 (const False)
 \end{code}
 which will reflect the change difference on the view to the head element of |xs|
-if |xs| is not empty, or to the seed |e| otherwise. We may choose other ways, say to 
+if |xs| is not empty, or to the seed |e| otherwise. We may choose other ways, say to
 reflect the change difference on the view only to the seed by defining
 \begin{code}
 lensSum'  ::  BiGUL ([Int], Int) Int
 lensSum'  =   lensFoldr ($(rearrS (Q( \(x,y) -> (y,x) ))) pSum2) (const False)
 \end{code}
-or to reflect the change difference among all the list elements and
-the seed by the following definition.
-\begin{code}
-lensSum''  ::  BiGUL ([Float], Float) Float
-lensSum''  =   lensFoldr pSum2Av (const False)
-   where pSum2Av = emb  (\(x,y) -> x+y)
-                        (\(x,y) v ->  let  av = (v-x-y)/2
-                                      in   (x + av, y+av))
-\end{code}
-For instance, although |get lensSum' ([1,2,3],0) = get lensSum'' ([1,2,3],0) =| \eval{get lensSum' ([1,2,3],0)}, their putback behaviors are different:
+Note that although |get lensSum ([1,2,3],0) = get lensSum' ([1,2,3],0) =| \eval{get lensSum' ([1,2,3],0)}, their putback behaviors are different:
 \begin{align*}
-& |put|\;\mathrlap{|lensSum'|}\phantom{|lensSum''|}\;|([1,2,3],0) 16| = \eval{put lensSum' ([1,2,3],0) 16} \\
-& |put lensSum'' ([1,2,3],0) 16| = \eval{put lensSum''  ([1,2,3],0) 16}
+& |put|\;\mathrlap{|lensSum|}\phantom{|lensSum'|}\;|([1,2,3],0) 16| = \eval{put lensSum ([1,2,3],0) 16} \\
+& |put lensSum' ([1,2,3],0) 16| = \eval{put lensSum'  ([1,2,3],0) 16}
 \end{align*}
-\todo{Josh: Technically, |get lensSum' ([1,2,3],0)| produces |Just 6| whereas |get lensSum'' ([1,2,3],0)| produces |Just 6.0|. Also having non-zero residuals doesn't look right.}
 
 It is worth noting that our definition of |lensFoldr| is just one
 putback function for |foldr|, and there are many others.
 This reflects the fact
-that one |foldr| can have many |put|s, each describing one 
+that one |foldr| can have many |put|s, each describing one
 updating strategy.
-
-\ignore{
-\subsection{Efficiency Issue: |lensFoldr|}
-
-A close look at the definition of |lensFoldr| reveals that it contains many
-redundant computations because of the use of |Compose| that calls |get| as many
-times as the number of calls of |Compose|. Put it more concretely,
-< put (lensFoldr bx (const True)) ([x1,x2,...,xn],e) v
-would call
-< get (lensFoldr bx (const True)) ([x2,...,xn],e),
-< ...,
-< get (lensFoldr bx (const True)) ([],e).
-
-
-\subsection{LensScanr}
-
-\subsection{LensMap}
-}

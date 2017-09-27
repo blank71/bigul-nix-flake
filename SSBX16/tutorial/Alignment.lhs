@@ -1,8 +1,8 @@
-% !TEX root = tutorial/tutorial.tex
+% !TEX root = tutorial.tex
 
 %include lhs2TeX-macros.lhs
 
-\section{Position-based, key-based, and delta-based list alignment}
+\section{Position-, key-, and delta-based list alignment}
 \label{sec:alignment}
 
 \ignore{

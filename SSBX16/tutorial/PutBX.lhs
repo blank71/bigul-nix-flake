@@ -5,7 +5,7 @@
 \section{Putback-based bidirectional programming}
 \label{sec:PutBX}
 
-In this tutorial, the kind of bidirectional transformations (BXs) we discuss is \emph{aymmetric lenses}~\cite{Lenses},
+In this chapter, the kind of bidirectional transformations (BXs) we discuss is \emph{aymmetric lenses}~\cite{Lenses},
 which basically consist of a pair of transformations:
 a {\em forward} transformation |get| producing a \emph{view} from a \emph{source}, and a {\em backward}, or {\em putback},
 transformation |put| which takes a source and a possibly modified view, and reflects the modifications on the view to the source, producing an updated source.
@@ -40,18 +40,26 @@ To ease and enable maintainable bidirectional programming, it is
 preferable to write just a single program that can denote both
 transformations.
 
-Lots of work \cite{Lenses,Bohannon:06,Bohannon:08,Hofmann:2011,XLHZ07,MHNHT07,Voigt09,Hidaka:10} has been devoted to the {\em get-based}
-approach, allowing the programmer to write the forward
-transformation |get| and deriving a suitable putback transformation.
+Lots of work \cite{Lenses,Bohannon:06,Bohannon:08,XLHZ07,MHNHT07,Voigt09,Hidaka:10} has been devoted to the {\em get-based}
+approach, allowing the programmer to write, mainly, the forward
+transformation |get|, and deriving a suitable putback transformation.
 While the get-based approach is friendly, 
 a |get| function will typically not be injective, so there may exist
 many possible |put| functions that can be combined with it to form a
-valid BX, and there is no way to control the choice of |put| through
-the definition of |get|. 
+valid BX.
 This ambiguity of |put| is what makes bidirectional
 programming challenging and unpredictable in practice.
+For specific domains where declarative approaches suffice,
+the get-based approach works fine, but when it comes to problems for which
+it is essential to precisely control |put| behavior,
+the get-based approach is inherently awkward:
+while most get-based languages/systems offer some features for programming |put| behavior,
+the programmer ends up having to break the |get|-based abstraction
+and figure out the |put| semantics of their |get| programs in excruciating detail
+to be able to reliably use these features, largely defeating the purpose of these languages/systems.
 
-The main topic of this tutorial is the {\em putback-based} approach
+
+The main topic of this chapter is the {\em putback-based} approach
 to bidirectional programming.
 In contrast to the get-based approach, it allows the programmer to write a backward 
 transformation |put| and derives a suitable |get| that can be
@@ -116,7 +124,7 @@ it is more difficult to construct a
 framework that can directly support putback-based bidirectional
 programming.
 
-In the rest of this tutorial, we will introduce BiGUL~\cite{KoZH16} (pronounced ``beagle''),
+In the rest of this chapter, we will introduce BiGUL~\cite{KoZH16} (pronounced ``beagle''),
 a simple yet powerful putback-based bidirectional language,
 which grew out of some prior putback-based languages~\cite{PaHF14,PaZH14}.
 BiGUL is implemented as an embedded language in Haskell, and we will assume that the reader is reasonably familiar with Haskell.

@@ -9,7 +9,7 @@ MAIN=tutorial
 
 BIB_FILE=references.bib
 
-FILES=$(MAIN).tex PutBX.lhs Install.tex ../Basic.lhs ../List.lhs Principle.lhs ../Alignment.lhs ../BiYacc.lhs ../Brul.lhs Conclusion.tex
+FILES=$(MAIN).tex PutBX.lhs Install.tex Basic.lhs List.lhs Principle.lhs Alignment.lhs BiYacc.lhs Brul.lhs Conclusion.tex
 
 TEX_FILE=$(MAIN).tex
 PDF_FILE=$(MAIN).pdf
@@ -43,18 +43,12 @@ $(BBL_FILE) : $(AUX_FILE) $(BIB_FILE)
 $(PDF_FILE) : $(FILES)
 	pdflatex $(TEX_FILE)
 
-$(MAIN).tex: lhs2TeX-polycode.sty ../lhs2TeX-macros.lhs PutBX.tex Basic.tex List.tex Principle.tex Alignment.tex BiYacc.tex Brul.tex Conclusion.tex
-
-../lhs2TeX-macros.lhs: lhs2TeX-macros.lhs
-	cp -f lhs2TeX-macros.lhs ..
+$(MAIN).tex: lhs2TeX-polycode.sty lhs2TeX-macros.lhs PutBX.tex Basic.tex List.tex Principle.tex Alignment.tex BiYacc.tex Brul.tex Conclusion.tex
 
 lhs2TeX-polycode.sty: lhs2TeX-polycode.lhs
 	lhs2TeX --output=$@ $<
 
 %.tex: %.lhs lhs2TeX-macros.lhs
-	lhs2TeX --output=$@ $<
-
-%.tex: ../%.lhs lhs2TeX-macros.lhs
 	lhs2TeX --output=$@ $<
 
 SUBMITDIR=_submit

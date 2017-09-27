@@ -3,14 +3,14 @@
 \section{Preparation: installing BiGUL}
 \label{sec:install}
 
-BiGUL is implemented as an embedded domain-specific language in Haskell, and this tutorial assumes that the readers have some Haskell background.
+BiGUL is implemented as an embedded domain-specific language in Haskell, and this chapter assumes that the readers have some Haskell background.
 (If not, see \url{https://wiki.haskell.org/Learning_Haskell} for a list of resources for learning Haskell; for the Haskell environment, it is recommended to install Haskell Platform at \url{https://www.haskell.org/platform/}.)
 BiGUL has been released to Hackage, and the latest version (1.0.1 at the time of writing) can be installed using Cabal in the usual way, by executing the following in the command line:
 \begin{lstlisting}
 $ cabal update
 $ cabal install BiGUL
 \end{lstlisting}
-If you want to ensure compatibility with this tutorial, you can instead install BiGUL-1.0.1 specifically by executing:
+If you want to ensure compatibility with this chapter, you can instead install BiGUL-1.0.1 specifically by executing:
 \begin{lstlisting}
 $ cabal install BiGUL-1.0.1
 \end{lstlisting}
@@ -28,25 +28,17 @@ Then load it using GHCi.
 \begin{lstlisting}
 $ ghci Test.hs
 GHCi, version 7.10.3: http://www.haskell.org/ghc/  :? for help
-[1 of 1] Compiling Main             ( test.hs, interpreted )
+[1 of 1] Compiling Main             ( Test.hs, interpreted )
 Ok, modules loaded: Main.
 *Main>
 \end{lstlisting}
 If you see the above message, congratulations on your successful installation.
 
-To make it more convenient to play with the BiGUL code in this tutorial, the literate Haskell source files for \autoref{sec:tour}~(\verb"Basic.lhs"), \autoref{sec:lists}~(\verb"List.lhs"), \autoref{sec:alignment}~(\verb"Alignment.lhs"), \autoref{sec:Brul}~(\verb"Brul.lhs"), and \autoref{sec:BiYacc}~(\verb"BiYacc.lhs") are provided at
+To make it more convenient to play with the BiGUL code in this chapter, the Haskell source files for \autoref{sec:tour}~(\verb"Basic.hs"), \autoref{sec:lists}~(\verb"List.hs"), \autoref{sec:alignment}~(\verb"Alignment.hs"), \autoref{sec:Brul}~(\verb"Brul.hs"), and \autoref{sec:BiYacc}~(\verb"BiYacc.hs") are provided at:
 \[ \text{\url{https://bitbucket.org/prl_tokyo/bigul/src/master/SSBX16/}} \]
-These literate Haskell source files need to be preprocessed by lhs2\TeX\ before they can be read by GHCi.
-Install lhs2\TeX\ by executing:
-\begin{lstlisting}
-$ cabal install lhs2TeX
-\end{lstlisting}
-and then load the literate source files by executing, e.g.,
-\begin{lstlisting}
-$ ghci -pgmL lhs2TeX -optL --pre Basic.lhs
-\end{lstlisting}
-(which tells GHCi to use lhs2\TeX\ with the option \verb"--pre" as its literate preprocessor).
-During preprocessing, lhs2\TeX\ will look for the file \verb"lhs2TeX-macros.lhs" (also available at the above URL), which should be placed under the same directory as the file being loaded.
+They are also available as electronic supplementary material to the online version of this chapter on SpringerLink.
+There are some dependencies among the files: \verb"List.hs" imports \verb"Basic.hs", and \verb"Brul.hs" imports \verb"Alignment.hs".
+The imported files should be present in the same directory as the files being loaded.
 
 %\todo{more detail for non-Haskellers; recommend Haskell tutorials/books; how to load the lhs2\TeX\ files}
 

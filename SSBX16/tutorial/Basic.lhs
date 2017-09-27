@@ -1,4 +1,4 @@
-% !TEX root = tutorial/tutorial.tex
+% !TEX root = tutorial.tex
 
 %include lhs2TeX-macros.lhs
 
@@ -63,7 +63,8 @@ provided that the view is computable from the source by~|f|
 applying function |f| to the source). Consider a simple |put| defined by
 |Skip square| where
 \begin{code}
-square x = x*x
+square    ::  Num a => a -> a
+square x  =   x*x
 \end{code}
 We can test its put behavior as follows:
 \begin{lstlisting}
@@ -117,7 +118,7 @@ uses the view |100| to replace the source |1| and gets a new source |100|.
 
 \subsection{Product}
 
-To use a view pair |(v1,v2)| to update a source pair
+If we want to use a view pair |(v1,v2)| to update a source pair
 |(s1,s2)|,
 we can write |Prod bx1 bx2| or |bx1 `Prod` bx2|, a product of two putback transformations
 |bx1| and |bx2|,
@@ -225,10 +226,10 @@ The source and view are respectively decomposed using |sourcePattern| and\break 
 |(P(...))| (written as \texttt{[p||} \ldots \texttt{||]} in plain text Haskell), and corresponding elements are updated using the programs provided in the declaration quasi-quote |(D(...))| (\texttt{[d||} \ldots \texttt{||]} in plain text Haskell).
 For example, we may describe |(skip1 `Prod` Replace) `Prod` Replace| by
 \begin{code}
-testUpdate :: (Show a, Show b, Show c) => BiGUL ((a,b),c) (((),b),c)
-testUpdate = $(update  (P( ((x,y),z) ))
-                       (P( ((x,y),z) ))
-                       (D( x = skip1; y = Replace; z = Replace )))
+testUpdate  ::  (Show a, Show b, Show c) => BiGUL ((a,b),c) (((),b),c)
+testUpdate  =   $(update  (P( ((x,y),z) ))
+                          (P( ((x,y),z) ))
+                          (D( x = skip1; y = Replace; z = Replace )))
 \end{code}
 In this concrete example, the three elements of the tuple (in both the source and view) are bound to the variables |x|, |y|, and~|z|, and they are sent to the three
 combinators as arguments in the |(D(...))| part. Note that since |skip1| does nothing on its source but checks if its view is |()|,
@@ -284,11 +285,11 @@ element in the source list. To do so, we use |Case| to describe a case analysis.
 replaceAll  ::  (Eq s, Show s) => BiGUL [s] s
 replaceAll  =
   Case  [  $(normal (Q( \s v -> length s == 1 )) (Q( \s -> length s == 1 )))
-           ==>  $(rearrS (Q( \[x] -> x ))) Replace
+           ==>   $(rearrS (Q( \[x] -> x ))) Replace
         ,  $(normal (Q( \s v -> length s > 1 )) (Q( \s -> length s > 1 )))
-           ==>  $(rearrS (Q( \(x:xs) -> (x,xs) )))$
-                  $(rearrV (Q( \v -> (v, v) )))$
-                    Replace `Prod` replaceAll
+           ==>   $(rearrS (Q( \(x:xs) -> (x,xs) )))$
+                   $(rearrV (Q( \v -> (v, v) )))$
+                     Replace `Prod` replaceAll
         ,  $(adaptive (Q( \s v -> length s == 0 )))
            ==> \s v -> [undefined]
         ]
@@ -316,25 +317,25 @@ the whole |Case|.
 
 As another interesting example, we define |emb|, which can safely embed any pair of well-behaved
 |get| and |put| into BiGUL. It is defined as follows:
-
-< emb :: Eq v => (s -> v) -> (s -> v -> s) -> BiGUL s v
-< emb g p = Case
-<   [  $(normal (Q( \s v -> g s == v )) (Q( \s -> True )))
-<      ==> Skip g
-<   ,  $(adaptive (Q( \ _ _ -> otherwise )))
-<      ==> p
-<   ]
-
+\begin{spec}
+emb :: Eq v => (s -> v) -> (s -> v -> s) -> BiGUL s v
+emb g p =
+  Case  [  $(normal (Q( \s v -> g s == v )) (Q( \s -> True )))
+           ==> Skip g
+        ,  $(adaptive (Q( \ _ _ -> otherwise )))
+           ==> p
+        ]
+\end{spec}
 where, given a pair |(g,p)| of well-behaved |get| and |put| functions,
 if the view is the same as that produced by applying |g| to the source, we make no change
 on the source with |Skip g| (hinting that the view can be produced using $g$), otherwise we adapt the source using |p| to
 reflect the change on the view to the source. Note that if |p| and |g| form a well-behaved bidirectional transformation, in the rerun of the whole |Case| after the adaptation, the first normal case will always be applicable. To see a use of |emb|, we may define the following putback function
 to update a pair with its sum.
 \begin{code}
-pSum2 :: BiGUL (Int, Int) Int
-pSum2 = emb g p
-  where  g (x,y) = x+y
-         p (x,y) v = (v-y,y)
+pSum2  ::  BiGUL (Int, Int) Int
+pSum2  =   emb g p
+  where  g (x,y)    = x+y
+         p (x,y) v  = (v-y,y)
 \end{code}
 %\begin{lstlisting}
 %*Basic> put pSum2 (1,2) 100
@@ -369,25 +370,25 @@ A unary condition like |(Q( \[x] -> True ))| where only the pattern part matters
 to further reduce syntactic noise.
 Finally, to also allow this kind of abbreviation in main conditions, BiGUL provides 
 a special form for the |normal| case where the main condition is specified as the conjunction of two unary predicates on the source and view respectively:
-< $(normalSV   (Q( sourceCond :: s -> Bool ))
-<              (Q( viewCond :: v -> Bool ))
-<              (Q( exitCond :: s -> Bool )))
+< $(normalSV   (Q( sourceCond  :: s  -> Bool ))
+<              (Q( viewCond    :: v  -> Bool ))
+<              (Q( exitCond    :: s  -> Bool )))
 <   ==> (bx :: BiGUL s v)
 and a special form for the |adaptive| case where the main condition is specified as the conjunction of two unary predicates on the source and view respectively:
-< $(adaptiveSV  (Q( sourceCond :: s -> Bool ))
-<               (Q( viewCond :: v -> Bool )))
+< $(adaptiveSV  (Q( sourceCond  :: s  -> Bool ))
+<               (Q( viewCond    :: v  -> Bool )))
 <   ==> (f :: s -> v -> s)
 
 
 \ignore{
 \begin{code}
 repHead :: BiGUL [Int] Int
-repHead = Case [
-  $(normal (Q( \s v -> length s > 0 )) (Q( \s -> length s > 0 )))
-    ==> $(rearrS (Q( \(x:xs) -> x ))) Replace,
-  $(adaptive (Q( \s v -> length s == 0 )))
-    ==> \s v -> [0]
- ]
+repHead =
+  Case  [ $(normal (Q( \s v -> length s > 0 )) (Q( \s -> length s > 0 )))
+          ==> $(rearrS (Q( \(x:xs) -> x ))) Replace
+        , $(adaptive (Q( \s v -> length s == 0 )))
+          ==> \s v -> [0]
+        ]
 \end{code}
 }
 
@@ -404,8 +405,8 @@ To capture this, BiGUL provides
 
 to describe this intention. We may, for example, define
 \begin{code}
-replaceAll2 :: BiGUL [Int] (Int,Bool)
-replaceAll2 = Dep even replaceAll
+replaceAll2  ::  BiGUL [Int] (Int,Bool)
+replaceAll2  =   Dep even replaceAll
 \end{code}
 to replace all elements of the source by the
 first component of the view, while checking whether
@@ -423,22 +424,23 @@ is inconsistent: |100| is an even number, so the second component should be |Tru
 
 \subsection{Composition}
 
-As in get-based bidirectional programming,
-putback-based bidirectional transformations
-can be composed similarly:
+BiGUL programs can be composed sequentially:
 
 < Compose :: BiGUL a u -> BiGUL u b -> BiGUL a b
 
-where we can put the view |b| to the source |a| through the intermediate data |u|, by
-composing the putback function from |b| to |u| and that from |u| to |a|.
+This combinator is straightforward in the |get| direction: |get (Compose l r)| (where |l :: BiGUL a u| and |r :: BiGUL u b|) simply applies |get l| to its input of type~|a| to compute an intermediate value of type~|u|, which is then processed by |get r| to produce the final result of type~|b|.
+Its |put| direction is more complex: |put (Compose l r)| starts with a source |s :: a| and a view |v :: b|, and the aim is to produce an updated source of type~|a|.
+The only way to proceed is to use |put r| to put~|v| into some intermediate source~|m| of type~|u|, and to produce this~|m| we are forced to use |get l| on~|s|.
+We can then update~|m| with~|v| to~|m'| using |put r|, and update~|a| with~|m'| using |put l|.
+In general, programs involving |Compose| are significantly harder to think about since we have to think in both |put| and |get| directions to figure out precisely what is going on.
 
 As a simple example, consider that we wish to use the view to update
 the head element of the head element of a list of lists.
 We can define such a putback function as the following |pHead2|
 by composing |pHead| with |pHead|.
 \begin{code}
-pHead2 :: Show a => BiGUL [[a]] a
-pHead2 = pHead `Compose` pHead
+pHead2  ::  Show a => BiGUL [[a]] a
+pHead2  =   pHead `Compose` pHead
 \end{code}
 The following is an example to demonstrate this:
 \begin{lstlisting}
