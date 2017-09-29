@@ -1082,7 +1082,7 @@ Computing Machinery]
   \let\state\position
   \let\postcode\position
   \let\country\position
-  Also with #1\unskip.\egroup}
+  Also with#1\unskip.\egroup}
 \renewcommand{\email}[2][]{%
   \if@ACM@anonymous\else
     \g@addto@macro\addresses{\email{#1}{#2}}%

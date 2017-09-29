@@ -92,7 +92,7 @@ kℕ = k ℕ Nat._≟_
 replace² : BiGUL emptyF (kℕ ⊗ kℕ) (kℕ ⊗ kℕ)
 replace² = prod replace replace
 
-replace²-correctness : Triple Π replace² (λ { ((x' , y') , _ , (v , w)) → x' ≡ v × y' ≡ w })
+replace²-correctness : Triple Π replace² (λ { ((s' , t') , _ , (v , w)) → s' ≡ v × t' ≡ w })
 replace²-correctness = conseq (λ _ → tt , tt) (prod replace replace) proj₁
 
 replace²-range : TripleR Π replace² Π
@@ -207,11 +207,11 @@ resetHeight-range =
            (λ _ → tt)) ∷ᴺ •∷ᴬ []))
     (λ _ → inj₁ (tt , refl , tt))
 
-resetHeight' : BiGUL emptyF (kℕ ⊗ kℕ) kℕ
-resetHeight' = rearrV var (prod var (k {G = kℕ} zero)) (refl , tt) (return refl) replace²
+alwaysResetHeight : BiGUL emptyF (kℕ ⊗ kℕ) kℕ
+alwaysResetHeight = rearrV var (prod var (k {G = kℕ} zero)) (refl , tt) (return refl) replace²
 
-resetHeight'-correctness : Triple Π resetHeight' (λ { ((w' , h') , _ , v) → w' ≡ v × h' ≡ zero })
-resetHeight'-correctness =
+alwaysResetHeight-correctness : Triple Π alwaysResetHeight (λ { ((w' , h') , _ , v) → w' ≡ v × h' ≡ zero })
+alwaysResetHeight-correctness =
   conseq
     (λ _ → _ , tt , refl)
     (rearrV Π (λ { ((w' , h') , _ , v) → w' ≡ v × h' ≡ zero })
@@ -222,8 +222,8 @@ resetHeight'-correctness =
                  _ , (refl , sym 0≡v) , (refl , 0≡v) })))
     (λ { ((_ , p , refl) , _) → p })
 
-resetHeight'-range : TripleR Π resetHeight' ((_≡ zero) ∘ proj₂)
-resetHeight'-range =
+alwaysResetHeight-range : TripleR Π alwaysResetHeight ((_≡ zero) ∘ proj₂)
+alwaysResetHeight-range =
   conseq
     (λ _ → tt)
     (rearrV Π

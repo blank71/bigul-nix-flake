@@ -5,10 +5,11 @@ Paper #3 An Axiomatic Basis for Bidirectional Programming
 
 Review #3A
 ===========================================================================
+* Updated: 17 Sep 2017 4:54:49pm EDT
 
 Overall merit
 -------------
-2. Reject - will argue against
+3. Weak reject - will not argue against
 
 Reviewer expertise
 ------------------
@@ -224,10 +225,21 @@ James Cheney, Jeremy Gibbons, James McKinna, Perdita Stevens: On
 principles of Least Change and Least Surprise for bidirectional
 transformations. Journal of Object Technology 16(1): 3:1-31 (2017)
 
+Reaction to author response
+---------------------------
+Thanks to the authors for their detailed response.  Perhaps my review came across as a bit harsh; I do want to say that I think there is nice material here (as I thought I said in the review).  I fully appreciate the challenge of completely formalizing this kind of system in a prover/proof assistant; my perhaps poor choice of words "Agda tool" was not intended to be disparaging, I thought it was intended in the paper that one could think of this both as a proof of correctness and prototype implementation, but realize that my choice of words gave the impression I did not understand this.
+
+The authors defend their (in my opinion) mischaracterization of previous work by saying essentially "yes, what we say in the introduction is misleading/simplistic, but we refer to a more accurate, detailed discussion in a later section so that's OK".  Sorry, I don't think that's OK, the introduction should be revised to avoid giving a misleading impression from the beginning.  
+
+Yes, Foster et al. present combinators that mostly "look like" the get direction (as a feature, not a bug).  But no, the behavior of the put direction obtained by refining this to express the put direction is not "essentially arbitrary" - at least in the sense  that "the implementation is choosing the behavior without any programmer control", which as you acknowledge in your response is not the case.  (Or if instead you mean that "essentially any desired put behavior can be obtained", then why is that bad?)  The paper should not is characterize previous work in this way.
+
+The authors do not really engage with my suggestion that their work can be motivated better by focusing on the ways in which your approach offers new advantages rather than ascribing specious disadvantages to previous work.  This is unfortunate; however, I am willing to raise my score and not block acceptance, provided acceptance is conditional on the authors revising the paper to address my concerns.
+
 
 
 Review #3B
 ===========================================================================
+* Updated: 21 Sep 2017 1:56:16pm EDT
 
 Overall merit
 -------------
@@ -239,7 +251,6 @@ X. Expert
 
 Paper summary
 -------------
-
 * Summary
 
 This paper presents a Hoare-style logic for the bidirectional language BiGUL. BiGUL is a putback-based language, in the sense that the programmer only writes one program for the put direction, and the other (get) direction is automatically derived. By construction, BiGUL programs are well behaved, in the sense that both directions are consistent. More precisely, assuming a set of sources and a set of views, the get direction is a partial function from sources to views, and the put direction is a partial functions from views and sources to sources. If putting v in s is defined and results in s', then get s' is defined and is v. Conversely, if get s is defined and is v, then putting v in s is defined and is s.
@@ -265,7 +276,6 @@ I have found the paper very pleasant to read, as it's clear, technically sound, 
 
 Comments for author
 -------------------
-
 --- Page 2 ---
 
 line 62. Why do you use a rectangle in this example? Why not simply use a pair of numbers?
@@ -332,6 +342,10 @@ replaceAll example. Could it be possible to have a version of replaceAll where p
 --- Page 26 ---
 
 line 1227. Can you also prove that if ss = [] then length ss' = 1?
+
+Reaction to author response
+---------------------------
+The answers were not fully satisfactory, but i maintain my positive mark
 
 
 
