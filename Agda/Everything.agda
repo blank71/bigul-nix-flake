@@ -209,6 +209,8 @@ Example-4·4-ii = HoareLogic.Examples.Miscellaneous.emb-correctness'
 --------
 -- Section 5
 
+alwaysResetHeight-putback-triple = HoareLogic.Examples.Miscellaneous.alwaysResetHeight-correctness
+
 Definition-5·1 = HoareLogic.Triple.TripleR
 
 Theorem-5·2-⇒ = HoareLogic.Triple.soundnessR
@@ -273,8 +275,7 @@ keyAlign-range-triple = HoareLogic.Examples.Alignment.keyAlign-range
 --------
 -- Section 8
 
-composition-rule-soundness = HoareLogic.Semantics.composition-soundness
+soundness-of-composition-rule = HoareLogic.Semantics.composition-soundness
 
 replaceAll-putback-triple = HoareLogic.Examples.ReplaceAll.replaceAll-correctness
-
-replaceAll-range-triple = HoareLogic.Examples.ReplaceAll.replaceAll-range
+replaceAll-range-triple   = HoareLogic.Examples.ReplaceAll.replaceAll-range
