@@ -82,6 +82,37 @@ emb-range g p =
            id) ∷ᴺ •∷ᴬ []))
     (λ _ → inj₁ (tt , refl , tt))
 
+eqCheck : {n : ℕ} {F : Functor n} {A : U n} → BiGUL F A (A ⊗ A)
+eqCheck = rearrS var (prod var var) (refl , refl) (return refl) replace
+
+eqCheck-correctness : {n : ℕ} {F : Functor n} {A : U n} →
+                      Triple (λ { (_ , (v , w)) → v ≡ w })
+                             (eqCheck {F = F} {A})
+                             (λ { (s' , _ , (v , w)) → s' ≡ v × s' ≡ w })
+eqCheck-correctness =
+  conseq
+    (λ { {s , (v , w)} v≡w → s , refl , v≡w })
+    (rearrS (λ { (_ , (v , w)) → v ≡ w })
+            (λ { (s' , _ , (v , w)) → s' ≡ v × s' ≡ w })
+      (conseq
+         (λ _ → tt)
+         replace
+         (λ { {._ , (s , t) , (v , w)} (refl , u , (u≡s , u≡t) , v≡w) →
+              (v , u) , (refl , v≡w) , (refl , v≡w) , (u≡s , u≡t) })))
+    (λ { {s' , s , (v , w)} (((u , _) , (u≡v , u≡w) , s'≡u , _) , v≡w) → trans s'≡u u≡v , trans s'≡u u≡w })
+
+eqCheck-range : {n : ℕ} {F : Functor n} {A : U n} →
+                TripleR (λ { (_ , (v , w)) → v ≡ w }) (eqCheck {F = F} {A}) Π
+eqCheck-range =
+  conseq
+    (λ { {s , (v , w)} ((_ , _ , v≡w) , _) → v≡w })
+    (rearrS (λ { (_ , (v , w)) → v ≡ w }) (λ _ → ⊤)
+      (conseq
+        (λ { {(s , t) , (v , w)} (st≡vw , u , _ , u≡s , u≡t) →
+             u , (u≡s , u≡t) , trans (sym (trans u≡s (cong proj₁ st≡vw))) (trans u≡t (cong proj₂ st≡vw)) })
+        replace
+        (λ _ → tt)))
+    (λ _ → _ , tt , refl)
 
 emptyF : Functor 0
 emptyF ()

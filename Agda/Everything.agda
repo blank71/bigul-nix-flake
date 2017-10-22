@@ -200,10 +200,12 @@ _ =    HoareLogic.Examples.Miscellaneous.keepHeight
 ---  and generate the actual code.
 ---  
 
-Example-4·3 = HoareLogic.Examples.Miscellaneous.resetHeight-correctness
+Example-4·3 = HoareLogic.Examples.Miscellaneous.eqCheck-correctness
 
-Example-4·4-i  = HoareLogic.Examples.Miscellaneous.emb-correctness
-Example-4·4-ii = HoareLogic.Examples.Miscellaneous.emb-correctness'
+Example-4·4 = HoareLogic.Examples.Miscellaneous.resetHeight-correctness
+
+Example-4·5-i  = HoareLogic.Examples.Miscellaneous.emb-correctness
+Example-4·5-ii = HoareLogic.Examples.Miscellaneous.emb-correctness'
 
 
 --------

@@ -118,8 +118,8 @@
 \bibfield{author}{\bibinfo{person}{James Cheney}, \bibinfo{person}{Jeremy
   Gibbons}, \bibinfo{person}{James McKinna}, {and} \bibinfo{person}{Perdita
   Stevens}.} \bibinfo{year}{2017}\natexlab{}.
-\newblock \showarticletitle{On principles of {Least Change} and {Least
-  Surprise} for bidirectional transformations}.
+\newblock \showarticletitle{On Principles of {Least Change} and {Least
+  Surprise} for Bidirectional Transformations}.
 \newblock \bibinfo{journal}{{\em Journal of Object Technology\/}}
   \bibinfo{volume}{16}, \bibinfo{number}{1} (\bibinfo{year}{2017}),
   \bibinfo{pages}{3:1--31}.
@@ -293,11 +293,26 @@
 \url{https://doi.org/10.1145/363235.363259}}
 
 
+\bibitem[\protect\citeauthoryear{Hofmann, Pierce, and Wagner}{Hofmann
+  et~al\mbox{.}}{2011}]%
+        {Hofmann-symmetric-lenses}
+\bibfield{author}{\bibinfo{person}{Martin Hofmann}, \bibinfo{person}{Benjamin
+  Pierce}, {and} \bibinfo{person}{Daniel Wagner}.}
+  \bibinfo{year}{2011}\natexlab{}.
+\newblock \showarticletitle{Symmetric Lenses}. In \bibinfo{booktitle}{{\em
+  Symposium on Principles of Programming Languages}} {\em
+  (\bibinfo{series}{POPL'11})}. \bibinfo{publisher}{ACM},
+  \bibinfo{pages}{371--384}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1145/1925844.1926428}}
+
+
 \bibitem[\protect\citeauthoryear{Hu and Ko}{Hu and Ko}{2017}]%
         {Hu-BiGUL-tutorial}
 \bibfield{author}{\bibinfo{person}{Zhenjiang Hu} {and}
   \bibinfo{person}{Hsiang-Shang Ko}.} \bibinfo{year}{2017}\natexlab{}.
-\newblock \bibinfo{title}{Principle and Practice of Bidirectional Programming
+\newblock \bibinfo{title}{Principles and Practice of Bidirectional Programming
   in {BiGUL}}.
 \newblock \bibinfo{howpublished}{Draft lecture notes for the \textit{Oxford
   Summer School on Bidirectional Transformations}}.   (\bibinfo{year}{2017}).
@@ -472,6 +487,20 @@
 \newblock
 \showDOI{%
 \url{https://doi.org/10.1007/s10270-008-0109-9}}
+
+
+\bibitem[\protect\citeauthoryear{Thomsen and Axelsen}{Thomsen and
+  Axelsen}{2015}]%
+        {Thomsen-rFun}
+\bibfield{author}{\bibinfo{person}{Michael~Kirkedal Thomsen} {and}
+  \bibinfo{person}{Holger~Bock Axelsen}.} \bibinfo{year}{2015}\natexlab{}.
+\newblock \showarticletitle{Interpretation and programming of the reversible
+  functional language {RFUN}}. In \bibinfo{booktitle}{{\em Symposium on the
+  Implementation and Application of Functional Programming Languages}}.
+  \bibinfo{publisher}{ACM}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1145/2897336.2897345}}
 
 
 \bibitem[\protect\citeauthoryear{Vazou, Seidel, Jhala, Vytiniotis, and

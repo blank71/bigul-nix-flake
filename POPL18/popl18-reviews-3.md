@@ -1,4 +1,4 @@
-POPL '18 Paper #2 Reviews and Comments
+POPL '18 Paper #3 Reviews and Comments
 ===========================================================================
 Paper #3 An Axiomatic Basis for Bidirectional Programming
 
@@ -17,7 +17,7 @@ X. Expert
 
 Paper summary
 -------------
-Summary 
+Summary
 
 This paper proposes a Floyd-Hoare-style logic for reasoning about
 bidirectional transformations, e.g. asymmetric lenses.  It focuses on
@@ -55,7 +55,7 @@ level the idea of a Hoare-style logic for verifying properties of
 bidirectional programs (in the context of a language with primitives
 that seem well-tailored to writing lenses / bidirectional programs more
 directly) is intriguing.  I would be more excited about the paper if it was
-focused on exploring this (perhaps for "classic" get/put lenses written 
+focused on exploring this (perhaps for "classic" get/put lenses written
 using BiGUL) rather than advocating for a put-oriented/put-only approach.
 
 On the other hand, the authors' apparent insistence on
@@ -167,7 +167,7 @@ fine, but please explain the convention when it is introduced
 
 
 318: "in the host language" - which one? how should one reason about the host
-language in this setting?  
+language in this setting?
 
 528: "intersected with the negations of the main conditions of all the
 previous rules" - making the rule order-sensitive.  This
@@ -203,7 +203,7 @@ expressible" [Felleisen's definition] using BiGUL would be more persuasive here.
 1196: discussion of composition.  This rule refers to "l o r" but does
 not define how it behaves.  Usually with lenses, the definition of
 the put function of the composition relies on both put and get
-functions of the composed lenses. Maybe this is why this rule seems complicated.  
+functions of the composed lenses. Maybe this is why this rule seems complicated.
 
 1246: "Bidirectional programming has been highly declarative" - again,
 I think this is inaccurate.  Please be clearer about the advantages
@@ -229,7 +229,7 @@ Reaction to author response
 ---------------------------
 Thanks to the authors for their detailed response.  Perhaps my review came across as a bit harsh; I do want to say that I think there is nice material here (as I thought I said in the review).  I fully appreciate the challenge of completely formalizing this kind of system in a prover/proof assistant; my perhaps poor choice of words "Agda tool" was not intended to be disparaging, I thought it was intended in the paper that one could think of this both as a proof of correctness and prototype implementation, but realize that my choice of words gave the impression I did not understand this.
 
-The authors defend their (in my opinion) mischaracterization of previous work by saying essentially "yes, what we say in the introduction is misleading/simplistic, but we refer to a more accurate, detailed discussion in a later section so that's OK".  Sorry, I don't think that's OK, the introduction should be revised to avoid giving a misleading impression from the beginning.  
+The authors defend their (in my opinion) mischaracterization of previous work by saying essentially "yes, what we say in the introduction is misleading/simplistic, but we refer to a more accurate, detailed discussion in a later section so that's OK".  Sorry, I don't think that's OK, the introduction should be revised to avoid giving a misleading impression from the beginning.
 
 Yes, Foster et al. present combinators that mostly "look like" the get direction (as a feature, not a bug).  But no, the behavior of the put direction obtained by refining this to express the put direction is not "essentially arbitrary" - at least in the sense  that "the implementation is choosing the behavior without any programmer control", which as you acknowledge in your response is not the case.  (Or if instead you mean that "essentially any desired put behavior can be obtained", then why is that bad?)  The paper should not is characterize previous work in this way.
 
@@ -304,7 +304,7 @@ line 422. Can there be variables in wpat that are not in vpat? I think not, beca
 
 --- Page 10 ---
 
-line 489. An example of source rearrangement would be most welcomed. 
+line 489. An example of source rearrangement would be most welcomed.
 
 
 --- Page 11 ---
@@ -364,13 +364,13 @@ Paper summary
 -------------
 This paper proposes a domain-specific language for specifying bidirectional transformations in the style of lenses. The main novelty of the language is a kind of Hoare logic to reason about such transformations. The language is presented by means of typing rules and an axiomatic semantics. The design is validated by means of a case study on key-based list alignment.
 
-This looks like a nice and solid contribution. The presentation is thorough and well-validated. This reviewer is not an expert on lenses and Hoare-style logics, so my main comments are about presentation. 
+This looks like a nice and solid contribution. The presentation is thorough and well-validated. This reviewer is not an expert on lenses and Hoare-style logics, so my main comments are about presentation.
 
 First of all, I think the paper needs a better motivation. What exactly is the problem the paper tries to solve? Why is it hard to reason about bidirectional programming without such an axiomatic semantics (e.g. why is ordinary algebraic reasoning not sufficient)?
 
 Secondly, I think the paper suffers from a lack of an informal, example-driven overview. I believe the proposal to write a paper by first giving a complete informal, example-guided overview of the approach before coming to the formal part stems from Simon Peyton Jones. In any case, I think this paper would also benefit greatly from such an overview. This reviewer got lost in the details around section 4.4 and 4.5. Useful examples to explain rearrV, rearrS, case etc. would have been quite helpful. The small examples that are presented there (e.g. keepHeight in 4.4) were not sufficient to give a lot of intuition, especially since good explanations (like a reading of the example in plain English) are missing.
 
-I was also missing some intuition or explanation of the expressiveness of the DSL. 
+I was also missing some intuition or explanation of the expressiveness of the DSL.
 
 Some more detailed comments.
 - p. 3, 2nd paragraph: You talk about a "direction" here, but it is not clear what "direction" means in this context.
