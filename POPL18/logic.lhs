@@ -1,9 +1,9 @@
 %% For double-blind review submission
 %\documentclass[acmsmall,10pt,fleqn,review,anonymous]{acmart}\settopmatter{printfolios=true}
 %% For single-blind review submission
-\documentclass[acmsmall,10pt,fleqn,review]{acmart}\settopmatter{printfolios=true}
+%\documentclass[acmsmall,10pt,fleqn,review]{acmart}\settopmatter{printfolios=true}
 %% For final camera-ready submission
-%\documentclass[acmsmall,10pt,fleqn]{acmart}\settopmatter{}
+\documentclass[acmsmall,10pt,fleqn]{acmart}\settopmatter{}
 
 %% Note: Authors migrating a paper from PACMPL format to traditional
 %% SIGPLAN proceedings format should change 'acmlarge' to
@@ -49,6 +49,7 @@
 %format ... = "\ldots"
 %format VDOTS = "\kern.6em\vphantom{|}\smash{\raisebox{-2pt}{\vdots}}"
 %format ^ = "\idots"
+%format _, = _ "\," ,
 
 %format (all(x)) = "\forall" x "."
 %format (some(x)) = "\exists" x "."
@@ -242,7 +243,7 @@
                                         %% when present, will be used in
                                         %% header instead of Full Title.
 %\begin{anonsuppress}
-%\titlenote{Draft manuscript (\today)}    %% \titlenote is optional;
+%\titlenote{Draft manuscript (\today)}   %% \titlenote is optional;
 %\end{anonsuppress}
                                         %% can be repeated if necessary;
                                         %% contents suppressed with 'anonymous'
@@ -329,7 +330,7 @@
 \begin{abstract}
 
 Among the frameworks of bidirectional transformations proposed for addressing various synchronisation (consistency maintenance) problems, \citet{Foster-lenses}'s asymmetric lenses have influenced the design of a generation of bidirectional programming languages.
-Most of these languages are based on a declarative programming model, and only allow the programmer to specify a consistency relation with ad hoc and/or awkward control over the behaviour of the derived consistency restorer.
+Most of these languages are based on a declarative programming model, and only allow the programmer to describe a consistency specification with ad hoc and/or awkward control over the consistency restoration behaviour.
 However, synchronisation problems are diverse and require vastly different consistency restoration strategies, and to cope with the diversity, the bidirectional programmer must have the ability to fully control and reason about the consistency restoration behaviour.
 The putback-based approach to bidirectional programming aims to provide exactly this ability, and this paper strengthens the putback-based position by proposing the first fully fledged reasoning framework for a bidirectional language --- a Hoare-style logic for \citet{Ko-BiGUL}'s putback-based language \BiGUL.
 The Hoare-style logic lets the \BiGUL\ programmer precisely characterise the bidirectional behaviour of their programs by reasoning solely in the putback direction, thereby offering a unidirectional programming abstraction that is reasonably straightforward to work with and yet provides full control not achieved by previous approaches.
@@ -386,21 +387,21 @@ Typically, a lens program describes a forward |get| transformation that computes
 Conversely, from the same lens program we can derive a backward |put| transformation that takes a source and a (possibly modified) view, and produces an updated source that is consistent with the view and can retain some information of the original source.
 
 By definition, the two transformations derived from any lens program should satisfy two inverse-like \emph{well-behavedness} laws called \ref{prop:PutGet} and \ref{prop:GetPut} (which will be formally stated in \autoref{thm:well-behavedness}).
-\citet[Section~4.4]{Stevens-QVT} provided a revealing perspective to understand these well-behavedness laws: the |get| transformation denoted by a lens can be regarded as defining a (functional and executable) consistency relation on the source and view; \ref{prop:PutGet} then says that the |put| transformation will correctly restore the consistency, i.e., the updated source and the view will satisfy the consistency relation, and \ref{prop:GetPut} says that the |put| transformation will perform no update if the input source and view are already consistent.
+\citet[Section~4.4]{Stevens-QVT} provided a revealing perspective to understand these well-behavedness laws: the |get| transformation denoted by a lens can be regarded as defining a (functional and executable) consistency relation on the source and view; \ref{prop:PutGet} then says that the |put| transformation will correctly restore the consistency, i.e., the updated source and the view will satisfy the consistency relation, and \ref{prop:GetPut} says that |put| will perform no update if the input source and view are already consistent.
 From this perspective, at the root of \citet{Foster-lenses}'s lenses and all subsequent \emph{|get|-based} approaches is a declarative programming model, in which the programmer specifies a consistency relation (in terms of a |get| transformation) and obtains a consistency restorer (a |put| transformation) that is guaranteed (by well-behavedness) to respect the consistency relation.
-Mechanisms are usually provided to customise the restoration behaviour, but they can be ad hoc and/or awkward to use.
+Mechanisms are provided for customising the restoration behaviour, but they are usually ad hoc and/or awkward to use.
 This is unsatisfactory in practice, since we care not only about consistency but even more about how consistency restoration is performed; with |get|-based approaches it is inherently difficult to understand or control the latter aspect.
 (See \autoref{sec:discussion} for further discussion.)
 
 To be concrete, let us consider a simple synchronisation problem where the source is a pair of numbers representing the width and height of a rectangle, and the view is a single number, which is consistent with a rectangle exactly when it is equal to the width of the rectangle.
 With respect to this definition of consistency, there are a variety of consistency restoration strategies: given a rectangle and a view, in addition to replacing the width with the view, which is necessary for restoring the consistency,
-\begin{itemize}[leftmargin=*]
+\begin{enumerate}[leftmargin=*]
 \item we can always keep the height unchanged --- this is a typical ``least-change'' strategy;
 \item we can update the height to keep the height-to-width ratio of the rectangle --- in general this can be maintaining some kind of internal consistency on the source side;
 \item we can reset the height to zero if the view is different from the width --- although rather drastic, this would be useful when the view side does not know how the source side maintains its internal consistency, and thus simply chooses to invalidate associated data and leave them for the source side to update later;
-\item we can decide to keep or reset the height depending on whether the difference between the width and the view is small enough --- this is a flexible mixture of the above strategy and the ``least-change'' one;
-\item we can use the height as a counter that is incremented every time an inconsistency is repaired --- in general this can be some form of logging of source changes.
-\end{itemize}
+\item we can decide to keep or reset the height depending on whether the difference between the width and the view is small enough --- this is a flexible mixture of strategies (1)~and~(3);
+\item we can use the height as a counter that is incremented every time an inconsistency is repaired --- though somewhat strange, in general this can be some form of logging of source changes.
+\end{enumerate}
 As we can see, even for a simple problem like rectangle width updating, there are already many possible update strategies; this is even more the case in complex, real-world scenarios.
 All the above update strategies restore the same consistency but have different \emph{retentive} behaviour --- the way in which the information of the original source is retained --- to meet different requirements.
 The programmer must be empowered to fully control and reason about the retentive behaviour of their programs to be sure that it is suitable for the intended applications.
@@ -410,14 +411,14 @@ Following some previous work which took exactly this \emph{putback-based} progra
 Like the original lenses, every \BiGUL\ program denotes a well-behaved pair of |put| and |get| transformations;
 in contrast to the original lenses, \BiGUL\ is designed to express |put| transformations, and lets the programmer freely specify their intended update strategies.
 Moreover, since |put| uniquely determines |get| by well-behavedness~(\autoref{lem:dominance}), the putback-based programmer is guaranteed that the |get| behaviour of their |put| program is unambiguously specified.
-The putback-based approach thus offers a powerful alternative to bidirectional programming when full control is needed and the declarative |get|-based approaches are not enough.
+The putback-based approach thus offers a powerful alternative to bidirectional programming when full control is needed and the more declarative |get|-based approaches are not enough.
 %However, due to the more intricate nature of \BiGUL's bidirectional semantics, it is still hard to guarantee that a \BiGUL\ program will exhibit the intended behaviour.
 
 This paper strengthens the putback-based position by proposing the first fully fledged reasoning framework for a bidirectional language: building on a revised version of \BiGUL, we propose a \emph{Hoare-style logic}~\citep{Hoare-logic} that empowers the programmer to precisely characterise both the |put| and |get| behaviour of \BiGUL\ programs by reasoning \emph{exclusively in the putback direction}, thereby offering a unidirectional programming abstraction that is reasonably straightforward to work with and yet provides full control not achieved by |get|-based approaches.
-For example, the programmer can express the height-keeping and height-resetting strategies as two \BiGUL\ programs |keepHeight| and |resetHeight|, and with our Hoare-style logic, the programmer can prove two Hoare-style triples to make sure that the two programs correctly restore the consistency and have the intended retentive behaviour:
+For example, the programmer can express strategies (1)~and~(3) as two \BiGUL\ programs |keepHeight| and |resetHeight|, and with our Hoare-style logic, the programmer can prove two Hoare-style triples to make sure that the two programs correctly restore the consistency and have the intended retentive behaviour:
 \begin{code}
-(ASSERT(True)) ~  keepHeight   ~ (ASSERT((w', h') (_  , h) v | w' = v && h' = h))
-(ASSERT(True)) ~  resetHeight  ~ (ASSERT((w', h') (w  , h) v | w' = v && (w = v => h' = h) && (w /= v => h' = 0)))
+(ASSERT(True)) ~  keepHeight   ~ (ASSERT((w', h') (_,  h) v | w' = v && h' = h))
+(ASSERT(True)) ~  resetHeight  ~ (ASSERT((w', h') (w,  h) v | w' = v && (w = v => h' = h) && (w /= v => h' = 0)))
 \end{code}
 These two putback triples state that both |keepHeight| and |resetHeight| work on any input pairs of source and view (due to their always-true precondition) and will update the width with the view (|w' = v|), that |keepHeight| will retain the original height (|h' = h|), and that |resetHeight| will retain the height if the original width is equal to the view (|w = v => h' = h|) or reset the height otherwise (|w /= v => h' = 0|).
 With a bit more reasoning about \emph{output range}, the programmer can also prove that the |get| transformations denoted by these two programs work on any input rectangle and extract its width, conforming to the consistency relation (|w' = v|) stated in the above triples.
@@ -438,10 +439,10 @@ The presentation will be preceded by a recap of asymmetric lenses~(\autoref{sec:
 %Discussion and conclusion will follow in Sections \ref{sec:discussion}~and~\ref{sec:conclusion}.
 
 Everything in this paper from theorems to derivation examples has been formalised and checked in \Agda\ version~2.5.2 with standard library version~0.13, but the \Agda\ formalisation is only provided as supplementary material.
-Instead, this paper will focus on explaining the intuition, and present the Hoare-style logic in a semi-formal way to make it suitable for human reasoning.
-\BiGUL\ is originally developed in \Agda\ and also ported to \Haskell\ as an embedded language, and this influences the choices of syntax used in this paper:
+This paper will focus on explaining the intuition, and present the Hoare-style logic in a semi-formal way to make it suitable for human reasoning.
+\BiGUL\ is originally developed in \Agda\ and ported to \Haskell\ as an embedded language, and this influences the choices of the syntax and host language used in this paper:
 our \BiGUL\ syntax is a hypothetical one abstracted from the \Haskell\ port of \BiGUL;
-the host functional language is total and may be thought of as \Agda\ imperfectly disguised as \Haskell\ --- in particular, we will use some standard \Haskell\ types and functions, and allow some general recursion and partiality justifiable in a total setting.
+the host functional language is total and may be thought of as \Agda\ imperfectly disguised as \Haskell\ --- we will use some standard \Haskell\ types and functions, and allow some general recursion and partiality justifiable in a total setting.
 
 %In an instance~\citep{Anjorin-BenchmarX-reloaded}, the \BiGUL\ program skipping all the dynamic checks runs about 20 times faster.
 
@@ -465,14 +466,14 @@ put  b : S -> V ->  Maybe S
 get  b : S ->       Maybe V
 \end{code}%
 %\[ |put b : S -> V -> Maybe S| \AND |get b : S -> Maybe V| \]
-The |put| --- or \emph{putback} --- semantics is also called the \emph{backward} semantics, and the |get| semantics is also called the \emph{forward} semantics.
+The |put| --- or \emph{putback} --- semantics is also called the \emph{backward} semantics, and the |get| semantics is also called the \emph{forward} semantics.%
+\footnote{In this paper we will provide an axiomatic semantics as the only formal definition of \BiGUL's semantics, and omit the definitions of |put| and |get| (except for a few simple cases in \autoref{sec:atomic}) and proofs that rely essentially on them (like the proof of \autoref{thm:well-behavedness}).
+All the definitions and proofs are included in the supplementary \Agda\ formalisation for reference.}
 \end{definition}
 
 As noted by \citet{Ko-BiGUL}, the two transformations in \autoref{def:put-and-get} are potentially partial computations modelled explicitly as total |Maybe|-computations.
 That is, |put b| and |get b| may fail to compute a result, in which case they produce |Nothing|; otherwise they return their result wrapped within the |Just| constructor.
 
-In this paper we will provide an axiomatic semantics as the only formal definition of \BiGUL's semantics, and omit the definitions of |put| and |get| (except for a few simple cases in \autoref{sec:atomic}) and proofs that rely essentially on them (like the proof of \autoref{thm:well-behavedness} below).
-All the definitions and proofs are included in the supplementary \Agda\ formalisation for reference.
 
 \begin{theorem}[well-behavedness] \label{thm:well-behavedness}
 Any \BiGUL\ program~|b| satisfies the following two \emph{well-behavedness} laws:
@@ -526,6 +527,9 @@ We have proved that putback triples are sound and complete with respect to \BiGU
 Let |b : S <~ V|, |R : (POWER(S TIMES V))|, and |R' : (POWER(S TIMES S TIMES V))|.
 \[ |(ASSERT R) ~ b ~ (ASSERT R')| \IFF |(all(s, v)) ~ R s v ~ => ~ (some(s')) ~ put b s v = Just s' ~ && ~ R' s' s v| \PERIOD \]
 \end{theorem}
+
+%The proof (as mentioned in \autoref{sec:asymmetric-lenses}) is omitted from the paper since it depends on the specific definition of |put|.
+%Presentation-wise, we state the theorem to alleviate the doubt that there might not be any implementation fulfilling the axioms that we will see in \autoref{sec:putback-proof-rules}.
 
 Given that putback behaviour completely determines forward behaviour, and that putback triples are about putback behaviour, shouldn't putback triples tell us something about forward behaviour as well?
 This is indeed the case, as will be shown by \autoref{thm:partial-forward-consistency}.
@@ -743,7 +747,7 @@ We can now construct simple derivations like the following one for |replace * re
 *  (ASSERT(_ _))
 ^  replace
 ^  (ASSERT(t' _ w | t' = w))
-(ASSERT((s', t') _ (v , w) | s' = v && t' = w))
+(ASSERT((s', t') _ (v, w) | s' = v && t' = w))
 \end{code}
 First note that the syntax tree structure of |replace * replace| is reflected in indentation: the top-level node is~`|*|', whose two sub-nodes --- both being |replace| --- are indented to the next level.
 Then, following the indentation structure, the assertions are added: the assertions about a node are put on the same indentation level as the node, with the precondition and postcondition appearing respectively before and after the node.
@@ -772,12 +776,12 @@ We could try to extend the derivation in \autoref{ex:replace-squared} using the 
 (ASSERT(_ (v, w) | v = w))
 (ASSERT(_ _))
 replace * replace
-(ASSERT((s', t') _ (v , w) | s' = v && t' = w))
+(ASSERT((s', t') _ (v, w) | s' = v && t' = w))
 VDOTS
 (ASSERT((s', t') _ _ | s' = t'))
 \end{code}
 Adjacent assertions on the same indentation level indicate an invocation of the consequence rule, with the one above implying the one below.
-In the first two lines of this derivation, there is one such invocation, which turns |(COM(_ (v , w) || v = w))| into |(COM(_ _))| so that the product rule can apply.
+In the first two lines of this derivation, there is one such invocation, which turns |(COM(_ (v, w) || v = w))| into |(COM(_ _))| so that the product rule can apply.
 On the other hand, the postcondition that we can establish, i.e., |(COM((s', t') _ (v, w) || s' = v && t' = w))|, does not imply the postcondition we want to establish, i.e., |(COM((s', t') _ _ || s' = t'))|.
 %(hence the vertical dots separating the two postconditions in the derivation, to avoid suggesting that the consequence rule is invoked)
 The usual consequence rule~(\ref{eq:usual-consequence-rule}) can help us to get rid of the entanglement |v = w|, but that entanglement is needed to establish the final implication (by |s' = v = w = t'|).
@@ -800,7 +804,7 @@ A guiding intuition for \BiGUL\ programming is to manipulate the source and view
 To provide a more concrete motivation:
 We have seen that the product combinator (\autoref{sec:product}) allows us to synchronise source and view tuples of arbitrary size, provided that their structures are the same.
 When this is not the case, in \BiGUL\ we can use a simple class of pattern-matching $\lambda$-expressions to rearrange the source and/or the view to make them match structurally and so ready for further synchronisation.
-For example, the height-keeping strategy we proposed for the rectangle width updating problem (\autoref{sec:introduction}) can be expressed in \BiGUL\ as:
+For example, the height-keeping strategy~(1) we proposed for the rectangle width updating problem (\autoref{sec:introduction}) can be expressed in \BiGUL\ as:
 \begin{code}
 keepHeight  : (Nat TIMES Nat) <~ Nat
 keepHeight  =  rearrV v -> (v, ())
@@ -844,7 +848,7 @@ We can now verify |keepHeight| as follows, where the precondition (assertion~1) 
 \begin{code}
 (ASSERT(_ _))(ASSERTNUMBER *1)
 rearrV v -> (v, ())
-^   (ASSERT(_ (_ , ())))(ASSERTNUMBER *3)
+^   (ASSERT(_ (_, ())))(ASSERTNUMBER *3)
 ^  ^  (ASSERT(_ _))
 ^  ^  replace
 ^  ^  (ASSERT(w' _ v | w' = v))
@@ -853,8 +857,8 @@ rearrV v -> (v, ())
 ^  ^  skip const ()
 ^  ^  (ASSERT(h' h _ | h' = h))
 ^  ^  (ASSERT(h' h () | h' = h))
-^  (ASSERT((w', h') (_ , h) (v, ()) | w' = v && h' = h))(ASSERTNUMBER *4)
-(ASSERT((w', h') (_ , h) v | w' = v && h' = h))(ASSERTNUMBER *2)
+^  (ASSERT((w', h') (_, h) (v, ()) | w' = v && h' = h))(ASSERTNUMBER *4)
+(ASSERT((w', h') (_, h) v | w' = v && h' = h))(ASSERTNUMBER *2)
 \end{code}
 Note that when constructing the derivation inwards from the initial precondition and postcondition, it is effortless to push them inside the |rearrV| and turn them into assertions 3~and~4 just by changing the view pattern to a pair pattern, as instructed by the |rearrV|.
 \end{example}
@@ -875,9 +879,9 @@ eqCheck =  rearrS x -> (x, x)
            ^ replace
 \end{code}
 where the `|Eq A|' constraint in the type indicates that we need decidable equality on~|A| for the program to be executable.
-This example shows that |rearrS| can impose restrictions on the result produced by the inner program: Operationally, the source is rearranged with the $\lambda$-expression |\ x -> (x, x)|, and then the inner program |replace| is executed, after which the rearranging $\lambda$-expression is evaluated backwards by matching the updated source produced by |replace| with the non-linear pattern |(x, x)| --- in effect checking whether the components are equal --- and then returning one of the components.
-For this computation to succeed, the updated source produced by |replace| --- that is, the view --- must be a pair of duplicated values.
-This is stated as the precondition of the following derivation for |eqCheck|:
+This example shows that |rearrS| can impose restrictions on the result produced by the inner program: Operationally, the source is rearranged with the $\lambda$-expression |\ x -> (x, x)|, and then the inner program |replace| is executed, after which the rearranging $\lambda$-expression is evaluated backwards by matching the replaced source with the non-linear pattern |(x, x)| --- in effect checking whether the components are equal --- and then returning one of the components.
+For this computation to succeed, the replaced source --- i.e., the input view --- must be a pair of duplicate values.
+In the derivation for |eqCheck| below, this restriction appears in assertion~1 (as the non-linear pattern |(s', s')| for the updated source), arising from the use of the |rearrS| rule.
 \begin{code}
 (ASSERT(_ (v, w) | v = w))
 rearrS x -> (x, x)
@@ -885,7 +889,7 @@ rearrS x -> (x, x)
 ^ (ASSERT(_ _))
 ^ replace
 ^ (ASSERT((s', t') _ (v, w) | s' = v && t' = w))
-^ (ASSERT((s', s') (s, s) (v, w) | s' = v && s' = w))
+^ (ASSERT((s', s') (s, s) (v, w) | s' = v && s' = w))(ASSERTNUMBER *1)
 (ASSERT(s' _ (v, w) | s' = v && s' = w))
 \end{code}
 \end{example}
@@ -905,7 +909,7 @@ rearrS x -> (x, x)
 \subsection{Case analysis}
 
 More sophisticated programs require case analysis, for which \BiGUL\ provides a powerful and intricate |case| construct.
-For a simple example, the height-resetting strategy for the rectangle width updating problem (\autoref{sec:introduction}) can be expressed as:
+For a simple example, the height-resetting strategy~(3) for the rectangle width updating problem (\autoref{sec:introduction}) can be expressed as:
 \begin{code}
 resetHeight : (Nat TIMES Nat) <~ Nat
 resetHeight =  case
@@ -1028,7 +1032,7 @@ case
 ^  adaptive _ _
 ^  ^  (ASSERT(COM(_ _) CAP ((COM(_ _)) CAP not (COM((w, _) v | w = v)))))
 ^  ^  (ASSERT((w, _) v | w /= v))(ASSERTNUMBER *8)
-^  ^  (ASSERT(_ v | (COM(_ _) (v, 0) v && (COM((w , _) v | w = v)) (v, 0) v)))
+^  ^  (ASSERT(_ v | (COM(_ _) (v, 0) v && (COM((w, _) v | w = v)) (v, 0) v)))
 ^  ^  \ _ v -> (v, 0)
 ^  ^  (ASSERTL(s' _ v |))
 ^  ^  (ASSERTR(COM((w', h') (w, h) v | w' = v && (w = v => h' = h) && (w /= v => h' = 0)) s' (v, 0) v))(ASSERTNUMBER *4)
@@ -1288,7 +1292,7 @@ Verifying the range of |alwaysResetHeight| is a more interesting example, where 
 \begin{code}
 (ASSERTRANGE(_ _))
 rearrV v -> (v, 0)
-^  (ASSERTRANGE(_ (_ , 0)))
+^  (ASSERTRANGE(_ (_, 0)))
 ^  ^   (ASSERTRANGE(_ _))
 ^  ^   (ASSERTRANGE(w v | w = v))
 ^  ^   replace
@@ -1298,8 +1302,8 @@ rearrV v -> (v, 0)
 ^  ^   replace
 ^  ^   (ASSERTRANGE(_)) (ASSERTRANGENUMBER *2)
 ^  ^   (ASSERTRANGE(0)) (ASSERTRANGENUMBER *4)
-^  (ASSERTRANGE((_ , 0)))
-(ASSERTRANGE((_ , 0)))
+^  (ASSERTRANGE((_, 0)))
+(ASSERTRANGE((_, 0)))
 \end{code}
 The interesting part is the second |replace|, for which we first establish the input and output ranges as assertions 1~and~2 according to the |replace| rule.
 However, because of the outer |rearrV|, the views in the actual input range for the second |replace| are restricted to zero, as stated by assertion~3, which does not contain assertion~1.
@@ -1548,8 +1552,8 @@ Their union is the output range of the entire |case|, and is indeed |COM(ss || l
 %  ^  ^  ^  ^  ^   keyAlign ks kv b c
 %  ^  ^  ^  ^  ^   (ASSERTRANGE(ss | length ss = prev n && prev n < n))
 %  ^  ^  ^  ^  ^   (ASSERTRANGE(ss | 1 + length ss = n))
-%  ^  ^  ^  ^  (ASSERTRANGE((_ , ss) | 1 + length ss = n))
-%  ^  ^  ^  (ASSERTRANGE((_ , ss) | 1 + length ss = n))
+%  ^  ^  ^  ^  (ASSERTRANGE((_, ss) | 1 + length ss = n))
+%  ^  ^  ^  (ASSERTRANGE((_, ss) | 1 + length ss = n))
 %  ^  ^  (ASSERTRANGE((_ :: ss) | 1 + length ss = n))
 %  ^  VDOTS
 %  (ASSERTRANGE(COM([] | 0 = n) CUP (COM((_ :: ss) | 1 + length ss = n))))
@@ -1690,7 +1694,8 @@ If, as \citet{Dijkstra-EWD361} argued, programs and their correctness proofs sho
   %% acknowledge financial support and will be used by metadata
   %% extraction tools.
 We would like to thank Jeremy Gibbons, Li Liu, and Zirun Zhu for commenting on drafts of this paper, and Shin-Cheng Mu for the fruitful discussions during his visit at NII.
-This work is partially supported by the \grantsponsor{GS501100001691}{Japan Society for the Promotion of Science}{https://doi.org/10.13039/501100001691} (JSPS) Grant-in-Aid for Scientific Research~(A) No.~\grantnum{GS501100001691}{25240009}.
+We also thank the anonymous reviewers for their valuable comments, and our shepherd James Cheney for checking a nearly final version of this paper.
+This work is partially supported by the \grantsponsor{GS501100001691}{Japan Society for the Promotion of Science}{https://doi.org/10.13039/501100001691} (JSPS) Grant-in-Aid for Scientific Research (A)~No.~\grantnum{GS501100001691}{25240009} and (S)~No.~\grantnum{GS501100001691}{17H06099}.
 \end{acks}
 
 %% Bibliography
@@ -1735,10 +1740,10 @@ replaceAll =
       (ASSERT((_ :: _ :: ss) v | 2 + length ss = n || (n = 0 && 2 + length ss = 1)))
       (ASSERT((_ :: _ :: ss) v | 2 + length ss = n))
       rearrS (s :: ss) -> (s, ss)
-        (ASSERT((_ , _ :: ss) v | 2 + length ss = n))
+        (ASSERT((_, _ :: ss) v | 2 + length ss = n))
         rearrV v -> (v, v)
-          (ASSERT((_ , _ :: ss) (v, w) | v = w && 2 + length ss = n))
-          (ASSERT((_ , _ :: ss) (v, w) | 2 + length ss = n))
+          (ASSERT((_, _ :: ss) (v, w) | v = w && 2 + length ss = n))
+          (ASSERT((_, _ :: ss) (v, w) | 2 + length ss = n))
              (ASSERT(_ _))
              replace
              (ASSERT(x _ v | x = v))
@@ -1748,9 +1753,9 @@ replaceAll =
              (ASSERT(ss' ss v | ((all(s')) s' `elem` ss' => s' = v) && (ss /= [] => length ss' = length ss)))
              (ASSERT((y :: ss') (_ :: ss) w | ((all(s')) s' `elem` (y :: ss') => s' = w) && length ss' = length ss))
              (ASSERT((y :: ss') (_ :: ss) w | y = w && ((all(s')) s' `elem` ss' => s' = w) && length ss' = length ss))
-          (ASSERT((x, y :: ss') (_ , _ :: ss) (v, w) | v = w && x = v && y = w && ((all(s')) s' `elem` ss' => s' = w) && length ss' = length ss))
-          (ASSERT((x, y :: ss') (_ , _ :: ss) (v, w) | v = w && x = v && y = v && ((all(s')) s' `elem` ss' => s' = v) && length ss' = length ss))
-        (ASSERT((x, y :: ss') (_ , _ :: ss) v | x = v && y = v && ((all(s')) s' `elem` ss' => s' = v) && length ss' = length ss))
+          (ASSERT((x, y :: ss') (_, _ :: ss) (v, w) | v = w && x = v && y = w && ((all(s')) s' `elem` ss' => s' = w) && length ss' = length ss))
+          (ASSERT((x, y :: ss') (_, _ :: ss) (v, w) | v = w && x = v && y = v && ((all(s')) s' `elem` ss' => s' = v) && length ss' = length ss))
+        (ASSERT((x, y :: ss') (_, _ :: ss) v | x = v && y = v && ((all(s')) s' `elem` ss' => s' = v) && length ss' = length ss))
       (ASSERT((x :: y :: ss') (_ :: _ :: ss) v | x = v && y = v && ((all(s')) s' `elem` ss' => s' = v) && length ss' = length ss))
     (ASSERT'(coverage)(True))
     (ASSERT'(disjointness)(True))
@@ -1790,7 +1795,7 @@ case
            (ASSERTRANGE((y :: ss) w | 1 + length ss = pred n && y = w))
            replaceAll
            (ASSERTRANGE((s :: ss) | 1 + length ss = pred n && ((all(s')) s' `elem` ss => s = s') && pred n < n))
-        (ASSERTRANGE((_ , s :: ss) | 1 + length ss = pred n && ((all(s')) s' `elem` ss => s = s') && pred n < n))
+        (ASSERTRANGE((_, s :: ss) | 1 + length ss = pred n && ((all(s')) s' `elem` ss => s = s') && pred n < n))
         (ASSERTRANGE((x, y :: ss) | 2 + length ss = n && x = y && (all(s')) s' `elem` ss => x = s'))
       (ASSERTRANGE((x, y :: ss) | 2 + length ss = n && x = y && (all(s')) s' `elem` ss => x = s'))
     (ASSERTRANGE((x :: y :: ss) | 2 + length ss = n && x = y && (all(s')) s' `elem` ss => x = s'))
