@@ -315,7 +315,7 @@
 \newblock \bibinfo{title}{Principles and Practice of Bidirectional Programming
   in {BiGUL}}.
 \newblock \bibinfo{howpublished}{Draft lecture notes for the \textit{Oxford
-  Summer School on Bidirectional Transformations}}.   (\bibinfo{year}{2017}).
+  Summer School on Bidirectional Transformations}}.
 \newblock
 \showURL{%
 \url{https://bitbucket.org/prl_tokyo/bigul/raw/master/SSBX16/tutorial.pdf}}
@@ -494,8 +494,8 @@
         {Thomsen-rFun}
 \bibfield{author}{\bibinfo{person}{Michael~Kirkedal Thomsen} {and}
   \bibinfo{person}{Holger~Bock Axelsen}.} \bibinfo{year}{2015}\natexlab{}.
-\newblock \showarticletitle{Interpretation and programming of the reversible
-  functional language {RFUN}}. In \bibinfo{booktitle}{{\em Symposium on the
+\newblock \showarticletitle{Interpretation and Programming of the Reversible
+  Functional Language {RFUN}}. In \bibinfo{booktitle}{{\em Symposium on the
   Implementation and Application of Functional Programming Languages}}.
   \bibinfo{publisher}{ACM}.
 \newblock
