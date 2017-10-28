@@ -262,12 +262,12 @@ _ =    HoareLogic.Examples.Alignment.keyAlignᴮ
 _ =    HoareLogic.Examples.Alignment.extract
 ---
 ---  includes some redundant branches to pass Agda's totality check. Also different from
----  Figure 4 are some uses of Agda-specific programming patterns, like using an explicitly
----  recursive function
+---  Figure 4 are some uses of Agda-specific programming patterns, like using the 'any'
+---  function in the standard library
 ---
-_ =    HoareLogic.Examples.Alignment.headMatch
+import Data.List.Any using (any)
 ---
----  to represent the main condition of the fourth branch. Such modifications help to make
+---  to specify the main condition of the fourth branch. Such modifications help to make
 ---  it easier to obtain proofs of properties needed in the derivation of the triple.
 ---
 
