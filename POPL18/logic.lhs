@@ -3,7 +3,7 @@
 %% For single-blind review submission
 %\documentclass[acmsmall,10pt,fleqn,review]{acmart}\settopmatter{printfolios=true}
 %% For final camera-ready submission
-\documentclass[acmsmall,10pt,fleqn,review]{acmart}\settopmatter{}
+\documentclass[acmsmall,10pt,fleqn,screen]{acmart}\settopmatter{}
 
 %% Note: Authors migrating a paper from PACMPL format to traditional
 %% SIGPLAN proceedings format should change 'acmlarge' to
@@ -155,8 +155,10 @@
 \newcommand{\PutTwice}{\name{PutTwice}}
 \newcommand{\PutbackRecursion}{\name{PutbackRecursion}}\newcommand{\RangeRecursion}{\name{RangeRecursion}}
 
+\usepackage{xifthen}
+
 \newcommand{\reason}[1]{\quad\{\text{-~#1~-}\}}
-\newcommand{\varcitet}[2]{\citeauthor{#1}#2~\citeyear{#1}}
+\newcommand{\varcitet}[3][]{\citeauthor{#2}#3~[\ifthenelse{\isempty{#1}}{\citeyear{#2}}{\citeyear[#1]{#2}}]}
 \newcommand{\awa}[2]{\mathrlap{#2}\phantom{#1}} % as wide as
 \newcommand{\varawa}[2]{\phantom{#1}\mathllap{#2}}
 \newcommand{\IF}{\text{If}\quad}
@@ -195,24 +197,20 @@
 \newcommand{\exampleautorefname}{Example}
 \newcommand{\notationautorefname}{Notation}
 
-\theoremstyle{acmdefinition}
-\newaliascnt{notation}{theorem}
-\newtheorem{notation}[notation]{Notation}
-\aliascntresetthe{notation}
-
-\newcommand{\varparagraph}[1]{\vspace{1ex plus .1ex minus .1ex}\textit{#1}\hspace{.5em}} %{\paragraph{#1}\hspace{.5em}}
+\newcommand{\varparagraph}[1]{\paragraph{#1}\hspace{.5em}} %{\vspace{1ex plus .1ex minus .1ex}\textit{#1}\hspace{.5em}}
 
 \makeatletter\if@@ACM@@journal\makeatother
 %% Journal information (used by PACMPL format)
 %% Supplied to authors by publisher for camera-ready submission
 \acmJournal{PACMPL}
-\acmVolume{0}
-\acmNumber{0}
-\acmArticle{0}
-\acmYear{\the\year}
-\acmMonth{\the\month}
-\acmDOI{10.1145/nnnnnnn.nnnnnnn}
-\startPage{1}
+\acmYear{2018}
+\acmVolume{2}
+\acmNumber{POPL}
+\acmArticle{41}
+\acmMonth{1}
+\acmPrice{}
+\acmDOI{10.1145/3158129}
+%\startPage{1}
 %\else\makeatother
 %% Conference information (used by SIGPLAN proceedings format)
 %% Supplied to authors by publisher for camera-ready submission
@@ -251,9 +249,9 @@
                                         %% [Short Title] is optional;
                                         %% when present, will be used in
                                         %% header instead of Full Title.
-\begin{anonsuppress}
-\titlenote{Draft manuscript (\today)}   %% \titlenote is optional;
-\end{anonsuppress}
+%\begin{anonsuppress}
+%\titlenote{Draft manuscript (\today)}   %% \titlenote is optional;
+%\end{anonsuppress}
                                         %% can be repeated if necessary;
                                         %% contents suppressed with 'anonymous'
 %\subtitle{Subtitle}                    %% \subtitle is optional
@@ -338,10 +336,10 @@
 %% before \maketitle command
 \begin{abstract}
 
-Among the frameworks of bidirectional transformations proposed for addressing various synchronisation (consistency maintenance) problems, \varcitet{Foster-lenses}{'s asymmetric lenses} have influenced the design of a generation of bidirectional programming languages.
+Among the frameworks of bidirectional transformations proposed for addressing various synchronisation (consistency maintenance) problems, \citeauthor{Foster-lenses}'s asymmetric lenses have influenced the design of a generation of bidirectional programming languages.
 Most of these languages are based on a declarative programming model, and only allow the programmer to describe a consistency specification with ad hoc and/or awkward control over the consistency restoration behaviour.
 However, synchronisation problems are diverse and require vastly different consistency restoration strategies, and to cope with the diversity, the bidirectional programmer must have the ability to fully control and reason about the consistency restoration behaviour.
-The putback-based approach to bidirectional programming aims to provide exactly this ability, and this paper strengthens the putback-based position by proposing the first fully fledged reasoning framework for a bidirectional language --- a Hoare-style logic for \varcitet{Ko-BiGUL}{'s putback-based language \BiGUL}.
+The putback-based approach to bidirectional programming aims to provide exactly this ability, and this paper strengthens the putback-based position by proposing the first fully fledged reasoning framework for a bidirectional language --- a Hoare-style logic for \citeauthor{Ko-BiGUL}'s putback-based language \BiGUL.
 The Hoare-style logic lets the \BiGUL\ programmer precisely characterise the bidirectional behaviour of their programs by reasoning solely in the putback direction, thereby offering a unidirectional programming abstraction that is reasonably straightforward to work with and yet provides full control not achieved by previous approaches.
 The theory has been formalised and checked in \Agda, but this paper presents the Hoare-style logic in a semi-formal way to make it easily understood and usable by the working \BiGUL\ programmer.
 
@@ -378,7 +376,7 @@ The theory has been formalised and checked in \Agda, but this paper presents the
 
 %% Keywords
 %% comma separated list
-%\keywords{keyword1, keyword2, keyword3}  %% \keywords is optional
+\keywords{asymmetric lenses, putback-based bidirectional programming}  %% \keywords is optional
 
 
 %% \maketitle
@@ -397,7 +395,7 @@ documents have the same content; whenever the content of one document is modifie
 %There are more complex scenarios as well: For example, in model-driven development, executable code is produced with respect to an abstract model describing high-level behaviour, and whenever the code is reorganised or the model is revised, the other side should be updated to maintain consistency --- in this case, consistency means that the behaviour of the code conforms to what the model specifies.
 Over the past decade, frameworks of \emph{bidirectional transformations} have been proposed to address a diverse range of synchronisation problems~\citep{Czarnecki-BX}.
 One such framework is \varcitet{Foster-lenses}{'s \emph{asymmetric lenses}}, which are highly influential such that the term \emph{bidirectional programming} has become largely synonymous with lens-based approaches (including lens combinators and bidirectionalisation; see, e.g., \citet{Foster-bidirectional-programming-approaches}).
-Asymmetric lenses are designed for synchronising two pieces of data where one side --- which is called the \emph{source} --- has more information than the other, which is called the \emph{view}.
+Asymmetric lenses are designed for synchronising two pieces of data where one side, which is called the \emph{source}, has more information than the other, which is called the \emph{view}.
 Typically, a lens program describes a forward |get| transformation that computes a consistent view from a source; whenever the source is modified, |get| is rerun to produce a new consistent view.
 Conversely, from the same lens program we can derive a backward |put| transformation that takes a source and a (possibly modified) view, and produces an updated source that is consistent with the view and can retain some information of the original source.
 
@@ -464,7 +462,7 @@ the host functional language is total and may be thought of as \Agda\ imperfectl
 
 %\todo{display more things if possible}
 
-\section{A recap of asymmetric lenses}
+\section{A Recap of Asymmetric Lenses}
 \label{sec:asymmetric-lenses}
 
 We start from a brief recap of some general facts about asymmetric lenses, but state these facts directly in terms of \BiGUL\ --- think of this section and the next as an introduction to the overall framework, rather than a detailed introduction to \BiGUL\ (which will be offered in \autoref{sec:putback-proof-rules}).
@@ -501,31 +499,33 @@ Any \BiGUL\ program~|b| satisfies the following two \emph{well-behavedness} laws
 
 As noted by \citeauthor{Ko-BiGUL}, \autoref{thm:well-behavedness} gives a stronger well-behavedness guarantee~\citep{Macedo-composing-least-change-lenses, Pacheco-putlenses} than the original definition of \citet{Foster-lenses} --- in the original \PutGet, for example, a successful |put| computation does not guarantee the success of the subsequent |get| computation.
 Even so, this theorem is not as practically useful as it seems because non-well-behavedness is merely swept under the partiality carpet: both |put b| and |get b| perform various checks at runtime to detect possible violations of well-behavedness, and if the programmer does not pay enough attention to well-behavedness requirements, the execution of |put b| or |get b| can unexpectedly fail one of these runtime checks (thereby satisfying \ref{prop:PutGet} or \ref{prop:GetPut} vacuously).
-On the other hand, theoretically we no longer need to worry about well-behavedness and can concentrate on totality, i.e., making sure that \BiGUL\ programs can compute successfully on the inputs that we care about.
+On the other hand, the theorem is still somewhat helpful since the BiGUL programmer no longer needs to worry about well-behavedness and can concentrate on totality, i.e., making sure that \BiGUL\ programs can compute successfully on the inputs that the programmer cares about.
 %This is part of the motivation for developing the Hoare-style logic.
 
 Well-behavedness implies that a putback transformation uniquely determines the corresponding forward transformation.
 \begin{lemma}[\protect{\citet[Lemma~2.2.5]{Foster-thesis}}] \label{lem:dominance}
 Let |l|,~|r : S <~ V|.
-%If |put l = put r| then |get l = get r|.
-\[ \IF |put l = put r| \THEN |get l = get r| \PERIOD \]
+If |put l = put r| then |get l = get r|.
+%\[ \IF |put l = put r| \THEN |get l = get r| \PERIOD \]
 \end{lemma}
 This lemma distinguishes asymmetric lenses from other models of bidirectional transformations (e.g., \varcitet{Hofmann-symmetric-lenses}{'s symmetric lenses}), and is the motivation behind \BiGUL's putback-based design, as it shows that it is theoretically feasible that the \BiGUL\ programmer can think and program solely in the putback direction and still unambiguously specify the forward behaviour.
-%This lemma is not actually helpful in practice, though, since the programmer may write a wrong putback program, in which case it does not help to know that there is a unique corresponding forward transformation because that is likely to be wrong as well.
-%The idea of putback-based programming can truly succeed only if we can reason about putback programs precisely --- hence the need for a program logic.
+This lemma does not help to explain what putback-based thinking is, though --- how does the programmer actually write a putback program while understanding its forward behaviour?
+The key idea of this paper is that a Hoare-style logic can help to explain how that is achieved.
+%In practice, however, this lemma is not too helpful in understanding forward behaviour, since the programmer may write a wrong putback program, in which case it does not help to know that there is a unique corresponding forward transformation, which is likely to be wrong as well.
+%The idea of putback-based programming can truly succeed only if we can reason about putback programs sufficiently precisely, which we achieve in this paper with a Hoare-style logic.
 
-\section{Theory of putback triples}
+\section{Theory of Putback Triples}
 \label{sec:putback-triples}
 
-Programming a putback transformation in \BiGUL\ is comparable to programming with states:
+Programming a putback transformation in \BiGUL\ is comparable to programming with states to some extent:
 the \BiGUL\ programmer is given a source state and a view state, and manipulates the two states with the aim of transferring all information in the view to the source; in the end, the updated source state is returned as the result.
 Reasoning about \BiGUL\ programs thus consists of tracking the properties satisfied by the states at each step, and it follows that a Hoare-style logic is well suited for performing this kind of reasoning about states.
 We will introduce a set of Hoare-style triples for saying when \BiGUL\ programs (as putback transformations) can compute successfully and return results satisfying some specified properties.
 Before doing so, we first need to fix our notation of relations (for specifying preconditions and postconditions).
 
 \begin{notation}
-Relations on types |(SUB A 1)|\,, |(SUB A 2)|\,, $\ldots,$ |(SUB A n)| are assigned the type |POWER((SUB A 1) TIMES (SUB A 2) TIMES {-"\cdots\;"-} TIMES (SUB A n))|.
-When a relation~|R| of this type relates elements |(SUB a 1) : (SUB A 1)|\,, |(SUB a 2) : (SUB A 2)|\,, $\ldots,$ |(SUB a n) : (SUB A n)|\,, we write |R (SUB a 1) (SUB a 2) ... (SUB a n)|\,. %(in a curried form, to save parentheses and commas).
+Relations on types |(SUB A 1)|\kern1pt, |(SUB A 2)|\kern1pt, $\ldots,$ |(SUB A n)| are assigned the type |POWER((SUB A 1) TIMES (SUB A 2) TIMES {-"\cdots\;"-} TIMES (SUB A n))|.
+When a relation~|R| of this type relates |(SUB a 1) : (SUB A 1)|\kern1pt, |(SUB a 2) : (SUB A 2)|\kern1pt, $\ldots,$ |(SUB a n) : (SUB A n)|\kern1pt, we write |R (SUB a 1) (SUB a 2) ... (SUB a n)|\kern1pt. %(in a curried form, to save parentheses and commas).
 \end{notation}
 
 \begin{definition}
@@ -548,7 +548,7 @@ Let |b : S <~ V|, |R : (POWER(S TIMES V))|, and |R' : (POWER(S TIMES S TIMES V))
 %The proof (as mentioned in \autoref{sec:asymmetric-lenses}) is omitted from the paper since it depends on the specific definition of |put|.
 %Presentation-wise, we state the theorem to alleviate the doubt that there might not be any implementation fulfilling the axioms that we will see in \autoref{sec:putback-proof-rules}.
 
-Given that putback behaviour completely determines forward behaviour, and that putback triples are about putback behaviour, shouldn't putback triples tell us something about forward behaviour as well?
+Given that putback behaviour completely determines forward behaviour~(\autoref{lem:dominance}), and that putback triples are about putback behaviour, shouldn't putback triples tell us something about forward behaviour as well?
 This is indeed the case, as will be shown by \autoref{thm:partial-forward-consistency}.
 Its statement will make use of some important definitions and notational conventions that will also be used throughout this paper.
 
@@ -593,7 +593,7 @@ Even in this case, though, there is still the second reason: \autoref{thm:partia
 We will augment \autoref{thm:partial-forward-consistency} to get a practically useful version (\autoref{thm:total-forward-consistency}).
 But before that, let us look at the concrete putback proof rules and some examples of putback reasoning.
 
-\section{\BiGUL\ and the putback proof rules}
+\section{\BiGUL\ and the Putback Proof Rules}
 \label{sec:putback-proof-rules}
 
 \begin{figure}
@@ -726,7 +726,7 @@ For each construct, we will give its type --- which is essential for inferring t
 Note that assertions are intended to be semantic rather than syntactic --- for example, if the precondition stated in a rule is |COM(_ _)|, we will regard the rule as directly applicable when the actual precondition is, say, |COM(s v || s = s && v = v)|, which differs from |COM(_ _)| syntactically but still denotes the always-true binary relation semantically.
 %Also, all assertions in triples are strongly typed according to \autoref{def:putback-triples}; for example, the source and view types of |replace| are required to be the same; consequently, |s'|~and~|v| in the corresponding proof rule's postcondition are of the same type, and it is sensible to talk about equality between them.
 
-\subsection{Atomic constructs}
+\subsection{Atomic Constructs}
 \label{sec:atomic}
 
 \BiGUL\ has three atomic constructs, whose corresponding rules are in the first row of \autoref{fig:putback-proof-rules}.
@@ -772,7 +772,7 @@ This format is compact and yet retains the tree structure of the derivation, mak
 %(Auxiliary dotted lines are also added to make indentation levels clearer, especially when derivations spread across pages.)
 \end{example}
 
-\subsection{The consequence rule}
+\subsection{The Consequence Rule}
 \label{sec:putback-consequence-rule}
 
 The consequence rule we present in \autoref{fig:putback-proof-rules} (the right one in the second row) may seem unusual, but first observe that it is a stronger version of the usual one (so at least there is nothing to lose):
@@ -804,8 +804,8 @@ On the other hand, the postcondition that we can establish, i.e., |(COM((s', t')
 The usual consequence rule~(\ref{eq:usual-consequence-rule}) can help us to get rid of the entanglement |v = w|, but that entanglement is needed to establish the final implication (by |s' = v = w = t'|).
 We thus need the stronger consequence rule to be able to carry over whatever we know about the original source and the view from the precondition to the postcondition.
 When working in our derivation format, the stronger consequence rule allows us to prove an implication between adjacent postconditions using whichever preconditions for the same node (on the same indentation level) as additional premises about the original source and the view.%
-%\footnote{Alternatively and equivalently, as suggested by an anonymous reviewer of an earlier version of this paper, we can keep the usual consequence rule~(\ref{eq:usual-consequence-rule}) and introduce a separation logic--style frame rule: |(ASSERT R) b (ASSERT R')| $\Rightarrow$ |(ASSERT(R CAP T)) b (ASSERT(R' CAP (COM(_ s v || T s v))))|, which is somewhat more elegant.
-%However, we feel that being able to use preconditions to establish implications between postconditions is more convenient in practice, and the stronger consequence rule captures this ability more directly.}
+\footnote{Alternatively and equivalently, as suggested by an anonymous reviewer of an earlier version of this paper, we can keep the usual consequence rule~(\ref{eq:usual-consequence-rule}) and introduce a separation logic--style frame rule: |(ASSERT R) b (ASSERT R')| $\Rightarrow$ |(ASSERT(R CAP T)) b (ASSERT(R' CAP (COM(_ s v || T s v))))|, which is somewhat more elegant.
+However, we feel that being able to use preconditions to establish implications between postconditions is more convenient in practice, and the stronger consequence rule captures this ability more directly.}
 
 %The stronger consequence rule also simplifies other rules.
 %For example, if we only had the usual consequence rule~(\ref{eq:usual-consequence-rule}), we would have to enrich the |skip| rule to something like:
@@ -820,15 +820,15 @@ When working in our derivation format, the stronger consequence rule allows us t
 A guiding intuition for \BiGUL\ programming is to manipulate the source and view to make their shapes match, which is achieved mainly with the \emph{rearrangement} operations.
 To provide a more concrete motivation:
 We have seen that the product combinator (\autoref{sec:product}) allows us to synchronise source and view tuples of arbitrary size, provided that their structures are the same.
-When this is not the case, in \BiGUL\ we can use a simple class of pattern-matching $\lambda$-expressions to rearrange the source and/or the view to make them match structurally and so ready for further synchronisation.
+When this is not the case, in \BiGUL\ we can use a simple class of pattern-matching $\lambda$-expressions to rearrange the source and/or the view to make them match structurally and ready for further synchronisation.
 For example, the height-keeping strategy~1 we proposed for the rectangle width updating problem (\autoref{sec:introduction}) can be expressed in \BiGUL\ as:
 \begin{code}
 keepHeight  : (Nat TIMES Nat) <~ Nat
 keepHeight  =  rearrV v -> (v, ())
-               ^  ^  replace
-               ^  *  skip const ()
+               ^  ^  replace        -- |const| is the K~combinator (|const x y = x|), and
+               ^  *  skip const ()  -- `|()|' is the sole inhabitant of the unit type
+                                    
 \end{code}
-where |const| is the K~combinator: |const x y = x|.
 Initially, the view is a single number, whereas the source is a pair.
 To make their structures match, we use the view rearrangement operation |rearrV v -> (v, ())| to apply the $\lambda$-expression |\ v -> (v, ())| to the view and make the result the new view.
 Inside the |rearrV|, the source and view are both pairs, so we can use |replace * skip const ()| to update the width and keep the height as it is.
@@ -923,7 +923,7 @@ rearrS x -> (x, x)
 %With these two relations, we state the precondition for the whole |rearrV| program as |(COM(s v || (some(r)) Match v r && R s r))|, and the precondition for the inner program as |(COM(s w || (some(r)) Eval r w && R s r))|, making no use of pattern-matching comprehension relations.
 
 
-\subsection{Case analysis}
+\subsection{Case Analysis}
 
 More sophisticated programs require case analysis, for which \BiGUL\ provides a powerful and intricate |case| construct.
 For a simple example, the height-resetting strategy~3 for the rectangle width updating problem (\autoref{sec:introduction}) can be expressed as:
@@ -942,10 +942,8 @@ In general, a case analysis in \BiGUL\ has the form |case INNER bs : S <~ V| whe
 For normal branches, the general form is |normal M exit E INNER b| where |M : (POWER(S TIMES V))| is called the \emph{main condition}, |E : (POWER S)| is called the \emph{exit condition}, and |b : S <~ V| is the branch body.
 For adaptive branches, the general form is |adaptive M INNER f| where |M : (POWER(S TIMES V))| is again the main condition, and |f : S -> V -> S| is a function in the host language.
 The syntactic conventions described by \autoref{notation:trivially-true-proposition} and \autoref{notation:angle-brackets} are also adopted for comprehension relations used as main or exit conditions.%
-\footnote{We make |M|~and~|E| comprehension relations to simplify the presentation --- in real, executable programs, |M|~and~|E| should be ``comprehension expressions'' that compute to boolean values instead of propositions.}
-%We are careful not to sacrifice computability, though: the comprehension relations we use as conditions in this paper can all be straightforwardly converted to ``comprehension expressions'' in real programs.}
-%but that would mess up the assertions where we would have to write propositions like |M s v = true| instead of just |M s v|.
-%
+\footnote{We make |M|~and~|E| comprehension relations to simplify the presentation --- in real, executable programs, |M|~and~|E| should be ``comprehension expressions'' that compute to boolean values instead of propositions, but that would mess up the assertions where we would have to write propositions like |M s v = true| instead of just |M s v|.}
+%We are careful not to sacrifice computability, though: the comprehension relations we use as conditions in this paper can all be straightforwardly converted to ``comprehension expressions'' in real programs.
 
 \varparagraph{The\/ |case| rule.}
 Operationally, the execution of a |case| finds the first branch whose main condition is satisfied by the source and view, and enters that branch.
@@ -962,12 +960,13 @@ However, the precise condition satisfied is not~|M| --- since the branches are t
 We denote this actual main condition by~|NORM M|, and the precondition for~|b| is strengthened to |R CAP (NORM M)|.
 %(The programmer can avoid distinguishing actual and ``superficial'' main conditions by writing programs where the main conditions are all disjoint, in which case |NORM M = M|.)
 As for the postcondition, in addition to~|R'|, we also require \,(i)~that the updated source and the view satisfy the actual main condition~|NORM M| and \,(ii)~that the updated source satisfy the actual exit condition |NORM E|, which is |E|~intersected with the negations of the exit conditions of all the previous normal branches.
-Requirement~(i) is for avoiding branch switching, while requirement~(ii) makes exit conditions analogous to ``assertions'' in reversible conditionals~\citep{Yokoyama-Janus}.
+These requirements are essential for guaranteeing well-behavedness; for a detailed development of these requirements, see \citet[Section~5.5]{Hu-BiGUL-tutorial}.
+%Requirement~(i) is for avoiding branch switching, while requirement~(ii) makes exit conditions analogous to ``assertions'' in reversible conditionals~\citep{Yokoyama-Janus}.
 
 \varparagraph{Adaptive branches.}
 Requirement~(i) above for normal branches turns out to be very restrictive, making normal branches only capable of dealing with ``almost consistent'' cases in practice.
 However, we often need branches whose main condition describes a particular kind of inconsistency and whose purpose is to repair that inconsistency --- that is, their main conditions are supposed to be broken after updating, and this is against the nature of normal branches.
-Instead, for repairing inconsistency, we use adaptive branches, which are comparable with \varcitet{Foster-lenses}{'s ``fixup functions''}.
+Instead, for repairing inconsistency, we use adaptive branches, which are comparable with \varcitet[Section~6.3]{Foster-lenses}{'s ``fixup functions''}.
 When entered, an adaptive branch |adaptive M INNER f| applies~|f| to the source and view to produce an adapted source; this adapted source then takes the place of the original source, and the whole |case| is rerun.
 Naturally, requirements have to be imposed on~|f|, as stated in the |case| rule:
 \begin{align*}
@@ -1086,7 +1085,7 @@ It is easy to see that |resetHeight = emb fst (\ _ v -> (v, 0))|.
 What we proved for |resetHeight| in \autoref{ex:resetHeight} can be generalised to the following triple for |emb g p|, where |g|~is used to define consistency:
 \[ |(ASSERT(_ _)) ~ emb g p ~ (ASSERT(s' s v || g s' = v && (g s = v => s' = s) && (g s /= v => s' = p s v)))| \]
 Interestingly, to prove this triple, we only require |g|~and~|p| to satisfy \PutGet\ (|(all(s, v)) g (p s v) = v|, which is \autoref{thm:well-behavedness}'s \ref{prop:PutGet} specialised for total functions); \GetPut\ of |emb g p| arises from the logic of |emb| itself and does not depend on |g|~and~|p|.
-Indeed, in the case of |resetHeight|, the pair of transformations being embedded only satisfies \PutGet.
+Indeed, in the case of |resetHeight|, the pair of transformations being embedded satisfies only \PutGet.
 
 On the other hand, if we have both \PutGet\ and \GetPut\ (|all(s) p s (g s) = s|), then we can derive a stronger triple saying that the putback behaviour of |emb g p| completely coincides with~|p|:
 \begin{code}
@@ -1109,7 +1108,7 @@ case
 Assertion~3 requires the \PutTwice\ property |all(s, v) p (p s v) v = p s v|, which is known to follow from \PutGet\ and \GetPut\ (see, e.g., \citet[Section~3]{Fischer-lens-laws}).
 \end{example}
 
-\section{Range triples and total forward consistency}
+\section{Range Triples and Total Forward Consistency}
 \label{sec:range-triples}
 
 We have seen in \autoref{ex:emb} that any pair of transformations satisfying only \PutGet\ can be embedded into \BiGUL.
@@ -1125,10 +1124,10 @@ The two programs |emb fst reset| and |alwaysResetHeight| have roughly the same p
 But in fact, |get (emb fst reset)| can compute successfully on all inputs, whereas |get alwaysResetHeight| can only compute successfully on inputs whose second component is zero (and is usually not what one wants in practice).
 This reveals that we still lack the machinery for fully understanding forward behaviour.
 What we are missing is the ability to estimate the \emph{domain} of a forward transformation, i.e., the subset of sources on which the forward transformation can compute successfully.
-To make such estimates for \BiGUL\ programs, which describe putback transformations, the key insight is that, for a well-behaved pair of |put| and |get|, the domain of |get| coincides with the \emph{range} of |put|, i.e., the subset of sources that can be produced by |put|.
-%\footnote{To see the coincidence, observe that \ref{prop:PutGet} (as stated in \autoref{thm:well-behavedness}) can be read roughly as ``if |s'|~is produced by |put b|, i.e., |s'|~is in the range of |put b|, then |get b| will compute successfully on~|s'|, i.e., |s'|~will be in the domain of~|get b|'', and \ref{prop:GetPut} says the converse.}
+To make such estimates for \BiGUL\ programs, which describe putback transformations, the key insight is that, for a well-behaved pair of |put| and |get|, the domain of |get| coincides with the \emph{range} of |put|, i.e., the subset of sources that can be produced by |put|.%
+\footnote{To see the coincidence, observe that \ref{prop:PutGet} (as stated in \autoref{thm:well-behavedness}) can be read roughly as ``if |s'|~is produced by |put b|, i.e., |s'|~is in the range of |put b|, then |get b| will compute successfully on~|s'|, i.e., |s'|~will be in the domain of~|get b|'', and \ref{prop:GetPut} says the converse.}
 The problem with |alwaysResetHeight| is now clear: it can only produce the sources whose second component is zero, so |get alwaysResetHeight| can compute successfully only on those sources.
-In contrast, |emb fst reset| is capable of producing all possible pairs.
+By contrast, |emb fst reset| is capable of producing all possible pairs.
 Our way ahead is to develop machinery for making such range estimates reliably, and that machinery is a second set of Hoare-style triples.
 
 %We can easily prove that the putback behaviour of |alwaysResetHeight| coincides with |reset| by deriving the putback triple |(ASSERT(_ _)) alwaysResetHeight (ASSERT(s' _ v || s' = (v, 0)))|; then, by \autoref{thm:well-behavedness}, the |put| and |get| semantics of |alwaysResetHeight| must form a well-behaved pair.
@@ -1146,10 +1145,10 @@ Our way ahead is to develop machinery for making such range estimates reliably, 
 %To make such estimates for \BiGUL\ programs, which describe putback transformations, the key insight is that, for a well-behaved pair of |put| and |get|, the domain of |get| coincides with the \emph{range} of |put|, i.e., the subset of sources that can be produced by |put|.%
 %\footnote{To see the coincidence, observe that \ref{prop:PutGet} (as stated in \autoref{thm:well-behavedness}) can be read roughly as ``if |s'|~is produced by |put b|, i.e., |s'|~is in the range of |put b|, then |get b| will compute successfully on~|s'|, i.e., |s'|~will be in the domain of~|get b|'', and \ref{prop:GetPut} says the converse.}
 %The problem with |alwaysResetHeight| is now clear: it can only produce the sources whose second component is zero, so |get alwaysResetHeight| can compute successfully only on those sources.
-%In contrast, |emb fst reset| is capable of producing all possible pairs.
+%By contrast, |emb fst reset| is capable of producing all possible pairs.
 %Our way ahead is to develop machinery for making such range estimates reliably, and that machinery is a second set of Hoare-style triples.
 
-\subsection{Theory of range triples}
+\subsection{Theory of Range Triples}
 
 \begin{definition}
 A \emph{range triple} is a \BiGUL\ program |b : S <~ V| surrounded by two \emph{range assertions}:
@@ -1158,7 +1157,7 @@ where |R : (POWER(S TIMES V))| is the precondition or \emph{input range} (on the
 Valid range triples are inductively defined by the proof rules in \autoref{fig:range-proof-rules} (which will be explained in \autoref{sec:range-proof-rules}).
 \end{definition}
 
-While the intended interpretation of a range triple for~|b| is about the range of |put b|, we actually need a slightly stronger interpretation about |get b| (to make \autoref{thm:total-forward-consistency} work), as stated by the following soundness and completeness theorem (which is in a sense dual to \autoref{thm:putback-soundness-and-completeness}).
+While the intended interpretation of a range triple for~|b| is about the range of |put b|, we actually need a slightly stronger interpretation about |get b| (to make \autoref{thm:total-forward-consistency} work), as stated by the following soundness and completeness theorem (which is, in a sense, dual to \autoref{thm:putback-soundness-and-completeness}).
 
 \begin{theorem}[soundness and completeness of range triples] \label{thm:range-soundness-and-completeness}
 Let |b : S <~ V|, |R : (POWER(S TIMES V))|, and |P' : (POWER S)|.
@@ -1204,7 +1203,7 @@ Notably, as we will see next, derivations of range triples are usually significa
 %We will write
 %\[ |(ASSERT R) ~ b ~ (ASSERT R') (ASSERTRANGE P)| \quad\text{as an abbreviation of}\quad |(ASSERT R) ~ b ~ (ASSERT R') ~ ~ && ~ ~ (ASSERTRANGE R) ~ b ~ (ASSERTRANGE P)| \]
 
-\subsection{The range proof rules}
+\subsection{The Range Proof Rules}
 \label{sec:range-proof-rules}
 
 \begin{figure}
@@ -1379,7 +1378,7 @@ then:
 \end{theorem}
 
 \ref{prop:PutbackRecursion} will be the proof rule we use for reasoning about the putback behaviour of recursive programs.
-It combines the basic proof idea~(\ref{prop:basic-proof-idea}) with the sized-based termination argument given in the beginning of this section: in the precondition for |f rec|, the size of the input source and view is bound to a logic variable~|n|, and we can make recursive invocations wherever the size~|m| of the current source and view is strictly less than~|n|.
+It combines the basic proof idea~(\ref{prop:basic-proof-idea}) with the size-based termination argument given in the beginning of this section: in the precondition for |f rec|, the size of the input source and view is bound to a logic variable~|n|, and we can make recursive invocations wherever the size~|m| of the current source and view is strictly less than~|n|.
 The soundness of \ref{prop:PutbackRecursion} is justified by \autoref{thm:putback-finite-expansion}, whose conclusion implies that any input in~|R| can be successfully turned into an output in~|R'| as long as |f|~is expanded enough times.
 %We again omit the proof of the theorem (which is by nested induction on |l|~and~|n|) from the presentation.
 
@@ -1404,7 +1403,7 @@ The conclusion of \autoref{thm:range-finite-expansion} justifies the soundness o
 Having the two recursion rules, we are now ready to verify |keyAlign|.
 %\todo{\autoref{thm:total-forward-consistency} and other theorems also work semantically}
 
-\section{Verifying key-based list alignment}
+\section{Verifying Key-Based List Alignment}
 \label{sec:key-based-alignment}
 
 \begin{figure}
@@ -1444,7 +1443,7 @@ View elements may be inserted, deleted, modified, or reordered.
 To put the updated view list back into the source list, we need to align the two lists, i.e., decide for each view element to which source element it corresponds (if any), before we can invoke an element-level consistency restorer on the right pairs of source and view elements.
 
 Several variants of list alignment have been implemented in \BiGUL~\citep{Zan-Brul, Mendes-delta-alignment}.
-In this paper we choose to verify a variant that is non-trivial and yet not overly complicated: key-based alignment, an implementation of which was presented and explained with a concrete scenario by
+In this paper we choose to verify a variant that is non-trivial and yet not overly complicated: key-based alignment, of which an implementation was presented and explained with a concrete scenario by
 \citet[Section~6.2]{Hu-BiGUL-tutorial}.
 Their program |keyAlign| is shown in \autoref{fig:keyAlign}.
 The types of source and view elements are |S|~and~|V| respectively.
@@ -1470,9 +1469,9 @@ For simplicity, we assume that |b|~can compute successfully for any pair of sour
 As a putback triple:
 \[ |(ASSERT(s v || ks s = kv v)) ~ b ~ (ASSERT(R' CAP (COM(s' _ v || ks s' = kv v))))| \]
 We will abbreviate |R' CAP (COM(s' _ v || ks s' = kv v))| as~|T'|.
-For the source-creating function~|c|, since a created source will be further processed by~|b|, we require the key of the created source to be the same as that of the view, i.e.,
+For the source-creating function~|c|, since a created source will be further processed by~|b|, we require the key of the created source to be the same as that of the view:
 \[ |(all(v)) ~ ks (c v) = kv v| \]
-We can then derive, for all~|n|,
+We can then derive, for all~|n|:
 \begin{code}
 (ASSERT(_ vs | length vs = n)) ~ keyAlign ks kv b c ~ (ASSERT(ss' ss vs | (some(~ ss'')) (STAR T') ss' ss'' vs && Retentive ss vs ss''))
 \end{code}
@@ -1583,8 +1582,8 @@ Their union is the output range of the entire |case|, and is indeed |COM(ss || l
 \label{sec:discussion}
 
 \varparagraph{How expressive is \BiGUL\ (especially compared with existing languages)?}
-The expressive power of the version of \BiGUL\ used in this paper mainly stems from its |case| construct, which has gone beyond \varcitet{Foster-lenses}{'s ``general conditional''} and allows, in particular, key-based list alignment to be implemented using only simple and general-purpose primitives for the first time.
-%Note that the case analysis constructs in \varcitet{Ko-BiGUL}{'s original \BiGUL} were essentially the same as \citeauthor{Foster-lenses}'s conditionals, and \citeauthor{Ko-BiGUL} had to provide list alignment as an extra and complex primitive.
+The expressive power of the version of \BiGUL\ used in this paper mainly stems from its |case| construct, which has gone beyond \varcitet[Section~6.3]{Foster-lenses}{'s ``general conditional''} and allows, in particular, key-based list alignment to be implemented using only simple and general-purpose primitives for the first time.
+(In the original \BiGUL~\citep{Ko-BiGUL}, the case analysis constructs were essentially the same as \citeauthor{Foster-lenses}'s conditionals, and key-based list alignment had to be provided as an extra and complex primitive.)
 
 Regarding alignment, \varcitet{Barbosa-matching-lenses}{'s ``matching lenses''} offer several sophisticated matching strategies, some of which can be hard to implement ``nicely'' in \BiGUL\ so far.
 However, matching lenses are special-purpose and require the invention of dedicated laws, and the essential components are built from scratch, whereas \BiGUL\ is designed with the ultimate aim of expressing all lenses using just a fixed set of simple primitives, like what we can do in general-purpose languages.
@@ -1600,12 +1599,12 @@ The majority of lens languages are |get|-based, as explained by \citet{Foster-th
 \citet{Matsuda-applicative-BX}, for example, explicitly state that their language adopts this design.
 \citet{Foster-lenses} also clearly show in their Figure~8 that their lens programs are supposed to be constructed like writing |get|, and \varcitet{Bohannon-relational-lenses}{'s relational lenses} are written like database queries, which are |get| transformations.
 Their programs can be (and are usually) enriched with putback information to allow more control, but that makes constructing and understanding the programs more awkward (see the next paragraph).
-In contrast, \BiGUL's putback-based design lets the programmer construct programs purely in the |put| direction.
+By contrast, \BiGUL's putback-based design lets the programmer construct programs purely in the |put| direction.
 The Hoare-style logic helps to clearly distinguish the two approaches for the first time: it is possible to precisely reason about bidirectional behaviour purely in the |put| direction, whereas it is unthinkable that the same can be achieved in the |get| direction.
 This might explain that there is only one comparable (but still much less powerful) reasoning framework: the totality lemmas of \citet{Foster-lenses}, which can only establish properties equivalent to triples of the form |(ASSERTRANGE(_ _)) b (ASSERTRANGE P)| and |(ASSERT(s v || P s && Q v)) b (ASSERT(_ _ _))| where |P : (POWER S)| and |Q : (POWER V)|.
 
 \varparagraph{Didn't some |get|-based approaches also offer the ability to control putback behaviour? Why switch to the putback-based approach?}
-To name a few, the ``fixup functions'' in \varcitet{Foster-lenses}{'s ``general conditionals''} (for branch switching), the parameters of \varcitet{Bohannon-relational-lenses-tech-report}{'s $\mathtt{join\_template}$} (for resolving ambiguous deletions), and the alignment keywords like ``\texttt{key}'' and ``\texttt{best}'' in the \name{Boomerang} language~\citep{Bohannon-Boomerang,Barbosa-matching-lenses} (for specifying keys and matching strategies during alignment) are all constructs which appear in programs designed to look like forward transformations but are meaningful only in the putback direction.
+To name a few, the ``fixup functions'' in \varcitet[Section~6.3]{Foster-lenses}{'s ``general conditionals''} (for branch switching), the parameters of \varcitet[Section~5.3]{Bohannon-relational-lenses-tech-report}{'s $\mathtt{join\_template}$} (for resolving ambiguous deletions), and the alignment keywords like ``\texttt{key}'' and ``\texttt{best}'' in the \name{Boomerang} language~\citep{Bohannon-Boomerang,Barbosa-matching-lenses} (for specifying keys and matching strategies during alignment) are all constructs which appear in programs designed to look like forward transformations but are meaningful only in the putback direction.
 Constructs with similar purposes can also be found in bidirectionalisation approaches, such as \varcitet{Voigtlander-shape-plug-ins}{'s ``shape bidirectionaliser plug-ins''} (for programming shape changes).
 Apart from offering only limited and/or special-purpose customisation of putback behaviour, the fundamental problem with these languages is that their programs contain an ad hoc mixture of forward and backward information, and to properly understand such programs, the only way is to reason in both directions and in terms of the complex underlying semantics.
 In other words, it is hard to come up with easy-to-use reasoning principles for these languages, and since reasoning principles reflect and even guide how we program, this indicates that these languages fail to deliver an easy-to-use abstraction.
@@ -1621,7 +1620,7 @@ The indisputable fact is that the major work is done in derivations of putback t
 %There are some forms of reasoning principles proposed along with some of the more generically designed bidirectional languages --- for example,  \citet{Foster-lenses} offer systematic rules for proving totality, and \citet{Hofmann-symmetric-lenses} give some equational laws originated from category theory.
 %None of them aim to be as strong as our Hoare-style logic, however.
 %We might say that the fundamental problem with those reasoning principles is that they are only auxiliary and cannot help the programmer to gain an adequate understanding of program behaviour without breaking the abstraction and reasoning in terms of the semantic definitions of the languages.
-%In contrast, our Hoare-style logic completely shields the programmer from the highly detailed semantic definition of \BiGUL\ like the one presented by \citet{Ko-BiGUL}, yet still allows the programmer to precisely understand program behaviour with reasonable effort.
+%By contrast, our Hoare-style logic completely shields the programmer from the highly detailed semantic definition of \BiGUL\ like the one presented by \citet{Ko-BiGUL}, yet still allows the programmer to precisely understand program behaviour with reasonable effort.
 
 \varparagraph{Where is lens composition?}
 In terms of consistency, the behaviour of lens composition is just relational composition; on the other hand, the retentive behaviour of lens composition is rather chaotic and hard to reason about, because its |put| direction is defined in terms of both the |put| and |get| directions of the lenses being composed.
@@ -1662,8 +1661,8 @@ for which the following triples are verified:
 (all(n)){-"\hspace{.75em}"-}  (ASSERTRANGE(ss _ | length ss = n)) ~                 replaceAll ~ (ASSERTRANGE((s' :: ss') | 1 + length ss' = n && (all(t)) t `elem` ss' => s' = t))
 \end{code}
 This example helps to clarify the misconception that, when programming |put|, the programmer still needs to have a |get| in mind --- rather, what the programmer needs to have in mind is a consistency relation (|COM(ss' v || (all(t)) t `elem` ss' => t = v)| in this case), which may be functional but does not need to be executable.
-%whereas |get replaceAll| has additional and nontrivial computational content, which is derived from the |replaceAll| program
-The range triple is also interesting as it has a nontrivial output range.
+%whereas |get replaceAll| has additional and non-trivial computational content, which is derived from the |replaceAll| program
+The range triple is also interesting as it has a non-trivial output range.
 
 Rather than developing more examples at this stage, we plan to move forward and aim for the verification of practical bidirectional applications.
 This will require better mechanised support than the current \Agda\ formalisation, which is exceedingly tedious to work with.
@@ -1700,7 +1699,7 @@ Instead, we should also start aiming to precisely characterise the behaviour of 
 %treating bidirectional programming as seriously as we treat general-purpose programming.\todo{verification tools}
 
 More broadly, we believe that programming languages should be shipped with reasoning principles --- even domain-specific languages deserve domain-specific reasoning principles, to justify that the languages offer adequate abstractions, and to help the programmer to work effectively and reliably with those abstractions.
-In the case of \BiGUL, the Hoare-style logic reflects the ``stateful'' nature of \BiGUL\ programming, and is designed domain-specifically such that the programmer can work out the precise behaviour of \BiGUL\ programs with reasonable effort (rather than breaking the abstraction and working with the messier underlying semantics).
+In the case of \BiGUL, the Hoare-style logic reflects the somewhat stateful nature of \BiGUL\ programming, and is designed domain-specifically such that the programmer can work out the precise behaviour of \BiGUL\ programs with reasonable effort (rather than breaking the abstraction and working with the messier underlying semantics).
 Moreover, the evolution of \BiGUL\ is partly prompted by the development of the Hoare-style logic, whose eventual simplicity justifies \BiGUL's current design.
 If, as \citet{Dijkstra-EWD361} argued, programs and their correctness proofs should grow hand in hand, then programming languages and their reasoning principles ought to be developed together as well.
 \BiGUL\ and its Hoare-style logic make a nice example of this statement.

@@ -2,7 +2,7 @@
 %%% Do NOT edit. File created by BibTeX with style
 %%% ACM-Reference-Format-Journals [18-Jan-2012].
 
-\begin{thebibliography}{00}
+\begin{thebibliography}{37}
 
 %%% ====================================================================
 %%% NOTE TO THE USER: you can override these defaults by providing
@@ -496,8 +496,8 @@
   \bibinfo{person}{Holger~Bock Axelsen}.} \bibinfo{year}{2015}\natexlab{}.
 \newblock \showarticletitle{Interpretation and Programming of the Reversible
   Functional Language {RFUN}}. In \bibinfo{booktitle}{{\em Symposium on the
-  Implementation and Application of Functional Programming Languages}}.
-  \bibinfo{publisher}{ACM}.
+  Implementation and Application of Functional Programming Languages}} {\em
+  (\bibinfo{series}{IFL'15})}. \bibinfo{publisher}{ACM}.
 \newblock
 \showDOI{%
 \url{https://doi.org/10.1145/2897336.2897345}}
@@ -533,20 +533,6 @@
 \newblock
 \showDOI{%
 \url{https://doi.org/10.1017/S0956796813000130}}
-
-
-\bibitem[\protect\citeauthoryear{Yokoyama and Gl{\"u}ck}{Yokoyama and
-  Gl{\"u}ck}{2007}]%
-        {Yokoyama-Janus}
-\bibfield{author}{\bibinfo{person}{Tetsuo Yokoyama} {and}
-  \bibinfo{person}{Robert Gl{\"u}ck}.} \bibinfo{year}{2007}\natexlab{}.
-\newblock \showarticletitle{A Reversible Programming Language and its
-  Invertible Self-Interpreter}. In \bibinfo{booktitle}{{\em Workshop on Partial
-  Evaluation and Program Manipulation}} {\em (\bibinfo{series}{PEPM'07})}.
-  \bibinfo{publisher}{ACM}, \bibinfo{pages}{144--153}.
-\newblock
-\showDOI{%
-\url{https://doi.org/10.1145/1244381.1244404}}
 
 
 \bibitem[\protect\citeauthoryear{Zan, Liu, Ko, and Hu}{Zan
