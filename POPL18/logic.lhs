@@ -336,10 +336,10 @@
 %% before \maketitle command
 \begin{abstract}
 
-Among the frameworks of bidirectional transformations proposed for addressing various synchronisation (consistency maintenance) problems, \citeauthor{Foster-lenses}'s asymmetric lenses have influenced the design of a generation of bidirectional programming languages.
+Among the frameworks of bidirectional transformations proposed for addressing various synchronisation (consistency maintenance) problems, Foster~et~al.'s~[2007] asymmetric lenses have influenced the design of a generation of bidirectional programming languages.
 Most of these languages are based on a declarative programming model, and only allow the programmer to describe a consistency specification with ad hoc and/or awkward control over the consistency restoration behaviour.
 However, synchronisation problems are diverse and require vastly different consistency restoration strategies, and to cope with the diversity, the bidirectional programmer must have the ability to fully control and reason about the consistency restoration behaviour.
-The putback-based approach to bidirectional programming aims to provide exactly this ability, and this paper strengthens the putback-based position by proposing the first fully fledged reasoning framework for a bidirectional language --- a Hoare-style logic for \citeauthor{Ko-BiGUL}'s putback-based language \BiGUL.
+The putback-based approach to bidirectional programming aims to provide exactly this ability, and this paper strengthens the putback-based position by proposing the first fully fledged reasoning framework for a bidirectional language --- a Hoare-style logic for Ko~et~al.'s~[2016] putback-based language \BiGUL.
 The Hoare-style logic lets the \BiGUL\ programmer precisely characterise the bidirectional behaviour of their programs by reasoning solely in the putback direction, thereby offering a unidirectional programming abstraction that is reasonably straightforward to work with and yet provides full control not achieved by previous approaches.
 The theory has been formalised and checked in \Agda, but this paper presents the Hoare-style logic in a semi-formal way to make it easily understood and usable by the working \BiGUL\ programmer.
 
@@ -394,7 +394,7 @@ A simple but typical example is synchronisation among documents of different for
 documents have the same content; whenever the content of one document is modified, the other documents should also be updated to restore the consistency.
 %There are more complex scenarios as well: For example, in model-driven development, executable code is produced with respect to an abstract model describing high-level behaviour, and whenever the code is reorganised or the model is revised, the other side should be updated to maintain consistency --- in this case, consistency means that the behaviour of the code conforms to what the model specifies.
 Over the past decade, frameworks of \emph{bidirectional transformations} have been proposed to address a diverse range of synchronisation problems~\citep{Czarnecki-BX}.
-One such framework is \varcitet{Foster-lenses}{'s \emph{asymmetric lenses}}, which are highly influential such that the term \emph{bidirectional programming} has become largely synonymous with lens-based approaches (including lens combinators and bidirectionalisation; see, e.g., \citet{Foster-bidirectional-programming-approaches}).
+One such framework is \varcitet{Foster-lenses}{'s} \emph{asymmetric lenses}, which are highly influential such that the term \emph{bidirectional programming} has become largely synonymous with lens-based approaches (including lens combinators and bidirectionalisation; see, e.g., \citet{Foster-bidirectional-programming-approaches}).
 Asymmetric lenses are designed for synchronising two pieces of data where one side, which is called the \emph{source}, has more information than the other, which is called the \emph{view}.
 Typically, a lens program describes a forward |get| transformation that computes a consistent view from a source; whenever the source is modified, |get| is rerun to produce a new consistent view.
 Conversely, from the same lens program we can derive a backward |put| transformation that takes a source and a (possibly modified) view, and produces an updated source that is consistent with the view and can retain some information of the original source.
@@ -508,7 +508,7 @@ Let |l|,~|r : S <~ V|.
 If |put l = put r| then |get l = get r|.
 %\[ \IF |put l = put r| \THEN |get l = get r| \PERIOD \]
 \end{lemma}
-This lemma distinguishes asymmetric lenses from other models of bidirectional transformations (e.g., \varcitet{Hofmann-symmetric-lenses}{'s symmetric lenses}), and is the motivation behind \BiGUL's putback-based design, as it shows that it is theoretically feasible that the \BiGUL\ programmer can think and program solely in the putback direction and still unambiguously specify the forward behaviour.
+This lemma distinguishes asymmetric lenses from other models of bidirectional transformations (e.g., \varcitet{Hofmann-symmetric-lenses}{'s} symmetric lenses), and is the motivation behind \BiGUL's putback-based design, as it shows that it is theoretically feasible that the \BiGUL\ programmer can think and program solely in the putback direction and still unambiguously specify the forward behaviour.
 This lemma does not help to explain what putback-based thinking is, though --- how does the programmer actually write a putback program while understanding its forward behaviour?
 The key idea of this paper is that a Hoare-style logic can help to explain how that is achieved.
 %In practice, however, this lemma is not too helpful in understanding forward behaviour, since the programmer may write a wrong putback program, in which case it does not help to know that there is a unique corresponding forward transformation, which is likely to be wrong as well.
@@ -915,7 +915,7 @@ rearrS x -> (x, x)
 %\varparagraph{Formalisation.}
 %The rearrangement rules we have presented rely essentially on pattern-matching comprehension relations, but the actual \Agda\ formalisation takes a different approach and avoids modelling pattern-matching comprehension relations entirely.
 %The formalisation is sketched here for the curious (and perhaps sceptical) reader.
-%We build on \varcitet{Ko-BiGUL}{'s formalisation of pattern matching}, which makes use of heavily indexed types to guarantee various kinds of safety.
+%We build on \varcitet{Ko-BiGUL}{'s} formalisation of pattern matching, which makes use of heavily indexed types to guarantee various kinds of safety.
 %To avoid introducing the heavy \Agda\ notation, below we will give a simplified account, hiding all parameters and indices.
 %Suppose that we are rearranging the view from |vpat| for type~|V| to |wpat| for type~|W|.
 %The actual formalisation first defines a type |PatResult|: an inhabitant of |PatResult| is the result of matching a value of type~|V| with |vpat|, and can be thought of as a mapping from every variable in |vpat| to the component matching the variable.
@@ -966,7 +966,7 @@ These requirements are essential for guaranteeing well-behavedness; for a detail
 \varparagraph{Adaptive branches.}
 Requirement~(i) above for normal branches turns out to be very restrictive, making normal branches only capable of dealing with ``almost consistent'' cases in practice.
 However, we often need branches whose main condition describes a particular kind of inconsistency and whose purpose is to repair that inconsistency --- that is, their main conditions are supposed to be broken after updating, and this is against the nature of normal branches.
-Instead, for repairing inconsistency, we use adaptive branches, which are comparable with \varcitet[Section~6.3]{Foster-lenses}{'s ``fixup functions''}.
+Instead, for repairing inconsistency, we use adaptive branches, which are comparable with \varcitet{Foster-lenses}{'s} ``fixup functions''.
 When entered, an adaptive branch |adaptive M INNER f| applies~|f| to the source and view to produce an adapted source; this adapted source then takes the place of the original source, and the whole |case| is rerun.
 Naturally, requirements have to be imposed on~|f|, as stated in the |case| rule:
 \begin{align*}
@@ -1582,10 +1582,10 @@ Their union is the output range of the entire |case|, and is indeed |COM(ss || l
 \label{sec:discussion}
 
 \varparagraph{How expressive is \BiGUL\ (especially compared with existing languages)?}
-The expressive power of the version of \BiGUL\ used in this paper mainly stems from its |case| construct, which has gone beyond \varcitet[Section~6.3]{Foster-lenses}{'s ``general conditional''} and allows, in particular, key-based list alignment to be implemented using only simple and general-purpose primitives for the first time.
+The expressive power of the version of \BiGUL\ used in this paper mainly stems from its |case| construct, which has gone beyond \varcitet{Foster-lenses}{'s} ``general conditional'' and allows, in particular, key-based list alignment to be implemented using only simple and general-purpose primitives for the first time.
 (In the original \BiGUL~\citep{Ko-BiGUL}, the case analysis constructs were essentially the same as \citeauthor{Foster-lenses}'s conditionals, and key-based list alignment had to be provided as an extra and complex primitive.)
 
-Regarding alignment, \varcitet{Barbosa-matching-lenses}{'s ``matching lenses''} offer several sophisticated matching strategies, some of which can be hard to implement ``nicely'' in \BiGUL\ so far.
+Regarding alignment, \varcitet{Barbosa-matching-lenses}{'s} ``matching lenses'' offer several sophisticated matching strategies, some of which can be hard to implement ``nicely'' in \BiGUL\ so far.
 However, matching lenses are special-purpose and require the invention of dedicated laws, and the essential components are built from scratch, whereas \BiGUL\ is designed with the ultimate aim of expressing all lenses using just a fixed set of simple primitives, like what we can do in general-purpose languages.
 In particular, we can program alignment in \BiGUL\ without having to bake special-purpose concepts like \citeauthor{Barbosa-matching-lenses}'s ``chunks'', ``rigid complements'', ``resources'' etc into the language.
 
@@ -1597,15 +1597,15 @@ It is when it comes to \emph{using} the lenses that the distinction between the 
 The majority of lens languages are |get|-based, as explained by \citet{Foster-thesis} below his Lemma~2.2.6:
 `Lens programmers often feel like they are writing the forward transformation (because the names of primitives typically connote the forward transformation) and getting the backward transformation ``for free''\,'.
 \citet{Matsuda-applicative-BX}, for example, explicitly state that their language adopts this design.
-\citet{Foster-lenses} also clearly show in their Figure~8 that their lens programs are supposed to be constructed like writing |get|, and \varcitet{Bohannon-relational-lenses}{'s relational lenses} are written like database queries, which are |get| transformations.
+\citet{Foster-lenses} also clearly show in their Figure~8 that their lens programs are supposed to be constructed like writing |get|, and \varcitet{Bohannon-relational-lenses}{'s} relational lenses are written like database queries, which are |get| transformations.
 Their programs can be (and are usually) enriched with putback information to allow more control, but that makes constructing and understanding the programs more awkward (see the next paragraph).
 By contrast, \BiGUL's putback-based design lets the programmer construct programs purely in the |put| direction.
 The Hoare-style logic helps to clearly distinguish the two approaches for the first time: it is possible to precisely reason about bidirectional behaviour purely in the |put| direction, whereas it is unthinkable that the same can be achieved in the |get| direction.
 This might explain that there is only one comparable (but still much less powerful) reasoning framework: the totality lemmas of \citet{Foster-lenses}, which can only establish properties equivalent to triples of the form |(ASSERTRANGE(_ _)) b (ASSERTRANGE P)| and |(ASSERT(s v || P s && Q v)) b (ASSERT(_ _ _))| where |P : (POWER S)| and |Q : (POWER V)|.
 
 \varparagraph{Didn't some |get|-based approaches also offer the ability to control putback behaviour? Why switch to the putback-based approach?}
-To name a few, the ``fixup functions'' in \varcitet[Section~6.3]{Foster-lenses}{'s ``general conditionals''} (for branch switching), the parameters of \varcitet[Section~5.3]{Bohannon-relational-lenses-tech-report}{'s $\mathtt{join\_template}$} (for resolving ambiguous deletions), and the alignment keywords like ``\texttt{key}'' and ``\texttt{best}'' in the \name{Boomerang} language~\citep{Bohannon-Boomerang,Barbosa-matching-lenses} (for specifying keys and matching strategies during alignment) are all constructs which appear in programs designed to look like forward transformations but are meaningful only in the putback direction.
-Constructs with similar purposes can also be found in bidirectionalisation approaches, such as \varcitet{Voigtlander-shape-plug-ins}{'s ``shape bidirectionaliser plug-ins''} (for programming shape changes).
+To name a few, the ``fixup functions'' in \varcitet{Foster-lenses}{'s} ``general conditionals'' (for branch switching), the parameters of \varcitet{Bohannon-relational-lenses-tech-report}{'s} $\mathtt{join\_template}$ (for resolving ambiguous deletions), and the alignment keywords like ``\texttt{key}'' and ``\texttt{best}'' in the \name{Boomerang} language~\citep{Bohannon-Boomerang,Barbosa-matching-lenses} (for specifying keys and matching strategies during alignment) are all constructs which appear in programs designed to look like forward transformations but are meaningful only in the putback direction.
+Constructs with similar purposes can also be found in bidirectionalisation approaches, such as \varcitet{Voigtlander-shape-plug-ins}{'s} ``shape bidirectionaliser plug-ins'' (for programming shape changes).
 Apart from offering only limited and/or special-purpose customisation of putback behaviour, the fundamental problem with these languages is that their programs contain an ad hoc mixture of forward and backward information, and to properly understand such programs, the only way is to reason in both directions and in terms of the complex underlying semantics.
 In other words, it is hard to come up with easy-to-use reasoning principles for these languages, and since reasoning principles reflect and even guide how we program, this indicates that these languages fail to deliver an easy-to-use abstraction.
 \BiGUL\ is unique since it offers a successful abstraction in which bidirectional programs become unidirectional and can still be precisely reasoned about, as clearly reflected in the Hoare-style logic.
@@ -1635,7 +1635,7 @@ We can formulate a rule like:
 and we have actually proved that the rule is sound, but the form of the rule is too complex to be easily usable.
 We will need to find a sweet spot and design a composition rule that is perhaps not as general as the above one but can still say enough about the retentive behaviour; most importantly, this rule should give guidance on how composition can be used and reasoned about in practice.
 %and only with such a rule can composition be justified as a worthy construct.
-It should be noted that while composition is included in other languages like \varcitet{Foster-lenses}{'s original lenses} (and in fact the \Haskell\ port of \BiGUL), the problem with controlling the retentive behaviour of composition has always existed, as discussed by, e.g., \citet[Section~2.2]{Diskin-delta-asymmetric}.
+It should be noted that while composition is included in other languages like \varcitet{Foster-lenses}{'s} original lenses (and in fact the \Haskell\ port of \BiGUL), the problem with controlling the retentive behaviour of composition has always existed, as discussed by, e.g., \citet[Section~2.2]{Diskin-delta-asymmetric}.
 
 \varparagraph{Are there more examples of verified \BiGUL\ programs?}
 In the supplementary \Agda\ code, there is one more program |replaceAll| which replaces all the elements in a source list with a view:
