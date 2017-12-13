@@ -1,0 +1,15 @@
+This is the supplementary Agda formalisation for the paper
+
+  An Axiomatic Basis for Bidirectional Programming
+    by Hsiang-Shang Ko and Zhenjiang Hu
+
+appearing at the 2018 ACM SIGPLAN Symposium on Principles of
+Programming Languages (POPL).
+
+The code is checked with Agda version 2.5.2 with Standard Library
+version 0.13. If installing (the specific version of) Agda is a
+problem, see the Agda-generated HTML files under the ‘html’ directory.
+
+All modules are collected in Everything.agda, which also contains
+references to Agda identifiers corresponding to definitions, theorems,
+and examples in the paper.

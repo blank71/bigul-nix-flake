@@ -1,4 +1,4 @@
-module DynamicallyChecked.TransatlanticCorporation where
+module DynamicallyChecked.Examples.TransatlanticCorporation where
 
 open import DynamicallyChecked.Utilities
 open import DynamicallyChecked.Partiality

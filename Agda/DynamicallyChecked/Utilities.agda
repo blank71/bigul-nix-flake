@@ -61,3 +61,10 @@ pred' (suc n) = just n
 revcat : {l : Level} {A : Set l} → List A → List A → List A
 revcat []       ys = ys
 revcat (x ∷ xs) ys = revcat xs (x ∷ ys)
+
+{-# NON_TERMINATING #-}
+fix : {l : Level} {A : Set l} → (A → A) → A
+fix f = f (fix f)
+
+cong-from-just : {l : Level} {A : Set l} {x y : A} → (Maybe A ∋ just x) ≡ just y → x ≡ y
+cong-from-just refl = refl

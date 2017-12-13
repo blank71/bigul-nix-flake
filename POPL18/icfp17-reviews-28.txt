@@ -1,0 +1,316 @@
+===========================================================================
+                           ICFP 2017 Review #28A
+---------------------------------------------------------------------------
+        Paper #28: An Axiomatic Basis for Bidirectional Programming
+---------------------------------------------------------------------------
+
+                      Overall merit: C. Weak paper, though I will not fight
+                                        strongly against it
+                         Confidence: Y. I am knowledgeable in this area,
+                                        but not an expert
+
+                         ===== Paper summary =====
+
+Bidirectional programming languages tackle the *view update* problem: given a source *s* and a view *v*, resulting from executing a certain function *q* on *s*, if the view is updated into *v'*, the source *s* should be updated to an *s’* such that *q(s’) = v’*. Traditional bidirectional languages based on *asymmetric lenses* restrict in some form the set of updates allowed in order to automatically guarantee the desired update property. BiGUL is a bidirectional language that allows for arbitrary update policies, making verification of BiGUL programs highly non-trivial. The paper presents a hoare theory for BiGUL programs.
+
+                      ===== Comments to authors =====
+
+The paper does a contribution that might be relevant and interesting. Unfortunately, I was not convinced it was the case. As I see it, there are two main issues: there is not much justification for the direction of the work, and the presentation is hard for the not expert.
+
+About the first issue, in the paper the justification for employing hoare triples is to allow (sort of) arbitrary updates in the views. But, even if we love hoare triples, they are a rather heavy mechanism for verification. Does the extra machinery justify the richer set of programs available? In the dissertation of Foster several additions were done to the original formulation of lenses, more interestingly with *resourceful lenses*, while keeping a nice level of abstraction with the desired properties. Why not keeping that direction?
+
+About the second issue, the paper assumes certain familiarity with the BiGUL language. Since it departs considerably from work of Foster, I think a gentle introduction is needed. In the way the paper is organized, the set of language primitives seems arbitrary, and they do not make much sense at first sight. Perhaps showing up front some examples and the implementation of some primitives might help. For instance, I was able to better understand **skip** when I saw the implementation in the supplementary material.
+
+===========================================================================
+                           ICFP 2017 Review #28B
+---------------------------------------------------------------------------
+        Paper #28: An Axiomatic Basis for Bidirectional Programming
+---------------------------------------------------------------------------
+
+                      Overall merit: B. OK paper, but I will not champion
+                                        it
+                         Confidence: X. I am an expert in this area
+
+                         ===== Paper summary =====
+
+The paper presents a reasoning system for BiGUL---a putback-based
+bidirectional language. The system is based on Hoare triples, adapted
+specifically for Lens-like bidirectional transformations, and is shown
+effective in reasoning about the input-output relationships of the
+bidirectional programs. The system is formally defined and mechanical
+proof are available as Agda programs.
+
+                      ===== Comments to authors =====
+
+I agree with the authors that the problem they are trying to solve is
+an important one in bidirectional programming. As argued in the paper,
+the standard well-behavedness properties is too weak for two reasons:
+1) It is not sufficient for a precise specification of program
+behaviours, leaving too much room for arbitrary decisions. 
+2) Partiality of functions introduces a loophole, as well-behavedness can
+be trivially satisfied through arbitrary “undefinedness”. In fact,
+this problem is well-recognised within the bidirectional programming
+community, and language designers go a long way to prevent it. For
+example, the original Lens languages insisted on totality at the cost
+of a very elaborate type system and restricted set of combinatory;
+“generic point-free lenses” do not enforce totality, but made an
+effort to make put more defined through more complicated combinators
+and recursive patterns. In my opinion, the approach in this paper is
+better. It separates programming and reasoning, allowing a reasonably
+easy to use language with reasoning mechanisms on top.
+
+The main reasons that I didn’t get more excited about this paper is
+the lack of proper evaluation. It appears that most of the examples
+presented in the paper are selected for easy explanation rather than
+demonstrating the reach of the technique. The keyAlign example is
+good, but there shall be more. In particular, to be fully convinced, I
+need to see more examples of different types of pre- and
+post-conditions that can be established for non-trivial programs,
+though not necessarily the detailed derivations. The supplementary
+material contains one more example “ReplaceAll”. But without
+explanation, it is impossible to understand what it does.
+
+Another weakness of the paper is the lack of discussion of related
+work. I understand that the majority of the bidirectional languages
+are get-based, which are different from BiGUL. But the goal of having
+better control/specification of program behaviours is shared. In
+addition to the lenses examples above, semantic bidirectionalization
+in a sense also precisely specify the input/output domains, through
+either static or dynamic (monadic) analysis. And the “shape
+bidirectionalizer plug-ins” also provides a limited form of control. I
+believe a discussion of how others attempted to solve the same
+problem, but being less successfully, will not only make the paper
+more complete, but also strengthen the main argument of the paper.
+
+More detailed comments:
+
+You mentioned that bidirectional has become largely synonymous with
+lens-based approaches. Well, there are two interpretations of
+“lens-based approaches”: 
+1) The lens framework of asymmetric get/put
+2) The combinatory-based language design. I can agree with the former,
+but definitively not the later. There is a flourishing area of
+bidirectionalization and other language designs that are not
+combinator-based. I think you shall clarify this.
+
+Theorem 3.8 is an important theorem, which is developed into the main
+result later. But it is very difficult to understand what it says. You
+mentioned that “a part of” the behaviour of get will be constrained.
+What does this mean? What is the significance?
+
+I am a bit confused by the consequence rule. You argued the need of
+the non-standard rule with the example of “replace*replace”. But I
+don’t understand why you will relax {_ (v,w) | v = w} to {(_,_)
+(_,_)}, instead of {(_,_) (v,w) | v = w}? Will the product rule cease
+to be applicable then? Also, if I understand correctly you are saying
+{_ (v,w) | v = w} => {(_,_) (_,_)}. But how can this be right? The
+consequence requires the source to be a pair, which is not implied by
+the condition. Am I missing something?
+
+In Section 4.4, I understand that the “b” part of the rearrV syntax is
+“replace * skip …” in the keepHeight example. But it took me some time
+to figure it out.
+
+In Section 4.5, I do not understand the role of exit conditions. The
+explanation given in the paper is to be “comparable with assertions in
+reversible conditionals”. This can’t be all the reason, can it?
+
+The subsequent example 4.3 has only a skip in the main branch. This is
+convenient for the discussion of emb later on. But I will very much
+prefer a more interesting example with a non-trivial main branch. In
+my opinion, it is far more important to establish the usefulness of
+the reasoning framework than to discuss the cute observations on emb.
+
+In Section 7, you motivated the example by saying “Alignment is one of
+the most important issues in synchronisation”. Well this might be
+true, but your technique is no in any way tied to alignment, isn’t it?
+So (over) emphasising like this may mislead people.
+
+===========================================================================
+                           ICFP 2017 Review #28C
+---------------------------------------------------------------------------
+        Paper #28: An Axiomatic Basis for Bidirectional Programming
+---------------------------------------------------------------------------
+
+                      Overall merit: D. Reject
+                         Confidence: Y. I am knowledgeable in this area,
+                                        but not an expert
+
+                         ===== Paper summary =====
+
+Bidirectional programming attempts to solve the problem of writing
+synchronisation code that reconciles differences between two versions
+of some data. Lenses are a popular formalism that captures some
+properties of how a 'good' reconciliation procedure should
+behave. However, these properties do not capture everything that one
+might want to know about some reconciliation procedure. For example,
+how missing data is dealt with.
+
+This paper proposes a solution to this problem by formulating a
+Hoare-style logic for a bidirectional programming language BiGul. All
+BiGul programs describe (partial) lenses. The idea is that the pre-
+and post-conditions proved for some BiGul program describe in more
+detail how the reconciliation is carried out. The main example given
+is a key-based list alignment synchroniser that is shown to have
+certain properties via the logic.
+
+The logic proved sound in Agda.
+
+                      ===== Comments to authors =====
+
+While this paper tackles an interesting problem, and appears to have
+some deep insights into bidirectional programming, I think that the
+presentation is far too inaccessible to be accepted in its present
+form.
+
+
+Things that I liked about this paper
+
+- I think that the problem being addressed is important, and that the
+  authors seem to have several deep insights into the structure of
+  bidirectional programs, and how to reason about them.
+
+
+Things that I think could be improved in this paper
+
+- At the sentence level, the writing is very clear. However, the paper
+  left me completely lacking an intuitive handle on what BiGul
+  programs mean, and how I might go about writing one
+  myself. Specifically:
+
+     1. What are the typing rules of BiGul? The Hoare logic rules in
+        Figure 1 implicitly use the typing of BiGul programs to make
+        sure everything makes sense, but the reader who is not
+        familiar with BiGul (which is going to be pretty much
+        everyone) won't have these types to hand.
+
+     2. What is the semantics of BiGul? Definition 2.1 states that
+        every BiGul program has a 'put' and a 'get' interpretation,
+        but doesn't say what they are! (and even states that a
+        previously published version is different!) I think I
+        understand the semantics of 'fail', 'replace', 'skip', '*',
+        and (possibly) 'rearrV' and 'rearrS', but I am lost on the
+        interpretation of 'case'. What does it mean for the process to
+        be "rerun" (Page 11, line 32). How does this affect
+        termination -- the types given in Definition 2.1 and the
+        references to Agda would imply that the 'get' and 'put'
+        functions are total?
+        
+  I'm afraid that the lack of an introduction to BiGul and its
+  semantics made it very difficult to for me to evaluate the rest of
+  the paper. I think that the problem being tackled is important, but
+  this presentation is not yet ready.
+
+- If the goal is to give better specifications to bidirectional
+  programs that specify the strategies they use for reconciliation,
+  then there is no discussion in the paper on how to interpret the
+  Hoare triples from this point of view. A discussion of how the
+  different strategies listed in lines 10-20 on page 2 are expressed
+  as Hoare-triples would be very welcome.
+
+Other comments:
+
+- The consequence rule. I don't like the expression of this rule
+  because it is non-compositional for proofs in the sense that, in the
+  listing presentation used in the paper, it reaches back to an
+  arbitrary point for the 'T'. I think a better way of expressing this
+  would be to have a normal consequence rule, and a separation
+  logic-style frame rule:
+
+         {R}b{R'}  ===> {R \cap S}b{R' \cap <_ s v | S s v>}
+
+- Also, I don't see the product rule (Section 4.2) as Separation logic
+  style frame rule because the underlying type of 'store' changes.
+
+===========================================================================
+                           ICFP 2017 Review #28D
+---------------------------------------------------------------------------
+        Paper #28: An Axiomatic Basis for Bidirectional Programming
+---------------------------------------------------------------------------
+
+                      Overall merit: B. OK paper, but I will not champion
+                                        it
+                         Confidence: Y. I am knowledgeable in this area,
+                                        but not an expert
+
+                         ===== Paper summary =====
+
+Bidirectional programming aims to allow users to write programs
+that maintain consistency between two representations of a value,
+with a change in one representation being automatically translated
+into a corresponding change in the other value, in either direction.
+This paper develops a Hoare-style logic for reasoning about the
+behaviour of bidirectional programs in the BIGUL language.  The
+paper presents the new logic in a semi-formal way, but the theory
+has been fully formalised in Agda.  A range of examples that
+illustrate the use of the new logic are provided.
+
+                      ===== Comments to authors =====
+
+General comments:
+
+This paper is beautifully written!  I'm not from the bidirectional
+programming community, but found it accessible and interesting.
+I enjoyed the light tone, and didn't find a single typo.  If an
+expert reviewer who is familiar with the literature in this area
+was supportive of the paper, I would be pleased to recommend
+acceptance for presentation at the ICFP conference.
+
+Specific comments:
+
+p1, The abstract didn't (for me) give a clear overview of what the
+paper was about; I had to also read the introduction to determine
+this.  It would be beneficial to further revise/polish the abstract.
+
+p1, The introductory section is a bit long at present, and would
+benefit from being compresed to around 2/3 of a page.
+
+p2, "unprecedented freedom" -> "freedom".
+
+p4, In section 3 it would be useful to include a simple example,
+e.g. by relating back to the rectangle example from section one.
+
+===========================================================================
+           Response by Hsiang-Shang Ko <hsiang-shang@nii.ac.jp>
+---------------------------------------------------------------------------
+Thank you all for your effort. First of all, there are sufficient grounds for accepting our paper: RB, the expert reviewer, acknowledges that we have a good solution to an important problem (which should alleviate RA’s first concern), and RD, a knowledgeable non-expert, is pleased with the presentation and finds it “accessible and interesting”. And the negative points raised by the reviewers can all be addressed, which we do below.
+
+**RB “lack of proper evaluation”:** We respectfully disagree. We have clearly presented our main theory, which is novel, completely formalised and verified in Agda, and supported by a representative and non-trivial development of key-based alignment. This is a contribution substantial enough for a conference paper, as seen in, for example, the most influential paper of POPL’05 (Foster et al.’s original lens paper, whose largest example is simpler than key-based alignment).
+
+**RB “lack of discussion of related work”:** Agreed, although this is forced by the lack of space. The paper does point out at the bottom of p23 the fundamental flaw of the get-based approaches in general; what’s missing is just a more detailed recap of how previous approaches — including combinators and bidirectionalization — “enrich their programs with putback information to gain more control”, so as to “strengthen the main argument” as RB says. (We also wanted to mention, e.g., Foster et al.’s treatment of totality, but in the end that was left out to stay within the page limit.) We’d love to add such recap once we’re granted more space (which is one aspect of the new ICFP reviewing process we’re looking forward to).
+
+**RA “second issue” & RC “lack of an introduction to BiGUL and its semantics”:** On the contrary, the paper is self-contained. We admit that our choice of presentation, which works for RD very well and probably also for RB, can nevertheless be slightly confusing. §2 mentions previous constructions about BiGUL, but its role in the paper is only to formally introduce the notion of well-behaved lenses (there’s a sentence at the beginning of §2 saying this), and §3 also works for well-behaved lenses in general. The introduction to BiGUL specifically is in §4, in terms of the Hoare-style rules (i.e., axiomatic _semantics_) and aided by informal operational semantics. We can improve the presentation by adding a few more sentences to put the readers in the right mood and tell them what to expect.
+
+**RC “typing rules”:** They are stated in prose when the syntax of each construct is introduced. We can add a figure summarising them if necessary.
+
+**RC “interpretation of ‘case’”:** We can use a concrete example (e.g., `resetHeight`) here to clarify this. Termination is explicitly mentioned in the first bullet point at the bottom of p11.
+
+**RC, “how the different strategies listed in lines 10-20 on page 2 are expressed as Hoare-triples:** Two are given in lines 41–42, and the rest are similar (as it’s only using a general logic language to state properties).
+
+
+# Detailed responses (exceeding the 500 word limit, but in case the reviewers are interested)
+
+## To RB
+
+**“[L]ens-based approaches”:** We mean your first interpretation, and we say “approaches” (in the plural) to include lens combinator–based and bidirectionalisation approaches. (And yes, we’ll clarify this once we have space.)
+
+**Theorem 3.8:** It is a tricky theorem, indeed. The way we understand it is that the precondition for put also determines the extent of get behaviour that we can be sure is constrained by the consistency relation, and thus, for understanding get behaviour, we’re incentivised to make the precondition as general as possible. The paper mentions the extreme case where the precondition is always true, in which case we can say plainly that get is a refinement of the consistency relation. In any case, we’re supposed to rely on Theorem 5.4 to fully understand get behaviour, not Theorem 3.8 (as explicitly mentioned by the paper below Theorem 3.8).
+
+**`replace * replace`:** The assertion `{ _ (v, w) | v = w }` cannot be expressed as `{ (s, t) (v, w) | L s v ∧ R t w }` for any relations `L` and `R`, and thus the product rule is not applicable. Corresponding to the Agda formalisation, the assertions/relations are all strongly typed, and all values have canonical forms. So the source values referred to in the assertions you mention are all of a product type, and a value of a product type is necessarily a pair (there’s no ‘undefined’ value). Sorry for the confusion. (Mixing `_` and `(_, _)` here is probably not a good idea.)
+
+**Exit conditions:** We’ve written up a very detailed explanation of the design of `case`, in particular the exit conditions, in our tutorial paper (Hu & Ko 2017); in a nutshell, exit conditions end up being pretty much the same as assertions in reversible programming, where assertions (which should be true _after_ branch execution) become conditions (which should be true _before_ branch execution) during inverse execution.
+
+**`emb`:** On the other hand, in practice `emb` can be important when the programmer does not want to write a proper BiGUL program (like when it’s particularly difficult or when some part of the program needs to be quickly prototyped for testing), and thus deserves some attention regarding what properties it expects its arguments to satisfy — the “observations” are definitely useful. As for general applicability (usefulness) of the framework, the development of `keyAlign` is a representative example, and working through the development is enough to give a sense of the generality of the Hoare-style logic.
+
+**Alignment:** This is where we say that alignment is representative. And we can deal with this representative example.
+
+## To RC
+
+**Consequence rule:** This looks very nice indeed! We’ll at least include this as an alternative.
+
+**Product rule:** We only mentioned that the star operator is related to separating conjunction, and didn’t say that our product rule is related to the frame rule.
+
+## To RD
+
+Thank you for your suggestions, which we will think about and follow.
+

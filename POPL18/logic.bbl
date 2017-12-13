@@ -1,0 +1,585 @@
+%%% -*-BibTeX-*-
+%%% Do NOT edit. File created by BibTeX with style
+%%% ACM-Reference-Format-Journals [18-Jan-2012].
+
+\begin{thebibliography}{37}
+
+%%% ====================================================================
+%%% NOTE TO THE USER: you can override these defaults by providing
+%%% customized versions of any of these macros before the \bibliography
+%%% command.  Each of them MUST provide its own final punctuation,
+%%% except for \shownote{}, \showDOI{}, and \showURL{}.  The latter two
+%%% do not use final punctuation, in order to avoid confusing it with
+%%% the Web address.
+%%%
+%%% To suppress output of a particular field, define its macro to expand
+%%% to an empty string, or better, \unskip, like this:
+%%%
+%%% \newcommand{\showDOI}[1]{\unskip}   % LaTeX syntax
+%%%
+%%% \def \showDOI #1{\unskip}           % plain TeX syntax
+%%%
+%%% ====================================================================
+
+\ifx \showCODEN    \undefined \def \showCODEN     #1{\unskip}     \fi
+\ifx \showDOI      \undefined \def \showDOI       #1{#1}\fi
+\ifx \showISBNx    \undefined \def \showISBNx     #1{\unskip}     \fi
+\ifx \showISBNxiii \undefined \def \showISBNxiii  #1{\unskip}     \fi
+\ifx \showISSN     \undefined \def \showISSN      #1{\unskip}     \fi
+\ifx \showLCCN     \undefined \def \showLCCN      #1{\unskip}     \fi
+\ifx \shownote     \undefined \def \shownote      #1{#1}          \fi
+\ifx \showarticletitle \undefined \def \showarticletitle #1{#1}   \fi
+\ifx \showURL      \undefined \def \showURL       {\relax}        \fi
+% The following commands are used for tagged output and should be
+% invisible to TeX
+\providecommand\bibfield[2]{#2}
+\providecommand\bibinfo[2]{#2}
+\providecommand\natexlab[1]{#1}
+\providecommand\showeprint[2][]{arXiv:#2}
+
+\bibitem[\protect\citeauthoryear{Barbosa, Cretin, Foster, Greenberg, and
+  Pierce}{Barbosa et~al\mbox{.}}{2010}]%
+        {Barbosa-matching-lenses}
+\bibfield{author}{\bibinfo{person}{Davi M.~J. Barbosa}, \bibinfo{person}{Julien
+  Cretin}, \bibinfo{person}{Nate Foster}, \bibinfo{person}{Michael Greenberg},
+  {and} \bibinfo{person}{Benjamin~C. Pierce}.} \bibinfo{year}{2010}\natexlab{}.
+\newblock \showarticletitle{Matching Lenses: Alignment and View Update}. In
+  \bibinfo{booktitle}{{\em International Conference on Functional Programming}}
+  {\em (\bibinfo{series}{ICFP'10})}. \bibinfo{publisher}{ACM},
+  \bibinfo{pages}{193--204}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1145/1863543.1863572}}
+
+
+\bibitem[\protect\citeauthoryear{Bohannon, Foster, Pierce, Pilkiewicz, and
+  Schmitt}{Bohannon et~al\mbox{.}}{2008}]%
+        {Bohannon-Boomerang}
+\bibfield{author}{\bibinfo{person}{Aaron Bohannon}, \bibinfo{person}{J.~Nathan
+  Foster}, \bibinfo{person}{Benjamin~C. Pierce}, \bibinfo{person}{Alexandre
+  Pilkiewicz}, {and} \bibinfo{person}{Alan Schmitt}.}
+  \bibinfo{year}{2008}\natexlab{}.
+\newblock \showarticletitle{{Boomerang}: Resourceful Lenses for String Data}.
+  In \bibinfo{booktitle}{{\em Symposium on Principles of Programming
+  Languages}} {\em (\bibinfo{series}{POPL'08})}. \bibinfo{publisher}{ACM},
+  \bibinfo{pages}{407--419}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1145/1328897.1328487}}
+
+
+\bibitem[\protect\citeauthoryear{Bohannon, Pierce, and Vaughan}{Bohannon
+  et~al\mbox{.}}{2005}]%
+        {Bohannon-relational-lenses-tech-report}
+\bibfield{author}{\bibinfo{person}{Aaron Bohannon},
+  \bibinfo{person}{Benjamin~C. Pierce}, {and} \bibinfo{person}{Jeffrey~A.
+  Vaughan}.} \bibinfo{year}{2005}\natexlab{}.
+\newblock \bibinfo{booktitle}{{\em Relational Lenses: A Language for Updatable
+  Views}}.
+\newblock \bibinfo{type}{{T}echnical {R}eport}.
+  \bibinfo{institution}{Department of Computer and Information Science,
+  University of Pennsylvania}.
+\newblock
+\showURL{%
+\url{http://www.cis.upenn.edu/~bcpierce/papers/dblenses-tr.pdf}}
+
+
+\bibitem[\protect\citeauthoryear{Bohannon, Pierce, and Vaughan}{Bohannon
+  et~al\mbox{.}}{2006}]%
+        {Bohannon-relational-lenses}
+\bibfield{author}{\bibinfo{person}{Aaron Bohannon},
+  \bibinfo{person}{Benjamin~C. Pierce}, {and} \bibinfo{person}{Jeffrey~A.
+  Vaughan}.} \bibinfo{year}{2006}\natexlab{}.
+\newblock \showarticletitle{Relational Lenses: A Language for Updatable Views}.
+  In \bibinfo{booktitle}{{\em Symposium on Principles of Database Systems}}
+  {\em (\bibinfo{series}{PODS'06})}. \bibinfo{publisher}{ACM},
+  \bibinfo{pages}{338--347}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1145/1142351.1142399}}
+
+
+\bibitem[\protect\citeauthoryear{Capretta}{Capretta}{2005}]%
+        {Capretta-general-recursion}
+\bibfield{author}{\bibinfo{person}{Venanzio Capretta}.}
+  \bibinfo{year}{2005}\natexlab{}.
+\newblock \showarticletitle{General Recursion via Coinductive Types}.
+\newblock \bibinfo{journal}{{\em Logical Methods in Computer Science\/}}
+  \bibinfo{volume}{1}, \bibinfo{number}{2} (\bibinfo{year}{2005}),
+  \bibinfo{pages}{1--28}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.2168/LMCS-1(2:1)2005}}
+
+
+\bibitem[\protect\citeauthoryear{Cheney, Gibbons, McKinna, and Stevens}{Cheney
+  et~al\mbox{.}}{2017}]%
+        {Cheney-least-surprise}
+\bibfield{author}{\bibinfo{person}{James Cheney}, \bibinfo{person}{Jeremy
+  Gibbons}, \bibinfo{person}{James McKinna}, {and} \bibinfo{person}{Perdita
+  Stevens}.} \bibinfo{year}{2017}\natexlab{}.
+\newblock \showarticletitle{On Principles of {Least Change} and {Least
+  Surprise} for Bidirectional Transformations}.
+\newblock \bibinfo{journal}{{\em Journal of Object Technology\/}}
+  \bibinfo{volume}{16}, \bibinfo{number}{1} (\bibinfo{year}{2017}),
+  \bibinfo{pages}{3:1--31}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.5381/jot.2017.16.1.a3}}
+
+
+\bibitem[\protect\citeauthoryear{Colson, Dupuis, Montrieux, Hu, Uchitel, and
+  Schobbens}{Colson et~al\mbox{.}}{2016}]%
+        {Colson-BiGUL-configuration}
+\bibfield{author}{\bibinfo{person}{Kevin Colson}, \bibinfo{person}{Robin
+  Dupuis}, \bibinfo{person}{Lionel Montrieux}, \bibinfo{person}{Zhenjiang Hu},
+  \bibinfo{person}{Sebasti{\'a}n Uchitel}, {and} \bibinfo{person}{Pierre-Yves
+  Schobbens}.} \bibinfo{year}{2016}\natexlab{}.
+\newblock \showarticletitle{Reusable Self-Adaptation through Bidirectional
+  Programming}. In \bibinfo{booktitle}{{\em International Symposium on Software
+  Engineering for Adaptive and Self-Managing Systems}} {\em
+  (\bibinfo{series}{SEAMS'16})}. \bibinfo{publisher}{ACM},
+  \bibinfo{pages}{4--15}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1145/2897053.2897055}}
+
+
+\bibitem[\protect\citeauthoryear{Czarnecki, Foster, Hu, L{\"a}mmel, Sch{\"u}rr,
+  and Terwilliger}{Czarnecki et~al\mbox{.}}{2009}]%
+        {Czarnecki-BX}
+\bibfield{author}{\bibinfo{person}{Krzysztof Czarnecki},
+  \bibinfo{person}{J.~Nathan Foster}, \bibinfo{person}{Zhenjiang Hu},
+  \bibinfo{person}{Ralf L{\"a}mmel}, \bibinfo{person}{Andy Sch{\"u}rr}, {and}
+  \bibinfo{person}{James~F. Terwilliger}.} \bibinfo{year}{2009}\natexlab{}.
+\newblock \showarticletitle{Bidirectional Transformations: A Cross-Discipline
+  Perspective}. In \bibinfo{booktitle}{{\em International Conference on Model
+  Transformation}} {\em (\bibinfo{series}{Lecture Notes in Computer Science})},
+  Vol.~\bibinfo{volume}{5563}. \bibinfo{publisher}{Springer},
+  \bibinfo{pages}{260--283}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1007/978-3-642-02408-5_19}}
+
+
+\bibitem[\protect\citeauthoryear{Dijkstra}{Dijkstra}{1974}]%
+        {Dijkstra-EWD361}
+\bibfield{author}{\bibinfo{person}{Edsger~W. Dijkstra}.}
+  \bibinfo{year}{1974}\natexlab{}.
+\newblock \showarticletitle{Programming as a Discipline of Mathematical
+  Nature}.
+\newblock \bibinfo{journal}{{\it Amer. Math. Monthly}} \bibinfo{volume}{81},
+  \bibinfo{number}{6} (\bibinfo{year}{1974}), \bibinfo{pages}{608--612}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.2307/2319209}}
+
+
+\bibitem[\protect\citeauthoryear{Diskin, Xiong, and Czarnecki}{Diskin
+  et~al\mbox{.}}{2011}]%
+        {Diskin-delta-asymmetric}
+\bibfield{author}{\bibinfo{person}{Zinovy Diskin}, \bibinfo{person}{Yingfei
+  Xiong}, {and} \bibinfo{person}{Krzysztof Czarnecki}.}
+  \bibinfo{year}{2011}\natexlab{}.
+\newblock \showarticletitle{From State- to Delta-Based Bidirectional Model
+  Transformations: the Asymmetric Case}.
+\newblock \bibinfo{journal}{{\em Journal of Object Technology\/}}
+  \bibinfo{volume}{10} (\bibinfo{year}{2011}), \bibinfo{pages}{6:1--25}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.5381/jot.2011.10.1.a6}}
+
+
+\bibitem[\protect\citeauthoryear{Fischer, Hu, and Pacheco}{Fischer
+  et~al\mbox{.}}{2015a}]%
+        {Fischer-lens-laws}
+\bibfield{author}{\bibinfo{person}{Sebastian Fischer},
+  \bibinfo{person}{Zhenjiang Hu}, {and} \bibinfo{person}{Hugo Pacheco}.}
+  \bibinfo{year}{2015}\natexlab{a}.
+\newblock \showarticletitle{A Clear Picture of Lens Laws}. In
+  \bibinfo{booktitle}{{\em International Conference on Mathematics of Program
+  Construction}} {\em (\bibinfo{series}{Lecture Notes in Computer Science})},
+  Vol.~\bibinfo{volume}{9129}. \bibinfo{publisher}{Springer},
+  \bibinfo{pages}{215--223}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1007/978-3-319-19797-5_10}}
+
+
+\bibitem[\protect\citeauthoryear{Fischer, Hu, and Pacheco}{Fischer
+  et~al\mbox{.}}{2015b}]%
+        {Fischer-essence-of-BX}
+\bibfield{author}{\bibinfo{person}{Sebastian Fischer},
+  \bibinfo{person}{Zhenjiang Hu}, {and} \bibinfo{person}{Hugo Pacheco}.}
+  \bibinfo{year}{2015}\natexlab{b}.
+\newblock \showarticletitle{The Essence of Bidirectional Programming}.
+\newblock \bibinfo{journal}{{\em SCIENCE CHINA Information Sciences\/}}
+  \bibinfo{volume}{58}, \bibinfo{number}{5} (\bibinfo{year}{2015}),
+  \bibinfo{pages}{1--21}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1007/s11432-015-5316-8}}
+
+
+\bibitem[\protect\citeauthoryear{Foster}{Foster}{2009}]%
+        {Foster-thesis}
+\bibfield{author}{\bibinfo{person}{John~Nathan Foster}.}
+  \bibinfo{year}{2009}\natexlab{}.
+\newblock {\em \bibinfo{title}{Bidirectional Programming Languages}}.
+\newblock \bibinfo{thesistype}{Ph.D. Dissertation}. \bibinfo{school}{University
+  of Pennsylvania}.
+\newblock
+\showURL{%
+\url{http://repository.upenn.edu/edissertations/56}}
+
+
+\bibitem[\protect\citeauthoryear{Foster, Greenwald, Moore, Pierce, and
+  Schmitt}{Foster et~al\mbox{.}}{2007}]%
+        {Foster-lenses}
+\bibfield{author}{\bibinfo{person}{J.~Nathan Foster},
+  \bibinfo{person}{Michael~B. Greenwald}, \bibinfo{person}{Jonathan~T. Moore},
+  \bibinfo{person}{Benjamin~C. Pierce}, {and} \bibinfo{person}{Alan Schmitt}.}
+  \bibinfo{year}{2007}\natexlab{}.
+\newblock \showarticletitle{Combinators for Bidirectional Tree Transformations:
+  A Linguistic Approach to the View-Update Problem}.
+\newblock \bibinfo{journal}{{\em ACM Transactions on Programming Languages and
+  Systems\/}} \bibinfo{volume}{29}, \bibinfo{number}{3} (\bibinfo{year}{2007}),
+  \bibinfo{pages}{17}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1145/1232420.1232424}}
+
+
+\bibitem[\protect\citeauthoryear{Foster, Matsuda, and Voigtl{\"a}nder}{Foster
+  et~al\mbox{.}}{2012}]%
+        {Foster-bidirectional-programming-approaches}
+\bibfield{author}{\bibinfo{person}{Nate Foster}, \bibinfo{person}{Kazutaka
+  Matsuda}, {and} \bibinfo{person}{Janis Voigtl{\"a}nder}.}
+  \bibinfo{year}{2012}\natexlab{}.
+\newblock \showarticletitle{Three Complementary Approaches to Bidirectional
+  Programming}.
+\newblock In \bibinfo{booktitle}{{\em Generic and Indexed Programming}}.
+  \bibinfo{series}{Lecture Notes in Computer Science},
+  Vol.~\bibinfo{volume}{7470}. \bibinfo{publisher}{Springer},
+  \bibinfo{pages}{1--46}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1007/978-3-642-32202-0_1}}
+
+
+\bibitem[\protect\citeauthoryear{Gibbons}{Gibbons}{2007}]%
+        {Gibbons-DGP}
+\bibfield{author}{\bibinfo{person}{Jeremy Gibbons}.}
+  \bibinfo{year}{2007}\natexlab{}.
+\newblock \showarticletitle{Datatype-Generic Programming}.
+\newblock In \bibinfo{booktitle}{{\em Datatype-Generic Programming}}.
+  \bibinfo{series}{Lecture Notes in Computer Science},
+  Vol.~\bibinfo{volume}{4719}. \bibinfo{publisher}{Springer},
+  \bibinfo{pages}{1--71}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1007/978-3-540-76786-2_1}}
+
+
+\bibitem[\protect\citeauthoryear{Hoare}{Hoare}{1969}]%
+        {Hoare-logic}
+\bibfield{author}{\bibinfo{person}{C.~A.~R. Hoare}.}
+  \bibinfo{year}{1969}\natexlab{}.
+\newblock \showarticletitle{An Axiomatic Basis for Computer Programming}.
+\newblock \bibinfo{journal}{{\it Commun. ACM}} \bibinfo{volume}{12},
+  \bibinfo{number}{10} (\bibinfo{year}{1969}), \bibinfo{pages}{576--580}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1145/363235.363259}}
+
+
+\bibitem[\protect\citeauthoryear{Hofmann, Pierce, and Wagner}{Hofmann
+  et~al\mbox{.}}{2011}]%
+        {Hofmann-symmetric-lenses}
+\bibfield{author}{\bibinfo{person}{Martin Hofmann}, \bibinfo{person}{Benjamin
+  Pierce}, {and} \bibinfo{person}{Daniel Wagner}.}
+  \bibinfo{year}{2011}\natexlab{}.
+\newblock \showarticletitle{Symmetric Lenses}. In \bibinfo{booktitle}{{\em
+  Symposium on Principles of Programming Languages}} {\em
+  (\bibinfo{series}{POPL'11})}. \bibinfo{publisher}{ACM},
+  \bibinfo{pages}{371--384}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1145/1925844.1926428}}
+
+
+\bibitem[\protect\citeauthoryear{Hu and Ko}{Hu and Ko}{2017}]%
+        {Hu-BiGUL-tutorial}
+\bibfield{author}{\bibinfo{person}{Zhenjiang Hu} {and}
+  \bibinfo{person}{Hsiang-Shang Ko}.} \bibinfo{year}{2017}\natexlab{}.
+\newblock \bibinfo{title}{Principles and Practice of Bidirectional Programming
+  in {BiGUL}}.
+\newblock \bibinfo{howpublished}{Draft lecture notes for the \textit{Oxford
+  Summer School on Bidirectional Transformations}}.
+\newblock
+\showURL{%
+\url{https://bitbucket.org/prl_tokyo/bigul/raw/master/SSBX16/tutorial.pdf}}
+
+
+\bibitem[\protect\citeauthoryear{Hu, Pacheco, and Fischer}{Hu
+  et~al\mbox{.}}{2014}]%
+        {Hu-putback-validity}
+\bibfield{author}{\bibinfo{person}{Zhenjiang Hu}, \bibinfo{person}{Hugo
+  Pacheco}, {and} \bibinfo{person}{Sebastian Fischer}.}
+  \bibinfo{year}{2014}\natexlab{}.
+\newblock \showarticletitle{Validity Checking of Putback Transformations in
+  Bidirectional Programming}. In \bibinfo{booktitle}{{\em International
+  Symposium on Formal Methods}} {\em (\bibinfo{series}{Lecture Notes in
+  Computer Science})}, Vol.~\bibinfo{volume}{8442}.
+  \bibinfo{publisher}{Springer}, \bibinfo{pages}{1--15}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1007/978-3-319-06410-9_1}}
+
+
+\bibitem[\protect\citeauthoryear{Kinoshita and Nakano}{Kinoshita and
+  Nakano}{2017}]%
+        {Kinoshita-bidirectional-certified-programming}
+\bibfield{author}{\bibinfo{person}{Daisuke Kinoshita} {and}
+  \bibinfo{person}{Keisuke Nakano}.} \bibinfo{year}{2017}\natexlab{}.
+\newblock \showarticletitle{Bidirectional Certified Programming}. In
+  \bibinfo{booktitle}{{\em International Workshop on Bidirectional
+  Transformations}} {\em (\bibinfo{series}{BX'17})}.
+  \bibinfo{publisher}{CEUR-WS.org}, \bibinfo{pages}{31--38}.
+\newblock
+\showURL{%
+\url{http://ceur-ws.org/Vol-1827/paper7.pdf}}
+
+
+\bibitem[\protect\citeauthoryear{Ko, Zan, and Hu}{Ko et~al\mbox{.}}{2016}]%
+        {Ko-BiGUL}
+\bibfield{author}{\bibinfo{person}{Hsiang-Shang Ko}, \bibinfo{person}{Tao Zan},
+  {and} \bibinfo{person}{Zhenjiang Hu}.} \bibinfo{year}{2016}\natexlab{}.
+\newblock \showarticletitle{{BiGUL}: A Formally Verified Core Language for
+  Putback-Based Bidirectional Programming}. In \bibinfo{booktitle}{{\em
+  Workshop on Partial Evaluation and Program Manipulation}} {\em
+  (\bibinfo{series}{PEPM'16})}. \bibinfo{publisher}{ACM},
+  \bibinfo{pages}{61--72}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1145/2847538.2847544}}
+
+
+\bibitem[\protect\citeauthoryear{Macedo, Pacheco, Cunha, and Oliveira}{Macedo
+  et~al\mbox{.}}{2013}]%
+        {Macedo-composing-least-change-lenses}
+\bibfield{author}{\bibinfo{person}{Nuno Macedo}, \bibinfo{person}{Hugo
+  Pacheco}, \bibinfo{person}{Alcino Cunha}, {and} \bibinfo{person}{Jos{\'e}~N.
+  Oliveira}.} \bibinfo{year}{2013}\natexlab{}.
+\newblock \showarticletitle{Composing Least-Change Lenses}. In
+  \bibinfo{booktitle}{{\em International Workshop on Bidirectional
+  Transformations}} {\em (\bibinfo{series}{Electronic Communications of the
+  EASST})}. \bibinfo{publisher}{EASST}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.14279/tuj.eceasst.57.868}}
+
+
+\bibitem[\protect\citeauthoryear{Matsuda and Wang}{Matsuda and Wang}{2015}]%
+        {Matsuda-applicative-BX}
+\bibfield{author}{\bibinfo{person}{Kazutaka Matsuda} {and}
+  \bibinfo{person}{Meng Wang}.} \bibinfo{year}{2015}\natexlab{}.
+\newblock \showarticletitle{Applicative Bidirectional Programming with Lenses}.
+  In \bibinfo{booktitle}{{\em International Conference on Functional
+  Programming}} {\em (\bibinfo{series}{ICFP'15})}. \bibinfo{publisher}{ACM},
+  \bibinfo{pages}{62--74}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1145/2858949.2784750}}
+
+
+\bibitem[\protect\citeauthoryear{McKinna}{McKinna}{2016}]%
+        {McKinna-proof-relevant-bisimulations}
+\bibfield{author}{\bibinfo{person}{James McKinna}.}
+  \bibinfo{year}{2016}\natexlab{}.
+\newblock \showarticletitle{Bidirectional Transformations are Proof-Relevant
+  Bisimulations (Extended Abstract)}. In \bibinfo{booktitle}{{\em International
+  Workshop on Type-Driven Development}} {\em (\bibinfo{series}{TyDe'16})}.
+\newblock
+\showURL{%
+\url{http://groups.inf.ed.ac.uk/bx/TyDe16.pdf}}
+
+
+\bibitem[\protect\citeauthoryear{Mendes, Ko, and Hu}{Mendes
+  et~al\mbox{.}}{2016}]%
+        {Mendes-delta-alignment}
+\bibfield{author}{\bibinfo{person}{Jorge Mendes}, \bibinfo{person}{Hsiang-Shang
+  Ko}, {and} \bibinfo{person}{Zhenjiang Hu}.} \bibinfo{year}{2016}\natexlab{}.
+\newblock \bibinfo{booktitle}{{\em The Under-Appreciated Put: Implementing
+  Delta-Alignment in {BiGUL}}}.
+\newblock \bibinfo{type}{{T}echnical {R}eport} GRACE-TR 2016-03.
+  \bibinfo{institution}{GRACE Center, National Institute of Informatics}.
+\newblock
+\showURL{%
+\url{http://grace-center.jp/wp-content/uploads/2016/04/GRACE-TR-2016-03.pdf}}
+
+
+\bibitem[\protect\citeauthoryear{Pacheco, Cunha, and Hu}{Pacheco
+  et~al\mbox{.}}{2012}]%
+        {Pacheco-delta-lenses}
+\bibfield{author}{\bibinfo{person}{Hugo Pacheco}, \bibinfo{person}{Alcino
+  Cunha}, {and} \bibinfo{person}{Zhenjiang Hu}.}
+  \bibinfo{year}{2012}\natexlab{}.
+\newblock \showarticletitle{Delta Lenses over Inductive Types}. In
+  \bibinfo{booktitle}{{\em International Workshop on Bidirectional
+  Transformations}}. \bibinfo{publisher}{EASST}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.14279/tuj.eceasst.49.713}}
+
+
+\bibitem[\protect\citeauthoryear{Pacheco, Hu, and Fischer}{Pacheco
+  et~al\mbox{.}}{2014a}]%
+        {Pacheco-putlenses}
+\bibfield{author}{\bibinfo{person}{Hugo Pacheco}, \bibinfo{person}{Zhenjiang
+  Hu}, {and} \bibinfo{person}{Sebastian Fischer}.}
+  \bibinfo{year}{2014}\natexlab{a}.
+\newblock \showarticletitle{Monadic Combinators for ``Putback'' Style
+  Bidirectional Programming}. In \bibinfo{booktitle}{{\em Workshop on Partial
+  Evaluation and Program Manipulation}} {\em (\bibinfo{series}{PEPM'14})}.
+  \bibinfo{publisher}{ACM}, \bibinfo{pages}{39--50}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1145/2543728.2543737}}
+
+
+\bibitem[\protect\citeauthoryear{Pacheco, Zan, and Hu}{Pacheco
+  et~al\mbox{.}}{2014b}]%
+        {Pacheco-BiFluX}
+\bibfield{author}{\bibinfo{person}{Hugo Pacheco}, \bibinfo{person}{Tao Zan},
+  {and} \bibinfo{person}{Zhenjiang Hu}.} \bibinfo{year}{2014}\natexlab{b}.
+\newblock \showarticletitle{{BiFluX}: A Bidirectional Functional Update
+  Language for {XML}}. In \bibinfo{booktitle}{{\em International Symposium on
+  Principles and Practice of Declarative Programming}} {\em
+  (\bibinfo{series}{PPDP'14})}. \bibinfo{publisher}{ACM},
+  \bibinfo{pages}{147--158}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1145/2643135.2643141}}
+
+
+\bibitem[\protect\citeauthoryear{Reynolds}{Reynolds}{2002}]%
+        {Reynolds-separation-logic}
+\bibfield{author}{\bibinfo{person}{John~C. Reynolds}.}
+  \bibinfo{year}{2002}\natexlab{}.
+\newblock \showarticletitle{Separation Logic: A Logic for Shared Mutable Data
+  Structures}. In \bibinfo{booktitle}{{\em Symposium on Logic in Computer
+  Science}} {\em (\bibinfo{series}{LICS'02})}. \bibinfo{publisher}{IEEE},
+  \bibinfo{pages}{55--74}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1109/LICS.2002.1029817}}
+
+
+\bibitem[\protect\citeauthoryear{Stevens}{Stevens}{2010}]%
+        {Stevens-QVT}
+\bibfield{author}{\bibinfo{person}{Perdita Stevens}.}
+  \bibinfo{year}{2010}\natexlab{}.
+\newblock \showarticletitle{Bidirectional Model Transformations in {QVT}:
+  Semantic Issues and Open Questions}.
+\newblock \bibinfo{journal}{{\em Software and Systems Modeling\/}}
+  \bibinfo{volume}{9} (\bibinfo{year}{2010}), \bibinfo{pages}{7}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1007/s10270-008-0109-9}}
+
+
+\bibitem[\protect\citeauthoryear{Thomsen and Axelsen}{Thomsen and
+  Axelsen}{2015}]%
+        {Thomsen-rFun}
+\bibfield{author}{\bibinfo{person}{Michael~Kirkedal Thomsen} {and}
+  \bibinfo{person}{Holger~Bock Axelsen}.} \bibinfo{year}{2015}\natexlab{}.
+\newblock \showarticletitle{Interpretation and Programming of the Reversible
+  Functional Language {RFUN}}. In \bibinfo{booktitle}{{\em Symposium on the
+  Implementation and Application of Functional Programming Languages}} {\em
+  (\bibinfo{series}{IFL'15})}. \bibinfo{publisher}{ACM}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1145/2897336.2897345}}
+
+
+\bibitem[\protect\citeauthoryear{Vazou, Seidel, Jhala, Vytiniotis, and
+  Peyton~Jones}{Vazou et~al\mbox{.}}{2014}]%
+        {Vazou-LiquidHaskell}
+\bibfield{author}{\bibinfo{person}{Niki Vazou}, \bibinfo{person}{Eric~L.
+  Seidel}, \bibinfo{person}{Ranjit Jhala}, \bibinfo{person}{Dimitrios
+  Vytiniotis}, {and} \bibinfo{person}{Simon Peyton~Jones}.}
+  \bibinfo{year}{2014}\natexlab{}.
+\newblock \showarticletitle{Refinement Types for {Haskell}}. In
+  \bibinfo{booktitle}{{\em International Conference on Functional Programming}}
+  {\em (\bibinfo{series}{ICFP'14})}. \bibinfo{publisher}{ACM},
+  \bibinfo{pages}{269--282}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1145/2628136.2628161}}
+
+
+\bibitem[\protect\citeauthoryear{Voigtl{\"a}nder, Hu, Matsuda, and
+  Wang}{Voigtl{\"a}nder et~al\mbox{.}}{2013}]%
+        {Voigtlander-shape-plug-ins}
+\bibfield{author}{\bibinfo{person}{Janis Voigtl{\"a}nder},
+  \bibinfo{person}{Zhenjiang Hu}, \bibinfo{person}{Kazutaka Matsuda}, {and}
+  \bibinfo{person}{Meng Wang}.} \bibinfo{year}{2013}\natexlab{}.
+\newblock \showarticletitle{Enhancing Semantic Bidirectionalization via Shape
+  Bidirectionalizer Plug-ins}.
+\newblock \bibinfo{journal}{{\em Journal of Functional Programming\/}}
+  \bibinfo{volume}{23}, \bibinfo{number}{5} (\bibinfo{year}{2013}),
+  \bibinfo{pages}{515--551}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1017/S0956796813000130}}
+
+
+\bibitem[\protect\citeauthoryear{Zan, Liu, Ko, and Hu}{Zan
+  et~al\mbox{.}}{2016}]%
+        {Zan-Brul}
+\bibfield{author}{\bibinfo{person}{Tao Zan}, \bibinfo{person}{Li Liu},
+  \bibinfo{person}{Hsiang-Shang Ko}, {and} \bibinfo{person}{Zhenjiang Hu}.}
+  \bibinfo{year}{2016}\natexlab{}.
+\newblock \showarticletitle{\textsc{Brul}: A Putback-Based Bidirectional
+  Transformation Library for Updatable Views}. In \bibinfo{booktitle}{{\em
+  International Workshop on Bidirectional Transformations}} {\em
+  (\bibinfo{series}{BX'16})}. \bibinfo{publisher}{CEUR-WS.org},
+  \bibinfo{pages}{77--89}.
+\newblock
+\showURL{%
+\url{http://ceur-ws.org/Vol-1571/paper_3.pdf}}
+
+
+\bibitem[\protect\citeauthoryear{Zhao, Zhao, and Hu}{Zhao
+  et~al\mbox{.}}{2016}]%
+        {Zhao-BiGUL-feature-models-use-cases}
+\bibfield{author}{\bibinfo{person}{Weize Zhao}, \bibinfo{person}{Haiyan Zhao},
+  {and} \bibinfo{person}{Zhenjiang Hu}.} \bibinfo{year}{2016}\natexlab{}.
+\newblock \showarticletitle{A Framework for Synchronization between Feature
+  Configurations and Use Cases based on Bidirectional Programming}. In
+  \bibinfo{booktitle}{{\em International Model-Driven Requirements Engineering
+  Workshop}} {\em (\bibinfo{series}{MoDRE'16})}. \bibinfo{publisher}{IEEE},
+  \bibinfo{pages}{170--179}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1109/REW.2016.040}}
+
+
+\bibitem[\protect\citeauthoryear{Zhu, Zhang, Ko, Martins, Saraiva, and Hu}{Zhu
+  et~al\mbox{.}}{2016}]%
+        {Zhu-BiYacc}
+\bibfield{author}{\bibinfo{person}{Zirun Zhu}, \bibinfo{person}{Yongzhe Zhang},
+  \bibinfo{person}{Hsiang-Shang Ko}, \bibinfo{person}{Pedro Martins},
+  \bibinfo{person}{Jo{\~a}o Saraiva}, {and} \bibinfo{person}{Zhenjiang Hu}.}
+  \bibinfo{year}{2016}\natexlab{}.
+\newblock \showarticletitle{Parsing and Reflective Printing, Bidirectionally}.
+  In \bibinfo{booktitle}{{\em International Conference on Software Language
+  Engineering}} {\em (\bibinfo{series}{SLE'16})}. \bibinfo{publisher}{ACM},
+  \bibinfo{pages}{2--14}.
+\newblock
+\showDOI{%
+\url{https://doi.org/10.1145/2997364.2997369}}
+
+
+\end{thebibliography}

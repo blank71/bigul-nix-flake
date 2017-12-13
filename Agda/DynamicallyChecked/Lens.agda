@@ -5,6 +5,8 @@ open import DynamicallyChecked.Utilities
 
 open import Function
 open import Data.Product
+open import Relation.Nullary
+open import Relation.Binary
 open import Relation.Binary.PropositionalEquality
 
 
@@ -41,14 +43,30 @@ iso-lens iso = record
   ; PutGet = Iso.from-to-inverse iso
   ; GetPut = Iso.to-from-inverse iso }
 
-skip-lens : {S : Set} → S ⇆ ⊤
-skip-lens = record
-  { put = λ s _ → return s
-  ; get = λ s → return tt
-  ; PutGet = λ { {._} (return refl) → return refl }
-  ; GetPut = λ _ → return refl }
+skip-lens : {S V : Set} → Decidable (_≡_ {A = V}) → (S → V) → S ⇆ V
+skip-lens {S} {V} _≟_ f = record
+  { put = put
+  ; get = return ∘ f
+  ; PutGet = λ put↦ → return (PutGet put↦)
+  ; GetPut = λ { {_} {._} (return refl) → GetPut } }
+  where  
+    put : S → V → Par S
+    put s v with f s ≟ v
+    put s v | yes _ = return s
+    put s v | no  _ = fail
 
-infixr 3 _↔_ _↕_ _◁_ _▷_
+    PutGet : {s : S} {v : V} {s' : S} → put s v ↦ s' → f s' ≡ v
+    PutGet {s} {v} put↦          with f s ≟ v
+    PutGet         (return refl) | yes refl = refl
+    PutGet         ()            | no  _
+    
+    GetPut : {s : S} → put s (f s) ↦ s
+    GetPut {s} with f s ≟ f s
+    GetPut {s} | yes _  = return refl
+    GetPut {s} | no neq with neq refl
+    GetPut {s} | no neq | ()
+
+infixr 3 _↔_ _↕_ _◂_ _▸_
 
 _↔_ : {A B C : Set} → A ⇆ B → B ⇆ C → A ⇆ C
 l ↔ r = record
@@ -57,15 +75,15 @@ l ↔ r = record
   ; PutGet = λ { (get-l-a↦b >>= put-r-b↦b' >>= put-l-a-b'↦a') → Lens.PutGet l put-l-a-b'↦a' >>= Lens.PutGet r put-r-b↦b' }
   ; GetPut = λ { (get-l-a↦b >>= get-r-b↦c) → get-l-a↦b >>= Lens.GetPut r get-r-b↦c >>= Lens.GetPut l get-l-a↦b } }
 
-_◁_ : {A B C : Set} → A ⇆ B → B ≅ C → A ⇆ C
-l ◁ iso = record
+_◂_ : {A B C : Set} → A ⇆ B → B ≅ C → A ⇆ C
+l ◂ iso = record
   { put = λ a c → Iso.from iso c >>= Lens.put l a
   ; get = Iso.to iso <=< Lens.get l
   ; PutGet = λ { (from-v↦v' >>= put-s-v'↦s') → Lens.PutGet l put-s-v'↦s' >>= Iso.from-to-inverse iso from-v↦v' }
   ; GetPut = λ { (get-s↦v >>= to-v↦v') → Iso.to-from-inverse iso to-v↦v' >>= Lens.GetPut l get-s↦v } } 
 
-_▷_ : {A B C : Set} → A ≅ B → B ⇆ C → A ⇆ C
-iso ▷ l = iso-lens iso ↔ l
+_▸_ : {A B C : Set} → A ≅ B → B ⇆ C → A ⇆ C
+iso ▸ l = iso-lens iso ↔ l
 
 _↕_ : {A B C D : Set} → A ⇆ B → C ⇆ D → A × C ⇆ B × D
 l ↕ r = record

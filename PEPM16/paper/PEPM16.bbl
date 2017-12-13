@@ -1,0 +1,192 @@
+\begin{thebibliography}{28}
+\providecommand{\natexlab}[1]{#1}
+\providecommand{\url}[1]{\texttt{#1}}
+\expandafter\ifx\csname urlstyle\endcsname\relax
+  \providecommand{\doi}[1]{doi: #1}\else
+  \providecommand{\doi}{doi: \begingroup \urlstyle{rm}\Url}\fi
+
+\bibitem[Altenkirch and McBride(2003)]{Altenkirch-GP-within-DTP}
+T.~Altenkirch and C.~McBride.
+\newblock Generic programming within dependently typed programming.
+\newblock In \emph{IFIP TC2/WG2.1 Working Conference on Generic Programming},
+  pages 1--20. Kluwer, B.V., 2003.
+
+\bibitem[Barbosa et~al.(2010)Barbosa, Cretin, Foster, Greenberg, and
+  Pierce]{Barbosa:2010}
+D.~M.~J. Barbosa, J.~Cretin, J.~N. Foster, M.~Greenberg, and B.~C. Pierce.
+\newblock Matching lenses: alignment and view update.
+\newblock In \emph{International Conference on Functional Programming}, pages
+  193--204. ACM, 2010.
+
+\bibitem[Bohannon et~al.(2006)Bohannon, Pierce, and Vaughan]{Bohannon:06}
+A.~Bohannon, B.~C. Pierce, and J.~A. Vaughan.
+\newblock Relational lenses: a language for updatable views.
+\newblock In \emph{Principles of Database Systems}, pages 338--347. ACM, 2006.
+
+\bibitem[Cheney(2008)]{Cheney-FLUX}
+J.~Cheney.
+\newblock \textsc{Flux}: functional updates for {XML}.
+\newblock In \emph{International Conference on Functional Programming}, pages
+  3--14. ACM, 2008.
+
+\bibitem[Czarnecki et~al.(2009)Czarnecki, Foster, Hu, L\"ammel, Sch\"urr, and
+  Terwilliger]{GRACE:09}
+K.~Czarnecki, J.~N. Foster, Z.~Hu, R.~L\"ammel, A.~Sch\"urr, and
+  J.~Terwilliger.
+\newblock Bidirectional transformations: a cross-discipline perspective.
+\newblock In \emph{International Conference on Model Transformation}, volume
+  5563 of \emph{Lecture Notes in Computer Science}, pages 260--283.
+  Springer-Verlag, 2009.
+
+\bibitem[Danielsson et~al.(2006)Danielsson, Gibbons, Hughes, and
+  Jansson]{Danielsson-fast-and-loose-reasoning}
+N.~A. Danielsson, J.~Gibbons, J.~Hughes, and P.~Jansson.
+\newblock Fast and loose reasoning is morally correct.
+\newblock In \emph{Principles of Programming Languages}, pages 206--217. ACM,
+  2006.
+
+\bibitem[Foster(2009)]{Foster:09}
+J.~N. Foster.
+\newblock \emph{Bidirectional Programming Languages}.
+\newblock PhD thesis, University of Pennsylvania, 2009.
+
+\bibitem[Foster et~al.(2007)Foster, Greenwald, Moore, Pierce, and
+  Schmitt]{Foster-lenses}
+J.~N. Foster, M.~B. Greenwald, J.~T. Moore, B.~C. Pierce, and A.~Schmitt.
+\newblock Combinators for bidirectional tree transformations: a linguistic
+  approach to the view-update problem.
+\newblock \emph{ACM Transactions on Programming Languages and Systems},
+  29\penalty0 (3):\penalty0 17, 2007.
+
+\bibitem[Foster et~al.(2008)Foster, Pilkiewicz, and Pierce]{FoPP08}
+J.~N. Foster, A.~Pilkiewicz, and B.~C. Pierce.
+\newblock Quotient lenses.
+\newblock In \emph{International Conference on Functional Programming}, pages
+  383--396. ACM, 2008.
+
+\bibitem[Gibbons(2007)]{Gibbons-DGP}
+J.~Gibbons.
+\newblock Datatype-generic programming.
+\newblock In \emph{Spring School on Datatype-Generic Programming}, volume 4719
+  of \emph{Lecture Notes in Computer Science}, pages 1--71. Springer-Verlag,
+  2007.
+
+\bibitem[Gibbons(2015)]{Gibbons-DSL}
+J.~Gibbons.
+\newblock Functional programming for domain-specific languages.
+\newblock In \emph{Central European Functional Programming School}, volume 8606
+  of \emph{Lecture Notes in Computer Science}, pages 1--28. Springer-Verlag,
+  2015.
+
+\bibitem[Grohne et~al.(2014)Grohne, L{\"o}h, and
+  Voigtl{\"a}nder]{Grohne-formalizing-semantic-bidirectionalization}
+H.~Grohne, A.~L{\"o}h, and J.~Voigtl{\"a}nder.
+\newblock Formalizing semantic bidirectionalization with dependent types.
+\newblock In \emph{International Workshop on Bidirectional Transformations},
+  pages 75--81. CEUR-WS, 2014.
+
+\bibitem[Hidaka et~al.(2010)Hidaka, Hu, Inaba, Kato, Matsuda, and
+  Nakano]{Hidaka:10}
+S.~Hidaka, Z.~Hu, K.~Inaba, H.~Kato, K.~Matsuda, and K.~Nakano.
+\newblock Bidirectionalizing graph transformations.
+\newblock In \emph{International Conference on Functional Programming}, pages
+  205--216. ACM, 2010.
+
+\bibitem[Hofmann et~al.(2011)Hofmann, Pierce, and Wagner]{Hofmann:2011}
+M.~Hofmann, B.~C. Pierce, and D.~Wagner.
+\newblock Symmetric lenses.
+\newblock In \emph{Principles of Programming Languages}, pages 371--384. ACM,
+  2011.
+
+\bibitem[Hofmann et~al.(2012)Hofmann, Pierce, and Wagner]{HoPW12}
+M.~Hofmann, B.~C. Pierce, and D.~Wagner.
+\newblock Edit lenses.
+\newblock In \emph{Principles of Programming Languages}, pages 495--508. ACM,
+  2012.
+
+\bibitem[Hu et~al.(2014)Hu, Pacheco, and Fischer]{Hu-putback-validity}
+Z.~Hu, H.~Pacheco, and S.~Fischer.
+\newblock Validity checking of putback transformations in bidirectional
+  programming.
+\newblock In \emph{International Symposium on Formal Methods}, volume 8442,
+  pages 1--15. Springer-Verlag, 2014.
+
+\bibitem[Lindley and McBride(2013)]{Lindley-Hasochism}
+S.~Lindley and C.~McBride.
+\newblock Hasochism: the pleasure and pain of dependently typed {Haskell}
+  programming.
+\newblock In \emph{Haskell Symposium}, pages 81--92. ACM, 2013.
+
+\bibitem[Matsuda et~al.(2007)Matsuda, Hu, Nakano, Hamana, and
+  Takeichi]{MHNHT07}
+K.~Matsuda, Z.~Hu, K.~Nakano, M.~Hamana, and M.~Takeichi.
+\newblock Bidirectionalization transformation based on automatic derivation of
+  view complement functions.
+\newblock In \emph{International Conference on Functional Programming}, pages
+  47--58. ACM, 2007.
+
+\bibitem[Moggi(1991)]{Moggi-monads}
+E.~Moggi.
+\newblock Notions of computation and monads.
+\newblock \emph{Information and Computation}, 93\penalty0 (1):\penalty0 55--92,
+  1991.
+
+\bibitem[Norell(2007)]{Norell-thesis}
+U.~Norell.
+\newblock \emph{Towards a Practical Programming Language based on Dependent
+  Type Theory}.
+\newblock PhD thesis, Chalmers University of Technology, 2007.
+
+\bibitem[Norell(2009)]{Nore08}
+U.~Norell.
+\newblock Dependently typed programming in {Agda}.
+\newblock In \emph{Advanced Functional Programming}, volume 5832 of
+  \emph{Lecture Notes in Computer Science}, pages 230--266. Springer-Verlag,
+  2009.
+
+\bibitem[Norell(2013)]{Norell-interactive-programming}
+U.~Norell.
+\newblock Interactive programming with dependent types.
+\newblock In \emph{International Conference on Functional Programming}, pages
+  1--2. ACM, 2013.
+
+\bibitem[Pacheco and Cunha(2010)]{PachecoCunha:10}
+H.~Pacheco and A.~Cunha.
+\newblock Generic point-free lenses.
+\newblock In \emph{Mathematics of Program Construction}, volume 6120 of
+  \emph{Lecture Notes in Computer Science}, pages 331--352. Springer-Verlag,
+  2010.
+
+\bibitem[Pacheco et~al.(2014{\natexlab{a}})Pacheco, Hu, and
+  Fischer]{Pacheco-putlenses}
+H.~Pacheco, Z.~Hu, and S.~Fischer.
+\newblock Monadic combinators for ``putback'' style bidirectional programming.
+\newblock In \emph{Partial Evaluation and Program Manipulation}, pages 39--50.
+  ACM, 2014{\natexlab{a}}.
+
+\bibitem[Pacheco et~al.(2014{\natexlab{b}})Pacheco, Zan, and
+  Hu]{Pacheco-BiFluX}
+H.~Pacheco, T.~Zan, and Z.~Hu.
+\newblock {BiFluX}: a bidirectional functional update language for {XML}.
+\newblock In \emph{Principles and Practice of Declarative Programming}, pages
+  147--158. ACM, 2014{\natexlab{b}}.
+
+\bibitem[Voigtl{\"a}nder(2009)]{Voigtlander-BX-for-free}
+J.~Voigtl{\"a}nder.
+\newblock Bidirectionalization for free!
+\newblock In \emph{Principles of Programming Languages}, pages 165--176. ACM,
+  2009.
+
+\bibitem[Wadler(1992)]{Wadler-essence}
+P.~Wadler.
+\newblock The essence of functional programming.
+\newblock In \emph{Principles of Programming Languages}, pages 1--14. ACM,
+  1992.
+
+\bibitem[Zhu et~al.(2015)Zhu, Ko, Martins, Saraiva, and Hu]{Zhu-BiYacc}
+Z.~Zhu, H.-S. Ko, P.~Martins, J.~Saraiva, and Z.~Hu.
+\newblock {BiYacc}: roll your parser and reflective printer into one.
+\newblock In \emph{International Workshop on Bidirectional Transformations},
+  pages 43--50. CEUR-WS, 2015.
+
+\end{thebibliography}
