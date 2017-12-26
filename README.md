@@ -18,12 +18,27 @@ An earlier paper describes the reification technique used in the Agda formalisat
 
 ## Installation ##
 
-BiGUL works with [GHC](https://www.haskell.org/ghc/) 7.10 and above, and is released to [Hackage](https://hackage.haskell.org/package/BiGUL), so the installation of the latest release of BiGUL is as simple as executing
+BiGUL works with [GHC](https://www.haskell.org/ghc/) 7.10 and 8.0 (and possibly above — see below), and is released to [Hackage](https://hackage.haskell.org/package/BiGUL), so the installation of the latest release of BiGUL is as simple as executing
 ```
 cabal update
 cabal install BiGUL
 ```
 in the command line (i.e., the standard way of installing Haskell packages).
+
+For newer versions of GHC, you may see some `cabal` error messages like the following, which complains about the version of `base`:
+```
+...
+cabal: Could not resolve dependencies:
+trying: BiGUL-1.0.1 (user goal)
+next goal: base (dependency of BiGUL-1.0.1)
+rejecting: base-4.10.1.0/installed-4.1... (conflict: BiGUL => base==4.9.*)
+...
+```
+In this case, try to execute
+```
+cabal install BiGUL --allow-newer=base
+```
+instead. If there are no major changes, BiGUL should still compile.
 
 The most recent development version (with changes not yet released to Hackage) is maintained in the `master` branch. To install the development version, first clone this git repository, and then invoke `cabal install` under the `Haskell/` subdirectory of the local copy of the repository:
 ```
