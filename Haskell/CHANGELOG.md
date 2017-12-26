@@ -1,6 +1,8 @@
 1.1.0 Changes
 =============
 
+* Cabal configuration file updated for GHC 8.2
+
 * `Generics.BiGUL.Lib.List.align` changed to a prettier version
 
 * `Generics.BiGUL.PatternMatching` no longer exposed
