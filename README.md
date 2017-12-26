@@ -38,7 +38,7 @@ In this case, try to execute
 ```
 cabal install BiGUL --allow-newer=base
 ```
-instead. If there are no major changes, BiGUL should still compile.
+instead. If there are no major changes to the API of GHC, BiGUL should still compile.
 
 The most recent development version (with changes not yet released to Hackage) is maintained in the `master` branch. To install the development version, first clone this git repository, and then invoke `cabal install` under the `Haskell/` subdirectory of the local copy of the repository:
 ```
