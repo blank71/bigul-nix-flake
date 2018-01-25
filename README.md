@@ -10,7 +10,7 @@ There is a more detailed tutorial, which gives a taste of programming with the H
 
 Also recommended (especially to mathematically inclined programmers) is a semi-formal introduction to BiGUL programming in terms of an axiomatic semantics, which clarifies the reasoning required for writing correct BiGUL programs:
 
-* Hsiang-Shang Ko and Zhenjiang Hu. An Axiomatic Basis for Bidirectional Programming. _Proceedings of the ACM on Programming Languages_, 2(POPL):41, 2018. https://doi.org/10.1145/3158129. (Preprint: https://bitbucket.org/prl_tokyo/bigul/raw/master/POPL18/logic.pdf.)
+* Hsiang-Shang Ko and Zhenjiang Hu. An Axiomatic Basis for Bidirectional Programming. _Proceedings of the ACM on Programming Languages_, 2(POPL):41, 2018. https://doi.org/10.1145/3158129. (PDF download: https://dl.acm.org/ft_gateway.cfm?id=3158129.)
 
 An earlier paper describes the reification technique used in the Agda formalisation; this paper uses an outdated version of BiGUL, but the reification technique still underlies the current formalisation.
 
