@@ -2,7 +2,8 @@
 
 %include lhs2TeX-macros.lhs
 
-\section{Putback-based bidirectional programming}
+\section{Putback-based bidirectional programming\protect\footnote{%
+The text of this section is adapted from the first author's FM~2014 paper~\cite{Hu-putback-validity}.}}
 \label{sec:PutBX}
 
 In this chapter, the kind of bidirectional transformations (BXs) we discuss is \emph{aymmetric lenses}~\cite{Lenses},
@@ -131,6 +132,5 @@ BiGUL is implemented as an embedded language in Haskell, and we will assume that
 After briefly explaining how to install BiGUL in \autoref{sec:install}, we will introduce basic BiGUL programming in \autoref{sec:tour}, and see a few more examples about lists in \autoref{sec:lists}.
 We will then move on to the underlying principles in \autoref{sec:bidirectionality}, explaining the design and implementation of BiGUL in detail.
 Those readers who are more interested in practical applications or want to see more examples first may safely skip \autoref{sec:bidirectionality} (which is rather long) and proceed to the last three sections, which will show how various bidirectional applications can be developed, including list alignment in \autoref{sec:alignment}, relational database updating in \autoref{sec:Brul}, and parsing and ``reflective'' printing in \autoref{sec:BiYacc}.
-
 
 

@@ -2,7 +2,8 @@
 
 %include lhs2TeX-macros.lhs
 
-\section{Bidirectionalizing relational queries with BiGUL}
+\section{Bidirectionalizing relational queries with BiGUL\protect\footnote{%
+The text of this section is adapted from our BX~2016 paper~\cite{ZanLKH16}.}}
 \label{sec:Brul}
 
 \ignore{
