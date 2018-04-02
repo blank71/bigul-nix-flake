@@ -4,13 +4,13 @@ Putback-based bidirectional programming allows the programmer to write only one 
 
 The module `Generics.BiGUL.Lib.HuStudies` ([haddock documentation on Hackage](https://hackage.haskell.org/package/BiGUL/docs/Generics-BiGUL-Lib-HuStudies.html)) contains some small, illustrative examples of BiGUL programs, and is a good place for getting started quickly.
 
-There is a more detailed tutorial, which gives a taste of programming with the Haskell port of BiGUL and its implementation:
-
-* Zhenjiang Hu and Hsiang-Shang Ko. Principles and Practice of Bidirectional Programming in BiGUL. Draft manuscript for the [_Oxford Summer School on Bidirectional Transformations_](https://www.cs.ox.ac.uk/projects/tlcbx/ssbx/). https://bitbucket.org/prl_tokyo/bigul/raw/master/SSBX16/tutorial.pdf.
-
-Also recommended (especially to mathematically inclined programmers) is a semi-formal introduction to BiGUL programming in terms of an axiomatic semantics, which clarifies the reasoning required for writing correct BiGUL programs:
+Recommended (especially to mathematically inclined programmers) is a semi-formal introduction to BiGUL programming in terms of an axiomatic semantics, which clarifies the reasoning required for writing correct BiGUL programs:
 
 * Hsiang-Shang Ko and Zhenjiang Hu. An Axiomatic Basis for Bidirectional Programming. _Proceedings of the ACM on Programming Languages_, 2(POPL):41, 2018. https://doi.org/10.1145/3158129. (PDF download: https://dl.acm.org/ft_gateway.cfm?id=3158129.)
+
+There is a less theory-oriented tutorial, which gives a taste of programming with the Haskell port of BiGUL and its implementation:
+
+* Zhenjiang Hu and Hsiang-Shang Ko. Principles and Practice of Bidirectional Programming in BiGUL. In [_International Summer School on Bidirectional Transformations (Oxford, UK, 25–29 July 2016)_](https://www.cs.ox.ac.uk/projects/tlcbx/ssbx/), volume 9715 of _Lecture Notes in Computer Science_, chapter 4, pages 100–150. Springer, 2018. https://doi.org/10.1007/978-3-319-79108-1_4. (A preprint of the chapter is available at https://bitbucket.org/prl_tokyo/bigul/raw/master/SSBX16/tutorial.pdf.)
 
 An earlier paper describes the reification technique used in the Agda formalisation; this paper uses an outdated version of BiGUL, but the reification technique still underlies the current formalisation.
 
