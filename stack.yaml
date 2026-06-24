@@ -18,7 +18,7 @@
 # snapshot: ./custom-snapshot.yaml
 # snapshot: https://example.com/snapshots/2024-01-01.yaml
 snapshot:
-    url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/20/26.yaml
+  url: https://raw.githubusercontent.com/commercialhaskell/stackage-snapshots/master/lts/21/25.yaml
 
 # User packages to be built.
 # Various formats can be used as shown in the example below.
@@ -30,7 +30,7 @@ snapshot:
 #   - auto-update
 #   - wai
 packages:
-    - Haskell
+  - Haskell
 # Dependency packages to be pulled from upstream that are not in the snapshot.
 # These entries can reference officially published versions as well as
 # forks / in-progress versions pinned to a git hash. For example:
@@ -40,7 +40,8 @@ packages:
 # - git: https://github.com/commercialhaskell/stack.git
 #   commit: e7b331f14bcffb8367cd58fbfc8b40ec7642100a
 #
-# extra-deps: []
+extra-deps:
+  - th-extras-0.0.0.6@sha256:8c24453f874f95105726344af013ac07ef1b1b69285ccb876894ada97a11d736,1907
 
 # Override default flag values for project packages and extra-deps
 # flags: {}

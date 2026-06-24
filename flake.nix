@@ -1,7 +1,7 @@
 # https://docs.haskellstack.org/en/v3.9.3/topics/nix_integration/#supporting-both-nix-and-non-nix-developers
 {
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-  inputs.nixpkgs-release.url = "github:NixOS/nixpkgs/release-25.05";
+  inputs.nixpkgs-release.url = "github:NixOS/nixpkgs/release-26.05";
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
   outputs =
@@ -20,7 +20,7 @@
 
         # Use the default GHC from nixpkgs to avoid removed compiler sets.
         # If you need a specific GHC, switch to pkgs.haskell.packages.ghcXYZ.
-        hPkgs = haskell.packages.ghc928;
+        hPkgs = haskell.packages.ghc948;
 
         myDevTools = [
           # For install ghc
