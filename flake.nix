@@ -20,7 +20,7 @@
 
         # Use the default GHC from nixpkgs to avoid removed compiler sets.
         # If you need a specific GHC, switch to pkgs.haskell.packages.ghcXYZ.
-        hPkgs = haskell.packages.ghc967;
+        hPkgs = haskell.packages.ghc984;
 
         myDevTools = [
           # For install ghc
