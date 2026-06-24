@@ -1,7 +1,7 @@
 # https://docs.haskellstack.org/en/v3.9.3/topics/nix_integration/#supporting-both-nix-and-non-nix-developers
 {
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-  inputs.nixpkgs-release.url = "github:NixOS/nixpkgs/release-23.05";
+  inputs.nixpkgs-release.url = "github:NixOS/nixpkgs/release-25.05";
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
   outputs =
@@ -20,7 +20,7 @@
 
         # Use the default GHC from nixpkgs to avoid removed compiler sets.
         # If you need a specific GHC, switch to pkgs.haskell.packages.ghcXYZ.
-        hPkgs = haskell.packages.ghc884;
+        hPkgs = haskell.packages.ghc8107;
 
         myDevTools = [
           # For install ghc
@@ -67,7 +67,7 @@
           # Make external Nix c libraries like zlib known to GHC, like
           # pkgs.haskell.lib.buildStackProject does
           # https://github.com/NixOS/nixpkgs/blob/d64780ea0e22b5f61cd6012a456869c702a72f20/pkgs/development/haskell-modules/generic-stack-builder.nix#L38
-          LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath myDevTools;
+          # LD_LIBRARY_PATH = pkgs.lib.makeLibraryPath myDevTools;
         };
       }
     );

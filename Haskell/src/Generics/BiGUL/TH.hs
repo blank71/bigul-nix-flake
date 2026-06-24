@@ -549,12 +549,21 @@ mkBodyExpForRearr (ListE (e:es)) = do
   (_, [ein,eright,eprod]) <- lookupNames astNamespace [] ["EIn", "ERight", "EProd"]
   return $ ConE ein `AppE` (ConE eright `AppE` (ConE eprod `AppE` hexp `AppE` rexp))
 
+#if MIN_VERSION_template_haskell(2,16,0)
+mkBodyExpForRearr (TupE [Just e])    = mkBodyExpForRearr e
+mkBodyExpForRearr (TupE (Just e:es)) = do
+  lexp <- mkBodyExpForRearr e
+  rexp <- mkBodyExpForRearr (TupE es)
+  (_, [eprod]) <- lookupNames astNamespace [] ["EProd"]
+  return ((ConE eprod `AppE` lexp) `AppE` rexp)
+#else
 mkBodyExpForRearr (TupE [e])    = mkBodyExpForRearr e
 mkBodyExpForRearr (TupE (e:es)) = do
   lexp <- mkBodyExpForRearr e
   rexp <- mkBodyExpForRearr (TupE es)
   (_, [eprod]) <- lookupNames astNamespace [] ["EProd"]
   return ((ConE eprod `AppE` lexp) `AppE` rexp)
+#endif
 mkBodyExpForRearr _           = fail "Unsupported expression in a rearranging lambda-expression"
 
 
@@ -576,7 +585,11 @@ getAllVars (ConE name) = []
 getAllVars (RecConE name es) = concatMap getAllVars (map snd es)
 getAllVars (InfixE (Just e1) (ConE name) (Just e2)) = getAllVars e1 ++ getAllVars e2
 getAllVars (ListE es) = concatMap getAllVars es
+#if MIN_VERSION_template_haskell(2,16,0)
+getAllVars (TupE  es) = concatMap (maybe [] getAllVars) es
+#else
 getAllVars (TupE  es) = concatMap getAllVars es
+#endif
 getAllVars  _         =  fail "Unsupported expression in a rearranging lambda-expression"
 
 -- | A higher-level syntax for 'Generics.BiGUL.RearrS',
@@ -640,9 +653,15 @@ mkExpFromPat (InfixP pl name pr) = do
   epl <- mkExpFromPat pl
   epr <- mkExpFromPat pr
   return (InfixE (Just epl) (ConE name) (Just epr))
+#if MIN_VERSION_template_haskell(2,16,0)
+mkExpFromPat (TupP ps) = do
+  es <- mapM mkExpFromPat ps
+  return (TupE (map Just es))
+#else
 mkExpFromPat (TupP ps) = do
   es <- mapM mkExpFromPat ps
   return (TupE es)
+#endif
 mkExpFromPat (VarP name) = return (VarE name)
 mkExpFromPat WildP = [| () |]
 mkExpFromPat _ = fail "Unsupported pattern in a rearranging lambda-expression"
