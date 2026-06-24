@@ -177,7 +177,11 @@ consToEnv cons = liftM zipWithLRs (mapM constructorToPatAndBody cons)
 
 constructFuncFromClause :: (Name, Name, Name, Name, Name) -> (Name, [ConTag], [Name]) -> Clause
 constructFuncFromClause (vK1, vU1, vL1, vR1, vProd) (n, lrs, names) =
+#if MIN_VERSION_template_haskell(2,18,0)
+  Clause [ConP n [] (map VarP names)] (NormalB (wrapLRs lrs (deriveGeneric names))) []
+#else
   Clause [ConP n (map VarP names)] (NormalB (wrapLRs lrs (deriveGeneric names))) []
+#endif
   where
     wrapLRs :: [ConTag] -> Exp -> Exp
     wrapLRs lrs exp = foldr (\lr e -> ConE (contag vL1 vR1 lr) `AppE` e) exp lrs
@@ -192,12 +196,21 @@ constructFuncToClause (vK1, vU1, vL1, vR1, vProd) (n, lrs, names) =
   Clause [wrapLRs lrs (deriveGeneric names)] (NormalB (foldl (\e1 name -> e1 `AppE` (VarE name)) (ConE n) names) ) []
   where
     wrapLRs :: [ConTag] -> TH.Pat -> TH.Pat
+#if MIN_VERSION_template_haskell(2,18,0)
+    wrapLRs lrs pat = foldr (\lr p -> ConP (contag vL1 vR1 lr) [] [p]) pat lrs
+
+    deriveGeneric :: [Name] -> TH.Pat
+    deriveGeneric []    = ConP vU1 [] []
+    deriveGeneric names = foldr1 (\p1 p2 -> ConP vProd [] [p1, p2])
+                            (map (\name -> ConP vK1 [] ((:[]) (VarP name))) names)
+#else
     wrapLRs lrs pat = foldr (\lr p -> ConP (contag vL1 vR1 lr) [p]) pat lrs
 
     deriveGeneric :: [Name] -> TH.Pat
     deriveGeneric []    = ConP vU1 []
     deriveGeneric names = foldr1 (\p1 p2 -> ConP vProd [p1, p2])
                             (map (\name -> ConP vK1 ((:[]) (VarP name))) names)
+#endif
 
 -- construct selector names from constructors
 generateSelectorNames :: [Con] -> Q [[Maybe Name]]
@@ -359,6 +372,35 @@ mkPat (LitP c) patTag _ = do
   (_, [gconst]) <- lookupNames astNamespace [] [show patTag ++ "Const"]
   return $ ConE gconst `AppE` LitE c
 
+#if MIN_VERSION_template_haskell(2,18,0)
+-- user defined datatypes && unit pattern
+mkPat (ConP name _ ps) patTag dupnames = do
+  ConP name' _ [] <- [p| () |]
+  if name == name' && ps == []
+  then do
+       unitt         <- [| () |]
+       (_, [gconst]) <- lookupNames astNamespace [] [show patTag ++ "Const"]
+       return $ ConE gconst `AppE` unitt
+  else do
+       lrs <- lookupLRs name
+       conInEither <- mkConstrutorFromLRs lrs patTag
+       pes         <- case ps of
+                       [] -> mkPat (ConP name' [] []) patTag dupnames
+                       _  -> mkPat (TupP ps)  patTag dupnames
+       return $ conInEither pes
+
+mkPat (RecP name ps) patTag dupnames = do
+  -- reduce the case for a record constructor to the case for an ordinary constructor
+  len <- lookupRecordLength name -- number of constructor arguments
+  indexs <- mapM (\(n,_) -> lookupRecordField name n) ps -- positions of the fields mentioned in p
+  let nps = map snd ps  -- patterns for the fields
+  mkPat (ConP name [] (helper 0 len (zip indexs nps) [])) patTag dupnames -- grab the pattern for position i for each 0 <= i < len from zip indexs nps
+  where findInPair [] i = WildP
+        findInPair ((j,p):xs) i | i == j = p
+                                | otherwise = findInPair xs i
+        helper i n pairs acc  | i == n = acc
+                              | otherwise = helper (i+1) n pairs (acc ++ [findInPair pairs i])
+#else
 -- user defined datatypes && unit pattern
 mkPat (ConP name ps) patTag dupnames = do
   ConP name' [] <- [p| () |]
@@ -385,7 +427,8 @@ mkPat (RecP name ps) patTag dupnames = do
         findInPair ((j,p):xs) i | i == j = p
                                 | otherwise = findInPair xs i
         helper i n pairs acc  | i == n = acc
-                              | otherwise = helper (i+1) n pairs (acc++[findInPair pairs i])
+                              | otherwise = helper (i+1) n pairs (acc ++ [findInPair pairs i])
+#endif
         -- let ips = zip indexs nps in [ maybe WildP id (List.lookup i ips) | i <- [0..len-1] ]
 
 mkPat (ListP []) patTag dupnames = do emptyp <- [p| [] |]
@@ -441,6 +484,21 @@ rearrangeExp _            env = fail "Unsupported expression in a rearranging la
 mkEnvForRearr :: TH.Pat -> Q (Map String Exp)
 mkEnvForRearr (LitP c) = return Map.empty
 
+#if MIN_VERSION_template_haskell(2,18,0)
+-- empty list is ok , mkEnvForRearr return Q Map.empty for it
+mkEnvForRearr (ConP name _ ps) = mkEnvForRearr (TupP ps)
+
+mkEnvForRearr (RecP name ps) = do
+  len <- lookupRecordLength name
+  indexs <- mapM (\(n,_) -> lookupRecordField name n) ps
+  let nps = map snd ps
+  mkEnvForRearr (ConP name [] (helper 0 len (zip indexs nps) []))
+  where findInPair [] i = WildP
+        findInPair ((j,p):xs) i | i == j = p
+                                | otherwise = findInPair xs i
+        helper i n pairs acc  | i == n = acc
+                              | otherwise = helper (i+1) n pairs (acc++[findInPair pairs i])
+#else
 -- empty list is ok , mkEnvForRearr return Q Map.empty for it
 mkEnvForRearr (ConP name ps) = mkEnvForRearr (TupP ps)
 
@@ -454,6 +512,7 @@ mkEnvForRearr (RecP name ps) = do
                                 | otherwise = findInPair xs i
         helper i n pairs acc  | i == n = acc
                               | otherwise = helper (i+1) n pairs (acc++[findInPair pairs i])
+#endif
 
 mkEnvForRearr (ListP []) = return Map.empty
 mkEnvForRearr (ListP (pl:pr))     = do
@@ -649,9 +708,15 @@ rearrV qlambexp = do
 
 mkExpFromPat :: TH.Pat -> Q TH.Exp
 mkExpFromPat (LitP c) = return (LitE c)
+#if MIN_VERSION_template_haskell(2,18,0)
+mkExpFromPat (ConP name _ ps) = do
+  es <- mapM mkExpFromPat ps
+  return $ foldl (\acc e -> (AppE acc e)) (ConE name) es
+#else
 mkExpFromPat (ConP name ps) = do
   es <- mapM mkExpFromPat ps
   return $ foldl (\acc e -> (AppE acc e)) (ConE name) es
+#endif
 mkExpFromPat (RecP name ps) = do
   rs <- mapM mkExpFromPat (map snd ps)
   let es = zip (map fst ps) rs
@@ -677,11 +742,19 @@ mkExpFromPat WildP = [| () |]
 mkExpFromPat _ = fail "Unsupported pattern in a rearranging lambda-expression"
 
 mkExpFromPat' :: TH.Pat -> Q TH.Exp
+#if MIN_VERSION_template_haskell(2,18,0)
+mkExpFromPat' (ConP name _ ps ) = do (_, [replace]) <- lookupNames astNamespace [] ["Replace"]
+                                     ConP name' _ [] <- [p| () |]
+                                     if name == name' && ps == []
+                                     then return (ConE replace)
+                                     else fail $ "Panic: rearrSV only supports tuple"
+#else
 mkExpFromPat' (ConP name ps ) = do (_, [replace]) <- lookupNames astNamespace [] ["Replace"]
                                    ConP name' [] <- [p| () |]
                                    if name == name' && ps == []
                                    then return (ConE replace)
                                    else fail $ "Panic: rearrSV only supports tuple"
+#endif
 mkExpFromPat' (VarP name) = return (VarE name)
 mkExpFromPat' (TupP ps) = do
   (_, [prod]) <- lookupNames astNamespace [] ["Prod"]
@@ -710,9 +783,15 @@ mkProdPatFromSHelper other     = return other
 -- 1:s:ss -> (() , (s, ss))
 mkProdPatFromS :: TH.Pat -> Q TH.Pat
 mkProdPatFromS (LitP c) = [p| () |]
+#if MIN_VERSION_template_haskell(2,18,0)
+mkProdPatFromS (ConP name _ ps) = do
+  es <- mapM mkProdPatFromS ps
+  mkProdPatFromSHelper $ TupP es
+#else
 mkProdPatFromS (ConP name ps) = do
   es <- mapM mkProdPatFromS ps
   mkProdPatFromSHelper $ TupP es
+#endif
 mkProdPatFromS (RecP name ps) = do
   rs <- mapM mkProdPatFromS (map snd ps)
   mkProdPatFromSHelper (TupP rs)
