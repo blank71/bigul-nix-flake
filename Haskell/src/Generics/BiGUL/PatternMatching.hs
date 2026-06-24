@@ -8,22 +8,22 @@ import Generics.BiGUL.Error
 import GHC.InOut
 
 import Control.Monad.Except
+import Control.Monad (liftM, liftM2)
 
-
-modifyError :: (e -> e) -> Either e a -> Either e a
-modifyError f = either (Left . f) Right
+mapPatError :: (e -> e) -> Either e a -> Either e a
+mapPatError f = either (Left . f) Right
 
 deconstruct :: Pat a env con -> a -> Either PatError env
 deconstruct PVar          x         = return (Var x)
 deconstruct PVar'         x         = return (Var x)
 deconstruct (PConst c)    x         = if c == x then return () else throwError PEConstantMismatch
-deconstruct (l `PProd` r) (x, y)    = liftM2 (,) (modifyError PEProdL (deconstruct l x))
-                                                 (modifyError PEProdR (deconstruct r y))
-deconstruct (PLeft  p)    (Left  x) = modifyError PELeft  (deconstruct p x)
+deconstruct (l `PProd` r) (x, y)    = liftM2 (,) (mapPatError PEProdL (deconstruct l x))
+                                                 (mapPatError PEProdR (deconstruct r y))
+deconstruct (PLeft  p)    (Left  x) = mapPatError PELeft  (deconstruct p x)
 deconstruct (PLeft  _)    _         = throwError PELeftMismatch
-deconstruct (PRight p)    (Right x) = modifyError PERight (deconstruct p x)
+deconstruct (PRight p)    (Right x) = mapPatError PERight (deconstruct p x)
 deconstruct (PRight _)    _         = throwError PERightMismatch
-deconstruct (PIn p)       x         = modifyError PEIn    (deconstruct p (out x))
+deconstruct (PIn p)       x         = mapPatError PEIn    (deconstruct p (out x))
 
 construct :: Pat a env con -> env -> a
 construct PVar          (Var x) = x
@@ -50,12 +50,12 @@ eval (EIn e)       env = inn (eval e env)
 uneval :: Pat a env con -> Expr env b -> b -> con -> Either PatError con
 uneval p (EDir d)     x         con = unevalDir p d x con
 uneval p (EConst c)   x         con = if c == x then return con else throwError PEConstantMismatch
-uneval p (EProd l r)  (x, y)    con = modifyError PEProdL (uneval p l x con) >>= modifyError PEProdR . uneval p r y
-uneval p (ELeft  e)   (Left  x) con = modifyError PELeft  (uneval p e x con)
+uneval p (EProd l r)  (x, y)    con = mapPatError PEProdL (uneval p l x con) >>= mapPatError PEProdR . uneval p r y
+uneval p (ELeft  e)   (Left  x) con = mapPatError PELeft  (uneval p e x con)
 uneval p (ELeft  _)   x         con = throwError PELeftMismatch
-uneval p (ERight e)   (Right x) con = modifyError PERight (uneval p e x con)
+uneval p (ERight e)   (Right x) con = mapPatError PERight (uneval p e x con)
 uneval p (ERight _)   x         con = throwError PERightMismatch
-uneval p (EIn e)      x         con = modifyError PEIn    (uneval p e (out x) con)
+uneval p (EIn e)      x         con = mapPatError PEIn    (uneval p e (out x) con)
 
 unevalDir :: Pat a env con -> Direction env b -> b -> con -> Either PatError con
 unevalDir PVar          DVar       x (Just y)     = if x == y
@@ -65,11 +65,11 @@ unevalDir PVar          DVar       x Nothing      = return (Just x)
 unevalDir PVar'         DVar       x (Just y)     = throwError PEMultipleUpdates
 unevalDir PVar'         DVar       x Nothing      = return (Just x)
 unevalDir (PConst c)    _          x con          = return con
-unevalDir (l `PProd` r) (DLeft  d) x (conl, conr) = liftM (, conr) (modifyError PEProdL (unevalDir l d x conl))
-unevalDir (l `PProd` r) (DRight d) x (conl, conr) = liftM (conl ,) (modifyError PEProdR (unevalDir r d x conr))
-unevalDir (PLeft  p)    d          x con          = modifyError PELeft  (unevalDir p d x con)
-unevalDir (PRight p)    d          x con          = modifyError PERight (unevalDir p d x con)
-unevalDir (PIn p)       d          x con          = modifyError PEIn    (unevalDir p d x con)
+unevalDir (l `PProd` r) (DLeft  d) x (conl, conr) = liftM (, conr) (mapPatError PEProdL (unevalDir l d x conl))
+unevalDir (l `PProd` r) (DRight d) x (conl, conr) = liftM (conl ,) (mapPatError PEProdR (unevalDir r d x conr))
+unevalDir (PLeft  p)    d          x con          = mapPatError PELeft  (unevalDir p d x con)
+unevalDir (PRight p)    d          x con          = mapPatError PERight (unevalDir p d x con)
+unevalDir (PIn p)       d          x con          = mapPatError PEIn    (unevalDir p d x con)
 
 fromContainerV :: Pat v env con -> con -> Either PatError env
 fromContainerV PVar          Nothing      = throwError PEValueUnrecoverable
@@ -77,11 +77,11 @@ fromContainerV PVar          (Just v)     = return (Var v)
 fromContainerV PVar'         Nothing      = throwError PEValueUnrecoverable
 fromContainerV PVar'         (Just v)     = return (Var v)
 fromContainerV (PConst c)    con          = return ()
-fromContainerV (l `PProd` r) (conl, conr) = liftM2 (,) (modifyError PEProdL (fromContainerV l conl))
-                                                       (modifyError PEProdR (fromContainerV r conr))
-fromContainerV (PLeft  p)    con          = modifyError PELeft  (fromContainerV p con)
-fromContainerV (PRight p)    con          = modifyError PERight (fromContainerV p con)
-fromContainerV (PIn p)       con          = modifyError PEIn    (fromContainerV p con)
+fromContainerV (l `PProd` r) (conl, conr) = liftM2 (,) (mapPatError PEProdL (fromContainerV l conl))
+                                                       (mapPatError PEProdR (fromContainerV r conr))
+fromContainerV (PLeft  p)    con          = mapPatError PELeft  (fromContainerV p con)
+fromContainerV (PRight p)    con          = mapPatError PERight (fromContainerV p con)
+fromContainerV (PIn p)       con          = mapPatError PEIn    (fromContainerV p con)
 
 fromContainerS :: Pat s env con -> env -> con -> env
 fromContainerS PVar          (Var s)      Nothing      = (Var s )
