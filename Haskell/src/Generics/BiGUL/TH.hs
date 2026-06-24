@@ -253,6 +253,15 @@ generateSelectorInstanceDec' _         _         _                          = No
 
 -- generate type representation of polymorhpic type
 -- e.g. VBook a b is represented as: AppT (ConT name) (ConT name_a `AppT` ConT name_b)
+#if MIN_VERSION_template_haskell(2,17,0)
+generateTypeVarsType :: Name -> [TyVarBndr flag] -> Type
+generateTypeVarsType n []    = ConT n -- not polymorphic case.
+generateTypeVarsType n tvars = foldl (\a b -> AppT a b) (ConT n) $ map (\tvar ->
+   case tvar of
+    { PlainTV  name _      -> VarT name;
+      KindedTV name _ kind -> VarT name -- error "kind type variables are not supported yet."
+    }) tvars
+#else
 generateTypeVarsType :: Name -> [TyVarBndr] -> Type
 generateTypeVarsType n []    = ConT n -- not polymorphic case.
 generateTypeVarsType n tvars = foldl (\a b -> AppT a b) (ConT n) $ map (\tvar ->
@@ -260,6 +269,7 @@ generateTypeVarsType n tvars = foldl (\a b -> AppT a b) (ConT n) $ map (\tvar ->
     { PlainTV  name      -> VarT name;
       KindedTV name kind -> VarT name -- error "kind type variables are not supported yet."
     }) tvars
+#endif
 
 constructLRs :: Int -> [[ConTag]]
 constructLRs 0 = []
@@ -796,13 +806,13 @@ nameNormal :: Q TH.Exp
 nameNormal = lookupNames astNamespace [] ["Normal"] >>= \(_, [bnormal]) -> conE bnormal
 
 class ExpOrPat a where
-  toExp :: a -> Q TH.Exp
+  toExp :: Q a -> Q TH.Exp
 
-instance ExpOrPat (Q TH.Exp) where
+instance ExpOrPat TH.Exp where
   toExp = id
 
-instance ExpOrPat (Q TH.Pat) where
-  toExp = (>>= patCond)
+instance ExpOrPat TH.Pat where
+  toExp qp = qp >>= patCond
 
 patLambdaToPred :: TH.Exp -> Q TH.Exp
 patLambdaToPred p =
@@ -818,8 +828,13 @@ patLambdaToPred p =
     doExp :: TH.Name -> TH.Pat -> Q TH.Exp -> TH.Exp -> Q TH.Exp
     doExp hreturn p qMatchExp boolExp = do
       matchExp <- qMatchExp
+#if MIN_VERSION_template_haskell(2,17,0)
+      return (DoE Nothing [BindS p (VarE hreturn `AppE` matchExp),
+                   NoBindS (VarE hreturn `AppE` boolExp)])
+#else
       return (DoE [BindS p (VarE hreturn `AppE` matchExp),
                    NoBindS (VarE hreturn `AppE` boolExp)])
+#endif
 
 -- | Construct a normal branch, for which a main condition on the source and view and
 --   an exit condition on the source should be specified. The usual way of using 'normal' is
@@ -835,7 +850,7 @@ patLambdaToPred p =
 --   * @b :: BiGUL s v@, which is the branch body.
 normal :: ExpOrPat a
        => Q TH.Exp  -- ^ main condition (binary predicate on the source and view)
-       -> a         -- ^ exit condition (unary predicate on the source)
+       -> Q a         -- ^ exit condition (unary predicate on the source)
        -> Q TH.Exp
 normal mp mq =
   [| \b -> ($(mp >>= patLambdaToPred), $(nameNormal) b $(toExp mq >>= patLambdaToPred)) |]
@@ -855,9 +870,9 @@ normal mp mq =
 --
 --   * @b :: BiGUL s v@, which is the branch body.
 normalSV :: (ExpOrPat a, ExpOrPat b, ExpOrPat c)
-         => a  -- ^ main source condition (unary predicate on the source)
-         -> b  -- ^ main view condition (unary predicate on the view)
-         -> c  -- ^ exit condition (unary predicate on the source)
+         => Q a  -- ^ main source condition (unary predicate on the source)
+         -> Q b  -- ^ main view condition (unary predicate on the view)
+         -> Q c  -- ^ exit condition (unary predicate on the source)
          -> Q TH.Exp
 normalSV mps mpv mq =
   [| \b -> (\s v -> $(toExp mps >>= patLambdaToPred) s && $(toExp mpv >>= patLambdaToPred) v,
@@ -890,8 +905,8 @@ adaptive mp = [| \f -> ($(mp >>= patLambdaToPred), $(nameAdaptive) f) |]
 --
 --   * @f :: s -> v -> s@, which is the adaptation function.
 adaptiveSV :: (ExpOrPat a, ExpOrPat b)
-           => a  -- ^ main source condition (unary predicate on the source)
-           -> b  -- ^ main view condition (unary predicate on the view)
+           => Q a  -- ^ main source condition (unary predicate on the source)
+           -> Q b  -- ^ main view condition (unary predicate on the view)
            -> Q TH.Exp
 adaptiveSV ps pv =
   [| \f -> (\s v -> $(toExp ps >>= patLambdaToPred) s && $(toExp pv >>= patLambdaToPred) v, $(nameAdaptive) f) |]
