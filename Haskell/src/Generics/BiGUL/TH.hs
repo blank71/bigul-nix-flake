@@ -131,11 +131,20 @@ deriveBiGULGeneric name = do
 #endif
             []
             (AppT (ConT nGeneric) (generateTypeVarsType name typeVars))
+#if __GLASGOW_HASKELL__ >= 808
+            [TySynInstD
+               (TySynEqn
+                  Nothing
+                  (AppT (ConT nRep) (generateTypeVarsType name typeVars))
+                  (constructorsToSum (nSum, nV1)
+                     (map (constructorToProduct (nK1, nR, nU1, nProd, nS1)) constructors))),
+#else
             [TySynInstD nRep
                (TySynEqn
                   [generateTypeVarsType name typeVars]
                   (constructorsToSum (nSum, nV1)
                      (map (constructorToProduct (nK1, nR, nU1, nProd, nS1)) constructors))),
+#endif
              FunD vFrom fromClauses,
              FunD vTo toClauses]
          ]
