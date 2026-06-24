@@ -46,16 +46,17 @@
 module GHC.InOut where
 
 import GHC.Generics
+import Data.Kind (Type)
 
 
 class (Generic a,ToFromRep (Rep a)) => InOut a where
   inn :: F a -> a
   out :: a -> F a
 
-type family Flatten (f :: * -> *) :: *
+type family Flatten (f :: Type -> Type) :: Type
 type F a = Flatten (Rep a)
 
-class ToFromRep (f :: * -> *) where
+class ToFromRep (f :: Type -> Type) where
   fromRep :: f x -> Flatten f
   toRep :: Flatten f -> f x
 
