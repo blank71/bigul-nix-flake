@@ -1,7 +1,7 @@
 # https://docs.haskellstack.org/en/v3.9.3/topics/nix_integration/#supporting-both-nix-and-non-nix-developers
 {
   inputs.nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
-  inputs.nixpkgs-release.url = "github:NixOS/nixpkgs/release-20.09";
+  inputs.nixpkgs-release.url = "github:NixOS/nixpkgs/release-23.05";
   inputs.flake-utils.url = "github:numtide/flake-utils";
 
   outputs =
@@ -20,7 +20,7 @@
 
         # Use the default GHC from nixpkgs to avoid removed compiler sets.
         # If you need a specific GHC, switch to pkgs.haskell.packages.ghcXYZ.
-        hPkgs = haskell.packages.ghc882;
+        hPkgs = haskell.packages.ghc884;
 
         myDevTools = [
           # For install ghc
@@ -33,8 +33,8 @@
           # hPkgs.ormolu # Haskell formatter
           # hPkgs.hlint # Haskell codestyle checker
           # hPkgs.hoogle # Lookup Haskell documentation
-          hPkgs.haskell-language-server # LSP server for editor
-          hPkgs.implicit-hie # auto generate LSP hie.yaml file from cabal
+          # hPkgs.haskell-language-server # LSP server for editor
+          # hPkgs.implicit-hie # auto generate LSP hie.yaml file from cabal
           # hPkgs.retrie # Haskell refactoring tool
           # hPkgs.cabal-install
           stack-wrapped
