@@ -134,7 +134,11 @@ deriveBiGULGeneric name = do
 #if __GLASGOW_HASKELL__ >= 808
             [TySynInstD
                (TySynEqn
-                  Nothing
+#if MIN_VERSION_template_haskell(2,21,0)
+                  (Just (map typeFamilyTyVarBndr typeVars))
+#else
+                  (Just typeVars)
+#endif
                   (AppT (ConT nRep) (generateTypeVarsType name typeVars))
                   (constructorsToSum (nSum, nV1)
                      (map (constructorToProduct (nK1, nR, nU1, nProd, nS1)) constructors))),
@@ -282,6 +286,13 @@ generateTypeVarsType n tvars = foldl (\a b -> AppT a b) (ConT n) $ map (\tvar ->
     { PlainTV  name      -> VarT name;
       KindedTV name kind -> VarT name -- error "kind type variables are not supported yet."
     }) tvars
+#endif
+
+#if MIN_VERSION_template_haskell(2,21,0)
+-- Type declarations use BndrVis, while explicit binders in TySynEqn use ().
+typeFamilyTyVarBndr :: TyVarBndr BndrVis -> TyVarBndr ()
+typeFamilyTyVarBndr (PlainTV name _) = PlainTV name ()
+typeFamilyTyVarBndr (KindedTV name _ kind) = KindedTV name () kind
 #endif
 
 constructLRs :: Int -> [[ConTag]]
