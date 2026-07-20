@@ -1,5 +1,8 @@
 # BiGUL: The Bidirectional Generic Update Language #
 
+> [!NOTE]
+> https://github.com/blank71/bigul-nix-flake is a fork of the BiGUL https://bitbucket.org/prl_tokyo/bigul, which is a Haskell implementation of the Bidirectional Generic Update Language (BiGUL). The original BiGUL repository is seemingly no longer maintained. This fork is intended to build the project with more modern Haskell Compiler (GHC) versions and to provide a Nix flake for easier reproducibility.
+
 Putback-based bidirectional programming allows the programmer to write only one putback transformation, from which the unique corresponding forward transformation is derived for free. BiGUL, short for the Bidirectional Generic Update Language, is designed to be a minimalist putback-based bidirectional programming language. Originally developed in the dependently typed programming language [Agda](http://wiki.portal.chalmers.se/agda/pmwiki.php), BiGUL’s well-behavedness has been completely formally verified. It has subsequently been ported to [Haskell](https://www.haskell.org) for developing various bidirectional applications.
 
 The module `Generics.BiGUL.Lib.HuStudies` ([haddock documentation on Hackage](https://hackage.haskell.org/package/BiGUL/docs/Generics-BiGUL-Lib-HuStudies.html)) contains some small, illustrative examples of BiGUL programs, and is a good place for getting started quickly.
